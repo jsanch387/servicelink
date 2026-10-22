@@ -1,5 +1,6 @@
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import React from 'react';
+import { fieldBoxClassName, fieldLabelClassName } from './fieldStyles';
 
 interface SelectOption {
   value: string;
@@ -34,7 +35,7 @@ export const Select: React.FC<SelectProps> = ({
   return (
     <div className={`w-full ${className}`}>
       {label && (
-        <label className="mb-1.5 block text-left text-sm font-medium text-gray-200">
+        <label className={fieldLabelClassName}>
           {label}
           {required && <span className="ml-1 text-red-400">*</span>}
         </label>
@@ -47,11 +48,10 @@ export const Select: React.FC<SelectProps> = ({
           disabled={disabled}
           name={name}
           className={`
-            w-full rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 text-base font-normal text-white sm:text-sm
-            focus:border-white/30 focus:bg-white/8 focus:outline-none focus:ring-2 focus:ring-white/20
-            transition-all duration-200 appearance-none touch-manipulation
-            ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/10'}
-            ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-white/20 active:bg-white/8 cursor-pointer'}
+            w-full appearance-none pr-8 text-base touch-manipulation sm:text-sm
+            ${fieldBoxClassName}
+            ${error ? 'border-red-500/50 bg-red-500/5' : 'hover:border-white/25'}
+            ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
             ${value ? 'text-white' : 'text-gray-500'}
           `}
         >
@@ -64,7 +64,7 @@ export const Select: React.FC<SelectProps> = ({
             </option>
           ))}
         </select>
-        <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
       </div>
       {error && <p className="mt-1 text-sm text-red-400">{error}</p>}
     </div>

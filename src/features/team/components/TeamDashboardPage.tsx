@@ -34,9 +34,8 @@ export const TeamDashboardPage: React.FC<TeamDashboardPageProps> = ({
               <Button
                 type="button"
                 variant="inverse"
-                size="xs"
-                className="shrink-0 font-semibold"
-                icon={<PlusIcon className="h-3.5 w-3.5" aria-hidden />}
+                className="shrink-0"
+                icon={<PlusIcon className="h-4 w-4" aria-hidden />}
                 onClick={openInvite}
                 aria-label="Invite team member"
               >

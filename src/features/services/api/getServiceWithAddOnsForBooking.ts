@@ -4,7 +4,9 @@
  * does not block unauthenticated (signed-out) visitors.
  */
 
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
+import { localizedServiceCopy } from '@/features/services/utils/localizedServiceCopy';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { unstable_noStore as noStore } from 'next/cache';
 
@@ -47,7 +49,8 @@ export interface ServiceWithAddOnsForBooking {
  */
 export async function getServiceWithAddOnsForBooking(
   businessId: string,
-  serviceId: string
+  serviceId: string,
+  locale: PublicBookingFlowLocale = 'en'
 ): Promise<ServiceWithAddOnsForBooking | null> {
   noStore();
   try {
@@ -56,7 +59,7 @@ export async function getServiceWithAddOnsForBooking(
     const { data: serviceRow, error: serviceError } = await supabase
       .from('business_services')
       .select(
-        'id, name, description, price_cents, duration_minutes, hours_to_complete, price_options_enabled'
+        'id, name, description, name_es, description_es, price_cents, duration_minutes, hours_to_complete, price_options_enabled'
       )
       .eq('id', serviceId)
       .eq('business_id', businessId)
@@ -144,10 +147,18 @@ export async function getServiceWithAddOnsForBooking(
       );
     }
 
-    const service: ServiceForBooking = {
-      id: (serviceRow as { id: string }).id,
+    const copy = localizedServiceCopy(locale, {
       name: (serviceRow as { name: string }).name,
       description: (serviceRow as { description: string | null }).description,
+      name_es: (serviceRow as { name_es?: string | null }).name_es,
+      description_es: (serviceRow as { description_es?: string | null })
+        .description_es,
+    });
+
+    const service: ServiceForBooking = {
+      id: (serviceRow as { id: string }).id,
+      name: copy.name,
+      description: copy.description,
       priceCents:
         (serviceRow as { price_cents: number | null }).price_cents ?? 0,
       durationMinutes,

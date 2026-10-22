@@ -304,7 +304,11 @@ export default async function PublicProfilePage({
       <ViewTracker businessSlug={slug} />
 
       {/* Structured Data for SEO */}
-      <StructuredData businessProfile={displayProfile} slug={slug} />
+      <StructuredData
+        businessProfile={displayProfile}
+        slug={slug}
+        bookingFlowLocale={bookingFlowLocale}
+      />
 
       <PublicBusinessProfileView
         businessProfile={displayProfile}

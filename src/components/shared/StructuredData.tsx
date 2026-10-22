@@ -9,18 +9,23 @@ import {
   publicSpecialtyLabels,
   publicTradeLine,
 } from '@/constants/businessSpecialties';
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { generatePublicProfileShareDescription } from '@/features/business-profile/utils/publicProfileShareCopy';
+import { localizedServiceCopy } from '@/features/services/utils/localizedServiceCopy';
 import React from 'react';
 
 interface StructuredDataProps {
   businessProfile: CompleteBusinessProfile;
   slug: string;
+  /** Resolved public booking language. Service names and descriptions follow it. */
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
 export const StructuredData: React.FC<StructuredDataProps> = ({
   businessProfile,
   slug,
+  bookingFlowLocale = 'en',
 }) => {
   const siteUrl = (
     process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app'
@@ -75,38 +80,44 @@ export const StructuredData: React.FC<StructuredDataProps> = ({
       ? {
           '@type': 'OfferCatalog',
           name: 'Services',
-          itemListElement: businessProfile.services.map((service, index) => ({
-            '@type': 'Offer',
-            itemOffered: {
-              '@type': 'Service',
-              name: service.name,
-              description: service.description,
-              provider: {
-                '@type': 'LocalBusiness',
-                name: businessProfile.business_name,
+          itemListElement: businessProfile.services.map((service, index) => {
+            const copy = localizedServiceCopy(bookingFlowLocale, service);
+            return {
+              '@type': 'Offer',
+              itemOffered: {
+                '@type': 'Service',
+                name: copy.name,
+                description: copy.description,
+                provider: {
+                  '@type': 'LocalBusiness',
+                  name: businessProfile.business_name,
+                },
               },
-            },
-            price: service.price_cents
-              ? (service.price_cents / 100).toString()
-              : undefined,
-            priceCurrency: 'USD',
-            position: index + 1,
-          })),
+              price: service.price_cents
+                ? (service.price_cents / 100).toString()
+                : undefined,
+              priceCurrency: 'USD',
+              position: index + 1,
+            };
+          }),
         }
       : undefined,
-    makesOffer: businessProfile.services?.map(service => ({
-      '@type': 'Offer',
-      itemOffered: {
-        '@type': 'Service',
-        name: service.name,
-        description: service.description,
-      },
-      price: service.price_cents
-        ? (service.price_cents / 100).toString()
-        : undefined,
-      priceCurrency: 'USD',
-      availability: 'https://schema.org/InStock',
-    })),
+    makesOffer: businessProfile.services?.map(service => {
+      const copy = localizedServiceCopy(bookingFlowLocale, service);
+      return {
+        '@type': 'Offer',
+        itemOffered: {
+          '@type': 'Service',
+          name: copy.name,
+          description: copy.description,
+        },
+        price: service.price_cents
+          ? (service.price_cents / 100).toString()
+          : undefined,
+        priceCurrency: 'USD',
+        availability: 'https://schema.org/InStock',
+      };
+    }),
     potentialAction: {
       '@type': 'ContactAction',
       target: `tel:${businessProfile.phone_number_call}`,

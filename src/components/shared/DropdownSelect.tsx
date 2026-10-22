@@ -9,6 +9,7 @@ import React, {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { fieldBoxClassName, fieldLabelClassName } from './fieldStyles';
 
 export interface DropdownSelectOption {
   value: string;
@@ -103,12 +104,12 @@ export function DropdownSelect({
         id={listboxId}
         role="listbox"
         style={panelStyle}
-        className={`overflow-y-auto rounded-[10px] border border-white/10 bg-[#1a1a1a] py-1 shadow-lg scrollbar-hide ${panelMaxHeightClassName}`}
+        className={`overflow-y-auto rounded-lg border border-white/15 bg-[#1a1a1a] py-1 shadow-lg scrollbar-hide ${panelMaxHeightClassName}`}
       >
         {options.map(option => {
           const isSelected = option.value === value;
           return (
-            <li key={option.value} role="presentation">
+            <li key={option.value || option.label} role="presentation">
               <button
                 type="button"
                 role="option"
@@ -118,7 +119,7 @@ export function DropdownSelect({
                   setOpen(false);
                 }}
                 className={`
-                  w-full cursor-pointer px-3.5 py-2.5 text-left text-sm transition-colors
+                  w-full cursor-pointer px-3 py-2 text-left text-sm transition-colors
                   ${isSelected ? 'bg-white/10 font-medium text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'}
                 `}
               >
@@ -133,7 +134,7 @@ export function DropdownSelect({
   return (
     <div ref={rootRef} className={`relative w-full ${className}`}>
       {label ? (
-        <label className="mb-2.5 block text-left text-sm font-semibold text-gray-200">
+        <label className={fieldLabelClassName}>
           {label}
           {required ? <span className="ml-1 text-red-400">*</span> : null}
         </label>
@@ -150,10 +151,10 @@ export function DropdownSelect({
           setOpen(prev => !prev);
         }}
         className={`
-          flex w-full items-center justify-between gap-2 rounded-[10px] border px-3.5 py-2.5 text-left text-sm font-medium transition-all duration-200 touch-manipulation
-          focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--dashboard-bg,#0f0f0f)]
-          ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/10 bg-white/5'}
-          ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:border-white/20 active:bg-white/8'}
+          flex w-full items-center justify-between gap-2 text-left text-sm touch-manipulation
+          ${fieldBoxClassName}
+          ${error ? 'border-red-500/50 bg-red-500/5' : 'hover:border-white/25'}
+          ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
           ${selected ? 'text-white' : 'text-gray-500'}
         `}
       >

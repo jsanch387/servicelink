@@ -23,7 +23,7 @@ interface QuickActionsCardProps {
 }
 
 const rowClassName =
-  'group flex cursor-pointer items-center gap-4 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-3.5 text-left transition-colors hover:border-white/15 hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20';
+  'group flex cursor-pointer items-center gap-3 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-left transition-colors hover:border-white/15 hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20';
 
 export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
   hasPublicPageSlug,
@@ -56,13 +56,13 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
   return (
     <DashboardGlassCard className="h-full">
       <p className="text-base font-semibold text-white">Shortcuts</p>
-      <div className="mt-4 flex flex-col gap-3">
+      <div className="mt-3 flex flex-col gap-2">
         <ShortcutRow
           href={newAppointment.enabled ? newAppointment.href : undefined}
           onClick={
             newAppointment.enabled ? undefined : newAppointment.onBlockedClick
           }
-          icon={<PlusIcon className="h-5 w-5" aria-hidden />}
+          icon={<PlusIcon className="h-4 w-4" aria-hidden />}
           label="New appointment"
           hint="Add a job to the calendar"
           title={newAppointment.title}
@@ -72,9 +72,9 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
           onClick={copyBookingLink}
           icon={
             copied ? (
-              <CheckIcon className="h-5 w-5" aria-hidden />
+              <CheckIcon className="h-4 w-4" aria-hidden />
             ) : (
-              <LinkIcon className="h-5 w-5" aria-hidden />
+              <LinkIcon className="h-4 w-4" aria-hidden />
             )
           }
           label={copied ? 'Copied' : 'Copy booking link'}
@@ -138,7 +138,7 @@ function ShortcutRow({
 }) {
   const content = (
     <>
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-white text-zinc-950">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-zinc-950">
         {icon}
       </span>
       <span className="min-w-0 flex-1">
@@ -146,7 +146,7 @@ function ShortcutRow({
           {label}
         </span>
         {hint ? (
-          <span className="mt-1 block truncate text-xs leading-4 text-zinc-400">
+          <span className="mt-0.5 block truncate text-xs leading-4 text-zinc-400">
             {hint}
           </span>
         ) : null}

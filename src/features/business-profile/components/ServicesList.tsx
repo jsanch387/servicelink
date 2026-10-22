@@ -12,6 +12,7 @@ import {
   shouldShowPublicServiceCategoryFilters,
 } from '@/features/services/categories/utils/buildPublicServiceCategoryOptions';
 import { filterServicesByCategoryFilter } from '@/features/services/categories/utils/filterServicesByCategoryFilter';
+import { localizedServiceCopy } from '@/features/services/utils/localizedServiceCopy';
 import React, { useEffect, useMemo, useState } from 'react';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
 import { resolvePublicBookingPolicy } from '../utils/bookingPolicy';
@@ -147,38 +148,46 @@ export const ServicesList: React.FC<ServicesListProps> = ({
                 showCategoryFilters ? 'mt-3' : ''
               }`}
             >
-              {displayServices.map(service => (
-                <ServiceCard
-                  key={service.id}
-                  service={{
-                    id: service.id,
-                    name: service.name,
-                    description: service.description || '',
-                    price: service.price_cents || 0,
-                    hours_to_complete: service.hours_to_complete || null,
-                    duration_minutes: service.duration_minutes ?? null,
-                    priceOptionsEnabled:
-                      service.price_options_enabled === true &&
-                      allowPriceOptionSignals,
-                  }}
-                  isEditable={false}
-                  isPublic={isPublic}
-                  businessSlug={businessSlug}
-                  hideBookLink={publicHideBookLinks}
-                  bookingFlowLocale={bookingFlowLocale}
-                  publicActiveSale={publicActiveSale}
-                  onSelectNavigate={
-                    policyAgreement.required && !policyAgreement.hasAgreed
-                      ? href => {
-                          void router.prefetch(href);
-                          policyAgreement.runAfterAgreement(() =>
-                            router.push(href)
-                          );
-                        }
-                      : undefined
-                  }
-                />
-              ))}
+              {displayServices.map(service => {
+                const copy = isPublic
+                  ? localizedServiceCopy(bookingFlowLocale, service)
+                  : {
+                      name: service.name,
+                      description: service.description,
+                    };
+                return (
+                  <ServiceCard
+                    key={service.id}
+                    service={{
+                      id: service.id,
+                      name: copy.name,
+                      description: copy.description || '',
+                      price: service.price_cents || 0,
+                      hours_to_complete: service.hours_to_complete || null,
+                      duration_minutes: service.duration_minutes ?? null,
+                      priceOptionsEnabled:
+                        service.price_options_enabled === true &&
+                        allowPriceOptionSignals,
+                    }}
+                    isEditable={false}
+                    isPublic={isPublic}
+                    businessSlug={businessSlug}
+                    hideBookLink={publicHideBookLinks}
+                    bookingFlowLocale={bookingFlowLocale}
+                    publicActiveSale={publicActiveSale}
+                    onSelectNavigate={
+                      policyAgreement.required && !policyAgreement.hasAgreed
+                        ? href => {
+                            void router.prefetch(href);
+                            policyAgreement.runAfterAgreement(() =>
+                              router.push(href)
+                            );
+                          }
+                        : undefined
+                    }
+                  />
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm text-zinc-500 text-center py-8">

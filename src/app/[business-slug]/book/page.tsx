@@ -16,6 +16,7 @@ import {
   parseBookServiceLocationTypeQuery,
   type BookDetailsStepQuery,
   type BookServiceLocationTypeQuery,
+  type PublicBookingFlowLocale,
 } from '@/constants/routes';
 import {
   BookServicePicker,
@@ -40,6 +41,7 @@ import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMap
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { resolvePublicBookingService } from '@/features/services/api/resolvePublicBookingService';
 import { sortServicesForDisplay } from '@/features/services/categories/utils/sortServicesForDisplay';
+import { localizedServiceCopy } from '@/features/services/utils/localizedServiceCopy';
 import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
 import type { ServiceRow } from '@/features/services/types/services';
 import {
@@ -122,6 +124,8 @@ type ServiceRowForPicker = {
   id: string;
   name: string;
   description: string | null;
+  name_es?: string | null;
+  description_es?: string | null;
   price_cents: number | null;
   price_options_enabled: boolean | null;
   hours_to_complete: number | null;
@@ -160,12 +164,14 @@ function mapPaymentSettingsForBooking(
 
 function mapRowToPickerItem(
   row: ServiceRowForPicker,
-  ownerPro: boolean
+  ownerPro: boolean,
+  locale: PublicBookingFlowLocale
 ): BookServicePickerItem {
+  const copy = localizedServiceCopy(locale, row);
   return {
     id: row.id,
-    name: row.name,
-    description: row.description,
+    name: copy.name,
+    description: copy.description,
     priceCents: row.price_cents ?? 0,
     priceOptionsEnabled: row.price_options_enabled === true && ownerPro,
     hours_to_complete: row.hours_to_complete ?? null,
@@ -370,7 +376,7 @@ export default async function BookingRequestPage({
       adminClient
         .from('business_services')
         .select(
-          'id, name, description, price_cents, price_options_enabled, hours_to_complete, duration_minutes, category_id, sort_order, created_at'
+          'id, name, description, name_es, description_es, price_cents, price_options_enabled, hours_to_complete, duration_minutes, category_id, sort_order, created_at'
         )
         .eq('business_id', businessProfile.id)
         .eq('is_active', true)
@@ -399,7 +405,7 @@ export default async function BookingRequestPage({
       []) as ServiceCategoryRow[];
 
     availabilityPickerServices = sortedPickerRows
-      .map(row => mapRowToPickerItem(row, ownerHasPro))
+      .map(row => mapRowToPickerItem(row, ownerHasPro, bookingFlowLocale))
       .filter(s => s.id && s.name);
 
     if (availabilityPickerServices.length === 1 && !isOwnerManualBooking) {
@@ -443,7 +449,8 @@ export default async function BookingRequestPage({
       adminClient,
       businessProfile.id,
       trimmedServiceId,
-      priceOptionId
+      priceOptionId,
+      bookingFlowLocale
     );
 
     if (!resolved.ok) {

@@ -1,6 +1,10 @@
 'use client';
 
 import {
+  fieldLabelClassName,
+  fieldSurfaceClassName,
+} from '@/components/shared/fieldStyles';
+import {
   formatLocationSuggestionKind,
   hasMapTilerBrowserKey,
   searchMapTilerLocations,
@@ -208,10 +212,8 @@ export function LocationAutocomplete({
   const inputClasses =
     variant === 'bare'
       ? 'w-full min-w-0 border-0 bg-transparent p-0 pr-9 text-base leading-7 text-white outline-none placeholder:text-gray-500'
-      : `w-full rounded-lg border bg-white/5 py-2.5 pl-3.5 pr-11 text-base font-normal text-white outline-none transition-all duration-200 placeholder:text-gray-500 focus:border-white/30 focus:bg-white/[0.08] focus:ring-2 focus:ring-white/20 sm:text-sm ${
-          error
-            ? 'border-red-500/50 bg-red-500/5'
-            : 'border-white/10 hover:border-white/20'
+      : `h-8 w-full pl-3 pr-9 text-base text-white placeholder:text-white/40 sm:text-sm ${fieldSurfaceClassName} ${
+          error ? 'border-red-500/50 bg-red-500/5' : 'hover:border-white/25'
         }`;
 
   const suggestionsCard =
@@ -363,17 +365,14 @@ export function LocationAutocomplete({
   return (
     <div ref={containerRef} className="relative w-full">
       {label && (
-        <label
-          htmlFor={id}
-          className="mb-1.5 block text-left text-sm font-medium text-gray-200"
-        >
+        <label htmlFor={id} className={fieldLabelClassName}>
           {label}
           {required && <span className="ml-1 text-red-400">*</span>}
         </label>
       )}
 
       {description ? (
-        <p className="mb-1.5 text-xs leading-relaxed text-zinc-500">
+        <p className="-mt-0.5 mb-2 text-xs leading-relaxed text-zinc-500">
           {description}
         </p>
       ) : null}
@@ -422,9 +421,11 @@ export function LocationAutocomplete({
               setIsFocused(true);
               inputRef.current?.focus();
             }}
-            className={`absolute top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-white/[0.08] text-zinc-400 transition-all hover:border-white/20 hover:bg-white/[0.14] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 ${
-              variant === 'bare' ? 'right-0 h-7 w-7' : 'right-2.5 h-7 w-7'
-            }`}
+            className={
+              variant === 'bare'
+                ? 'absolute right-0 top-1/2 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-white/[0.08] text-zinc-400 transition-all hover:border-white/20 hover:bg-white/[0.14] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50'
+                : 'absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-white/40 hover:text-white focus:outline-none'
+            }
           >
             <XMarkIcon className="h-4 w-4" aria-hidden />
           </button>

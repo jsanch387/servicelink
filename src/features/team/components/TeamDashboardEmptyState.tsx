@@ -35,9 +35,10 @@ export const TeamDashboardEmptyState: React.FC<
       <Button
         type="button"
         variant="inverse"
-        size="xs"
         className="mt-4"
-        icon={showAddIcon ? <PlusIcon /> : undefined}
+        icon={
+          showAddIcon ? <PlusIcon className="h-4 w-4" aria-hidden /> : undefined
+        }
         onClick={onAddMember}
       >
         {actionLabel}

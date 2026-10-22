@@ -534,7 +534,7 @@ export const publicBookingUiEs: PublicBookingUi = {
     serviceCategoriesAriaLabel: 'Ver servicios por categoría',
     noServicesInCategory: 'No hay servicios en esta categoría.',
     saleBannerBadge: 'Oferta',
-    saleBannerOffLabel: 'dto',
+    saleBannerOffLabel: 'off',
     saleBannerWhenYouBook: discount => `Obtén ${discount} al reservar`,
     saleBannerLimitedTime: 'Por tiempo limitado',
     saleBannerDates: {

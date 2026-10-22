@@ -187,7 +187,8 @@ export default async function ServiceDetailsPage({
 
   const result = await getServiceWithAddOnsForBooking(
     businessId,
-    serviceId.trim()
+    serviceId.trim(),
+    bookingFlowLocale
   );
 
   if (!result) notFound();
