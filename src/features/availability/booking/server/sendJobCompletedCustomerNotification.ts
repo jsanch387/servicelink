@@ -44,6 +44,10 @@ export interface JobCompletedNotificationInput {
     label: string;
     discountCents: number;
   } | null;
+  salesTax?: {
+    label: string;
+    taxCents: number;
+  } | null;
   reviewUrl?: string | null;
   coveredByMembership?: boolean;
   jobs?: JobCompletedInvoiceEmailJob[];
@@ -154,6 +158,7 @@ export async function sendJobCompletedCustomerNotification(
       totalCents: input.totalCents,
       subtotalCents: input.subtotalCents,
       discount: input.discount,
+      salesTax: input.salesTax,
       reviewUrl: input.reviewUrl,
       coveredByMembership: input.coveredByMembership === true,
       jobs: input.jobs,

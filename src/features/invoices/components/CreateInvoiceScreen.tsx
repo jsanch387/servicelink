@@ -38,6 +38,8 @@ interface CreateInvoiceScreenProps {
   initialDraft?: InvoiceDraft;
   /** Appointment this bill was opened from. Saved with the draft. */
   bookingId?: string | null;
+  salesTaxEnabled?: boolean;
+  salesTaxRateBps?: number;
 }
 
 const cardClassName =
@@ -48,6 +50,8 @@ export const CreateInvoiceScreen: React.FC<CreateInvoiceScreenProps> = ({
   invoiceId,
   initialDraft,
   bookingId = null,
+  salesTaxEnabled = false,
+  salesTaxRateBps = 0,
 }) => {
   const router = useRouter();
   const [draft, setDraft] = useState<InvoiceDraft>(
@@ -404,7 +408,12 @@ export const CreateInvoiceScreen: React.FC<CreateInvoiceScreenProps> = ({
           </form>
 
           <div className="min-w-0 lg:h-full">
-            <InvoiceBillPreview businessName={businessName} draft={draft} />
+            <InvoiceBillPreview
+              businessName={businessName}
+              draft={draft}
+              salesTaxEnabled={salesTaxEnabled}
+              salesTaxRateBps={salesTaxRateBps}
+            />
           </div>
         </div>
       </div>

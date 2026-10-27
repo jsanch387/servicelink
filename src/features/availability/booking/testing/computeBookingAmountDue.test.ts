@@ -262,6 +262,22 @@ describe('computeBookingAmountDue', () => {
     expect(result.adjustedTotalCents).toBe(390_10);
     expect(result.amountDueCents).toBe(0);
   });
+
+  it('adds frozen sales tax once, after the discount', () => {
+    const result = computeBookingAmountDue({
+      servicePriceCents: 10_000,
+      addonDetails: [],
+      sessionFees: [],
+      paidOnlineAmountCents: 5_500,
+      sessionPayment: undefined,
+      taxCents: 1_000,
+      taxRateBps: 1000,
+    });
+
+    expect(result.taxCents).toBe(1_000);
+    expect(result.adjustedTotalCents).toBe(11_000);
+    expect(result.amountDueCents).toBe(5_500);
+  });
 });
 
 describe('computeBookingRemainingAmountCents', () => {

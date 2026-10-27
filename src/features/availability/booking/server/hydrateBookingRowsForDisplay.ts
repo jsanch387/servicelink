@@ -49,7 +49,7 @@ export async function hydrateBookingRowsForDisplay(
     const { data: paymentRows } = await (supabase as any)
       .from('booking_payments')
       .select(
-        'booking_id, payment_status, payment_method_selected, currency, total_amount_cents, paid_online_amount_cents, remaining_amount_cents'
+        'booking_id, payment_status, payment_method_selected, currency, total_amount_cents, paid_online_amount_cents, remaining_amount_cents, tax_cents, tax_rate_bps'
       )
       .in('booking_id', bookingIds);
 
@@ -61,6 +61,8 @@ export async function hydrateBookingRowsForDisplay(
       total_amount_cents: number | null;
       paid_online_amount_cents: number | null;
       remaining_amount_cents: number | null;
+      tax_cents?: number | null;
+      tax_rate_bps?: number | null;
     }>;
 
     for (const payment of normalized) {
@@ -101,6 +103,8 @@ export async function hydrateBookingRowsForDisplay(
         totalAmountCents: withPayment.payment?.totalAmountCents ?? 0,
         paidOnlineAmountCents: withPayment.payment?.paidOnlineAmountCents ?? 0,
         remainingAmountCents: 0,
+        taxCents: withPayment.payment?.taxCents ?? 0,
+        taxRateBps: withPayment.payment?.taxRateBps ?? 0,
       },
     };
   });

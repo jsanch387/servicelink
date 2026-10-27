@@ -40,6 +40,9 @@ export interface BookingPaymentSummaryDisplay {
   totalAmountCents: number;
   paidOnlineAmountCents: number;
   remainingAmountCents: number;
+  /** Frozen tax on this job. Zero or omitted means the price had no tax. */
+  taxCents?: number;
+  taxRateBps?: number;
 }
 
 export interface AvailabilityBookingDisplay {

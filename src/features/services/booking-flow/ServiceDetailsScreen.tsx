@@ -93,16 +93,27 @@ interface ServiceDetailsScreenProps {
 
 function resolveInitialPhase(params: {
   needsPriceStep: boolean;
+  needsAddOnStep: boolean;
   needsLocationStep: boolean;
   initialDetailsStep?: BookDetailsStepQuery;
   hasValidPriceOption: boolean;
 }): ServiceDetailsPhase {
   const {
     needsPriceStep,
+    needsAddOnStep,
     needsLocationStep,
     initialDetailsStep,
     hasValidPriceOption,
   } = params;
+
+  const needsOptionsStep = needsPriceStep || needsAddOnStep;
+
+  // A price-and-total recap is only useful after the customer picked
+  // something. With nothing to configure, open location (or leave this
+  // screen entirely — the server already sends them to the calendar).
+  if (needsLocationStep && !needsOptionsStep) {
+    return 'location';
+  }
 
   if (
     initialDetailsStep === 'location' &&
@@ -156,6 +167,7 @@ export function ServiceDetailsScreen({
   const [phase, setPhase] = useState<ServiceDetailsPhase>(() =>
     resolveInitialPhase({
       needsPriceStep,
+      needsAddOnStep: showAddOnSection,
       needsLocationStep,
       initialDetailsStep,
       hasValidPriceOption: Boolean(validInitialOptionId),
@@ -399,7 +411,8 @@ export function ServiceDetailsScreen({
     handleContinueToSchedule();
   };
 
-  const canGoBackWithinDetails = phase === 'location';
+  const canGoBackWithinDetails =
+    phase === 'location' && (needsPriceStep || showAddOnSection);
 
   const stickyBackLabel =
     phase === 'location' ? ui.serviceDetails.backToOptions : exitDetailsLabel;

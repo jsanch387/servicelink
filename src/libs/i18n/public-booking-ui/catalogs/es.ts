@@ -44,6 +44,7 @@ export const publicBookingUiEs: PublicBookingUi = {
     schedule: 'Horario',
     customer: 'Cliente',
     subtotal: 'Subtotal',
+    salesTax: rate => `Impuesto (${rate})`,
     visitTotal: 'Total de la visita',
     emailNotProvided: 'Sin correo electrónico',
   },

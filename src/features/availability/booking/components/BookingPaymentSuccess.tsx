@@ -8,6 +8,7 @@ import {
   bcp47ForBookingLocale,
   publicBookingUi,
 } from '@/libs/i18n/publicBookingUi';
+import { formatSalesTaxRateLabel } from '@/features/payments/utils/salesTaxRate';
 import { SubscriptionSuccessCheckmark } from '@/features/subscriptions/components/SubscriptionSuccessCheckmark';
 import type { AddOnDisplay } from '../types';
 
@@ -85,6 +86,8 @@ export function BookingPaymentSuccess({
   totalAmountCents,
   durationMinutes,
   servicePriceCents,
+  taxCents = 0,
+  taxRateBps = 0,
   selectedAddOns = [],
   customerVehicleYear,
   customerVehicleMake,
@@ -103,6 +106,9 @@ export function BookingPaymentSuccess({
   totalAmountCents: number;
   durationMinutes: number | null;
   servicePriceCents: number | null;
+  /** Frozen tax on this charge. Zero hides the tax line. */
+  taxCents?: number | null;
+  taxRateBps?: number | null;
   selectedAddOns?: AddOnDisplay[];
   customerVehicleYear?: string | null;
   customerVehicleMake?: string | null;
@@ -131,6 +137,17 @@ export function BookingPaymentSuccess({
   const safeTotal =
     Number.isFinite(totalAmountCents) && totalAmountCents > 0
       ? totalAmountCents
+      : null;
+  const safeTaxCents =
+    typeof taxCents === 'number' && Number.isFinite(taxCents) && taxCents > 0
+      ? Math.round(taxCents)
+      : 0;
+  const taxRateLabel = formatSalesTaxRateLabel(taxRateBps ?? 0);
+  const taxLabel =
+    safeTaxCents > 0
+      ? taxRateLabel
+        ? ui.common.salesTax(taxRateLabel)
+        : null
       : null;
 
   return (
@@ -208,6 +225,14 @@ export function BookingPaymentSuccess({
           {safeTotal != null && (
             <>
               <div className="h-px bg-white/10" />
+              {taxLabel ? (
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <p className="text-gray-400">{taxLabel}</p>
+                  <p className="tabular-nums text-gray-300">
+                    {formatMoney(safeTaxCents, currency, bookingFlowLocale)}
+                  </p>
+                </div>
+              ) : null}
               <div className="flex justify-between items-center">
                 <p className="text-sm font-medium text-white">
                   {ui.common.total}
@@ -280,7 +305,7 @@ export function BookingPaymentSuccess({
         </div>
       </GlassCard>
 
-      <Button href={`/${businessSlug}`} variant="inverse" size="lg" fullWidth>
+      <Button href={`/${businessSlug}`} variant="inverse" fullWidth>
         {ui.bookingPaymentSuccess.backToProfile}
       </Button>
 

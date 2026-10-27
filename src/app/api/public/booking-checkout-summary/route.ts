@@ -51,6 +51,8 @@ export async function GET(request: NextRequest) {
         total_amount_cents,
         paid_online_amount_cents,
         remaining_amount_cents,
+        tax_cents,
+        tax_rate_bps,
         booking:bookings!inner(
           id,
           business_slug,
@@ -143,6 +145,15 @@ export async function GET(request: NextRequest) {
         totalAmountCents: row.total_amount_cents,
         paidOnlineAmountCents: row.paid_online_amount_cents,
         remainingAmountCents: row.remaining_amount_cents,
+        taxCents:
+          typeof row.tax_cents === 'number' && Number.isFinite(row.tax_cents)
+            ? Math.max(0, Math.round(row.tax_cents))
+            : 0,
+        taxRateBps:
+          typeof row.tax_rate_bps === 'number' &&
+          Number.isFinite(row.tax_rate_bps)
+            ? Math.max(0, Math.round(row.tax_rate_bps))
+            : 0,
         booking: {
           id: booking.id,
           serviceName: booking.service_name,

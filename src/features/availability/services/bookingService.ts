@@ -514,6 +514,8 @@ export async function insertBookingPaymentsRowForNoCheckoutPublicBooking(
     checkoutMode: string | null | undefined;
     /** When `checkout_mode` is `customer_choice`, the customer's chosen path. */
     clientPaymentMethod?: PublicBookingNoCheckoutPaymentMethod | null;
+    taxRateBps?: number;
+    taxCents?: number;
   }
 ): Promise<void> {
   const total = Math.max(0, Math.round(args.totalAmountCents));
@@ -559,6 +561,8 @@ export async function insertBookingPaymentsRowForNoCheckoutPublicBooking(
     deposit_value: null,
     last_checkout_session_id: null,
     paid_at: null,
+    tax_rate_bps: Math.max(0, Math.round(args.taxRateBps ?? 0)),
+    tax_cents: Math.max(0, Math.round(args.taxCents ?? 0)),
   });
 
   if (error) {

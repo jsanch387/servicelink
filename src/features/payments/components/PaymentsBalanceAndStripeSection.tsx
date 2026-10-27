@@ -105,8 +105,8 @@ export const PaymentsBalanceAndStripeSection: React.FC<
             {openError}
           </p>
         ) : null}
-        <div className="mt-5">
-          <PaymentsStripeFeeNote />
+        <div className="mt-5 border-t border-white/[0.08] pt-4">
+          <PaymentsStripeFeeNote collapsible />
         </div>
       </GlassCard>
     </div>

@@ -16,8 +16,7 @@ import {
 import type { PaymentSettingsDashboardInitial } from '../types/paymentSettingsDashboard';
 import { PaymentsAcceptPaymentsCard } from './PaymentsAcceptPaymentsCard';
 import { PaymentsBalanceAndStripeSection } from './PaymentsBalanceAndStripeSection';
-import { PaymentsCheckoutOptionsCard } from './PaymentsCheckoutOptionsCard';
-import { PaymentsDepositSettingsCard } from './PaymentsDepositSettingsCard';
+import { PaymentsSettingsForm } from './PaymentsSettingsForm';
 import { PaymentsPageHeader } from './PaymentsPageHeader';
 
 export interface PaymentsPageProps {
@@ -69,6 +68,8 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
       depositType: 'percent',
       depositValue: 0,
       currency: 'usd',
+      taxEnabled: false,
+      taxRateBps: 0,
     };
 
   return (
@@ -101,14 +102,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
                   below; changes apply when payments are on.
                 </p>
               ) : null}
-              <PaymentsCheckoutOptionsCard
-                initialCheckoutMode={dashboardSettings.checkoutMode}
-              />
-              <PaymentsDepositSettingsCard
-                initialDepositsEnabled={dashboardSettings.depositsEnabled}
-                initialDepositType={dashboardSettings.depositType}
-                initialDepositValue={dashboardSettings.depositValue}
-              />
+              <PaymentsSettingsForm settings={dashboardSettings} />
             </div>
           </>
         ) : showServicelinkGate ? (

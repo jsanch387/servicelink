@@ -71,6 +71,8 @@ describe('buildInvoiceSnapshot', () => {
         paidOnlineCents: 5000,
         sessionPayCents: 12000,
         amountDueCents: 0,
+        taxCents: 0,
+        taxRateBps: 0,
       },
       sessionPaymentMethod: 'cash',
       reviewRawToken: 'review-token-abc',
@@ -125,6 +127,8 @@ describe('buildInvoiceSnapshot', () => {
         paidOnlineCents: 0,
         sessionPayCents: 12500,
         amountDueCents: 0,
+        taxCents: 0,
+        taxRateBps: 0,
       },
       sessionPaymentMethod: 'cash',
     });
@@ -174,6 +178,8 @@ describe('buildInvoiceSnapshot', () => {
         paidOnlineCents: 0,
         sessionPayCents: 7000,
         amountDueCents: 0,
+        taxCents: 0,
+        taxRateBps: 0,
       },
     });
 
@@ -235,6 +241,8 @@ describe('buildInvoiceSnapshot', () => {
         paidOnlineCents: 0,
         sessionPayCents: 399_00,
         amountDueCents: 0,
+        taxCents: 0,
+        taxRateBps: 0,
       },
       sessionPaymentMethod: 'cash',
     });
@@ -283,6 +291,8 @@ describe('buildInvoiceSnapshot', () => {
         paidOnlineCents: 0,
         sessionPayCents: 0,
         amountDueCents: 0,
+        taxCents: 0,
+        taxRateBps: 0,
       },
       coveredByMembership: true,
     });

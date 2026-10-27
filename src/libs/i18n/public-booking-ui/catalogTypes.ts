@@ -47,6 +47,8 @@ export type PublicBookingUi = {
     schedule: string;
     customer: string;
     subtotal: string;
+    /** `Tax (8.25%)` — rate label already includes the percent sign. */
+    salesTax: (rate: string) => string;
     visitTotal: string;
     /** Summary row when customer email was left blank */
     emailNotProvided: string;

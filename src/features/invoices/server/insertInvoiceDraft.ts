@@ -1,7 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
+import { quotePublicBookingSalesTax } from '@/features/availability/booking/utils/publicBookingSalesTax';
+
 import type { ParsedInvoiceDraft } from '../utils/parseSaveInvoiceDraft';
+import { loadInvoiceTaxPreview } from './loadInvoiceTaxPreview';
 
 type InsertInvoiceDraftResult =
   | { ok: true; invoiceId: string }
@@ -53,8 +56,18 @@ export async function insertInvoiceDraft(
   // `invoices` is not in the generated Database type yet.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = admin as any;
-  const { draft } = input;
   const linked = await bookingLink(admin, input.businessId, input.bookingId);
+  const taxPreview = await loadInvoiceTaxPreview(
+    admin,
+    input.businessId,
+    linked.bookingId
+  );
+  const salesTax = quotePublicBookingSalesTax({
+    priceAfterDiscountCents: input.draft.subtotalCents,
+    taxEnabled: taxPreview.salesTaxEnabled,
+    taxRateBps: taxPreview.salesTaxRateBps,
+  });
+  const { draft } = input;
 
   let invoiceId: string | null = null;
   let lastError: { message?: string; code?: string } | null = null;
@@ -75,7 +88,9 @@ export async function insertInvoiceDraft(
         currency: 'usd',
         due_on: draft.dueOn,
         subtotal_cents: draft.subtotalCents,
-        total_cents: draft.totalCents,
+        tax_rate_bps: salesTax.rateBps,
+        tax_cents: salesTax.taxCents,
+        total_cents: salesTax.totalCents,
         public_token: createPublicToken(),
       })
       .select('id')

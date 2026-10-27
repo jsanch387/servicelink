@@ -60,6 +60,11 @@ export interface AvailabilityBookingNotificationPayload {
     discountCents: number;
     estimatedTotalCents: number;
   };
+  /** Sales tax on the price after discounts. The email total includes this. */
+  salesTax?: {
+    label: string;
+    taxCents: number;
+  } | null;
   /**
    * Multi-job visit: one entry per job. When present (length ≥ 1), the template
    * lists each job instead of the single top-level service section.

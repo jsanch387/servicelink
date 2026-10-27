@@ -14,6 +14,7 @@ import { notifyOwnerInvoicePaid } from './notifyOwnerInvoicePaid';
 import { insertInvoiceDraft } from './insertInvoiceDraft';
 import { loadBookingPaymentCoverage } from './syncInvoiceWithBookingPayment';
 import { updateInvoiceDraft } from './updateInvoiceDraft';
+import { invoiceSalesTaxLabel } from '../utils/invoiceSalesTax';
 import type { ParsedInvoiceDraft } from '../utils/parseSaveInvoiceDraft';
 
 type SendInvoiceResult =
@@ -92,7 +93,7 @@ export async function sendInvoice(
   const { data: existing, error: loadError } = await db
     .from('invoices')
     .select(
-      'id, status, invoice_number, short_code, customer_email, customer_phone, customer_id, booking_id'
+      'id, status, invoice_number, short_code, customer_email, customer_phone, customer_id, booking_id, total_cents, tax_cents, tax_rate_bps'
     )
     .eq('id', invoiceId)
     .eq('business_id', input.businessId)
@@ -232,6 +233,13 @@ export async function sendInvoice(
       : '') ??
     '';
 
+  const storedTotalCents =
+    typeof existing.total_cents === 'number' ? existing.total_cents : 0;
+  const storedTaxCents =
+    typeof existing.tax_cents === 'number' ? existing.tax_cents : 0;
+  const storedTaxRateBps =
+    typeof existing.tax_rate_bps === 'number' ? existing.tax_rate_bps : 0;
+
   let emailSent = false;
   let emailError: string | undefined;
   if (email) {
@@ -241,10 +249,18 @@ export async function sendInvoice(
       replyTo: business.replyTo,
       customerName: input.draft.customerName,
       invoiceNumber,
-      totalCents: input.draft.totalCents,
+      totalCents: storedTotalCents,
       dueOn: input.draft.dueOn,
       invoiceUrl: shortUrl,
       paid: alreadyPaid,
+      ...(storedTaxCents > 0
+        ? {
+            salesTax: {
+              label: invoiceSalesTaxLabel(storedTaxRateBps),
+              taxCents: storedTaxCents,
+            },
+          }
+        : {}),
     });
     emailSent = emailed.sent;
     emailError = emailed.sent ? undefined : emailed.error;

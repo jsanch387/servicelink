@@ -1,11 +1,9 @@
 'use client';
 
-import { Button, GlassCard } from '@/components/shared';
-import { API_ROUTES } from '@/constants/routes';
+import { GlassCard } from '@/components/shared';
 import type { CheckoutPaymentMode } from '@/features/payments/types/checkoutPaymentMode';
 import { CheckIcon } from '@heroicons/react/24/solid';
-import { useRouter } from 'next/navigation';
-import React, { useEffect, useId, useState } from 'react';
+import React, { useId } from 'react';
 
 const OPTIONS: {
   id: CheckoutPaymentMode;
@@ -33,62 +31,15 @@ const OPTIONS: {
 ];
 
 export interface PaymentsCheckoutOptionsCardProps {
-  /** From `payment_settings.checkout_mode`; null means nothing saved yet. */
-  initialCheckoutMode: CheckoutPaymentMode | null;
+  checkoutMode: CheckoutPaymentMode | null;
+  onCheckoutModeChange: (mode: CheckoutPaymentMode) => void;
 }
 
 export const PaymentsCheckoutOptionsCard: React.FC<
   PaymentsCheckoutOptionsCardProps
-> = ({ initialCheckoutMode }) => {
-  const router = useRouter();
-  const [savedMode, setSavedMode] = useState<CheckoutPaymentMode | null>(
-    initialCheckoutMode
-  );
-  const [selectedMode, setSelectedMode] = useState<CheckoutPaymentMode | null>(
-    initialCheckoutMode
-  );
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+> = ({ checkoutMode, onCheckoutModeChange }) => {
   const groupLabelId = useId();
   const groupDescriptionId = useId();
-
-  useEffect(() => {
-    setSavedMode(initialCheckoutMode);
-    setSelectedMode(initialCheckoutMode);
-  }, [initialCheckoutMode]);
-
-  const isDirty = selectedMode !== savedMode;
-
-  const handleSave = async () => {
-    if (selectedMode === null || saving) return;
-    setError(null);
-    setSaving(true);
-    try {
-      const res = await fetch(API_ROUTES.PAYMENTS_SERVICELINK_SETTINGS, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ checkoutMode: selectedMode }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        success?: boolean;
-        error?: string;
-      };
-      if (!res.ok || data.success === false) {
-        setError(
-          typeof data.error === 'string' && data.error.trim()
-            ? data.error
-            : 'Could not save. Try again.'
-        );
-        return;
-      }
-      setSavedMode(selectedMode);
-      router.refresh();
-    } catch {
-      setError('Something went wrong. Check your connection and try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return (
     <GlassCard padding="none" rounded="rounded-2xl" className="overflow-hidden">
@@ -107,14 +58,14 @@ export const PaymentsCheckoutOptionsCard: React.FC<
           aria-describedby={groupDescriptionId}
         >
           {OPTIONS.map(option => {
-            const selected = selectedMode === option.id;
+            const selected = checkoutMode === option.id;
             return (
               <button
                 key={option.id}
                 type="button"
                 role="radio"
                 aria-checked={selected}
-                onClick={() => setSelectedMode(option.id)}
+                onClick={() => onCheckoutModeChange(option.id)}
                 className={`
                   w-full cursor-pointer rounded-xl border px-4 py-3.5 text-left transition-colors
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f0f]
@@ -150,31 +101,6 @@ export const PaymentsCheckoutOptionsCard: React.FC<
               </button>
             );
           })}
-        </div>
-
-        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-gray-500 sm:max-w-xs">
-            {error ? (
-              <span className="text-red-300">{error}</span>
-            ) : selectedMode === null ? (
-              'Choose an option, then save.'
-            ) : isDirty ? (
-              'Save to keep your changes.'
-            ) : (
-              'Nothing new to save.'
-            )}
-          </p>
-          <Button
-            type="button"
-            variant="inverse"
-            size="sm"
-            disabled={!isDirty || selectedMode === null || saving}
-            loading={saving}
-            onClick={() => void handleSave()}
-            className="w-full sm:w-auto shrink-0"
-          >
-            Save changes
-          </Button>
         </div>
       </div>
     </GlassCard>

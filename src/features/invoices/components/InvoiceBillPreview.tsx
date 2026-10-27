@@ -3,6 +3,8 @@
 import { formatUsPhoneDigits } from '@/components/shared';
 import React from 'react';
 
+import { quotePublicBookingSalesTax } from '@/features/availability/booking/utils/publicBookingSalesTax';
+
 import type { InvoiceDraft } from '../types';
 import {
   formatInvoiceCents,
@@ -12,10 +14,13 @@ import {
   parseInvoiceAmountToCents,
   parseInvoiceQuantity,
 } from '../utils/invoiceDraft';
+import { invoiceSalesTaxLabel } from '../utils/invoiceSalesTax';
 
 interface InvoiceBillPreviewProps {
   businessName: string;
   draft: InvoiceDraft;
+  salesTaxEnabled?: boolean;
+  salesTaxRateBps?: number;
 }
 
 const lineGridClassName =
@@ -24,6 +29,8 @@ const lineGridClassName =
 export const InvoiceBillPreview: React.FC<InvoiceBillPreviewProps> = ({
   businessName,
   draft,
+  salesTaxEnabled = false,
+  salesTaxRateBps = 0,
 }) => {
   const customerName = draft.customerName.trim();
   const phone = formatUsPhoneDigits(draft.customerPhone);
@@ -33,7 +40,14 @@ export const InvoiceBillPreview: React.FC<InvoiceBillPreviewProps> = ({
   const visibleLines = draft.lines.filter(
     line => line.description.trim() || line.amount.trim()
   );
-  const totalCents = invoiceDraftTotalCents(draft.lines);
+  const subtotalCents = invoiceDraftTotalCents(draft.lines);
+  const salesTax = quotePublicBookingSalesTax({
+    priceAfterDiscountCents: subtotalCents,
+    taxEnabled: salesTaxEnabled,
+    taxRateBps: salesTaxRateBps,
+  });
+  const taxLabel =
+    salesTax.taxCents > 0 ? invoiceSalesTaxLabel(salesTax.rateBps) : null;
 
   return (
     <section
@@ -126,12 +140,22 @@ export const InvoiceBillPreview: React.FC<InvoiceBillPreviewProps> = ({
             <div className="flex items-center justify-between gap-6 text-[#6f6a64]">
               <dt>Subtotal</dt>
               <dd className="tabular-nums text-[#1c1c1c]">
-                {formatInvoiceCents(totalCents)}
+                {formatInvoiceCents(subtotalCents)}
               </dd>
             </div>
+            {taxLabel ? (
+              <div className="flex items-center justify-between gap-6 text-[#6f6a64]">
+                <dt>{taxLabel}</dt>
+                <dd className="tabular-nums text-[#1c1c1c]">
+                  {formatInvoiceCents(salesTax.taxCents)}
+                </dd>
+              </div>
+            ) : null}
             <div className="flex items-center justify-between gap-6 font-semibold">
               <dt>Amount due</dt>
-              <dd className="tabular-nums">{formatInvoiceCents(totalCents)}</dd>
+              <dd className="tabular-nums">
+                {formatInvoiceCents(salesTax.totalCents)}
+              </dd>
             </div>
           </dl>
         </div>

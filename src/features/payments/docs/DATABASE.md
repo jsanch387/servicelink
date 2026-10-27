@@ -83,6 +83,8 @@ Both tables reference **`business_profiles(id)`** (tenant root). The owner is `b
 | `created_at`                | `timestamptz` | no       | Created at.                                                                                                                 |
 | `updated_at`                | `timestamptz` | no       | Updated at.                                                                                                                 |
 | `payments_enabled`          | `bool`        | no       | When **true**, ServiceLink checkout is active on the booking experience; Stripe can stay connected while this is **false**. |
+| `tax_enabled`               | `bool`        | no       | When **true**, the business adds sales tax on top of the price. Default **false**. The stored rate is kept when this is turned off. |
+| `tax_rate_bps`              | `int4`        | no       | Rate in hundredths of a percent. `825` = 8.25%. `0`–`2500` (0–25%). Must be at least `1` while `tax_enabled` is true. |
 
 ### Deposits: `deposit_type` + `deposit_value` (one amount, two shapes)
 

@@ -97,12 +97,36 @@ import type { BookingDiscountSnapshot } from '@/features/marketing/server/bookin
 import { promoDiscountResolveErrorMessage } from '@/features/marketing/utils/promoDiscountResolveErrorMessage';
 import { normalizeEnteredPromoCode } from '@/features/marketing/server/resolveBookingPromoDiscountSnapshot';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
+import {
+  quotePublicBookingSalesTax,
+  salesTaxEmailLine,
+} from '@/features/availability/booking/utils/publicBookingSalesTax';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { assertPublicBookingsRateLimits } from '@/server/rateLimit/publicApiRateLimit';
 import { supabaseErrorForLogs } from '@/server/logging/structuredLog';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextRequest, NextResponse } from 'next/server';
+
+function publicBookingStoredTax(args: {
+  /** Membership visits are covered. Tax stays off even when the switch is on. */
+  membershipCovered: boolean;
+  paySettings: {
+    tax_enabled?: boolean;
+    tax_rate_bps?: number | null;
+  } | null;
+  priceAfterDiscountCents: number;
+}) {
+  return quotePublicBookingSalesTax({
+    priceAfterDiscountCents: args.priceAfterDiscountCents,
+    taxEnabled:
+      !args.membershipCovered && args.paySettings?.tax_enabled === true,
+    taxRateBps:
+      typeof args.paySettings?.tax_rate_bps === 'number'
+        ? args.paySettings.tax_rate_bps
+        : 0,
+  });
+}
 
 function publicBookingJson(
   requestId: string,
@@ -609,7 +633,9 @@ export async function POST(request: NextRequest) {
     });
     const { data: paymentSettingsRow, error: paymentSettingsError } =
       await paymentSettingsOf(supabase)
-        .select('payments_enabled, checkout_mode, currency')
+        .select(
+          'payments_enabled, checkout_mode, currency, tax_enabled, tax_rate_bps'
+        )
         .eq('business_id', businessId)
         .maybeSingle();
 
@@ -623,6 +649,8 @@ export async function POST(request: NextRequest) {
       payments_enabled?: boolean;
       checkout_mode?: string | null;
       currency?: string | null;
+      tax_enabled?: boolean;
+      tax_rate_bps?: number | null;
     } | null;
 
     const rawClientPm = body.paymentMethodSelected;
@@ -797,14 +825,21 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const visitTotalAfterDiscount = discountSnapshot
+        ? Math.max(0, visitGross - discountSnapshot.discountCents)
+        : visitGross;
+      const visitTax = publicBookingStoredTax({
+        membershipCovered: paymentMethodForInsert === 'membership',
+        paySettings,
+        priceAfterDiscountCents: visitTotalAfterDiscount,
+      });
       try {
-        const visitTotalAfterDiscount = discountSnapshot
-          ? Math.max(0, visitGross - discountSnapshot.discountCents)
-          : visitGross;
         await insertBookingPaymentsRowForNoCheckoutPublicBooking(supabase, {
           bookingId: result.id,
           businessId,
-          totalAmountCents: visitTotalAfterDiscount,
+          totalAmountCents: visitTax.totalCents,
+          taxRateBps: visitTax.rateBps,
+          taxCents: visitTax.taxCents,
           currency: paySettings?.currency?.trim() || 'usd',
           paymentsEnabled: paySettings?.payments_enabled === true,
           checkoutMode: paySettings?.checkout_mode ?? null,
@@ -857,7 +892,8 @@ export async function POST(request: NextRequest) {
         checkoutMode: paySettings?.checkout_mode,
         clientPaymentMethod,
         currency: paySettings?.currency?.trim() || 'usd',
-        totalPriceCents: visitGross,
+        totalPriceCents:
+          visitTax.taxCents > 0 ? visitTax.totalCents : visitGross,
         hasPriceLineItems,
       });
 
@@ -882,6 +918,11 @@ export async function POST(request: NextRequest) {
                   discountSnapshot.subtotalCents -
                   discountSnapshot.discountCents,
               },
+            }
+          : {}),
+        ...(salesTaxEmailLine(visitTax.rateBps, visitTax.taxCents)
+          ? {
+              salesTax: salesTaxEmailLine(visitTax.rateBps, visitTax.taxCents),
             }
           : {}),
         jobs: emailJobs,
@@ -1076,14 +1117,21 @@ export async function POST(request: NextRequest) {
         : {}),
     });
 
+    const totalAfterDiscount = discountSnapshot
+      ? Math.max(0, totalPriceCentsForEmail - discountSnapshot.discountCents)
+      : totalPriceCentsForEmail;
+    const bookingTax = publicBookingStoredTax({
+      membershipCovered: paymentMethodForInsert === 'membership',
+      paySettings,
+      priceAfterDiscountCents: totalAfterDiscount,
+    });
     try {
-      const totalAfterDiscount = discountSnapshot
-        ? Math.max(0, totalPriceCentsForEmail - discountSnapshot.discountCents)
-        : totalPriceCentsForEmail;
       await insertBookingPaymentsRowForNoCheckoutPublicBooking(supabase, {
         bookingId: result.id,
         businessId,
-        totalAmountCents: totalAfterDiscount,
+        totalAmountCents: bookingTax.totalCents,
+        taxRateBps: bookingTax.rateBps,
+        taxCents: bookingTax.taxCents,
         currency: paySettings?.currency?.trim() || 'usd',
         paymentsEnabled: paySettings?.payments_enabled === true,
         checkoutMode: paySettings?.checkout_mode ?? null,
@@ -1119,7 +1167,10 @@ export async function POST(request: NextRequest) {
       checkoutMode: paySettings?.checkout_mode,
       clientPaymentMethod,
       currency: paySettings?.currency?.trim() || 'usd',
-      totalPriceCents: totalPriceCentsForEmail,
+      totalPriceCents:
+        bookingTax.taxCents > 0
+          ? bookingTax.totalCents
+          : totalPriceCentsForEmail,
       hasPriceLineItems,
     });
 
@@ -1150,6 +1201,14 @@ export async function POST(request: NextRequest) {
               estimatedTotalCents:
                 discountSnapshot.subtotalCents - discountSnapshot.discountCents,
             },
+          }
+        : {}),
+      ...(salesTaxEmailLine(bookingTax.rateBps, bookingTax.taxCents)
+        ? {
+            salesTax: salesTaxEmailLine(
+              bookingTax.rateBps,
+              bookingTax.taxCents
+            ),
           }
         : {}),
       paymentSummary,

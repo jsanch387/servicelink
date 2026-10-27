@@ -37,6 +37,11 @@ import {
 } from '@/features/business-profile/utils/publicServiceLocation';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
+import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
+import {
+  onlineAmountDueNowCents,
+  quotePublicBookingSalesTax,
+} from '@/features/availability/booking/utils/publicBookingSalesTax';
 import { resolveBookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingDiscountSnapshot';
 import { promoDiscountResolveErrorMessage } from '@/features/marketing/utils/promoDiscountResolveErrorMessage';
 import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
@@ -360,7 +365,9 @@ export async function POST(request: NextRequest) {
     const { data: settingsRow, error: settingsError } = await paymentSettingsOf(
       supabase
     )
-      .select('payments_enabled, currency')
+      .select(
+        'payments_enabled, currency, checkout_mode, deposits_enabled, deposit_type, deposit_value, tax_enabled, tax_rate_bps'
+      )
       .eq('business_id', businessId)
       .maybeSingle();
 
@@ -387,9 +394,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const currency = normalizeCurrency(
-      (settingsRow as { currency?: string | null }).currency
-    );
+    const settings = settingsRow as {
+      currency?: string | null;
+      checkout_mode?: string | null;
+      deposits_enabled?: boolean | null;
+      deposit_type?: string | null;
+      deposit_value?: number | null;
+      tax_enabled?: boolean | null;
+      tax_rate_bps?: number | null;
+    };
+    const salesTax = quotePublicBookingSalesTax({
+      priceAfterDiscountCents: bookingPayload.totalPriceCents,
+      taxEnabled: settings.tax_enabled === true,
+      taxRateBps:
+        typeof settings.tax_rate_bps === 'number' ? settings.tax_rate_bps : 0,
+    });
+    if (salesTax.taxCents > 0) {
+      const expectedOnline = onlineAmountDueNowCents({
+        paymentsEnabled: true,
+        checkoutMode: checkoutModeFromDb(settings.checkout_mode),
+        depositsEnabled: settings.deposits_enabled === true,
+        depositType:
+          settings.deposit_type === 'fixed' ? 'fixed' : 'percent',
+        depositValue:
+          typeof settings.deposit_value === 'number'
+            ? settings.deposit_value
+            : 0,
+        customerPaymentChoice:
+          bookingPayload.paymentMethodSelected === 'pay_now'
+            ? 'pay_now'
+            : bookingPayload.paymentMethodSelected === 'pay_in_person'
+              ? 'pay_in_person'
+              : null,
+        totalCents: salesTax.totalCents,
+      });
+      if (amountCents !== expectedOnline) {
+        logCheckoutDev('reject: tax amount mismatch', {
+          amountCents,
+          expectedOnline,
+          taxCents: salesTax.taxCents,
+        });
+        return NextResponse.json(
+          { success: false, error: 'Invalid payment amount.' },
+          { status: 400 }
+        );
+      }
+    }
+    const bookingPayloadForSession = {
+      ...bookingPayload,
+      taxRateBps: salesTax.rateBps,
+      taxCents: salesTax.taxCents,
+    };
+
+    const currency = normalizeCurrency(settings.currency);
 
     const { data: accountRow, error: accountError } = await paymentAccountsOf(
       supabase
@@ -433,7 +490,7 @@ export async function POST(request: NextRequest) {
     const lineName = sanitizeLineItemName(body.serviceName);
     const stripe = getStripePlatform();
     const paymentKind =
-      bookingPayload.totalPriceCents > amountCents ? 'deposit' : 'full';
+      salesTax.totalCents > amountCents ? 'deposit' : 'full';
     const { data: checkoutSessionRow, error: checkoutSessionInsertError } =
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
@@ -446,7 +503,7 @@ export async function POST(request: NextRequest) {
           selected_payment_method: bookingPayload.paymentMethodSelected,
           currency,
           expected_amount_cents: amountCents,
-          booking_payload: bookingPayload,
+          booking_payload: bookingPayloadForSession,
         })
         .select('id')
         .single();

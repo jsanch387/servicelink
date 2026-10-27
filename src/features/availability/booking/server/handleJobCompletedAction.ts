@@ -53,6 +53,8 @@ interface BookingForJobCompleted {
 
 interface BookingPaymentsRow {
   paid_online_amount_cents: number | null;
+  tax_cents?: number | null;
+  tax_rate_bps?: number | null;
   session_payment_stripe_payment_intent_id?: string | null;
 }
 
@@ -246,7 +248,7 @@ export async function handleJobCompletedAction(opts: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: paymentsData } = await (auth.supabase as any)
     .from('booking_payments')
-    .select('paid_online_amount_cents')
+    .select('paid_online_amount_cents, tax_cents, tax_rate_bps')
     .eq('booking_id', bookingId)
     .maybeSingle();
 
@@ -272,6 +274,8 @@ export async function handleJobCompletedAction(opts: {
             : null,
       discountCents: booking.discount_cents,
     },
+    taxCents: payments?.tax_cents,
+    taxRateBps: payments?.tax_rate_bps,
   });
 
   const adminForInvoice = createSupabaseAdminClient();

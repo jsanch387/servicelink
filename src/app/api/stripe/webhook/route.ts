@@ -42,6 +42,7 @@ import {
 } from '@/features/availability/booking/utils/ownerManualBookingJobs';
 import { appointmentMoneyFieldsFromJobs } from '@/features/availability/booking/utils/resolveBookingLineSubtotalCents';
 import { PUBLIC_BOOKING_MAX_JOBS } from '@/features/availability/booking/constants/publicBookingJobs';
+import { salesTaxEmailLine } from '@/features/availability/booking/utils/publicBookingSalesTax';
 import { createBooking } from '@/features/availability/services/bookingService';
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
@@ -171,6 +172,9 @@ type StoredBookingCheckoutPayload = {
   };
   totalPriceCents: number;
   requiredOnlineAmountCents: number;
+  /** Frozen at checkout. Zero when the business was not collecting tax. */
+  taxRateBps?: number;
+  taxCents?: number;
   paymentMethodSelected: 'pay_now' | 'pay_in_person' | 'none';
   depositType?: 'fixed' | 'percent' | null;
   depositValue?: number | null;
@@ -321,6 +325,14 @@ function parseStoredBookingCheckoutPayload(
     },
     totalPriceCents,
     requiredOnlineAmountCents,
+    taxRateBps:
+      typeof p.taxRateBps === 'number' && Number.isFinite(p.taxRateBps)
+        ? Math.max(0, Math.round(p.taxRateBps))
+        : 0,
+    taxCents:
+      typeof p.taxCents === 'number' && Number.isFinite(p.taxCents)
+        ? Math.max(0, Math.round(p.taxCents))
+        : 0,
     paymentMethodSelected: method,
     depositType:
       p.depositType === 'fixed' || p.depositType === 'percent'
@@ -761,10 +773,9 @@ export async function POST(request: NextRequest) {
         checkoutSessionRowId: String(checkoutSessionRow.id),
         bookingId: createdBooking.id,
       });
-      const remainingCents = Math.max(
-        bookingPayload.totalPriceCents - amountPaidCents,
-        0
-      );
+      const taxCents = bookingPayload.taxCents ?? 0;
+      const jobTotalCents = bookingPayload.totalPriceCents + taxCents;
+      const remainingCents = Math.max(jobTotalCents - amountPaidCents, 0);
       const paymentStatus = remainingCents > 0 ? 'deposit_paid' : 'paid_full';
       const currencyCode =
         typeof session.currency === 'string' && session.currency.trim()
@@ -838,11 +849,19 @@ export async function POST(request: NextRequest) {
               },
             }
           : {}),
+        ...(salesTaxEmailLine(bookingPayload.taxRateBps ?? 0, taxCents)
+          ? {
+              salesTax: salesTaxEmailLine(
+                bookingPayload.taxRateBps ?? 0,
+                taxCents
+              )!,
+            }
+          : {}),
         paymentSummary: buildStripeCheckoutPaymentSummary({
           paymentStatus,
           amountPaidCents,
           remainingCents,
-          totalPriceCents: bookingPayload.totalPriceCents,
+          totalPriceCents: jobTotalCents,
           currency: currencyCode,
           hasPriceLineItems,
         }),
@@ -857,10 +876,12 @@ export async function POST(request: NextRequest) {
         payment_status: paymentStatus,
         payment_method_selected: bookingPayload.paymentMethodSelected,
         currency: currencyCode,
-        total_amount_cents: bookingPayload.totalPriceCents,
+        total_amount_cents: jobTotalCents,
         required_online_amount_cents: bookingPayload.requiredOnlineAmountCents,
         paid_online_amount_cents: amountPaidCents,
         remaining_amount_cents: remainingCents,
+        tax_rate_bps: bookingPayload.taxRateBps ?? 0,
+        tax_cents: taxCents,
         deposit_type: bookingPayload.depositType,
         deposit_value: bookingPayload.depositValue,
         last_checkout_session_id: session.id,

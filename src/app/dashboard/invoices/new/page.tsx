@@ -2,6 +2,7 @@ import { ROUTES } from '@/constants/routes';
 import { CreateInvoiceScreen } from '@/features/invoices';
 import { isOwnerEmailAllowedForInvoicesRollout } from '@/features/invoices/config/invoicesRolloutAllowlist';
 import { loadInvoiceDraftFromBooking } from '@/features/invoices/server/loadInvoiceDraftFromBooking';
+import { loadInvoiceTaxPreview } from '@/features/invoices/server/loadInvoiceTaxPreview';
 import { businessCanUseInvoices } from '@/features/invoices/server/requireInvoicePro';
 import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { redirect } from 'next/navigation';
@@ -45,6 +46,12 @@ export default async function NewInvoicePage({ searchParams }: PageProps) {
     (
       businessRow as { business_name?: string | null } | null
     )?.business_name?.trim() || 'Your business';
+  const bookingId = fromBooking?.kind === 'draft' ? fromBooking.bookingId : null;
+  const salesTax = await loadInvoiceTaxPreview(
+    supabase,
+    context.businessId,
+    bookingId
+  );
 
   return (
     <CreateInvoiceScreen
@@ -52,7 +59,9 @@ export default async function NewInvoicePage({ searchParams }: PageProps) {
       initialDraft={
         fromBooking?.kind === 'draft' ? fromBooking.draft : undefined
       }
-      bookingId={fromBooking?.kind === 'draft' ? fromBooking.bookingId : null}
+      bookingId={bookingId}
+      salesTaxEnabled={salesTax.salesTaxEnabled}
+      salesTaxRateBps={salesTax.salesTaxRateBps}
     />
   );
 }

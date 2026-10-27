@@ -1247,6 +1247,9 @@ export type Database = {
           updated_at: string;
           /** When false, ServiceLink checkout is off; Stripe may still be connected. */
           payments_enabled: boolean;
+          tax_enabled: boolean;
+          /** Hundredths of a percent. `825` is 8.25%. */
+          tax_rate_bps: number;
         };
         Insert: {
           id?: string;
@@ -1262,6 +1265,8 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           payments_enabled?: boolean;
+          tax_enabled?: boolean;
+          tax_rate_bps?: number;
         };
         Update: {
           id?: string;
@@ -1277,6 +1282,8 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           payments_enabled?: boolean;
+          tax_enabled?: boolean;
+          tax_rate_bps?: number;
         };
       };
       payment_requests: {

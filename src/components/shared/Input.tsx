@@ -29,6 +29,8 @@ interface InputProps {
     | 'url';
   /** Optional icon on the left (e.g. phone); adds left padding when set. */
   leftIcon?: React.ReactNode;
+  /** Quiet mark on the right, such as %. */
+  suffix?: React.ReactNode;
   /** Max length for the input value (native maxLength). */
   maxLength?: number;
   'aria-label'?: string;
@@ -55,6 +57,7 @@ export const Input: React.FC<InputProps> = ({
   autoComplete,
   inputMode,
   leftIcon,
+  suffix,
   maxLength,
   'aria-label': ariaLabel,
   onBlur,
@@ -68,6 +71,7 @@ export const Input: React.FC<InputProps> = ({
       : 'password'
     : type;
   const hasLeftIcon = Boolean(leftIcon);
+  const hasSuffix = Boolean(suffix);
 
   return (
     <div className={`w-full ${className}`}>
@@ -100,17 +104,22 @@ export const Input: React.FC<InputProps> = ({
           className={`
             w-full text-base text-white placeholder:text-white/40 sm:text-sm touch-manipulation
             ${fieldBoxClassName}
-            ${hasLeftIcon ? 'pl-9' : ''}
+            ${hasLeftIcon ? '!pl-9' : ''}
             ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/15'}
             ${
               disabled
                 ? 'cursor-not-allowed opacity-60'
                 : 'hover:border-white/25'
             }
-            ${isPasswordType ? 'pr-10' : ''}
+            ${isPasswordType || hasSuffix ? '!pr-8' : ''}
             ${inputClassName}
           `}
         />
+        {hasSuffix && !isPasswordType ? (
+          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-sm tabular-nums text-white/40">
+            {suffix}
+          </span>
+        ) : null}
         {isPasswordType && (
           <button
             type="button"

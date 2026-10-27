@@ -95,7 +95,7 @@ export default async function DashboardPaymentsSettingsPage({
 
   const { data: paymentSettingsRow } = await paymentSettingsOf(supabase)
     .select(
-      'payments_enabled, checkout_mode, deposits_enabled, deposit_type, deposit_value, currency'
+      'payments_enabled, checkout_mode, deposits_enabled, deposit_type, deposit_value, currency, tax_enabled, tax_rate_bps'
     )
     .eq('business_id', businessId)
     .maybeSingle();
@@ -119,6 +119,8 @@ export default async function DashboardPaymentsSettingsPage({
           depositType: 'percent',
           depositValue: 0,
           currency: 'usd',
+          taxEnabled: false,
+          taxRateBps: 0,
         };
   }
 
