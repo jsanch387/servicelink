@@ -28,10 +28,8 @@ import {
   parseMembershipFirstVisitDate,
   parseMembershipFirstVisitTime,
 } from './parseMembershipFirstVisit';
-import {
-  membershipPlanPricesOf,
-  membershipPlansOf,
-} from './membershipTablesQuery';
+import { ensureMembershipPriceIncludesShopTax } from './ensureMembershipPriceTax';
+import { membershipPlansOf } from './membershipTablesQuery';
 
 type PlanRow = {
   id: string;
@@ -40,14 +38,6 @@ type PlanRow = {
   deleted_at: string | null;
   is_published: boolean;
   visit_duration_minutes: number | null;
-};
-
-type PriceRow = {
-  id: string;
-  plan_id: string;
-  business_id: string;
-  stripe_price_id: string | null;
-  currency: string;
 };
 
 export type CreatePublicMembershipCheckoutInput = {
@@ -301,41 +291,22 @@ export async function createPublicMembershipCheckoutSession(
     };
   }
 
-  const { data: priceData, error: priceError } = await membershipPlanPricesOf(
-    supabase
-  )
-    .select('id, plan_id, business_id, stripe_price_id, currency')
-    .eq('id', priceId)
-    .eq('plan_id', planId)
-    .eq('business_id', businessId)
-    .maybeSingle();
-
-  const price = priceData as PriceRow | null;
-  if (priceError) {
-    logMemberships(requestId, 'error', 'checkout.price_load_failed', {
-      businessId: shortIdForLog(businessId),
-      planId: shortIdForLog(planId),
-      priceId: shortIdForLog(priceId),
-      reason: 'Could not load pricing option',
-      ...supabaseErrorForLogs(priceError),
-    });
-    return { ok: false, status: 500, error: 'Could not start checkout.' };
-  }
-
-  const stripePriceId = price?.stripe_price_id?.trim() ?? '';
-  if (!price || !stripePriceId) {
-    logMemberships(requestId, 'warn', 'checkout.missing_stripe_price', {
-      businessId: shortIdForLog(businessId),
-      planId: shortIdForLog(planId),
-      priceId: shortIdForLog(priceId),
-      reason: 'Pricing option has no Stripe Price id',
-    });
+  const priced = await ensureMembershipPriceIncludesShopTax(supabase, {
+    businessId,
+    planId,
+    priceId,
+    stripeAccountId,
+    requestId,
+  });
+  if (!priced.ok) {
     return {
       ok: false,
       status: 400,
-      error: 'This plan is not ready for checkout yet.',
+      error: priced.error,
     };
   }
+  const stripePriceId = priced.stripePriceId;
+  const price = { id: priceId };
 
   const baseUrl = getAppBaseUrl(request);
   const slugPath = encodeSlugPath(businessSlug);
@@ -357,6 +328,8 @@ export async function createPublicMembershipCheckoutSession(
     firstVisitTime,
     visitDurationMinutes: String(visitDurationMinutes),
     smsOptIn: input.agreedToNotifications === false ? 'false' : 'true',
+    taxCents: String(priced.taxCents),
+    taxRateBps: String(priced.taxRateBps),
   };
   const street = trimMeta(input.street, 200);
   const unit = trimMeta(input.unit, 40);

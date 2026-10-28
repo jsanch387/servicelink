@@ -372,6 +372,9 @@ export type PublicBookingUi = {
     firstVisitTimeTitle: string;
     firstVisitTimeRequired: string;
     firstVisitNoSlots: string;
+    reviewTitle: string;
+    /** Date row on the subscribe review. The visit itself is not a charge. */
+    reviewFirstVisitLabel: string;
     /** Back link on `/{slug}/subscribe`. */
     subscribePageBackLabel: string;
     subscribeStepBackLabel: string;

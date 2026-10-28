@@ -14,6 +14,7 @@ const WEEKDAY_AXIS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as const;
 
 export interface AggregatePaymentsRevenueResult {
   collectedCents: number;
+  taxCollectedCents: number;
   previousTotalCents: number;
   changePercent: number | null;
   jobsPaid: number;
@@ -28,6 +29,7 @@ export function aggregatePaymentsRevenue(args: {
 }): AggregatePaymentsRevenueResult {
   const byDay = new Map<string, number>();
   let collectedCents = 0;
+  let taxCollectedCents = 0;
   let previousTotalCents = 0;
   let jobsPaid = 0;
 
@@ -40,6 +42,7 @@ export function aggregatePaymentsRevenue(args: {
       (day >= args.range.fromYmd && day <= args.range.toYmd);
     if (inCurrent) {
       collectedCents += earnings.collectedCents;
+      taxCollectedCents += earnings.taxCollectedCents;
       jobsPaid += 1;
       byDay.set(day, (byDay.get(day) ?? 0) + earnings.collectedCents);
     }
@@ -54,6 +57,7 @@ export function aggregatePaymentsRevenue(args: {
 
   return {
     collectedCents,
+    taxCollectedCents,
     previousTotalCents: args.range.comparePrevious ? previousTotalCents : 0,
     changePercent: args.range.comparePrevious
       ? revenueChangePercent(collectedCents, previousTotalCents)

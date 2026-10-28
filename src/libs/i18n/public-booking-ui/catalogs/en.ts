@@ -407,6 +407,8 @@ export const publicBookingUiEn: PublicBookingUi = {
     firstVisitTimeTitle: 'Choose a time',
     firstVisitTimeRequired: 'Choose a time for your visit.',
     firstVisitNoSlots: 'No open times on this day. Try another date.',
+    reviewTitle: 'Review',
+    reviewFirstVisitLabel: 'First visit',
     subscribePageBackLabel: 'Subscriptions',
     subscribeStepBackLabel: 'Back',
     continueToCheckoutCta: 'Continue to pay',

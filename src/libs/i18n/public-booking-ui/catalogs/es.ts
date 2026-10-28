@@ -414,6 +414,8 @@ export const publicBookingUiEs: PublicBookingUi = {
     firstVisitTimeTitle: 'Elige una hora',
     firstVisitTimeRequired: 'Elige una hora para tu visita.',
     firstVisitNoSlots: 'No hay horarios este día. Prueba otra fecha.',
+    reviewTitle: 'Revisar',
+    reviewFirstVisitLabel: 'Primera visita',
     subscribePageBackLabel: 'Suscripciones',
     subscribeStepBackLabel: 'Atrás',
     continueToCheckoutCta: 'Continuar al pago',

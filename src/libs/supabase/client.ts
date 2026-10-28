@@ -825,6 +825,8 @@ export type Database = {
           interval_unit: string;
           interval_count: number;
           price_cents: number;
+          tax_rate_bps: number;
+          tax_cents: number;
           currency: string;
           is_default: boolean;
           stripe_price_id: string | null;
@@ -838,6 +840,8 @@ export type Database = {
           interval_unit: string;
           interval_count: number;
           price_cents: number;
+          tax_rate_bps?: number;
+          tax_cents?: number;
           currency?: string;
           is_default?: boolean;
           stripe_price_id?: string | null;
@@ -851,6 +855,8 @@ export type Database = {
           interval_unit?: string;
           interval_count?: number;
           price_cents?: number;
+          tax_rate_bps?: number;
+          tax_cents?: number;
           currency?: string;
           is_default?: boolean;
           stripe_price_id?: string | null;

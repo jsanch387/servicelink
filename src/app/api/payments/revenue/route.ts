@@ -40,6 +40,8 @@ export async function GET(request: NextRequest) {
         to: result.toYmd,
         totalCents: result.totalCents,
         totalLabel: result.totalLabel,
+        taxCollectedCents: result.taxCollectedCents,
+        taxCollectedLabel: result.taxCollectedLabel,
         previousTotalCents: result.previousTotalCents,
         changePercent: result.changePercent,
         jobsPaid: result.jobsPaid,

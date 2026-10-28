@@ -14,10 +14,27 @@ import {
 } from '../revenue/summarizeRevenue';
 import { zonedYmd } from '../revenue/zonedDateTime';
 
-const PAD_LEFT = 56;
-const PAD_RIGHT = 8;
-const PAD_TOP = 12;
-const PAD_BOTTOM = 46;
+interface ChartMetrics {
+  padLeft: number;
+  padRight: number;
+  padTop: number;
+  padBottom: number;
+  fontSize: number;
+  labelClass: string;
+  grid: string;
+  stroke: number;
+}
+
+const CHART_METRICS: ChartMetrics = {
+  padLeft: 40,
+  padRight: 4,
+  padTop: 16,
+  padBottom: 28,
+  fontSize: 11,
+  labelClass: 'fill-zinc-500',
+  grid: 'rgba(255,255,255,0.08)',
+  stroke: 1.75,
+};
 
 interface PaymentsRevenueAreaChartProps {
   buckets: RevenueBucket[];
@@ -29,6 +46,7 @@ export function PaymentsRevenueAreaChart({
   buckets,
   heightClassName = 'h-52',
 }: PaymentsRevenueAreaChartProps) {
+  const metrics = CHART_METRICS;
   const frameRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -36,9 +54,9 @@ export function PaymentsRevenueAreaChart({
   const geometry = useMemo(
     () =>
       size.width > 0 && size.height > 0
-        ? chartGeometry(buckets, size.width, size.height)
+        ? chartGeometry(buckets, size.width, size.height, metrics)
         : null,
-    [buckets, size.height, size.width]
+    [buckets, metrics, size.height, size.width]
   );
   const todayYmd = useMemo(
     () =>
@@ -51,6 +69,31 @@ export function PaymentsRevenueAreaChart({
   const active = activeIndex != null ? buckets[activeIndex] : null;
   const activePoint =
     activeIndex != null ? geometry?.points[activeIndex] : null;
+
+  const labeledTicks = useMemo(
+    () =>
+      labeledTickIndexes(
+        buckets.length,
+        Math.max(size.width - metrics.padLeft - metrics.padRight, 0)
+      ),
+    [buckets.length, metrics.padLeft, metrics.padRight, size.width]
+  );
+
+  const selectBucketAt = (clientX: number) => {
+    const frame = frameRef.current;
+    if (!frame || !geometry) return;
+    const x = clientX - frame.getBoundingClientRect().left;
+    let nearest = 0;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    geometry.points.forEach((point, index) => {
+      const distance = Math.abs(point.x - x);
+      if (distance < nearestDistance) {
+        nearest = index;
+        nearestDistance = distance;
+      }
+    });
+    setActiveIndex(nearest);
+  };
 
   useLayoutEffect(() => {
     const frame = frameRef.current;
@@ -78,14 +121,18 @@ export function PaymentsRevenueAreaChart({
   }
 
   return (
-    <div ref={frameRef} className={`relative w-full ${heightClassName}`}>
+    <div
+      ref={frameRef}
+      className={`relative w-full min-w-0 ${heightClassName}`}
+    >
       {geometry && size.width > 0 ? (
         <svg
           viewBox={`0 0 ${size.width} ${size.height}`}
           className="absolute inset-0 h-full w-full"
           role="img"
           aria-label="Earnings over time"
-          onMouseLeave={() => setActiveIndex(null)}
+          onPointerLeave={() => setActiveIndex(null)}
+          onPointerDown={event => selectBucketAt(event.clientX)}
         >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -105,21 +152,20 @@ export function PaymentsRevenueAreaChart({
           {geometry.ticks.map(tick => (
             <g key={tick.cents}>
               <line
-                x1={PAD_LEFT}
-                x2={size.width - PAD_RIGHT}
+                x1={metrics.padLeft}
+                x2={size.width - metrics.padRight}
                 y1={tick.y}
                 y2={tick.y}
-                stroke="rgba(255,255,255,0.28)"
+                stroke={metrics.grid}
                 strokeWidth="1"
-                strokeDasharray="2 5"
               />
               <text
-                x={PAD_LEFT - 8}
+                x={metrics.padLeft - 6}
                 y={tick.y}
                 textAnchor="end"
                 dominantBaseline="middle"
-                className="fill-zinc-300"
-                fontSize="14"
+                className={metrics.labelClass}
+                fontSize={metrics.fontSize}
               >
                 {tick.label}
               </text>
@@ -130,7 +176,7 @@ export function PaymentsRevenueAreaChart({
             d={geometry.line}
             fill="none"
             stroke="rgb(52 211 153)"
-            strokeWidth="2"
+            strokeWidth={metrics.stroke}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -151,13 +197,13 @@ export function PaymentsRevenueAreaChart({
                   onMouseEnter={() => setActiveIndex(index)}
                   onFocus={() => setActiveIndex(index)}
                 />
-                {shouldLabelTick(index, buckets.length) ? (
+                {labeledTicks.has(index) ? (
                   <text
                     x={point.x}
                     y={size.height - 6}
                     textAnchor={tickAnchor(index, buckets.length)}
-                    className="fill-zinc-300"
-                    fontSize="14"
+                    className={metrics.labelClass}
+                    fontSize={metrics.fontSize}
                   >
                     {bucket.label}
                   </text>
@@ -170,7 +216,7 @@ export function PaymentsRevenueAreaChart({
               <line
                 x1={activePoint.x}
                 x2={activePoint.x}
-                y1={PAD_TOP}
+                y1={metrics.padTop}
                 y2={geometry.baseline}
                 stroke="rgba(52,211,153,0.45)"
                 strokeDasharray="3 4"
@@ -221,24 +267,25 @@ export function PaymentsRevenueAreaChart({
 function chartGeometry(
   buckets: RevenueBucket[],
   width: number,
-  height: number
+  height: number,
+  metrics: ChartMetrics
 ) {
-  const plotRight = width - PAD_RIGHT;
-  const innerWidth = Math.max(plotRight - PAD_LEFT, 1);
-  const baseline = height - PAD_BOTTOM;
-  const innerHeight = Math.max(baseline - PAD_TOP, 1);
+  const plotRight = width - metrics.padRight;
+  const innerWidth = Math.max(plotRight - metrics.padLeft, 1);
+  const baseline = height - metrics.padBottom;
+  const innerHeight = Math.max(baseline - metrics.padTop, 1);
   const dataMax = Math.max(...buckets.map(bucket => bucket.totalCents), 0);
+  const axisMax = axisMaxCents(dataMax);
   const ticks = axisTicks(dataMax).map(cents => ({
     cents,
-    y: yForCents(cents, axisMaxCents(dataMax), innerHeight),
+    y: yForCents(cents, axisMax, innerHeight, metrics.padTop),
     label: formatAxisDollars(cents),
   }));
-  const axisMax = axisMaxCents(dataMax);
   const count = Math.max(buckets.length, 1);
   const step = count > 1 ? innerWidth / (count - 1) : innerWidth;
   const points = buckets.map((bucket, index) => ({
-    x: PAD_LEFT + step * index,
-    y: yForCents(bucket.totalCents, axisMax, innerHeight),
+    x: metrics.padLeft + step * index,
+    y: yForCents(bucket.totalCents, axisMax, innerHeight, metrics.padTop),
   }));
   const line = smoothLine(points);
   const first = points[0];
@@ -298,8 +345,13 @@ function smoothLine(points: { x: number; y: number }[]) {
   return path;
 }
 
-function yForCents(cents: number, axisMax: number, innerHeight: number) {
-  return PAD_TOP + innerHeight * (1 - cents / axisMax);
+function yForCents(
+  cents: number,
+  axisMax: number,
+  innerHeight: number,
+  padTop: number
+) {
+  return padTop + innerHeight * (1 - cents / axisMax);
 }
 
 function axisMaxCents(maxCents: number) {
@@ -346,9 +398,37 @@ function tickAnchor(index: number, count: number): 'start' | 'middle' | 'end' {
   return 'middle';
 }
 
-function shouldLabelTick(index: number, count: number): boolean {
-  if (count <= 12) return true;
-  if (count <= 16) return index % 2 === 0;
-  const step = Math.ceil(count / 7);
-  return index % step === 0 || index === count - 1;
+/** Evenly spaced axis labels. The last month is kept, and never sits on the one before it. */
+function labeledTickIndexes(count: number, plotWidth: number): Set<number> {
+  if (count <= 0) return new Set();
+  const maxLabels = Math.max(2, Math.floor(Math.max(plotWidth, 1) / 48));
+  if (count <= maxLabels) {
+    return new Set(Array.from({ length: count }, (_, index) => index));
+  }
+
+  const chosen: number[] = [];
+  for (let slot = 0; slot < maxLabels; slot += 1) {
+    const index = Math.round((slot * (count - 1)) / (maxLabels - 1));
+    const previous = chosen[chosen.length - 1];
+    if (previous == null) {
+      chosen.push(index);
+      continue;
+    }
+    if (index - previous < 2) {
+      if (slot === maxLabels - 1) chosen[chosen.length - 1] = count - 1;
+      continue;
+    }
+    chosen.push(index);
+  }
+
+  const last = chosen[chosen.length - 1];
+  if (last !== count - 1) {
+    if (last != null && count - 1 - last < 2) {
+      chosen[chosen.length - 1] = count - 1;
+    } else {
+      chosen.push(count - 1);
+    }
+  }
+
+  return new Set(chosen);
 }

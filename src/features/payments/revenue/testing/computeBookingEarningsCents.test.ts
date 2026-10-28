@@ -18,6 +18,7 @@ describe('computeBookingEarningsCents', () => {
     expect(result).toEqual({
       collectedCents: 15000,
       potentialCents: 15000,
+      taxCollectedCents: 0,
       scheduledYmd: '2026-08-26',
     });
   });
@@ -30,6 +31,25 @@ describe('computeBookingEarningsCents', () => {
         subtotal_cents: 15000,
       })
     ).toBeNull();
+  });
+
+  it('keeps sales tax out of earnings and reports it beside the job', () => {
+    const result = computeBookingEarningsCents({
+      status: 'completed',
+      scheduled_date: '2026-10-27',
+      subtotal_cents: 8500,
+      booking_payments: {
+        total_amount_cents: 8691,
+        paid_online_amount_cents: 8691,
+        tax_cents: 191,
+      },
+    });
+    expect(result).toEqual({
+      collectedCents: 8500,
+      potentialCents: 8500,
+      taxCollectedCents: 191,
+      scheduledYmd: '2026-10-27',
+    });
   });
 
   it('uses the scheduled calendar day, not payment time', () => {
