@@ -7,7 +7,11 @@ import {
   normalizeUsPhoneDigits,
 } from '@/lib/formatUsPhone';
 import React, { useEffect, useId, useState } from 'react';
-import { fieldLabelClassName, fieldSurfaceClassName } from './fieldStyles';
+import {
+  fieldHeightClassName,
+  fieldLabelClassName,
+  fieldSurfaceClassName,
+} from './fieldStyles';
 
 const PHONE_FORMATTED_MAX_LENGTH = 14;
 
@@ -88,7 +92,8 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
 
       <div
         className={`
-          flex h-8 items-stretch overflow-hidden
+          flex items-stretch overflow-hidden
+          ${fieldHeightClassName}
           ${fieldSurfaceClassName}
           focus-within:border-white/30 focus-within:ring-2 focus-within:ring-white/20
           ${error ? 'border-red-500/50 bg-red-500/5' : ''}

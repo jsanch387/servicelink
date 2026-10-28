@@ -274,12 +274,17 @@ export function serviceLinkEmailFootnote(text: string): string {
   return `<p style="margin:14px 0 0 0;${FONT_BODY_MUTED}">${escapeHtml(text)}</p>`;
 }
 
-export function serviceLinkEmailCta(href: string, label: string): string {
+export function serviceLinkEmailCta(
+  href: string,
+  label: string,
+  options?: { fullWidth?: boolean }
+): string {
+  const fullWidth = options?.fullWidth === true;
   return `
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px auto 0 auto;">
+    <table role="presentation" width="${fullWidth ? '100%' : 'auto'}" cellspacing="0" cellpadding="0" border="0" style="margin:${fullWidth ? '24px 0 0 0' : '24px auto 0 auto'};">
       <tr>
         <td align="center" bgcolor="#ffffff" style="border-radius:12px;">
-          <a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 24px;font-family:${SERVICE_LINK_EMAIL_FONT};font-size:15px;font-weight:600;line-height:20px;color:#000000 !important;text-decoration:none !important;">
+          <a href="${escapeHtml(href)}" style="display:${fullWidth ? 'block' : 'inline-block'};padding:14px 24px;font-family:${SERVICE_LINK_EMAIL_FONT};font-size:15px;font-weight:600;line-height:20px;color:#000000 !important;text-decoration:none !important;${fullWidth ? 'text-align:center;' : ''}">
             ${escapeHtml(label)}
           </a>
         </td>

@@ -2,9 +2,12 @@ import {
   sendQuoteSentToCustomerEmail,
   type QuoteSentToCustomerPayload,
 } from '@/features/email';
+import { quoteSentEmailPayment } from '@/features/email/quote-sent-to-customer/quoteSentToCustomerTemplate';
 import { quotePublicLinkExpiresAt } from '@/features/quotes/shared/quotePublicLinkTtl';
 import type { ValidatedSendQuoteBody } from '@/features/quotes/send/validateSendQuoteBody';
 import type { QuotePaymentSnapshot } from '@/features/quotes/server/quotePaymentSnapshot';
+import { quoteSalesTaxLabel } from '@/features/quotes/shared/quoteSalesTax';
+import type { PublicBookingSalesTaxQuote } from '@/features/availability/booking/utils/publicBookingSalesTax';
 import {
   mergeQuoteAssetsPreservingExtra,
   normalizeQuoteAssets,
@@ -31,6 +34,7 @@ export async function sendExistingQuoteAsSent(params: {
   businessDisplayName: string;
   payload: ValidatedSendQuoteBody;
   payment: QuotePaymentSnapshot;
+  salesTax: PublicBookingSalesTaxQuote;
   /** e.g. `request.nextUrl.origin` or `NEXT_PUBLIC_SITE_URL` */
   siteOrigin: string;
 }): Promise<SendExistingQuoteAsSentResult> {
@@ -42,6 +46,7 @@ export async function sendExistingQuoteAsSent(params: {
     businessDisplayName,
     payload: p,
     payment,
+    salesTax,
     siteOrigin,
   } = params;
 
@@ -98,6 +103,8 @@ export async function sendExistingQuoteAsSent(params: {
       ),
       service_name: p.serviceName,
       price_cents: p.priceCents,
+      tax_rate_bps: salesTax.rateBps,
+      tax_cents: salesTax.taxCents,
       duration_minutes: p.durationMinutes,
       note: p.note,
       scheduled_date: p.scheduledDate,
@@ -182,6 +189,14 @@ export async function sendExistingQuoteAsSent(params: {
       serviceName: p.serviceName,
       businessName: businessDisplayName,
       priceCents: p.priceCents,
+      ...(salesTax.taxCents > 0
+        ? {
+            salesTax: {
+              label: quoteSalesTaxLabel(salesTax.rateBps),
+              taxCents: salesTax.taxCents,
+            },
+          }
+        : {}),
       scheduledDate: p.scheduledDate,
       scheduledStartTime: p.scheduledStartTimeForDb,
       durationMinutes: p.durationMinutes,
@@ -191,6 +206,12 @@ export async function sendExistingQuoteAsSent(params: {
       publicQuoteUrl: publicUrl,
       expiresAt,
       addonDetails: p.addonDetails,
+      payment: quoteSentEmailPayment({
+        collection: payment.payment_collection,
+        depositType: payment.deposit_type,
+        depositValue: payment.deposit_value,
+        totalCents: salesTax.totalCents,
+      }),
     };
     const emailResult = await sendQuoteSentToCustomerEmail(
       p.customerEmail,

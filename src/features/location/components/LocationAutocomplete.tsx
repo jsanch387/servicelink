@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  fieldHeightClassName,
   fieldLabelClassName,
   fieldSurfaceClassName,
 } from '@/components/shared/fieldStyles';
@@ -212,7 +213,7 @@ export function LocationAutocomplete({
   const inputClasses =
     variant === 'bare'
       ? 'w-full min-w-0 border-0 bg-transparent p-0 pr-9 text-base leading-7 text-white outline-none placeholder:text-gray-500'
-      : `h-8 w-full pl-3 pr-9 text-base text-white placeholder:text-white/40 sm:text-sm ${fieldSurfaceClassName} ${
+      : `${fieldHeightClassName} w-full pl-3.5 pr-9 text-base text-white placeholder:text-white/40 sm:text-sm ${fieldSurfaceClassName} ${
           error ? 'border-red-500/50 bg-red-500/5' : 'hover:border-white/25'
         }`;
 

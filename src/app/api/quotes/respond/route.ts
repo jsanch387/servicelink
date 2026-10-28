@@ -256,9 +256,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const quoteTaxCents =
+      typeof q.tax_cents === 'number' ? q.tax_cents : 0;
+    const quoteTaxRateBps =
+      typeof q.tax_rate_bps === 'number' ? q.tax_rate_bps : 0;
     const customerPayment = await loadQuoteCustomerPayment(admin, {
       business_id: String(q.business_id),
       price_cents: Number(q.price_cents ?? 0),
+      tax_cents: quoteTaxCents,
       payment_collection:
         typeof q.payment_collection === 'string' ? q.payment_collection : null,
       deposit_type: typeof q.deposit_type === 'string' ? q.deposit_type : null,
@@ -305,6 +310,8 @@ export async function POST(request: NextRequest) {
             scheduledStartTimeForDb:
               schedule?.scheduledStartTimeForDb ?? `${slotTime}:00`,
             totalCents: customerPayment.totalCents,
+            taxCents: quoteTaxCents,
+            taxRateBps: quoteTaxRateBps,
             depositType,
             depositValue:
               typeof q.deposit_value === 'number' ? q.deposit_value : null,
@@ -436,6 +443,8 @@ export async function POST(request: NextRequest) {
           bookingId: done.bookingId,
           businessId: String(q.business_id),
           totalCents: customerPayment.totalCents,
+          taxCents: quoteTaxCents,
+          taxRateBps: quoteTaxRateBps,
         });
       } catch (paymentError) {
         console.error('[quotes] pay in person payment', paymentError);
