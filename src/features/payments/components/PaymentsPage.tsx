@@ -93,7 +93,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
               />
             </div>
             <div
-              className={`mt-8 sm:mt-10 space-y-8 sm:space-y-10 transition-opacity duration-200 ${
+              className={`mt-6 sm:mt-8 space-y-4 sm:space-y-5 transition-opacity duration-200 ${
                 servicelinkPaymentsEnabled
                   ? 'opacity-100'
                   : 'opacity-40 sm:opacity-[0.44]'

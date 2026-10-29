@@ -30,7 +30,7 @@ export const FreePaymentPreviewLockedDashboard: React.FC<
   const [collectTax, setCollectTax] = useState(false);
   const [taxRate, setTaxRate] = useState('');
 
-  const rootClass = ['space-y-8 sm:space-y-10', className]
+  const rootClass = ['space-y-4 sm:space-y-5', className]
     .filter(Boolean)
     .join(' ');
 

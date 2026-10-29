@@ -66,13 +66,13 @@ export const PaymentsDepositSettingsCard: React.FC<
 
   return (
     <GlassCard padding="none" rounded="rounded-2xl" className="overflow-hidden">
-      <div className="p-4 sm:px-8 sm:pt-8 sm:pb-6">
+      <div className="p-4 sm:p-5">
         <h2 className="text-lg font-semibold text-white">Deposits</h2>
         <p className="mt-1 text-sm text-white/60">
           Collect part of the price when someone books.
         </p>
 
-        <div className="mt-6">
+        <div className="mt-4">
           <div className="rounded-[10px] border border-white/[0.08] bg-white/[0.03] px-3 py-2.5">
             <Switch
               checked={depositsEnabled}
@@ -83,7 +83,7 @@ export const PaymentsDepositSettingsCard: React.FC<
           </div>
 
           {depositsEnabled ? (
-            <div className="mt-6">
+            <div className="mt-4">
               <label htmlFor="deposit-amount" className={fieldLabelClassName}>
                 Deposit amount
               </label>

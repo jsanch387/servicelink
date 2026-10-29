@@ -43,7 +43,7 @@ export const PaymentsCheckoutOptionsCard: React.FC<
 
   return (
     <GlassCard padding="none" rounded="rounded-2xl" className="overflow-hidden">
-      <div className="p-4 sm:px-8 sm:pt-8 sm:pb-6">
+      <div className="p-4 sm:p-5">
         <h2 className="text-lg font-semibold text-white" id={groupLabelId}>
           How customers pay
         </h2>
@@ -52,7 +52,7 @@ export const PaymentsCheckoutOptionsCard: React.FC<
         </p>
 
         <div
-          className="mt-6 flex flex-col gap-3"
+          className="mt-4 flex flex-col gap-2"
           role="radiogroup"
           aria-labelledby={groupLabelId}
           aria-describedby={groupDescriptionId}
@@ -67,7 +67,7 @@ export const PaymentsCheckoutOptionsCard: React.FC<
                 aria-checked={selected}
                 onClick={() => onCheckoutModeChange(option.id)}
                 className={`
-                  w-full cursor-pointer rounded-xl border px-4 py-3.5 text-left transition-colors
+                  w-full cursor-pointer rounded-xl border px-3.5 py-3 text-left transition-colors
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f0f]
                   ${
                     selected
@@ -76,7 +76,7 @@ export const PaymentsCheckoutOptionsCard: React.FC<
                   }
                 `}
               >
-                <div className="flex gap-3.5 items-start">
+                <div className="flex gap-3 items-start">
                   <span
                     className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
                     aria-hidden

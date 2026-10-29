@@ -16,13 +16,13 @@ export const PaymentsTaxSettingsCard: React.FC<
 > = ({ collectTax, onCollectTaxChange, taxRate, onTaxRateChange }) => {
   return (
     <GlassCard padding="none" rounded="rounded-2xl" className="overflow-hidden">
-      <div className="p-4 sm:px-8 sm:pt-8 sm:pb-6">
+      <div className="p-4 sm:p-5">
         <h2 className="text-lg font-semibold text-white">Sales tax</h2>
         <p className="mt-1 text-sm text-white/60">
           Add a percentage on top of the price.
         </p>
 
-        <div className="mt-6">
+        <div className="mt-4">
           <div className="rounded-[10px] border border-white/[0.08] bg-white/[0.03] px-3 py-2.5">
             <Switch
               checked={collectTax}
@@ -33,7 +33,7 @@ export const PaymentsTaxSettingsCard: React.FC<
           </div>
 
           {collectTax ? (
-            <div className="mt-6 sm:max-w-xs">
+            <div className="mt-4 sm:max-w-xs">
               <Input
                 id="sales-tax-rate"
                 label="Tax rate"

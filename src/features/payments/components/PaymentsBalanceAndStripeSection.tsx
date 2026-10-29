@@ -66,13 +66,13 @@ export const PaymentsBalanceAndStripeSection: React.FC<
 
   return (
     <div className="min-w-0 w-full">
-      <GlassCard padding="none" rounded="rounded-2xl" className="p-4 sm:p-8">
+      <GlassCard padding="none" rounded="rounded-2xl" className="p-4 sm:p-5">
         <p className="text-sm font-semibold text-white">Stripe</p>
         <p className="mt-1 text-sm text-gray-400 leading-relaxed">
           View balance, charges, payouts, and tax forms in your Stripe
           dashboard. Bank and payout details are managed in Stripe.
         </p>
-        <div className="mt-5">
+        <div className="mt-4">
           {canUseExpressLink ? (
             <Button
               type="button"
@@ -105,7 +105,7 @@ export const PaymentsBalanceAndStripeSection: React.FC<
             {openError}
           </p>
         ) : null}
-        <div className="mt-5 border-t border-white/[0.08] pt-4">
+        <div className="mt-4 border-t border-white/[0.08] pt-3">
           <PaymentsStripeFeeNote collapsible />
         </div>
       </GlassCard>
