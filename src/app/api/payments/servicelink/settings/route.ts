@@ -196,7 +196,11 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (typeof taxEnabled === 'boolean') {
-      if (taxEnabled && (patch.tax_rate_bps == null || patch.tax_rate_bps < 1)) {
+      const nextTaxRateBps = patch.tax_rate_bps;
+      if (
+        taxEnabled &&
+        (typeof nextTaxRateBps !== 'number' || nextTaxRateBps < 1)
+      ) {
         return NextResponse.json(
           {
             success: false,

@@ -217,7 +217,10 @@ export async function chooseCustomerScheduleAndReview(
   ).toBeVisible();
   await page.getByRole('radio', { name: /Let customer choose/i }).click();
   const paymentHeading = page.getByRole('heading', { name: 'Payment' });
-  const reviewHeading = page.getByRole('heading', { name: 'Review', exact: true });
+  const reviewHeading = page.getByRole('heading', {
+    name: 'Review',
+    exact: true,
+  });
   await expect(paymentHeading.or(reviewHeading)).toBeVisible();
   if (await paymentHeading.isVisible()) {
     await page.getByRole('button', { name: 'Continue' }).click();

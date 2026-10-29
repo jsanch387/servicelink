@@ -256,8 +256,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const quoteTaxCents =
-      typeof q.tax_cents === 'number' ? q.tax_cents : 0;
+    const quoteTaxCents = typeof q.tax_cents === 'number' ? q.tax_cents : 0;
     const quoteTaxRateBps =
       typeof q.tax_rate_bps === 'number' ? q.tax_rate_bps : 0;
     const customerPayment = await loadQuoteCustomerPayment(admin, {

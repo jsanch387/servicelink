@@ -352,9 +352,7 @@ describe('ServiceDetailsScreen flow', () => {
     expect(
       screen.getByRole('heading', { name: /where should service happen/i })
     ).toBeTruthy();
-    expect(
-      screen.getByRole('link', { name: /back to profile/i })
-    ).toBeTruthy();
+    expect(screen.getByRole('link', { name: /back to profile/i })).toBeTruthy();
     expect(
       screen.queryByRole('button', { name: /back to options/i })
     ).toBeNull();

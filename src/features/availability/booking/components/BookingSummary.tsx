@@ -179,10 +179,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   const showServicePrice = servicePriceCents != null && servicePriceCents > 0;
   const showPriceFooter =
     hasPrice &&
-    (hasAddOns ||
-      showSalePricing ||
-      Boolean(saleAppliesLine) ||
-      showSalesTax);
+    (hasAddOns || showSalePricing || Boolean(saleAppliesLine) || showSalesTax);
 
   const detailRows: Array<{
     key: string;
@@ -313,7 +310,9 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
                   </span>
                   <span className="text-sm font-semibold text-white tabular-nums">
                     {formatCents(
-                      showSalesTax ? priceWithTaxCents : saleEstimatedTotalCents!
+                      showSalesTax
+                        ? priceWithTaxCents
+                        : saleEstimatedTotalCents!
                     )}
                   </span>
                 </div>

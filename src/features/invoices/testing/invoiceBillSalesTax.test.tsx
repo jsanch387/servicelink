@@ -30,9 +30,9 @@ describe('invoice bill sales tax', () => {
     expect(screen.getByText('Subtotal').nextElementSibling?.textContent).toBe(
       '$85.00'
     );
-    expect(screen.getByText('Tax (2.25%)').nextElementSibling?.textContent).toBe(
-      '$1.91'
-    );
+    expect(
+      screen.getByText('Tax (2.25%)').nextElementSibling?.textContent
+    ).toBe('$1.91');
     expect(screen.getByText('Amount due').nextElementSibling?.textContent).toBe(
       '$86.91'
     );

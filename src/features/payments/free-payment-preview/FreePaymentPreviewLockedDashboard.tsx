@@ -10,6 +10,7 @@ import { LockedPaymentPreviewSection } from './LockedPaymentPreviewSection';
 
 export interface FreePaymentPreviewLockedDashboardProps {
   className?: string;
+  showSalesTaxCard?: boolean;
 }
 
 /**
@@ -18,14 +19,13 @@ export interface FreePaymentPreviewLockedDashboardProps {
  */
 export const FreePaymentPreviewLockedDashboard: React.FC<
   FreePaymentPreviewLockedDashboardProps
-> = ({ className }) => {
+> = ({ className, showSalesTaxCard = false }) => {
   const [checkoutMode, setCheckoutMode] = useState<CheckoutPaymentMode | null>(
     null
   );
   const [depositsEnabled, setDepositsEnabled] = useState(false);
-  const [depositMode, setDepositMode] = useState<DepositAmountMode>(
-    'percentage'
-  );
+  const [depositMode, setDepositMode] =
+    useState<DepositAmountMode>('percentage');
   const [depositAmount, setDepositAmount] = useState('0');
   const [collectTax, setCollectTax] = useState(false);
   const [taxRate, setTaxRate] = useState('');
@@ -52,14 +52,16 @@ export const FreePaymentPreviewLockedDashboard: React.FC<
           onDepositAmountChange={setDepositAmount}
         />
       </LockedPaymentPreviewSection>
-      <LockedPaymentPreviewSection lockedLabel="Sales tax (preview, locked)">
-        <PaymentsTaxSettingsCard
-          collectTax={collectTax}
-          onCollectTaxChange={setCollectTax}
-          taxRate={taxRate}
-          onTaxRateChange={setTaxRate}
-        />
-      </LockedPaymentPreviewSection>
+      {showSalesTaxCard ? (
+        <LockedPaymentPreviewSection lockedLabel="Sales tax (preview, locked)">
+          <PaymentsTaxSettingsCard
+            collectTax={collectTax}
+            onCollectTaxChange={setCollectTax}
+            taxRate={taxRate}
+            onTaxRateChange={setTaxRate}
+          />
+        </LockedPaymentPreviewSection>
+      ) : null}
     </div>
   );
 };

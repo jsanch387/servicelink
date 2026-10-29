@@ -37,6 +37,8 @@ export interface PaymentsPageProps {
   stripeExpressAccountId?: string | null;
   /** Had Connect and/or `payment_settings` before losing Pro (churned / downgraded). */
   priorPaymentsSetup?: boolean;
+  /** Prod test: sales tax card is visible only for the allowlisted owner. */
+  showSalesTaxCard?: boolean;
 }
 
 export const PaymentsPage: React.FC<PaymentsPageProps> = ({
@@ -48,6 +50,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
   paymentSettings = null,
   stripeExpressAccountId = null,
   priorPaymentsSetup = false,
+  showSalesTaxCard = false,
 }) => {
   const showProPaymentsDashboard =
     hasProAccess && stripeConnectReady && paymentSettings != null;
@@ -102,18 +105,23 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
                   below; changes apply when payments are on.
                 </p>
               ) : null}
-              <PaymentsSettingsForm settings={dashboardSettings} />
+              <PaymentsSettingsForm
+                settings={dashboardSettings}
+                showSalesTaxCard={showSalesTaxCard}
+              />
             </div>
           </>
         ) : showServicelinkGate ? (
-          <ProServicelinkPaymentsGate />
+          <ProServicelinkPaymentsGate showSalesTaxCard={showSalesTaxCard} />
         ) : showStripeConnectSetup ? (
           <ProPaymentsSetupExperience
             resumeConnect={stripeConnectResume}
             stripeRestricted={stripeConnectRestricted}
+            showSalesTaxCard={showSalesTaxCard}
           />
         ) : (
           <FreePaymentPreview
+            showSalesTaxCard={showSalesTaxCard}
             upsellTitle={
               priorPaymentsSetup
                 ? FREE_PAYMENTS_UPSELL_TITLE_RESTORE

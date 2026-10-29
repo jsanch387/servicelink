@@ -1178,8 +1178,8 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   </QuoteReviewField>
                 ) : null}
                 {collectsPaymentOnSend && paymentSummary ? (
-                <QuoteReviewField label="Payment">
-                  <p>{paymentSummary.label}</p>
+                  <QuoteReviewField label="Payment">
+                    <p>{paymentSummary.label}</p>
                     {paymentSummary.detail.includes('$') ? (
                       <p className="text-sm text-white/60">
                         {paymentSummary.detail}

@@ -43,8 +43,10 @@ function depositValueForSave(mode: DepositAmountMode, amount: string): number {
 
 export function PaymentsSettingsForm({
   settings,
+  showSalesTaxCard = false,
 }: {
   settings: PaymentSettingsDashboardInitial;
+  showSalesTaxCard?: boolean;
 }) {
   const router = useRouter();
 
@@ -115,9 +117,12 @@ export function PaymentsSettingsForm({
     depositsEnabled !== savedDepositsEnabled ||
     depositMode !== savedDepositMode ||
     depositAmount !== savedDepositAmount;
-  const taxDirty = collectTax !== savedCollectTax || taxRate !== savedTaxRate;
+  const taxDirty =
+    showSalesTaxCard &&
+    (collectTax !== savedCollectTax || taxRate !== savedTaxRate);
   const parsedTaxRate = parseSalesTaxPercent(taxRate);
-  const taxRateInvalid = collectTax && parsedTaxRate == null;
+  const taxRateInvalid =
+    showSalesTaxCard && collectTax && parsedTaxRate == null;
   const isDirty = checkoutDirty || depositDirty || taxDirty;
 
   const handleSave = async () => {
@@ -138,7 +143,7 @@ export function PaymentsSettingsForm({
         body.depositType = depositMode === 'percentage' ? 'percent' : 'fixed';
         body.depositValue = depositValueForSave(depositMode, depositAmount);
       }
-      if (taxDirty) {
+      if (showSalesTaxCard && taxDirty) {
         body.taxEnabled = collectTax;
         if (parsedTaxRate != null) {
           body.taxRateBps = salesTaxPercentToBps(parsedTaxRate);
@@ -193,12 +198,14 @@ export function PaymentsSettingsForm({
         depositAmount={depositAmount}
         onDepositAmountChange={setDepositAmount}
       />
-      <PaymentsTaxSettingsCard
-        collectTax={collectTax}
-        onCollectTaxChange={setCollectTax}
-        taxRate={taxRate}
-        onTaxRateChange={setTaxRate}
-      />
+      {showSalesTaxCard ? (
+        <PaymentsTaxSettingsCard
+          collectTax={collectTax}
+          onCollectTaxChange={setCollectTax}
+          taxRate={taxRate}
+          onTaxRateChange={setTaxRate}
+        />
+      ) : null}
       <PaymentsSettingsSaveRow
         isDirty={isDirty}
         saving={saving}

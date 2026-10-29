@@ -111,6 +111,8 @@ describe('buildQuoteSentToCustomerHtml', () => {
     expect(totalAt).toBeGreaterThan(whenAt);
     expect(paymentAt).toBeGreaterThan(totalAt);
     expect(html).toContain('You choose how to pay');
-    expect(html).toContain('Pay a $10 deposit, pay $86.91 in full, or pay in person.');
+    expect(html).toContain(
+      'Pay a $10 deposit, pay $86.91 in full, or pay in person.'
+    );
   });
 });

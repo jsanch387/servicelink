@@ -189,8 +189,7 @@ export async function resolveQuotePaymentSnapshot(
     const due = ready.depositsEnabled
       ? depositDueCents(total, ready.depositType, ready.depositValue)
       : 0;
-    const includeDeposit =
-      ready.depositsEnabled && due >= QUOTE_CARD_MIN_CENTS;
+    const includeDeposit = ready.depositsEnabled && due >= QUOTE_CARD_MIN_CENTS;
     return {
       ok: true,
       snapshot: {

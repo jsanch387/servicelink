@@ -414,8 +414,7 @@ export async function POST(request: NextRequest) {
         paymentsEnabled: true,
         checkoutMode: checkoutModeFromDb(settings.checkout_mode),
         depositsEnabled: settings.deposits_enabled === true,
-        depositType:
-          settings.deposit_type === 'fixed' ? 'fixed' : 'percent',
+        depositType: settings.deposit_type === 'fixed' ? 'fixed' : 'percent',
         depositValue:
           typeof settings.deposit_value === 'number'
             ? settings.deposit_value
@@ -489,8 +488,7 @@ export async function POST(request: NextRequest) {
     const baseUrl = getAppBaseUrl(request);
     const lineName = sanitizeLineItemName(body.serviceName);
     const stripe = getStripePlatform();
-    const paymentKind =
-      salesTax.totalCents > amountCents ? 'deposit' : 'full';
+    const paymentKind = salesTax.totalCents > amountCents ? 'deposit' : 'full';
     const { data: checkoutSessionRow, error: checkoutSessionInsertError } =
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)

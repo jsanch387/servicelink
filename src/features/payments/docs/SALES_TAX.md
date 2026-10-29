@@ -22,13 +22,13 @@ Settings UI: `PaymentsTaxSettingsCard`. Math: `src/features/payments/utils/sales
 
 ## Where a charge freezes the tax
 
-| Record | Columns | What the customer pays |
-| --- | --- | --- |
-| `payment_settings` | `tax_enabled`, `tax_rate_bps` | The live shop rate. Not a charge. |
-| `booking_payments` | `tax_rate_bps`, `tax_cents` | `total_amount_cents` includes tax. |
-| `quotes` | `tax_rate_bps`, `tax_cents` | `price_cents + tax_cents`. |
-| `invoices` | `tax_rate_bps`, `tax_cents` | `subtotal_cents + tax_cents`. |
-| `membership_plan_prices` | `tax_rate_bps`, `tax_cents` | Stripe `unit_amount` is `price_cents + tax_cents`. |
+| Record                   | Columns                       | What the customer pays                             |
+| ------------------------ | ----------------------------- | -------------------------------------------------- |
+| `payment_settings`       | `tax_enabled`, `tax_rate_bps` | The live shop rate. Not a charge.                  |
+| `booking_payments`       | `tax_rate_bps`, `tax_cents`   | `total_amount_cents` includes tax.                 |
+| `quotes`                 | `tax_rate_bps`, `tax_cents`   | `price_cents + tax_cents`.                         |
+| `invoices`               | `tax_rate_bps`, `tax_cents`   | `subtotal_cents + tax_cents`.                      |
+| `membership_plan_prices` | `tax_rate_bps`, `tax_cents`   | Stripe `unit_amount` is `price_cents + tax_cents`. |
 
 A saved quote, invoice, or booking keeps the tax from when it was saved. Changing the shop rate later does not rewrite those rows. Editing and saving a quote again recomputes from the current shop rate.
 
@@ -83,11 +83,11 @@ Create payment → Payment link and Create payment → Tap to pay charge the typ
 
 ## Code map
 
-| Piece | File |
-| --- | --- |
-| Rate field, cap, and cent rounding | `src/features/payments/utils/salesTaxRate.ts` |
+| Piece                                       | File                                                               |
+| ------------------------------------------- | ------------------------------------------------------------------ |
+| Rate field, cap, and cent rounding          | `src/features/payments/utils/salesTaxRate.ts`                      |
 | Shared tax quote, deposit slice, email line | `src/features/availability/booking/utils/publicBookingSalesTax.ts` |
-| Quote wrapper | `src/features/quotes/shared/quoteSalesTax.ts` |
-| Invoice wrapper | `src/features/invoices/utils/invoiceSalesTax.ts` |
-| Membership tax and Stripe unit amount | `src/features/subscriptions/server/membershipSalesTax.ts` |
-| Earnings minus tax | `src/features/payments/revenue/computeBookingEarningsCents.ts` |
+| Quote wrapper                               | `src/features/quotes/shared/quoteSalesTax.ts`                      |
+| Invoice wrapper                             | `src/features/invoices/utils/invoiceSalesTax.ts`                   |
+| Membership tax and Stripe unit amount       | `src/features/subscriptions/server/membershipSalesTax.ts`          |
+| Earnings minus tax                          | `src/features/payments/revenue/computeBookingEarningsCents.ts`     |

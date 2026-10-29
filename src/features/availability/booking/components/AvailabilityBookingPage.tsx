@@ -2655,7 +2655,9 @@ export function AvailabilityBookingPage({
                       {salesTaxApplies && salesTaxLabel && salesTaxQuote ? (
                         <>
                           <div className="flex items-center justify-between gap-4 text-sm">
-                            <span className="text-white/60">{salesTaxLabel}</span>
+                            <span className="text-white/60">
+                              {salesTaxLabel}
+                            </span>
                             <span className="tabular-nums text-white">
                               {formatPrice(
                                 salesTaxQuote.taxCents,

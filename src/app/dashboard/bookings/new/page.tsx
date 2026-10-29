@@ -225,18 +225,23 @@ export default async function NewAppointmentPage({
 
   const params = (await searchParams) ?? {};
 
-  const [serviceCatalog, categoriesResult, activeSale, membershipVisit, taxRow] =
-    await Promise.all([
-      loadQuoteServiceCatalog(supabase, business.id),
-      getServiceCategories(business.id),
-      loadOwnerBookingSale(supabase, business.id),
-      loadMembershipVisitPrefill(supabase, business.id, params),
-      supabase
-        .from('payment_settings')
-        .select('tax_enabled, tax_rate_bps')
-        .eq('business_id', business.id)
-        .maybeSingle(),
-    ]);
+  const [
+    serviceCatalog,
+    categoriesResult,
+    activeSale,
+    membershipVisit,
+    taxRow,
+  ] = await Promise.all([
+    loadQuoteServiceCatalog(supabase, business.id),
+    getServiceCategories(business.id),
+    loadOwnerBookingSale(supabase, business.id),
+    loadMembershipVisitPrefill(supabase, business.id, params),
+    supabase
+      .from('payment_settings')
+      .select('tax_enabled, tax_rate_bps')
+      .eq('business_id', business.id)
+      .maybeSingle(),
+  ]);
   const salesTax = taxRow.data as {
     tax_enabled?: boolean | null;
     tax_rate_bps?: number | null;

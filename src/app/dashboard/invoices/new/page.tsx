@@ -46,7 +46,8 @@ export default async function NewInvoicePage({ searchParams }: PageProps) {
     (
       businessRow as { business_name?: string | null } | null
     )?.business_name?.trim() || 'Your business';
-  const bookingId = fromBooking?.kind === 'draft' ? fromBooking.bookingId : null;
+  const bookingId =
+    fromBooking?.kind === 'draft' ? fromBooking.bookingId : null;
   const salesTax = await loadInvoiceTaxPreview(
     supabase,
     context.businessId,

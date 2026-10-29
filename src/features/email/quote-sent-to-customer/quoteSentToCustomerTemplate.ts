@@ -215,7 +215,10 @@ export function buildQuoteSentToCustomerHtml(
         )
       : '',
     tax
-      ? serviceLinkEmailPriceLineRow(tax.label, formatUsdFromCents(tax.taxCents))
+      ? serviceLinkEmailPriceLineRow(
+          tax.label,
+          formatUsdFromCents(tax.taxCents)
+        )
       : '',
     serviceLinkEmailPriceTotalRow('Total', formatUsdFromCents(totalCents)),
   ].join('');
