@@ -1,8 +1,15 @@
+import type { QuotePaymentCollection } from '@/features/quotes/shared/quotePaymentCollection';
+
 export interface QuoteSentToCustomerPayload {
   customerName: string;
   serviceName: string;
   businessName: string;
   priceCents: number;
+  /** Set when tax was added. `priceCents` stays the pre-tax quote. */
+  salesTax?: {
+    label: string;
+    taxCents: number;
+  } | null;
   /** `YYYY-MM-DD`, or null when customer will choose on accept */
   scheduledDate: string | null;
   /** `HH:mm` (24h), or null when customer will choose on accept */
@@ -21,6 +28,12 @@ export interface QuoteSentToCustomerPayload {
     name: string;
     priceCents: number;
   }> | null;
+  /** How the customer pays to accept. Omitted on older sends. */
+  payment?: {
+    collection: QuotePaymentCollection;
+    /** Due now when a deposit applies. Null when they pay in full or nothing is due. */
+    depositCents: number | null;
+  } | null;
 }
 
 export type SendQuoteSentToCustomerResult =

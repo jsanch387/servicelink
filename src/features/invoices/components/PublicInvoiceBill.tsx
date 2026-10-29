@@ -8,6 +8,7 @@ import {
   formatInvoiceCents,
   formatInvoiceDueDate,
 } from '../utils/invoiceDraft';
+import { invoiceSalesTaxLabel } from '../utils/invoiceSalesTax';
 
 export type PublicInvoiceBillLine = {
   id: string;
@@ -26,6 +27,11 @@ export type PublicInvoiceBillModel = {
   customerPhone: string | null;
   dueOn: string | null;
   note: string | null;
+  /** Line total before tax. Falls back to `totalCents` when omitted. */
+  subtotalCents?: number;
+  taxCents?: number;
+  taxRateBps?: number;
+  /** Amount due. Includes tax when this bill has tax. */
   totalCents: number;
   lines: PublicInvoiceBillLine[];
   /** Card Pay is available on the public bill. */
@@ -67,6 +73,11 @@ export const PublicInvoiceBill: React.FC<{
         ? 'Void'
         : 'Amount due';
   const note = invoice.note?.trim() ?? '';
+  const taxCents = invoice.taxCents ?? 0;
+  const subtotalCents =
+    invoice.subtotalCents ?? Math.max(0, invoice.totalCents - taxCents);
+  const taxLabel =
+    taxCents > 0 ? invoiceSalesTaxLabel(invoice.taxRateBps ?? 0) : null;
 
   return (
     <main
@@ -178,9 +189,17 @@ export const PublicInvoiceBill: React.FC<{
           <div className="flex items-center justify-between gap-6 text-[#6f6a64]">
             <dt>Subtotal</dt>
             <dd className="tabular-nums text-[#1c1c1c]">
-              {formatInvoiceCents(invoice.totalCents)}
+              {formatInvoiceCents(subtotalCents)}
             </dd>
           </div>
+          {taxLabel ? (
+            <div className="flex items-center justify-between gap-6 text-[#6f6a64]">
+              <dt>{taxLabel}</dt>
+              <dd className="tabular-nums text-[#1c1c1c]">
+                {formatInvoiceCents(taxCents)}
+              </dd>
+            </div>
+          ) : null}
           <div className="flex items-center justify-between gap-6 border-t border-[#eceae4] pt-3 font-semibold">
             <dt>{amountLabel}</dt>
             <dd className="tabular-nums">

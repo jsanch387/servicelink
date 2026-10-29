@@ -7,6 +7,11 @@ import {
   normalizeUsPhoneDigits,
 } from '@/lib/formatUsPhone';
 import React, { useEffect, useId, useState } from 'react';
+import {
+  fieldHeightClassName,
+  fieldLabelClassName,
+  fieldSurfaceClassName,
+} from './fieldStyles';
 
 const PHONE_FORMATTED_MAX_LENGTH = 14;
 
@@ -79,10 +84,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
   return (
     <div className={`w-full ${className}`}>
       {label ? (
-        <label
-          htmlFor={inputId}
-          className="mb-1.5 block text-left text-sm font-medium text-gray-200"
-        >
+        <label htmlFor={inputId} className={fieldLabelClassName}>
           {label}
           {required ? <span className="ml-1 text-red-400">*</span> : null}
         </label>
@@ -90,22 +92,23 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
 
       <div
         className={`
-          flex h-11 items-stretch overflow-hidden rounded-lg border bg-white/5
-          transition-all duration-200
-          focus-within:border-white/30 focus-within:bg-white/8 focus-within:ring-2 focus-within:ring-white/20
-          ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/10'}
-          ${disabled ? 'cursor-not-allowed opacity-60' : 'hover:border-white/20'}
+          flex items-stretch overflow-hidden
+          ${fieldHeightClassName}
+          ${fieldSurfaceClassName}
+          focus-within:border-white/30 focus-within:ring-2 focus-within:ring-white/20
+          ${error ? 'border-red-500/50 bg-red-500/5' : ''}
+          ${disabled ? 'cursor-not-allowed opacity-60' : 'hover:border-white/25'}
         `}
       >
         <div
-          className="flex shrink-0 items-center gap-1.5 border-r border-white/10 bg-white/[0.03] px-3"
+          className="flex shrink-0 items-center gap-1.5 border-r border-white/10 px-3"
           title="United States (+1)"
           aria-hidden
         >
-          <span className="rounded-sm bg-white/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-zinc-200">
+          <span className="rounded-sm bg-white/10 px-1 py-px text-[10px] font-bold tracking-wide text-white/70">
             US
           </span>
-          <span className="text-sm font-semibold tabular-nums text-zinc-300">
+          <span className="text-sm tabular-nums text-white/40">
             +{US_PHONE_COUNTRY_CODE}
           </span>
         </div>
@@ -125,16 +128,16 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
           aria-label={
             label ? `${label}, United States` : 'Phone, United States'
           }
-          className="min-w-0 flex-1 bg-transparent px-3.5 text-base text-white placeholder-gray-500 outline-none sm:text-sm"
+          className="min-w-0 flex-1 bg-transparent px-3 text-base text-white placeholder:text-white/40 outline-none disabled:cursor-not-allowed sm:text-sm"
         />
       </div>
 
       {error ? (
-        <p className="mt-1 text-sm text-red-400">{error}</p>
+        <p className="mt-1.5 text-sm text-red-400">{error}</p>
       ) : showDigitHint &&
         digitCount > 0 &&
         digitCount < US_PHONE_DIGIT_COUNT ? (
-        <p className="mt-1 text-sm text-gray-400">
+        <p className="mt-1.5 text-sm text-white/60">
           {US_PHONE_DIGIT_COUNT - digitCount} more digit
           {digitCount === 9 ? '' : 's'} needed
         </p>

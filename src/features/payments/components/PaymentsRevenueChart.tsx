@@ -31,10 +31,14 @@ export function PaymentsRevenueChartSkeleton({
   onPeriodChange?: (period: PaymentsRevenuePeriod) => void;
 }) {
   return (
-    <GlassCard padding="none" rounded="rounded-2xl" className="p-4 sm:p-6">
+    <GlassCard
+      padding="none"
+      rounded="rounded-2xl"
+      className="px-3 pt-4 pb-4 sm:px-4 sm:pt-5 sm:pb-5"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="h-10 w-40 animate-pulse rounded-lg bg-white/10" />
-        <div className="w-[8.75rem] shrink-0">
+        <div className="w-[7.25rem] sm:w-[8.75rem] shrink-0">
           <DropdownSelect
             value={period}
             onChange={next => {
@@ -74,7 +78,8 @@ export function PaymentsRevenueChart() {
         ? formatRevenueDateRange(data.from, data.to)
         : '';
   const hasSeries = (data?.buckets.length ?? 0) > 0;
-  const jobsPaid = data?.jobsPaid ?? 0;
+  const showTax = (data?.taxCollectedCents ?? 0) > 0;
+  const showChange = period !== 'all';
 
   if (loading && period !== 'custom') {
     return (
@@ -86,7 +91,11 @@ export function PaymentsRevenueChart() {
   }
 
   return (
-    <GlassCard padding="none" rounded="rounded-2xl" className="p-4 sm:p-6">
+    <GlassCard
+      padding="none"
+      rounded="rounded-2xl"
+      className="px-3 pt-4 pb-4 sm:px-4 sm:pt-5 sm:pb-5"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           {loading ? (
@@ -97,7 +106,7 @@ export function PaymentsRevenueChart() {
             </p>
           )}
         </div>
-        <div className="w-[8.75rem] shrink-0">
+        <div className="w-[7.25rem] sm:w-[8.75rem] shrink-0">
           <DropdownSelect
             value={period}
             onChange={next => {
@@ -109,25 +118,29 @@ export function PaymentsRevenueChart() {
           />
         </div>
       </div>
-      <div className="mt-2 flex items-center justify-between gap-3 text-sm">
-        {loading || period === 'all' ? (
-          <span />
-        ) : (
-          <ChangeBadge changePercent={data?.changePercent} period={period} />
-        )}
+      <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         {loading ? (
-          <span className="inline-block h-4 w-40 animate-pulse rounded bg-white/10" />
-        ) : dateRange ? (
-          <span className="whitespace-nowrap text-zinc-500">{dateRange}</span>
+          <span className="inline-block h-4 w-48 animate-pulse rounded bg-white/10" />
+        ) : showChange || showTax ? (
+          <p className="min-w-0 text-sm leading-5 text-zinc-500">
+            {showChange ? (
+              <ChangeBadge
+                changePercent={data?.changePercent}
+                period={period}
+              />
+            ) : null}
+            {showChange && showTax ? (
+              <span className="text-zinc-600"> · </span>
+            ) : null}
+            {showTax ? <>Tax collected {data?.taxCollectedLabel}</> : null}
+          </p>
+        ) : (
+          <span />
+        )}
+        {loading ? null : dateRange ? (
+          <span className="text-sm text-zinc-500">{dateRange}</span>
         ) : null}
       </div>
-      {loading ? null : (
-        <p className="mt-1 text-xs text-zinc-500">
-          {jobsPaid === 0
-            ? 'Finish a job and it shows up here.'
-            : `${jobsPaid} job${jobsPaid === 1 ? '' : 's'} paid`}
-        </p>
-      )}
 
       {period === 'custom' ? (
         <div className="mt-4">
@@ -139,7 +152,7 @@ export function PaymentsRevenueChart() {
         </div>
       ) : null}
 
-      <div className="mt-6">
+      <div className="-mx-1 mt-8">
         {error ? (
           <div className="flex h-52 flex-col items-center justify-center gap-2 text-center">
             <p className="text-sm text-zinc-400">{error}</p>

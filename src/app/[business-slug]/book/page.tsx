@@ -142,6 +142,8 @@ type PaymentSettingsRowForBooking = {
   deposit_type: string;
   deposit_value: number;
   currency: string;
+  tax_enabled?: boolean | null;
+  tax_rate_bps?: number | null;
 };
 
 function mapPaymentSettingsForBooking(
@@ -159,6 +161,11 @@ function mapPaymentSettingsForBooking(
     depositType,
     depositValue: Number.isFinite(row.deposit_value) ? row.deposit_value : 0,
     currency: row.currency?.trim() || 'usd',
+    taxEnabled: row.tax_enabled === true,
+    taxRateBps:
+      typeof row.tax_rate_bps === 'number' && Number.isFinite(row.tax_rate_bps)
+        ? row.tax_rate_bps
+        : 0,
   };
 }
 
@@ -493,7 +500,7 @@ export default async function BookingRequestPage({
     await adminClient
       .from('payment_settings')
       .select(
-        'payments_enabled, checkout_mode, deposits_enabled, deposit_type, deposit_value, currency'
+        'payments_enabled, checkout_mode, deposits_enabled, deposit_type, deposit_value, currency, tax_enabled, tax_rate_bps'
       )
       .eq('business_id', businessProfile.id)
       .maybeSingle();

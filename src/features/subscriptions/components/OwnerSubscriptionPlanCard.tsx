@@ -12,6 +12,7 @@ import {
   formatSubscriptionPriceCents,
   getDefaultCadenceOption,
 } from '../utils/formatSubscriptionPrice';
+import { MembershipTaxCaption } from './MembershipTaxCaption';
 
 interface OwnerSubscriptionPlanCardProps {
   plan: OwnerSubscriptionPlan;
@@ -38,20 +39,29 @@ export const OwnerSubscriptionPlanCard: React.FC<
         href={ROUTES.DASHBOARD.SUBSCRIPTIONS_DETAIL(plan.id)}
         className="group flex w-full cursor-pointer flex-col gap-3 p-5 text-left sm:p-6"
       >
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="m-0 min-w-0 flex-1 pr-1 text-[15px] font-semibold tracking-tight break-words text-white sm:text-base">
-            {plan.name}
-          </h3>
-          <div className="flex shrink-0 items-baseline gap-1 tabular-nums">
-            <span className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
-              {price}
-            </span>
-            {priceSuffix ? (
-              <span className="text-sm font-medium text-zinc-500">
-                {priceSuffix}
+        <div>
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="m-0 min-w-0 flex-1 pr-1 text-[15px] font-semibold tracking-tight break-words text-white sm:text-base">
+              {plan.name}
+            </h3>
+            <div className="flex shrink-0 items-baseline gap-1 tabular-nums">
+              <span className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                {price}
               </span>
-            ) : null}
+              {priceSuffix ? (
+                <span className="text-sm font-medium text-zinc-500">
+                  {priceSuffix}
+                </span>
+              ) : null}
+            </div>
           </div>
+          {defaultOption ? (
+            <MembershipTaxCaption
+              priceCents={defaultOption.priceCents}
+              taxCents={defaultOption.taxCents}
+              taxRateBps={defaultOption.taxRateBps}
+            />
+          ) : null}
         </div>
 
         {plan.cadenceOptions.length > 0 ? (

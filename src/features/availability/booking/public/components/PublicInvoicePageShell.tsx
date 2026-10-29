@@ -9,6 +9,7 @@ import {
   type InvoiceSnapshotLine,
 } from '@/features/availability/booking/server/buildInvoiceSnapshot';
 import { invoiceCoveredByMembership } from '@/features/availability/booking/utils/invoiceCoveredByMembership';
+import { formatSalesTaxRateLabel } from '@/features/payments/utils/salesTaxRate';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import {
   groupInvoiceSnapshotLines,
@@ -545,6 +546,19 @@ export function PublicInvoicePageShell({
               </>
             )}
           </div>
+
+          {(snapshot.totals.taxCents ?? 0) > 0 ? (
+            <div className="flex items-center justify-between gap-4 border-t border-[#ebe8e1] px-5 py-3 text-[13px] sm:px-6 md:px-8 dark:border-[#2a2a2a]">
+              <span className="text-[#888480]">
+                {snapshot.totals.taxRateBps
+                  ? `Tax (${formatSalesTaxRateLabel(snapshot.totals.taxRateBps)})`
+                  : 'Tax'}
+              </span>
+              <span className="tabular-nums text-[#0f0f0f] dark:text-white">
+                {formatCents(snapshot.totals.taxCents ?? 0)}
+              </span>
+            </div>
+          ) : null}
 
           <VisitSummary
             customerName={snapshot.customer.name}

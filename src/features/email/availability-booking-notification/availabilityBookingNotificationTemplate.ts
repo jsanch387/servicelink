@@ -170,11 +170,17 @@ function buildMultiJobPricingRowsHtml(
       ? payload.discount
       : null;
 
+  const salesTax =
+    payload.salesTax != null && payload.salesTax.taxCents > 0
+      ? payload.salesTax
+      : null;
+
   if (appointmentDiscount) {
     const visitEstimated =
       appointmentDiscount.estimatedTotalCents >= 0
         ? appointmentDiscount.estimatedTotalCents
         : Math.max(0, grossForDisplay - appointmentDiscount.discountCents);
+    const totalCents = visitEstimated + (salesTax?.taxCents ?? 0);
     return [
       serviceLinkEmailPriceLineRow(
         'Subtotal',
@@ -184,13 +190,30 @@ function buildMultiJobPricingRowsHtml(
         appointmentDiscount.label,
         `-${formatPriceCents(appointmentDiscount.discountCents)}`
       ),
-      serviceLinkEmailPriceTotalRow('Total', formatPriceCents(visitEstimated)),
+      ...(salesTax
+        ? [
+            serviceLinkEmailPriceLineRow(
+              salesTax.label,
+              formatPriceCents(salesTax.taxCents)
+            ),
+          ]
+        : []),
+      serviceLinkEmailPriceTotalRow('Total', formatPriceCents(totalCents)),
     ].join('');
   }
 
+  const totalCents = grossForDisplay + (salesTax?.taxCents ?? 0);
   return [
     serviceLinkEmailPriceLineRow('Subtotal', formatPriceCents(grossForDisplay)),
-    serviceLinkEmailPriceTotalRow('Total', formatPriceCents(grossForDisplay)),
+    ...(salesTax
+      ? [
+          serviceLinkEmailPriceLineRow(
+            salesTax.label,
+            formatPriceCents(salesTax.taxCents)
+          ),
+        ]
+      : []),
+    serviceLinkEmailPriceTotalRow('Total', formatPriceCents(totalCents)),
   ].join('');
 }
 
@@ -334,13 +357,21 @@ export function buildAvailabilityBookingEmailHtml(
     ? formatPriceCents(payload.servicePriceCents!)
     : null;
 
-  const totalLabel =
+  const salesTax =
+    payload.salesTax != null && payload.salesTax.taxCents > 0
+      ? payload.salesTax
+      : null;
+  const priceBeforeTaxCents =
     payload.discount != null && payload.discount.estimatedTotalCents >= 0
-      ? formatPriceCents(payload.discount.estimatedTotalCents)
+      ? payload.discount.estimatedTotalCents
       : payload.totalPriceCents != null &&
           Number.isFinite(payload.totalPriceCents)
-        ? formatPriceCents(payload.totalPriceCents)
+        ? payload.totalPriceCents
         : null;
+  const totalLabel =
+    priceBeforeTaxCents != null
+      ? formatPriceCents(priceBeforeTaxCents + (salesTax?.taxCents ?? 0))
+      : null;
 
   const discountForEmail =
     payload.discount != null && payload.discount.discountCents > 0
@@ -447,8 +478,16 @@ export function buildAvailabilityBookingEmailHtml(
         optionLabel: optionLabel || undefined,
         lineItems: serviceLineItems,
         totalLabel:
-          serviceLineItems.length > 0 || discountForEmail ? totalLabel : null,
+          serviceLineItems.length > 0 || discountForEmail || salesTax
+            ? totalLabel
+            : null,
         discount: discountForEmail,
+        salesTax: salesTax
+          ? {
+              label: salesTax.label,
+              amountLabel: formatPriceCents(salesTax.taxCents),
+            }
+          : null,
       })
     );
   }

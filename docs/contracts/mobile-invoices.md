@@ -76,7 +76,7 @@ Do not select `public_token` or `short_code` for the list. Do not read `invoice_
 | `customer_name`  | text         | Trimmed, or `Untitled` if blank                                                   |
 | `invoice_number` | int or null  | `#1001`, or `—` when null. Drafts have no number. Numbers start at 1001 when sent |
 | `due_on`         | date or null | `Mon D, YYYY`. Parse `YYYY-MM-DD` at noon. Null → `No due date`                   |
-| `total_cents`    | int ≥ 0      | USD (`cents / 100`)                                                               |
+| `total_cents`    | int ≥ 0      | USD (`cents / 100`). The amount of the bill, including tax when the bill has tax. |
 | `created_at`     | timestamptz  | Sort only. Do not display                                                         |
 
 An empty shop is `data: []`. On `error`, show a retry.
@@ -155,7 +155,7 @@ const { data: lines, error: lineError } = await supabase
 const { data: invoice, error } = await supabase
   .from('invoices')
   .select(
-    'id, status, invoice_number, customer_name, customer_email, customer_phone, due_on, note, total_cents'
+    'id, status, invoice_number, customer_name, customer_email, customer_phone, due_on, note, subtotal_cents, tax_cents, tax_rate_bps, total_cents'
   )
   .eq('id', invoiceId)
   .eq('business_id', businessId)
@@ -197,18 +197,21 @@ Money is integer cents. Show USD with `cents / 100`.
 
 Email and phone live on `invoices`. They are copies. Do not join `customers`. `customer_id` can be null and is not used on this screen.
 
-`invoices.subtotal_cents` and `invoices.total_cents` are both ints and are stored as the same number: the sum of line `amount_cents`. The bill does not select `subtotal_cents`. It prints `total_cents` twice:
+Line prices stay pre-tax. `subtotal_cents` is the sum of line `amount_cents`. `tax_cents` is added once. `total_cents` is `subtotal_cents + tax_cents`. `tax_rate_bps` is the frozen rate (`825` is 8.25%). Both tax columns are `0` when the bill has no tax.
 
-| Label      | When   | Amount                                                                 |
-| ---------- | ------ | ---------------------------------------------------------------------- |
-| Subtotal   | always | `total_cents`                                                          |
-| Amount due | `sent` | `total_cents`                                                          |
-| Paid       | `paid` | `total_cents` (the full bill, not a payment applied against a balance) |
-| Void       | `void` | `total_cents`                                                          |
+Show a tax row only when `tax_cents > 0`. The label is `Tax (8.25%)` from `tax_rate_bps`, or `Tax` when the rate is missing. Do not send tax in the save body. The server writes it.
+
+| Label      | When            | Amount                                                                 |
+| ---------- | --------------- | ---------------------------------------------------------------------- |
+| Subtotal   | always          | `subtotal_cents`                                                       |
+| Tax        | `tax_cents > 0` | `tax_cents`                                                            |
+| Amount due | `sent`          | `total_cents`                                                          |
+| Paid       | `paid`          | `total_cents` (the full bill, not a payment applied against a balance) |
+| Void       | `void`          | `total_cents`                                                          |
 
 The status pill says `Paid`, `Void`, or `Unpaid`. A `sent` bill is `Unpaid`.
 
-There is no tax column, no discount column, and no amount paid or balance due. Do not subtract anything from `total_cents`. A booking discount, if there was one, was already taken off the line prices before the invoice was saved. `payment_method` and `paid_at` are not shown here.
+There is no discount column, and no amount paid or balance due. Do not subtract anything from `total_cents`. A booking discount, if there was one, was already taken off the line prices before the invoice was saved. An appointment that already stored tax keeps that rate. The server does not tax it again from the current shop settings. `payment_method` and `paid_at` are not shown here.
 
 ---
 
@@ -279,7 +282,7 @@ One call creates the invoice when `invoiceId` is omitted, or updates that draft 
 
 What the server does:
 
-1. Insert a draft, or replace the existing draft’s customer, note, due date, and lines.
+1. Insert a draft, or replace the existing draft’s customer, note, due date, and lines. Line prices stay pre-tax. The server adds sales tax once and stores it on `tax_cents`, `tax_rate_bps`, and `total_cents`.
 2. On the first send, assign `invoice_number` (from 1001), mint `short_code`, set `status` to `sent`, and set `sent_at`.
 3. If `bookingId` points at an appointment that is already paid, mark this invoice `paid` and record `payment_method`. The customer email then says amount paid.
 4. Email when `customerEmail` is set. Text when `customerPhone` is set. Either channel can fail without rolling the invoice back.

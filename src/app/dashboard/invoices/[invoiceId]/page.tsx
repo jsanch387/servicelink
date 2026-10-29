@@ -5,6 +5,7 @@ import { InvoiceBillScreen } from '@/features/invoices/components/InvoiceBillScr
 import { InvoiceBillSkeleton } from '@/features/invoices/components/InvoiceBillSkeleton';
 import { loadInvoiceBill } from '@/features/invoices/server/loadInvoiceBill';
 import { loadInvoiceDraft } from '@/features/invoices/server/loadInvoiceDraft';
+import { loadInvoiceTaxPreview } from '@/features/invoices/server/loadInvoiceTaxPreview';
 import { isOwnerEmailAllowedForInvoicesRollout } from '@/features/invoices/config/invoicesRolloutAllowlist';
 import { loadInvoiceEditorKind } from '@/features/invoices/server/loadInvoiceEditorKind';
 import { businessCanUseInvoices } from '@/features/invoices/server/requireInvoicePro';
@@ -88,6 +89,11 @@ async function InvoiceEditor({
 }) {
   const loaded = await loadInvoiceDraft(supabase, businessId, invoiceId);
   if (!loaded.ok) redirect(ROUTES.DASHBOARD.INVOICES);
+  const salesTax = await loadInvoiceTaxPreview(
+    supabase,
+    businessId,
+    loaded.bookingId
+  );
 
   const { data: businessRow } = await supabase
     .from('business_profiles')
@@ -104,6 +110,9 @@ async function InvoiceEditor({
       businessName={businessName}
       invoiceId={invoiceId}
       initialDraft={loaded.draft}
+      bookingId={loaded.bookingId}
+      salesTaxEnabled={salesTax.salesTaxEnabled}
+      salesTaxRateBps={salesTax.salesTaxRateBps}
     />
   );
 }

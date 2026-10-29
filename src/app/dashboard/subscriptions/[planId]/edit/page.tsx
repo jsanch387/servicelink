@@ -3,6 +3,7 @@ import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelper
 import { CreateSubscriptionPlanPage } from '@/features/subscriptions';
 import { getMembershipPlanForBusiness } from '@/features/subscriptions/server/getMembershipPlan';
 import { loadMembershipsAccess } from '@/features/subscriptions/server/loadMembershipsAccess';
+import { loadMembershipShopTax } from '@/features/subscriptions/server/membershipSalesTax';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { notFound, redirect } from 'next/navigation';
@@ -63,5 +64,17 @@ export default async function EditSubscriptionPlanPage({
     notFound();
   }
 
-  return <CreateSubscriptionPlanPage mode="edit" initialPlan={plan} />;
+  const shopTax = await loadMembershipShopTax(
+    supabase,
+    businessResolved.businessId
+  );
+
+  return (
+    <CreateSubscriptionPlanPage
+      mode="edit"
+      initialPlan={plan}
+      salesTaxEnabled={shopTax.taxEnabled}
+      salesTaxRateBps={shopTax.taxRateBps}
+    />
+  );
 }

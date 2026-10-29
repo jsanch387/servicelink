@@ -1,7 +1,7 @@
 /** Official Stripe Standard US pricing. https://stripe.com/pricing */
 export const STRIPE_PRICING_URL = 'https://stripe.com/pricing';
 
-export const STRIPE_PROCESSING_FEE_TITLE = 'Stripe charges';
+export const STRIPE_PROCESSING_FEE_TITLE = 'Stripe fees';
 
 export const STRIPE_FEE_RATES = [
   { id: 'online', label: 'Cards', value: '2.9% + 30¢' },

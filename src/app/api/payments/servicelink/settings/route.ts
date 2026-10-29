@@ -2,7 +2,7 @@
  * PATCH /api/payments/servicelink/settings
  *
  * Owner updates `payment_settings` for the current business (checkout mode,
- * deposits, or turning ServiceLink payments off). Requires Pro and a
+ * deposits, sales tax, or turning ServiceLink payments off). Requires Pro and a
  * `payment_settings` row (created when payments were first enabled).
  */
 
@@ -10,6 +10,7 @@ import { getHasProAccessForPayments } from '@/features/payments/server/getHasPro
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import type { CheckoutPaymentMode } from '@/features/payments/types/checkoutPaymentMode';
+import { MAX_SALES_TAX_PERCENT } from '@/features/payments/utils/salesTaxRate';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextRequest, NextResponse } from 'next/server';
@@ -75,6 +76,8 @@ export async function PATCH(request: NextRequest) {
     const depositsEnabled = raw.depositsEnabled;
     const depositType = raw.depositType;
     const depositValue = raw.depositValue;
+    const taxEnabled = raw.taxEnabled;
+    const taxRateBps = raw.taxRateBps;
 
     const patch: Record<string, unknown> = {
       updated_by: user.id,
@@ -171,6 +174,53 @@ export async function PATCH(request: NextRequest) {
         patch.deposit_type = 'fixed';
         patch.deposit_value = cents;
       }
+    }
+
+    const maxTaxRateBps = MAX_SALES_TAX_PERCENT * 100;
+    if (taxRateBps !== undefined) {
+      if (
+        typeof taxRateBps !== 'number' ||
+        !Number.isInteger(taxRateBps) ||
+        taxRateBps < 0 ||
+        taxRateBps > maxTaxRateBps
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Sales tax rate must be 0.01–${MAX_SALES_TAX_PERCENT}%`,
+          },
+          { status: 400 }
+        );
+      }
+      patch.tax_rate_bps = taxRateBps;
+    }
+
+    if (typeof taxEnabled === 'boolean') {
+      const nextTaxRateBps = patch.tax_rate_bps;
+      if (
+        taxEnabled &&
+        (typeof nextTaxRateBps !== 'number' || nextTaxRateBps < 1)
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Enter a sales tax rate up to ${MAX_SALES_TAX_PERCENT}%`,
+          },
+          { status: 400 }
+        );
+      }
+      if (!taxEnabled && taxRateBps === 0) {
+        return NextResponse.json(
+          { success: false, error: 'Sales tax rate must stay above zero' },
+          { status: 400 }
+        );
+      }
+      patch.tax_enabled = taxEnabled;
+    } else if (taxRateBps === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Sales tax rate must stay above zero' },
+        { status: 400 }
+      );
     }
 
     const keys = Object.keys(patch).filter(k => k !== 'updated_by');

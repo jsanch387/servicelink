@@ -43,6 +43,9 @@ export interface CreateAppointmentWizardProps {
   serviceLocation: PublicBookingServiceLocation;
   activeSale?: PublicActiveSale | null;
   membershipVisit?: MembershipVisitPrefill | null;
+  /** Business sales tax. Off leaves every total unchanged. */
+  salesTaxEnabled?: boolean;
+  salesTaxRateBps?: number;
 }
 
 export function CreateAppointmentWizard({
@@ -55,6 +58,8 @@ export function CreateAppointmentWizard({
   serviceLocation,
   activeSale = null,
   membershipVisit = null,
+  salesTaxEnabled = false,
+  salesTaxRateBps = 0,
 }: CreateAppointmentWizardProps) {
   const router = useRouter();
   const ctrl = useCreateAppointmentController({
@@ -280,6 +285,8 @@ export function CreateAppointmentWizard({
         onAddAnotherJob={addAnotherJob}
         addAnotherDisabled={!addJobGate.ok || isSubmitting}
         membershipCovered={Boolean(membershipId)}
+        salesTaxEnabled={salesTaxEnabled}
+        salesTaxRateBps={salesTaxRateBps}
       />
     );
   }
@@ -322,6 +329,8 @@ export function CreateAppointmentWizard({
             <SelectionSummaryCard
               draft={draft}
               membershipCovered={Boolean(membershipId)}
+              salesTaxEnabled={salesTaxEnabled}
+              salesTaxRateBps={salesTaxRateBps}
             />
           </div>
         ) : null}

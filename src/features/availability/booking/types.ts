@@ -69,6 +69,10 @@ export interface PublicBookingPaymentSettings {
   depositType: 'fixed' | 'percent';
   depositValue: number;
   currency: string;
+  /** Sales tax switch from payment settings. */
+  taxEnabled: boolean;
+  /** Hundredths of a percent. 8.25% is 825. */
+  taxRateBps: number;
 }
 
 export interface AvailabilityBookingPageProps {

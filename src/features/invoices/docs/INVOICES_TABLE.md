@@ -16,7 +16,7 @@ Behavior, routes, and the paid notification: [README.md](./README.md).
 
 Customer name, email, and phone are copied onto the bill. `due_on` empty means due on receipt. `invoice_number` and `short_code` stay empty until send. `public_token` is the secret for the customer link. `short_code` is the public `/b/{code}` path.
 
-Line `amount_cents` must equal `quantity * unit_amount_cents`. `subtotal_cents` and `total_cents` store that same sum.
+Line `amount_cents` must equal `quantity * unit_amount_cents`. `subtotal_cents` is that sum. `tax_cents` is added once on top. `total_cents` is `subtotal_cents + tax_cents`.
 
 ## `invoices` columns
 
@@ -35,8 +35,10 @@ Line `amount_cents` must equal `quantity * unit_amount_cents`. `subtotal_cents` 
 | `note`               | Text or null                                                            |
 | `currency`           | Text, USD in the product                                                |
 | `due_on`             | Date or null. Parse `YYYY-MM-DD` at noon.                               |
-| `subtotal_cents`     | Int, same as `total_cents`                                              |
-| `total_cents`        | Int. The bill prints this as subtotal and as the amount.                |
+| `subtotal_cents`     | Int. Sum of the line amounts, before tax.                               |
+| `tax_rate_bps`       | Int. Frozen rate. `825` is 8.25%. `0` when the bill has no tax.         |
+| `tax_cents`          | Int. Tax added once. Included in `total_cents`.                         |
+| `total_cents`        | Int. Amount due, including tax.                                         |
 | `public_token`       | Secret. Do not select it for the owner list.                            |
 | `short_code`         | Public link code, or null until send.                                   |
 | `sent_at`            | Set on first send                                                       |
@@ -46,7 +48,7 @@ Line `amount_cents` must equal `quantity * unit_amount_cents`. `subtotal_cents` 
 | `created_at`         | Sort key for the list. Not displayed.                                   |
 | `updated_at`         | Row timestamp                                                           |
 
-`payment_method` check: [`migrations/002_invoices_payment_method.sql`](./migrations/002_invoices_payment_method.sql).
+`payment_method` check: [`migrations/002_invoices_payment_method.sql`](./migrations/002_invoices_payment_method.sql). Sales tax: [`migrations/003_invoices_sales_tax.sql`](./migrations/003_invoices_sales_tax.sql).
 
 ## Access
 

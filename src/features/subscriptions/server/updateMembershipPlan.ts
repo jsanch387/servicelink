@@ -17,6 +17,10 @@ import {
   supabaseErrorForLogs,
 } from './membershipsTransactionLog';
 import {
+  loadMembershipShopTax,
+  membershipTaxColumns,
+} from './membershipSalesTax';
+import {
   archiveRemovedMembershipStripePrices,
   syncMembershipPlanStripeCatalog,
 } from './syncMembershipPlanStripeCatalog';
@@ -157,6 +161,7 @@ export async function updateMembershipPlanForBusiness(
     };
   }
 
+  const shopTax = await loadMembershipShopTax(supabase, businessId);
   const updatedPrices: PriceRow[] = [];
 
   for (let index = 0; index < input.cadenceOptions.length; index += 1) {
@@ -168,6 +173,7 @@ export async function updateMembershipPlanForBusiness(
     if (existing) {
       const priceUpdate = {
         price_cents: option.priceCents,
+        ...membershipTaxColumns(option.priceCents, shopTax),
         is_default: isDefault,
       } satisfies PriceUpdate;
 
@@ -194,6 +200,7 @@ export async function updateMembershipPlanForBusiness(
         interval_unit: option.intervalUnit,
         interval_count: option.intervalCount,
         price_cents: option.priceCents,
+        ...membershipTaxColumns(option.priceCents, shopTax),
         currency: 'usd',
         is_default: isDefault,
       } satisfies PriceInsert;

@@ -29,6 +29,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { quotePublicBookingSalesTax } from '@/features/availability/booking/utils/publicBookingSalesTax';
 import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
 import type { SubscriptionCadenceOption } from '../types/customerSubscriptionPlan';
 import {
@@ -43,6 +44,7 @@ import {
   formatSubscriptionPriceCents,
 } from '../utils/formatSubscriptionPrice';
 import { planDescriptionForDisplay } from '../utils/planDescription';
+import { MembershipTaxCaption } from './MembershipTaxCaption';
 import { SubscriptionPlanReadySuccess } from './SubscriptionPlanReadySuccess';
 
 const CREATE_STEP_META: Record<
@@ -96,11 +98,19 @@ function hydrateOptions(
 interface CreateSubscriptionPlanPageProps {
   mode?: 'create' | 'edit';
   initialPlan?: OwnerSubscriptionPlan;
+  /** Live shop rate so the preview updates as the price is typed. Save recomputes. */
+  salesTaxEnabled?: boolean;
+  salesTaxRateBps?: number;
 }
 
 export const CreateSubscriptionPlanPage: React.FC<
   CreateSubscriptionPlanPageProps
-> = ({ mode = 'create', initialPlan }) => {
+> = ({
+  mode = 'create',
+  initialPlan,
+  salesTaxEnabled = false,
+  salesTaxRateBps = 0,
+}) => {
   const router = useRouter();
   const isEdit = mode === 'edit' && Boolean(initialPlan);
   const backHref = isEdit
@@ -431,6 +441,20 @@ export const CreateSubscriptionPlanPage: React.FC<
                                 )}
                                 {formatCadencePriceSuffix(option)}
                               </p>
+                              <MembershipTaxCaption
+                                priceCents={option.priceCents}
+                                taxCents={
+                                  quotePublicBookingSalesTax({
+                                    priceAfterDiscountCents: option.priceCents,
+                                    taxEnabled: salesTaxEnabled,
+                                    taxRateBps: salesTaxRateBps,
+                                  }).taxCents
+                                }
+                                taxRateBps={
+                                  salesTaxEnabled ? salesTaxRateBps : 0
+                                }
+                                align="start"
+                              />
                             </div>
                             <button
                               type="button"

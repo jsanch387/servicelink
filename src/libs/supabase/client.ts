@@ -825,6 +825,8 @@ export type Database = {
           interval_unit: string;
           interval_count: number;
           price_cents: number;
+          tax_rate_bps: number;
+          tax_cents: number;
           currency: string;
           is_default: boolean;
           stripe_price_id: string | null;
@@ -838,6 +840,8 @@ export type Database = {
           interval_unit: string;
           interval_count: number;
           price_cents: number;
+          tax_rate_bps?: number;
+          tax_cents?: number;
           currency?: string;
           is_default?: boolean;
           stripe_price_id?: string | null;
@@ -851,6 +855,8 @@ export type Database = {
           interval_unit?: string;
           interval_count?: number;
           price_cents?: number;
+          tax_rate_bps?: number;
+          tax_cents?: number;
           currency?: string;
           is_default?: boolean;
           stripe_price_id?: string | null;
@@ -1247,6 +1253,9 @@ export type Database = {
           updated_at: string;
           /** When false, ServiceLink checkout is off; Stripe may still be connected. */
           payments_enabled: boolean;
+          tax_enabled: boolean;
+          /** Hundredths of a percent. `825` is 8.25%. */
+          tax_rate_bps: number;
         };
         Insert: {
           id?: string;
@@ -1262,6 +1271,8 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           payments_enabled?: boolean;
+          tax_enabled?: boolean;
+          tax_rate_bps?: number;
         };
         Update: {
           id?: string;
@@ -1277,6 +1288,8 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           payments_enabled?: boolean;
+          tax_enabled?: boolean;
+          tax_rate_bps?: number;
         };
       };
       payment_requests: {

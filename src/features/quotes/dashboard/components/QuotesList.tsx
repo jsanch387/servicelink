@@ -1,6 +1,7 @@
 'use client';
 
 import { ROUTES } from '@/constants/routes';
+import { quoteAmountDueCents } from '@/features/quotes/shared/quoteSalesTax';
 import { splitQuoteServiceDisplayName } from '@/features/quotes/shared/quoteServiceSnapshot';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -31,7 +32,11 @@ function serviceLabel(quote: DashboardQuote): string {
 }
 
 function amountLabel(quote: DashboardQuote): string {
-  if (quote.totalCents > 0) return formatQuoteCurrency(quote.totalCents);
+  if (quote.totalCents > 0) {
+    return formatQuoteCurrency(
+      quoteAmountDueCents(quote.totalCents, quote.taxCents ?? 0)
+    );
+  }
   return 'Price TBD';
 }
 

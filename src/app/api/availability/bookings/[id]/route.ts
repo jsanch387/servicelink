@@ -39,7 +39,7 @@ async function loadPaymentRowForBooking(
   const { data } = await (supabase as any)
     .from('booking_payments')
     .select(
-      'payment_status, payment_method_selected, currency, total_amount_cents, paid_online_amount_cents, remaining_amount_cents'
+      'payment_status, payment_method_selected, currency, total_amount_cents, paid_online_amount_cents, remaining_amount_cents, tax_cents, tax_rate_bps'
     )
     .eq('booking_id', bookingId)
     .maybeSingle();
@@ -51,6 +51,8 @@ async function loadPaymentRowForBooking(
     total_amount_cents: number | null;
     paid_online_amount_cents: number | null;
     remaining_amount_cents: number | null;
+    tax_cents?: number | null;
+    tax_rate_bps?: number | null;
   } | null;
 }
 

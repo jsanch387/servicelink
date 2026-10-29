@@ -85,7 +85,9 @@ Table: `public.quotes`
 | `vehicle_model`             | text                  |      yes | Optional snapshot of car 1. Mirrors `vehicles[0]`.                                                                               |
 | `assets`                    | jsonb                 |      yes | Snapshot array `{ type, label, attributes }` (vehicle, pet, later others). First vehicle also mirrors `vehicle_*`.               |
 | `service_name`              | text                  |      yes | Nullable during request-stage; required once quote is sent/later. Catalog: `Name` or `Name — Option` (add-ons stored separately) |
-| `price_cents`               | integer               |      yes | Total price (service + add-ons); required once quote is sent/later                                                               |
+| `price_cents`               | integer               |      yes | Quoted price before tax (service + add-ons); required once quote is sent/later                                                   |
+| `tax_rate_bps`              | integer               |       no | Frozen rate. `825` is 8.25%. `0` when the quote has no tax. Default `0`.                                                         |
+| `tax_cents`                 | integer               |       no | Tax added once on `price_cents`. The customer pays `price_cents + tax_cents`. Default `0`.                                       |
 | `duration_minutes`          | integer               |      yes | Nullable during request-stage; required once quote is sent/later                                                                 |
 | `service_id`                | uuid                  |      yes | Optional FK/snapshot to catalog `services.id` when quote used a saved service                                                    |
 | `service_price_option_id`   | uuid                  |      yes | Optional catalog price option id                                                                                                 |

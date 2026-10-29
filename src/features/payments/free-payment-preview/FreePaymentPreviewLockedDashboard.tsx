@@ -2,36 +2,15 @@
 
 import { PaymentsCheckoutOptionsCard } from '@/features/payments/components/PaymentsCheckoutOptionsCard';
 import { PaymentsDepositSettingsCard } from '@/features/payments/components/PaymentsDepositSettingsCard';
-import React from 'react';
+import { PaymentsTaxSettingsCard } from '@/features/payments/components/PaymentsTaxSettingsCard';
+import type { CheckoutPaymentMode } from '@/features/payments/types/checkoutPaymentMode';
+import type { DepositAmountMode } from '@/features/payments/types/depositAmountMode';
+import React, { useState } from 'react';
 import { LockedPaymentPreviewSection } from './LockedPaymentPreviewSection';
-
-type PreviewSectionConfig = {
-  id: string;
-  lockedLabel: string;
-  content: React.ReactNode;
-};
-
-const FREE_PAYMENTS_PREVIEW_SECTIONS: PreviewSectionConfig[] = [
-  {
-    id: 'checkout',
-    lockedLabel: 'Checkout options (preview, locked)',
-    content: <PaymentsCheckoutOptionsCard initialCheckoutMode={null} />,
-  },
-  {
-    id: 'deposits',
-    lockedLabel: 'Deposit settings (preview, locked)',
-    content: (
-      <PaymentsDepositSettingsCard
-        initialDepositsEnabled={false}
-        initialDepositType="percent"
-        initialDepositValue={0}
-      />
-    ),
-  },
-];
 
 export interface FreePaymentPreviewLockedDashboardProps {
   className?: string;
+  showSalesTaxCard?: boolean;
 }
 
 /**
@@ -40,18 +19,49 @@ export interface FreePaymentPreviewLockedDashboardProps {
  */
 export const FreePaymentPreviewLockedDashboard: React.FC<
   FreePaymentPreviewLockedDashboardProps
-> = ({ className }) => {
+> = ({ className, showSalesTaxCard = false }) => {
+  const [checkoutMode, setCheckoutMode] = useState<CheckoutPaymentMode | null>(
+    null
+  );
+  const [depositsEnabled, setDepositsEnabled] = useState(false);
+  const [depositMode, setDepositMode] =
+    useState<DepositAmountMode>('percentage');
+  const [depositAmount, setDepositAmount] = useState('0');
+  const [collectTax, setCollectTax] = useState(false);
+  const [taxRate, setTaxRate] = useState('');
+
   const rootClass = ['space-y-8 sm:space-y-10', className]
     .filter(Boolean)
     .join(' ');
 
   return (
     <div className={rootClass}>
-      {FREE_PAYMENTS_PREVIEW_SECTIONS.map(({ id, lockedLabel, content }) => (
-        <LockedPaymentPreviewSection key={id} lockedLabel={lockedLabel}>
-          {content}
+      <LockedPaymentPreviewSection lockedLabel="Checkout options (preview, locked)">
+        <PaymentsCheckoutOptionsCard
+          checkoutMode={checkoutMode}
+          onCheckoutModeChange={setCheckoutMode}
+        />
+      </LockedPaymentPreviewSection>
+      <LockedPaymentPreviewSection lockedLabel="Deposit settings (preview, locked)">
+        <PaymentsDepositSettingsCard
+          depositsEnabled={depositsEnabled}
+          onDepositsEnabledChange={setDepositsEnabled}
+          depositMode={depositMode}
+          onDepositModeChange={setDepositMode}
+          depositAmount={depositAmount}
+          onDepositAmountChange={setDepositAmount}
+        />
+      </LockedPaymentPreviewSection>
+      {showSalesTaxCard ? (
+        <LockedPaymentPreviewSection lockedLabel="Sales tax (preview, locked)">
+          <PaymentsTaxSettingsCard
+            collectTax={collectTax}
+            onCollectTaxChange={setCollectTax}
+            taxRate={taxRate}
+            onTaxRateChange={setTaxRate}
+          />
         </LockedPaymentPreviewSection>
-      ))}
+      ) : null}
     </div>
   );
 };

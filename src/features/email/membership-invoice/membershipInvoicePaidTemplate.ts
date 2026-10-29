@@ -29,6 +29,11 @@ export function buildMembershipInvoicePaidPlainText(
     `Plan: ${plan}`,
     `Schedule: ${payload.cadenceLabel.trim() || 'Recurring'}`,
     `Period: ${payload.periodLabel.trim() || '—'}`,
+    ...(payload.salesTax && payload.salesTax.taxCents > 0
+      ? [
+          `${payload.salesTax.label}: ${formatInvoiceMoney(payload.salesTax.taxCents)}`,
+        ]
+      : []),
     `Paid: ${payload.eventDateLabel.trim() || '—'}`,
     '',
     'Manage membership:',
@@ -56,6 +61,7 @@ export function buildMembershipInvoicePaidHtml(
     periodLabel: payload.periodLabel,
     eventDateLabel: payload.eventDateLabel,
     eventDateLabelKey: 'Paid',
+    salesTax: payload.salesTax,
   });
 
   return `

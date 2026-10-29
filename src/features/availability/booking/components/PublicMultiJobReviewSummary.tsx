@@ -45,6 +45,8 @@ export type PublicMultiJobReviewSummaryProps = {
   saleEstimatedTotalCents?: number;
   saleDiscountCents?: number;
   saleAppliesLine?: string | null;
+  salesTaxCents?: number;
+  salesTaxLabel?: string | null;
   canAddAnotherJob?: boolean;
   onAddAnotherJob?: () => void;
   addAnotherLabel?: string;
@@ -69,6 +71,8 @@ export function PublicMultiJobReviewSummary({
   saleEstimatedTotalCents,
   saleDiscountCents,
   saleAppliesLine,
+  salesTaxCents,
+  salesTaxLabel,
   canAddAnotherJob = false,
   onAddAnotherJob,
   addAnotherLabel,
@@ -96,9 +100,11 @@ export function PublicMultiJobReviewSummary({
     saleEstimatedTotalCents != null &&
     saleEstimatedTotalCents < saleSubtotalCents;
 
-  const visitTotalCents = showSalePricing
-    ? saleEstimatedTotalCents!
-    : visitSubtotalCents;
+  const showSalesTax =
+    salesTaxCents != null && salesTaxCents > 0 && Boolean(salesTaxLabel);
+  const visitTotalCents =
+    (showSalePricing ? saleEstimatedTotalCents! : visitSubtotalCents) +
+    (showSalesTax ? salesTaxCents! : 0);
 
   const dateFormatted = new Date(
     `${scheduledDateYmd}T12:00:00`
@@ -243,6 +249,14 @@ export function PublicMultiJobReviewSummary({
               ) : null}
               <div className="h-px bg-white/10" aria-hidden />
             </>
+          ) : null}
+          {showSalesTax ? (
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="text-zinc-400">{salesTaxLabel}</span>
+              <span className="tabular-nums text-zinc-300">
+                {formatCatalogPriceCents(salesTaxCents!)}
+              </span>
+            </div>
           ) : null}
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-semibold text-white">

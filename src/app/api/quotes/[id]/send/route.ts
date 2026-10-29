@@ -15,6 +15,7 @@ import {
   shortUserIdForLog,
   supabaseErrorForLogs,
 } from '@/features/quotes/server/quoteSendRouteLog';
+import { loadQuoteSalesTax } from '@/features/quotes/server/loadQuoteSalesTax';
 import { resolveQuotePaymentSnapshot } from '@/features/quotes/server/quotePaymentSnapshot';
 import { sendExistingQuoteAsSent } from '@/features/quotes/server/sendExistingQuoteAsSent';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
@@ -200,9 +201,14 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ||
       request.nextUrl.origin;
 
+    const salesTax = await loadQuoteSalesTax(
+      admin,
+      resolved.businessId,
+      parsed.data.priceCents
+    );
     const payment = await resolveQuotePaymentSnapshot(admin, {
       businessId: resolved.businessId,
-      priceCents: parsed.data.priceCents,
+      priceCents: salesTax.totalCents,
       requested: parsed.data.paymentCollection,
     });
     if (!payment.ok) {
@@ -221,6 +227,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       businessDisplayName,
       payload: parsed.data,
       payment: payment.snapshot,
+      salesTax,
       siteOrigin,
     });
 

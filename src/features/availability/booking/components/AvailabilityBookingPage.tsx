@@ -45,6 +45,12 @@ import {
 } from '../utils/buildPublicMultiJobBookingBody';
 import { clientBookingTimeZone } from '../utils/clientBookingTimeZone';
 import {
+  depositDueNowCents,
+  onlineAmountDueNowCents,
+  quotePublicBookingSalesTax,
+} from '../utils/publicBookingSalesTax';
+import { formatSalesTaxRateLabel } from '@/features/payments/utils/salesTaxRate';
+import {
   loadPublicBookingJobsCart,
   persistPublicBookingJobsCartJobs,
   publicBookingJobDisplayName,
@@ -150,12 +156,12 @@ function getDepositDueNowCents(
   paymentSettings: PublicBookingPaymentSettings,
   totalPriceCents: number
 ): number {
-  if (!paymentSettings.depositsEnabled) return totalPriceCents;
-  if (paymentSettings.depositType === 'fixed') {
-    return Math.min(totalPriceCents, Math.max(0, paymentSettings.depositValue));
-  }
-  const percent = Math.min(100, Math.max(0, paymentSettings.depositValue));
-  return Math.round((totalPriceCents * percent) / 100);
+  return depositDueNowCents({
+    depositsEnabled: paymentSettings.depositsEnabled,
+    depositType: paymentSettings.depositType,
+    depositValue: paymentSettings.depositValue,
+    totalCents: totalPriceCents,
+  });
 }
 
 /** Card amount due now (full pay path vs deposit path). Single source for CTA + checkout. */
@@ -165,20 +171,16 @@ function computeOnlineAmountDueNowCents(
   customerPaymentChoice: PaymentChoice | null,
   totalPriceCents: number
 ): number {
-  if (!paymentSettingsEnabled || !paymentSettings) return 0;
-  const safeTotal = Number.isFinite(totalPriceCents)
-    ? Math.max(0, totalPriceCents)
-    : 0;
-  const configuredDeposit = getDepositDueNowCents(paymentSettings, safeTotal);
-  const requiresDepositNow =
-    paymentSettings.depositsEnabled === true && configuredDeposit > 0;
-  const requiresPayNow =
-    paymentSettings.checkoutMode === 'in_app' ||
-    (paymentSettings.checkoutMode === 'customer_choice' &&
-      customerPaymentChoice === 'pay_now');
-  if (requiresPayNow) return safeTotal;
-  if (requiresDepositNow) return configuredDeposit;
-  return 0;
+  if (!paymentSettings) return 0;
+  return onlineAmountDueNowCents({
+    paymentsEnabled: paymentSettingsEnabled,
+    checkoutMode: paymentSettings.checkoutMode,
+    depositsEnabled: paymentSettings.depositsEnabled,
+    depositType: paymentSettings.depositType,
+    depositValue: paymentSettings.depositValue,
+    customerPaymentChoice,
+    totalCents: totalPriceCents,
+  });
 }
 
 /** Frontend checkout debug logs disabled in production/local builds (server logs only). */
@@ -819,6 +821,8 @@ export function AvailabilityBookingPage({
     paidOnlineAmountCents: number;
     remainingAmountCents: number;
     totalAmountCents: number;
+    taxCents: number;
+    taxRateBps: number;
     serviceName: string;
     scheduledDate: string;
     startTime: string;
@@ -865,8 +869,34 @@ export function AvailabilityBookingPage({
    */
   const shouldShowPaymentStep =
     paymentSettingsEnabled && hasCheckoutModeConfigured;
+  const requiresPayNow =
+    paymentSettings?.checkoutMode === 'in_app' ||
+    (paymentSettings?.checkoutMode === 'customer_choice' &&
+      customerPaymentChoice === 'pay_now');
+  /** Discount-adjusted total for display + pay-in-full; deposits stay on pre-discount. */
+  const bookingDisplayTotalCents = bookingDiscountPricing.applies
+    ? bookingDiscountPricing.estimatedTotalCents
+    : totalPriceCents;
+  const salesTaxQuote = quotePublicBookingSalesTax({
+    priceAfterDiscountCents: bookingDisplayTotalCents,
+    taxEnabled: paymentSettings?.taxEnabled === true,
+    taxRateBps: paymentSettings?.taxRateBps ?? 0,
+  });
+  const salesTaxApplies = (salesTaxQuote?.taxCents ?? 0) > 0;
+  const salesTaxLabel =
+    salesTaxApplies && salesTaxQuote
+      ? ui.common.salesTax(formatSalesTaxRateLabel(salesTaxQuote.rateBps))
+      : null;
+  /** Job total the customer owes. Tax on means this includes tax. */
+  const bookingChargeTotalCents =
+    salesTaxApplies && salesTaxQuote
+      ? salesTaxQuote.totalCents
+      : bookingDisplayTotalCents;
   const configuredDepositCents = paymentSettings
-    ? getDepositDueNowCents(paymentSettings, totalPriceCents)
+    ? getDepositDueNowCents(
+        paymentSettings,
+        salesTaxApplies ? bookingChargeTotalCents : totalPriceCents
+      )
     : 0;
   const requiresDepositNow =
     paymentSettingsEnabled &&
@@ -878,15 +908,15 @@ export function AvailabilityBookingPage({
     depositIsPercent && paymentSettings
       ? Math.min(100, Math.max(0, Math.round(paymentSettings.depositValue)))
       : null;
-  const requiresPayNow =
-    paymentSettings?.checkoutMode === 'in_app' ||
-    (paymentSettings?.checkoutMode === 'customer_choice' &&
-      customerPaymentChoice === 'pay_now');
-  /** Discount-adjusted total for display + pay-in-full; deposits stay on pre-discount. */
-  const bookingDisplayTotalCents = bookingDiscountPricing.applies
-    ? bookingDiscountPricing.estimatedTotalCents
-    : totalPriceCents;
   const amountDueNowCents = (() => {
+    if (salesTaxApplies) {
+      return computeOnlineAmountDueNowCents(
+        paymentSettings,
+        paymentSettingsEnabled,
+        customerPaymentChoice,
+        bookingChargeTotalCents
+      );
+    }
     const base = computeOnlineAmountDueNowCents(
       paymentSettings,
       paymentSettingsEnabled,
@@ -900,7 +930,7 @@ export function AvailabilityBookingPage({
   })();
   const amountDueLaterCents = Math.max(
     0,
-    bookingDisplayTotalCents - amountDueNowCents
+    bookingChargeTotalCents - amountDueNowCents
   );
 
   const paymentCurrency = paymentSettings?.currency ?? 'usd';
@@ -1078,6 +1108,8 @@ export function AvailabilityBookingPage({
                 paidOnlineAmountCents: number;
                 remainingAmountCents: number;
                 totalAmountCents: number;
+                taxCents?: number;
+                taxRateBps?: number;
                 booking: {
                   serviceName: string;
                   scheduledDate: string;
@@ -1099,6 +1131,14 @@ export function AvailabilityBookingPage({
                 paidOnlineAmountCents: json.data.paidOnlineAmountCents,
                 remainingAmountCents: json.data.remainingAmountCents,
                 totalAmountCents: json.data.totalAmountCents,
+                taxCents:
+                  typeof json.data.taxCents === 'number'
+                    ? json.data.taxCents
+                    : 0,
+                taxRateBps:
+                  typeof json.data.taxRateBps === 'number'
+                    ? json.data.taxRateBps
+                    : 0,
                 serviceName: json.data.booking.serviceName,
                 scheduledDate: json.data.booking.scheduledDate,
                 startTime: json.data.booking.startTime,
@@ -1593,6 +1633,8 @@ export function AvailabilityBookingPage({
             : undefined
         }
         saleAppliesLine={saleAppliesLine}
+        salesTaxCents={salesTaxApplies ? salesTaxQuote?.taxCents : undefined}
+        salesTaxLabel={salesTaxLabel}
         customer={submittedData.customer}
         date={submittedData.date}
         time={submittedData.time}
@@ -1636,6 +1678,8 @@ export function AvailabilityBookingPage({
         remainingAmountCents={paymentSuccessData.remainingAmountCents}
         paymentStatus={paymentSuccessData.paymentStatus}
         totalAmountCents={paymentSuccessData.totalAmountCents}
+        taxCents={paymentSuccessData.taxCents}
+        taxRateBps={paymentSuccessData.taxRateBps}
         durationMinutes={paymentSuccessData.durationMinutes}
         servicePriceCents={paymentSuccessData.servicePriceCents}
         selectedAddOns={paymentSuccessData.selectedAddOns}
@@ -2355,6 +2399,10 @@ export function AvailabilityBookingPage({
                         : undefined
                     }
                     saleAppliesLine={saleAppliesLine}
+                    salesTaxCents={
+                      salesTaxApplies ? salesTaxQuote?.taxCents : undefined
+                    }
+                    salesTaxLabel={salesTaxLabel}
                     canAddAnotherJob={
                       Boolean(addAnotherJobHref) &&
                       visitJobs.length < PUBLIC_BOOKING_MAX_JOBS
@@ -2407,6 +2455,10 @@ export function AvailabilityBookingPage({
                         : undefined
                     }
                     saleAppliesLine={saleAppliesLine}
+                    salesTaxCents={
+                      salesTaxApplies ? salesTaxQuote?.taxCents : undefined
+                    }
+                    salesTaxLabel={salesTaxLabel}
                     date={serviceDateYmd ?? ''}
                     startTimeHhmm={selectedTime}
                     customer={customerForSubmit}
@@ -2565,104 +2617,114 @@ export function AvailabilityBookingPage({
                   )}
 
                   <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
-                    <p className="text-sm font-semibold text-white tracking-tight pb-3 border-b border-white/10">
+                    <p className="text-sm font-semibold text-white tracking-tight">
                       {ui.common.summary}
                     </p>
-                    <div className="flex flex-col gap-3.5 pt-4">
+                    <div className="mt-4 flex flex-col gap-2">
                       <div className="flex items-center justify-between gap-4 text-sm">
-                        <span className="text-gray-300 shrink-0">
+                        <span
+                          className={
+                            salesTaxApplies
+                              ? 'text-white/60'
+                              : 'font-semibold text-white'
+                          }
+                        >
                           {ui.common.bookingTotal}
                         </span>
-                        {bookingDiscountPricing.applies ? (
-                          <div className="flex items-baseline justify-end gap-2">
-                            <span className="text-zinc-500 line-through decoration-zinc-500/70 tabular-nums">
+                        <span
+                          className={`flex items-baseline gap-2 tabular-nums text-white ${
+                            salesTaxApplies ? '' : 'font-semibold'
+                          }`}
+                        >
+                          {bookingDiscountPricing.applies ? (
+                            <span className="text-xs text-zinc-500 line-through decoration-zinc-500/70">
                               {formatPrice(
                                 bookingDiscountPricing.subtotalCents,
                                 paymentCurrency,
                                 bookingFlowLocale
                               )}
                             </span>
-                            <span className="text-white font-semibold text-right tabular-nums">
-                              {formatPrice(
-                                bookingDisplayTotalCents,
-                                paymentCurrency,
-                                bookingFlowLocale
-                              )}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-white font-semibold text-right tabular-nums">
-                            {formatPrice(
-                              totalPriceCents,
-                              paymentCurrency,
-                              bookingFlowLocale
-                            )}
-                          </span>
-                        )}
-                      </div>
-                      {saleAppliesLine ? (
-                        <div className="space-y-1.5">
-                          <BookingSaleAppliesNotice line={saleAppliesLine} />
-                          {bookingDiscountPricing.discountCents > 0 ? (
-                            <p className="text-sm font-medium text-emerald-300/90">
-                              {ui.common.youSave(
-                                formatPrice(
-                                  bookingDiscountPricing.discountCents,
-                                  paymentCurrency,
-                                  bookingFlowLocale
-                                )
-                              )}
-                            </p>
                           ) : null}
-                        </div>
-                      ) : null}
-                      {requiresDepositNow && (
-                        <div className="flex items-center justify-between gap-4 text-sm">
-                          <span className="text-gray-300 shrink-0">
-                            {depositIsPercent && depositPercentWhole != null
-                              ? ui.common.depositPercentOfTotal(
-                                  depositPercentWhole
-                                )
-                              : ui.common.deposit}
-                          </span>
-                          <span className="text-white font-semibold text-right tabular-nums">
-                            {formatPrice(
-                              configuredDepositCents,
-                              paymentCurrency,
-                              bookingFlowLocale
-                            )}
-                          </span>
-                        </div>
-                      )}
-                      {(requiresPayNow || requiresDepositNow) && (
+                          {formatPrice(
+                            bookingDisplayTotalCents,
+                            paymentCurrency,
+                            bookingFlowLocale
+                          )}
+                        </span>
+                      </div>
+                      {salesTaxApplies && salesTaxLabel && salesTaxQuote ? (
                         <>
                           <div className="flex items-center justify-between gap-4 text-sm">
-                            <span className="text-gray-300 shrink-0">
-                              {ui.common.dueNow}
+                            <span className="text-white/60">
+                              {salesTaxLabel}
                             </span>
-                            <span className="text-white font-semibold text-right tabular-nums">
+                            <span className="tabular-nums text-white">
                               {formatPrice(
-                                amountDueNowCents,
+                                salesTaxQuote.taxCents,
                                 paymentCurrency,
                                 bookingFlowLocale
                               )}
                             </span>
                           </div>
                           <div className="flex items-center justify-between gap-4 text-sm">
-                            <span className="text-gray-300 shrink-0">
-                              {ui.common.remaining}
+                            <span className="font-semibold text-white">
+                              {ui.common.total}
                             </span>
-                            <span className="text-white font-semibold text-right tabular-nums">
+                            <span className="font-semibold tabular-nums text-white">
                               {formatPrice(
-                                amountDueLaterCents,
+                                bookingChargeTotalCents,
                                 paymentCurrency,
                                 bookingFlowLocale
                               )}
                             </span>
                           </div>
                         </>
-                      )}
+                      ) : null}
                     </div>
+                    {saleAppliesLine ? (
+                      <div className="mt-3 space-y-1.5">
+                        <BookingSaleAppliesNotice line={saleAppliesLine} />
+                        {bookingDiscountPricing.discountCents > 0 ? (
+                          <p className="text-sm font-medium text-emerald-300/90">
+                            {ui.common.youSave(
+                              formatPrice(
+                                bookingDiscountPricing.discountCents,
+                                paymentCurrency,
+                                bookingFlowLocale
+                              )
+                            )}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {amountDueNowCents > 0 && amountDueLaterCents > 0 ? (
+                      <div className="mt-4 flex flex-col gap-2 border-t border-white/[0.08] pt-4">
+                        <div className="flex items-center justify-between gap-4 text-sm">
+                          <span className="text-white/60">
+                            {ui.common.dueNow}
+                          </span>
+                          <span className="tabular-nums text-white">
+                            {formatPrice(
+                              amountDueNowCents,
+                              paymentCurrency,
+                              bookingFlowLocale
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-4 text-sm">
+                          <span className="text-white/60">
+                            {ui.common.remaining}
+                          </span>
+                          <span className="tabular-nums text-white">
+                            {formatPrice(
+                              amountDueLaterCents,
+                              paymentCurrency,
+                              bookingFlowLocale
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
 
                   {amountDueNowCents > 0 && (

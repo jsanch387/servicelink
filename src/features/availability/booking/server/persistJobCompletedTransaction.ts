@@ -18,6 +18,7 @@ import {
   type BookingAmountDueResult,
 } from './computeBookingAmountDue';
 import { generateInvoicePublicToken } from './generateInvoicePublicToken';
+import { salesTaxEmailLine } from '@/features/availability/booking/utils/publicBookingSalesTax';
 import { generateInvoiceShortCode } from './generateInvoiceShortCode';
 import type {
   JobCompletedRequestBody,
@@ -507,6 +508,10 @@ export async function persistJobCompletedTransaction(
             discountCents: snapshot.totals.discountCents,
           }
         : null,
+    salesTax: salesTaxEmailLine(
+      snapshot.totals.taxRateBps ?? 0,
+      snapshot.totals.taxCents ?? 0
+    ),
     reviewUrl: snapshot.reviewUrl,
     coveredByMembership: snapshot.coveredByMembership === true,
     jobs: snapshot.jobs?.map(job => ({

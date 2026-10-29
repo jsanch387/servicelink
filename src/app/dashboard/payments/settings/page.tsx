@@ -1,6 +1,7 @@
 import { ROUTES } from '@/constants/routes';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { PaymentsPage } from '@/features/payments';
+import { isOwnerEmailAllowedForSalesTax } from '@/features/payments/config/salesTaxRolloutAllowlist';
 import { logConnect } from '@/features/payments/server/connectOnboardingLog';
 import { getHasProAccessForPayments } from '@/features/payments/server/getHasProAccessForPayments';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
@@ -95,7 +96,7 @@ export default async function DashboardPaymentsSettingsPage({
 
   const { data: paymentSettingsRow } = await paymentSettingsOf(supabase)
     .select(
-      'payments_enabled, checkout_mode, deposits_enabled, deposit_type, deposit_value, currency'
+      'payments_enabled, checkout_mode, deposits_enabled, deposit_type, deposit_value, currency, tax_enabled, tax_rate_bps'
     )
     .eq('business_id', businessId)
     .maybeSingle();
@@ -119,6 +120,8 @@ export default async function DashboardPaymentsSettingsPage({
           depositType: 'percent',
           depositValue: 0,
           currency: 'usd',
+          taxEnabled: false,
+          taxRateBps: 0,
         };
   }
 
@@ -143,6 +146,7 @@ export default async function DashboardPaymentsSettingsPage({
       priorPaymentsSetup={priorPaymentsSetup}
       paymentSettings={paymentSettingsForDashboard}
       stripeExpressAccountId={paymentAccount?.stripe_account_id?.trim() ?? null}
+      showSalesTaxCard={isOwnerEmailAllowedForSalesTax(user.email)}
     />
   );
 }

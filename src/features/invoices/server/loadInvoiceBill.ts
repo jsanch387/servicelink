@@ -28,7 +28,7 @@ export async function loadInvoiceBill(
   const { data: invoice, error } = await db
     .from('invoices')
     .select(
-      'id, status, invoice_number, short_code, customer_name, customer_email, customer_phone, due_on, note, total_cents'
+      'id, status, invoice_number, short_code, customer_name, customer_email, customer_phone, due_on, note, subtotal_cents, tax_cents, tax_rate_bps, total_cents'
     )
     .eq('id', invoiceId)
     .eq('business_id', businessId)
@@ -76,6 +76,9 @@ export async function loadInvoiceBill(
         : null,
     dueOn: typeof invoice.due_on === 'string' ? invoice.due_on : null,
     note: typeof invoice.note === 'string' ? invoice.note : null,
+    subtotalCents: Number(invoice.subtotal_cents) || 0,
+    taxCents: Number(invoice.tax_cents) || 0,
+    taxRateBps: Number(invoice.tax_rate_bps) || 0,
     totalCents: Number(invoice.total_cents) || 0,
     shortCode:
       typeof invoice.short_code === 'string' ? invoice.short_code : null,

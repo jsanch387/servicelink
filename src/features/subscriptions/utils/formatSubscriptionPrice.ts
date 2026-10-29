@@ -5,6 +5,18 @@ import type {
   SubscriptionCadenceUnit,
 } from '../types/customerSubscriptionPlan';
 
+/** Keeps cents when the amount is not a whole dollar. */
+export function formatMembershipAmountCents(cents: number): string {
+  const rounded = Math.max(0, Math.round(cents));
+  const hasCents = rounded % 100 !== 0;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: hasCents ? 2 : 0,
+  }).format(rounded / 100);
+}
+
 export function formatSubscriptionPriceCents(
   priceCents: number,
   locale: PublicBookingFlowLocale = 'en'

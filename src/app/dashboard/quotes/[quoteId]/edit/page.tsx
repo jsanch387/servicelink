@@ -1,6 +1,7 @@
 import { ROUTES } from '@/constants/routes';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { CreateQuoteScreen } from '@/features/quotes';
+import { loadQuoteTaxPreview } from '@/features/quotes/server/loadQuoteSalesTax';
 import { loadQuoteSendPaymentOffer } from '@/features/quotes/server/quotePaymentSnapshot';
 import { loadQuoteServiceCatalog } from '@/features/quotes/server/loadQuoteServiceCatalog';
 import { getServiceCategories } from '@/features/services/categories/api/getServiceCategories';
@@ -52,11 +53,13 @@ export default async function DashboardQuoteEditPage({ params }: PageProps) {
     business_type?: string | null;
   };
 
-  const [serviceCatalog, categoriesResult, paymentOffer] = await Promise.all([
-    loadQuoteServiceCatalog(supabase, business.id),
-    getServiceCategories(business.id),
-    loadQuoteSendPaymentOffer(createSupabaseAdminClient(), business.id),
-  ]);
+  const [serviceCatalog, categoriesResult, paymentOffer, salesTax] =
+    await Promise.all([
+      loadQuoteServiceCatalog(supabase, business.id),
+      getServiceCategories(business.id),
+      loadQuoteSendPaymentOffer(createSupabaseAdminClient(), business.id),
+      loadQuoteTaxPreview(supabase, business.id),
+    ]);
 
   return (
     <CreateQuoteScreen
@@ -67,6 +70,8 @@ export default async function DashboardQuoteEditPage({ params }: PageProps) {
       serviceCatalog={serviceCatalog}
       serviceCategories={categoriesResult.data ?? []}
       paymentOffer={paymentOffer}
+      salesTaxEnabled={salesTax.salesTaxEnabled}
+      salesTaxRateBps={salesTax.salesTaxRateBps}
     />
   );
 }

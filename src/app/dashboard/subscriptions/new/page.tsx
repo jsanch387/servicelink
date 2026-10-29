@@ -2,6 +2,7 @@ import { ROUTES } from '@/constants/routes';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { CreateSubscriptionPlanPage } from '@/features/subscriptions';
 import { loadMembershipsAccess } from '@/features/subscriptions/server/loadMembershipsAccess';
+import { loadMembershipShopTax } from '@/features/subscriptions/server/membershipSalesTax';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { redirect } from 'next/navigation';
@@ -45,5 +46,15 @@ export default async function NewSubscriptionPlanPage() {
     redirect(ROUTES.DASHBOARD.SUBSCRIPTIONS);
   }
 
-  return <CreateSubscriptionPlanPage />;
+  const shopTax = await loadMembershipShopTax(
+    supabase,
+    businessResolved.businessId
+  );
+
+  return (
+    <CreateSubscriptionPlanPage
+      salesTaxEnabled={shopTax.taxEnabled}
+      salesTaxRateBps={shopTax.taxRateBps}
+    />
+  );
 }
