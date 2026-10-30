@@ -3,6 +3,7 @@
 import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { FilterButton } from './FilterButton';
 
 export type FilterMenuOption<T extends string = string> = {
   id: T;
@@ -32,7 +33,6 @@ export function FilterMenu<T extends string>({
   onChange,
   label = 'Filter',
   menuLabel = 'Filter',
-  size = 'md',
   expanded,
   onExpandedChange,
 }: {
@@ -41,7 +41,6 @@ export function FilterMenu<T extends string>({
   onChange: (id: T) => void;
   label?: string;
   menuLabel?: string;
-  size?: 'sm' | 'md';
   /** When set, the parent owns whether the menu is open. */
   expanded?: boolean;
   onExpandedChange?: (open: boolean) => void;
@@ -101,25 +100,19 @@ export function FilterMenu<T extends string>({
 
   return (
     <>
-      <button
+      <FilterButton
         ref={buttonRef}
-        type="button"
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="listbox"
         onClick={() => setOpen(!open)}
-        className={`inline-flex shrink-0 cursor-pointer items-center border border-white/15 text-gray-200 transition-colors hover:border-white/30 hover:bg-white/[0.04] ${
-          size === 'sm'
-            ? 'h-8 gap-1.5 rounded-lg px-2.5 text-xs'
-            : 'h-10 gap-2 rounded-[10px] px-3.5 text-sm'
-        }`}
       >
         <span>{label}</span>
         <AdjustmentsHorizontalIcon
-          className={`shrink-0 text-gray-400 ${size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'}`}
+          className="h-3.5 w-3.5 shrink-0 text-gray-400"
           aria-hidden
         />
-      </button>
+      </FilterButton>
       {open && typeof document !== 'undefined'
         ? createPortal(
             <div

@@ -106,7 +106,7 @@ export function DashboardSidebarNavGroup({
     <div ref={rootRef} className="relative">
       <button
         type="button"
-        className={`group flex w-full cursor-pointer items-center rounded-xl text-[15px] leading-5 font-medium tracking-tight text-zinc-400 transition-colors hover:bg-white/[0.045] hover:text-white ${
+        className={`group flex w-full cursor-pointer items-center rounded-lg text-[15px] leading-5 font-medium tracking-tight text-zinc-400 transition-colors hover:bg-white/[0.045] hover:text-white ${
           collapsed
             ? 'gap-3.5 px-3 py-2.5 lg:justify-center lg:gap-0 lg:px-0 lg:py-2.5'
             : 'gap-3.5 px-3 py-2.5'

@@ -1,6 +1,6 @@
 'use client';
 
-import { FilterMenu } from '@/components/shared';
+import { FilterButton, FilterMenu } from '@/components/shared';
 import {
   CalendarDaysIcon,
   ChevronLeftIcon,
@@ -190,20 +190,19 @@ export const ExpensesFilters: React.FC<{
 
   return (
     <div className="mb-4 flex items-center justify-end gap-2">
-      <button
+      <FilterButton
         ref={dateRef}
-        type="button"
         aria-expanded={open === 'date'}
         aria-haspopup="dialog"
         onClick={() => setOpen(current => (current === 'date' ? null : 'date'))}
-        className="inline-flex h-10 min-w-0 cursor-pointer items-center gap-2 rounded-[10px] border border-white/15 px-3.5 text-sm text-gray-200 transition-colors hover:border-white/30 hover:bg-white/[0.04]"
+        className="min-w-0"
       >
         <span className="truncate text-left">{monthLabel}</span>
         <CalendarDaysIcon
-          className="h-4 w-4 shrink-0 text-gray-400"
+          className="h-3.5 w-3.5 shrink-0 text-gray-400"
           aria-hidden
         />
-      </button>
+      </FilterButton>
 
       <FilterMenu
         options={CATEGORIES}

@@ -36,7 +36,7 @@ A `manager` key already exists in `ROLE_PERMISSIONS` and is unused in the produc
 
 Check a capability (`can(ctx, 'bookings.write')`). Do not check `role === 'member'` in product code.
 
-`bookings.delete` is new. It does not exist in `TEAM_PERMISSIONS` yet. Today, delete sits inside `bookings.write`.
+`bookings.delete` is separate from `bookings.write`. Coordinator and manager have it. Member does not.
 
 | Permission | What it allows |
 | --- | --- |
@@ -172,6 +172,8 @@ Booking reads already work for any active teammate. Do not add update or delete 
 - `POST /api/public/bookings` with `ownerManualBooking` must require `bookings.write`. Today it only checks that the person belongs to the shop, and a Member already belongs to the shop.
 - Mobile invite may omit `role`. Omitted means Member. Web sends the role the owner picked.
 
-### Left for Manager
+### Manager
 
-Office pages, `bookings.delete` for Manager, and the Manager option on invite. Office SELECT stays owner-only until then.
+The invite can store Manager. That role is a coordinator plus the office: customers, quotes, invoices, expenses, reviews, the booking page, services, hours, and marketing. It does not include revenue, billing, the team, or deleting the account.
+
+Office rows stay closed to members. A manager reads and writes them through policies that require `business_members.role = 'manager'`. Changing someone's role after they join is still a separate Team-page control.

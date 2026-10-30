@@ -108,6 +108,27 @@ describe('resolveDashboardContext', () => {
     });
   });
 
+  it('keeps a manager on the manager permissions', async () => {
+    lookupOwnedBusinessId.mockResolvedValue(null);
+    lookupActiveMembership.mockResolvedValue({
+      businessId: 'biz-member',
+      role: 'manager',
+    });
+
+    const result = await resolveDashboardContext(
+      createAuthClient({ id: 'user-3' }) as never
+    );
+
+    expect(result).toMatchObject({
+      ok: true,
+      context: {
+        role: 'manager',
+        isOwner: false,
+        permissions: permissionsForRole('manager'),
+      },
+    });
+  });
+
   it('maps an unknown assigned role to member', async () => {
     lookupOwnedBusinessId.mockResolvedValue(null);
     lookupActiveMembership.mockResolvedValue({

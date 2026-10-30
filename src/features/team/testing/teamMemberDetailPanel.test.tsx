@@ -38,7 +38,7 @@ describe('TeamMemberDetailPanel', () => {
     expect(screen.getByText('jordan@example.com')).toBeTruthy();
     expect(screen.getByText('Active')).toBeTruthy();
     expect(screen.getByText('Member')).toBeTruthy();
-    expect(screen.getByText(/Completes jobs/)).toBeTruthy();
+    expect(screen.getByText(/Sees every appointment/)).toBeTruthy();
 
     expect(screen.queryByText('Display name')).toBeNull();
 

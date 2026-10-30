@@ -2,6 +2,7 @@ import { ROUTES } from '@/constants/routes';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { OwnerSubscriberDetailPage } from '@/features/subscriptions';
 import { isOwnerEmailAllowedForMembershipsRollout } from '@/features/subscriptions/config/membershipsRolloutAllowlist';
+import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -25,6 +26,8 @@ export default async function SubscriptionSubscriberDetailPage({
   if (userError || !user) {
     redirect(ROUTES.AUTH.LOGIN);
   }
+
+  await requireDashboardPageAccess('billing.manage');
 
   if (!isOwnerEmailAllowedForMembershipsRollout(user.email)) {
     redirect(ROUTES.DASHBOARD.MAIN);

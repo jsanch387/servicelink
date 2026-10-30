@@ -36,27 +36,10 @@ export const DASHBOARD_ACCESS_ROLES = [
 ] as const;
 export type DashboardAccessRole = (typeof DASHBOARD_ACCESS_ROLES)[number];
 
-const WORK_READ: TeamPermission[] = [
-  'dashboard.read',
-  'bookings.read',
-  'customers.read',
-  'quotes.read',
-  'invoices.read',
-  'reviews.read',
-];
-
 /** Hired help: the board and the job — not the owner’s CRM / quotes / reviews. */
 const MEMBER_READ: TeamPermission[] = ['dashboard.read', 'bookings.read'];
 
 const JOB_RUN: TeamPermission[] = ['bookings.run'];
-
-const WORK_WRITE: TeamPermission[] = [
-  'bookings.write',
-  'customers.write',
-  'quotes.write',
-  'invoices.write',
-  'reviews.write',
-];
 
 const SHOP_SETUP: TeamPermission[] = [
   'profile.write',
@@ -72,11 +55,26 @@ const COORDINATOR: TeamPermission[] = [
   'bookings.delete',
 ];
 
+/** Office the manager runs. Not billing, payouts, the team, or deleting the account. */
+const MANAGER_OFFICE: TeamPermission[] = [
+  'customers.read',
+  'customers.write',
+  'quotes.read',
+  'quotes.write',
+  'invoices.read',
+  'invoices.write',
+  'expenses.read',
+  'expenses.write',
+  'reviews.read',
+  'reviews.write',
+  ...SHOP_SETUP,
+];
+
 export const ROLE_PERMISSIONS: Record<DashboardAccessRole, TeamPermission[]> = {
   owner: [...TEAM_PERMISSIONS],
   member: [...MEMBER_READ, ...JOB_RUN],
   coordinator: COORDINATOR,
-  manager: [...WORK_READ, ...JOB_RUN, ...WORK_WRITE, ...SHOP_SETUP],
+  manager: [...COORDINATOR, ...MANAGER_OFFICE],
 };
 
 export function isTeamPermission(value: string): value is TeamPermission {

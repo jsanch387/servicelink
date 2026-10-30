@@ -13,31 +13,20 @@ import {
 } from '@/features/availability/types/availability';
 import { normalizeAvailabilityRow } from '@/features/availability/utils/normalizeAvailabilityRow';
 import { parseTimeOffBlocksFromRequestBody } from '@/features/availability/utils/timeOffBlocksPayload';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
 async function getAuthAndBusinessId(supabase: SupabaseClient) {
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { error: 'Authentication required', status: 401 as const };
+  const resolved = await requireBusinessPermission(
+    supabase,
+    'availability.write'
+  );
+  if (!resolved.ok) {
+    return { error: resolved.error, status: resolved.status };
   }
-
-  const { data: businessProfile, error: businessError } = await supabase
-    .from('business_profiles')
-    .select('id')
-    .eq('profile_id', user.id)
-    .single();
-
-  if (businessError || !businessProfile) {
-    return { error: 'Business profile not found', status: 404 as const };
-  }
-
-  return { businessId: businessProfile.id };
+  return { businessId: resolved.businessId };
 }
 
 export async function GET() {

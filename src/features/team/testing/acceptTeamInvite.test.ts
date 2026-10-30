@@ -135,6 +135,33 @@ describe('acceptTeamInvite', () => {
     );
   });
 
+  it('stores manager from the invite', async () => {
+    loadTeamInviteByToken.mockResolvedValue({
+      ok: true,
+      invite: {
+        id: 'inv-1',
+        business_id: 'biz-1',
+        email: 'alex@shop.com',
+        role: 'manager',
+      },
+      businessName: 'Shop',
+    });
+    lookupOwnedBusinessId.mockResolvedValue(null);
+    lookupActiveMemberBusinessId.mockResolvedValue(null);
+
+    const admin = createAdmin();
+    const result = await acceptTeamInvite(admin as never, {
+      rawToken: 'token',
+      userId: 'user-1',
+      userEmail: 'alex@shop.com',
+    });
+
+    expect(result.ok).toBe(true);
+    expect(admin.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ role: 'manager' })
+    );
+  });
+
   it('stores coordinator from the invite', async () => {
     loadTeamInviteByToken.mockResolvedValue({
       ok: true,

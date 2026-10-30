@@ -1,6 +1,6 @@
 'use client';
 
-import { FilterMenu } from '@/components/shared';
+import { FilterButton, FilterMenu } from '@/components/shared';
 
 export type BookingsStatusFilterValue = 'upcoming' | 'past' | 'cancelled';
 
@@ -28,18 +28,15 @@ export function BookingsAssignedToMeFilter({
   className = '',
 }: BookingsAssignedToMeFilterProps) {
   return (
-    <button
-      type="button"
+    <FilterButton
       aria-pressed={pressed}
       onClick={() => onPressedChange(!pressed)}
-      className={`inline-flex h-8 cursor-pointer items-center whitespace-nowrap rounded-lg border border-white/15 px-2.5 text-xs transition-colors hover:bg-white/[0.04] ${
-        pressed
-          ? 'bg-white/10 font-medium text-white'
-          : 'text-gray-200 hover:border-white/30'
+      className={`whitespace-nowrap ${
+        pressed ? 'bg-white/10 font-medium text-white' : ''
       } ${className}`}
     >
       {pressed ? 'View all' : 'Assigned to me'}
-    </button>
+    </FilterButton>
   );
 }
 
@@ -58,7 +55,6 @@ export function BookingsStatusFilter({
         value={value}
         onChange={onChange}
         menuLabel="Appointments"
-        size="sm"
       />
     </div>
   );

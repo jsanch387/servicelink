@@ -17,6 +17,7 @@ import {
   supabaseErrorForLogs,
   truncateLogDetail,
 } from '@/features/quotes/server/quoteSendRouteLog';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { assertOwnerQuoteSendRateLimits } from '@/server/rateLimit/ownerQuoteSendRateLimit';
@@ -41,7 +42,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { user, authMethod } = auth;
+    const { user, supabase, authMethod } = auth;
+    const permitted = await requireBusinessPermission(supabase, 'quotes.write');
+    if (!permitted.ok) {
+      return quoteSendJsonResponse(
+        requestId,
+        { success: false, error: permitted.error },
+        permitted.status
+      );
+    }
 
     const rateLimit = await assertOwnerQuoteSendRateLimits(request, user.id);
     if (!rateLimit.ok) {
@@ -129,7 +138,7 @@ export async function POST(request: NextRequest) {
         .filter(Boolean)
         .join(' ') || null;
 
-    if (!businessRow.profile_id || businessRow.profile_id !== user.id) {
+    if (businessRow.id !== permitted.businessId) {
       logQuoteSend(
         requestId,
         ROUTE_LABEL,

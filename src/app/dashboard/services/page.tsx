@@ -5,8 +5,7 @@
  * Auth and onboarding are required; loading and errors are handled in the feature.
  */
 
-import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
-import { isProAccess } from '@/features/pricing';
+import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
 import {
   getAddOnCounts,
   getAddOns,
@@ -15,36 +14,17 @@ import {
   ServicesWithAddOnsView,
 } from '@/features/services';
 import { sortServicesForDisplay } from '@/features/services/categories/utils/sortServicesForDisplay';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { redirect } from 'next/navigation';
+import { requireCompletedShopPage } from '@/features/team/server/requireDashboardPageAccess';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ServicesPage() {
-  const supabase = await createSupabaseServerClient();
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    redirect('/login');
-  }
-
-  const stateResult = await getOnboardingState(user.id, supabase);
-  if (!stateResult.success || !stateResult.data) {
-    redirect('/dashboard');
-  }
-
-  const { status, businessProfile } = stateResult.data;
-  if (status !== 'completed' || !businessProfile?.id) {
-    redirect('/dashboard');
-  }
+  const { context } = await requireCompletedShopPage('services.write');
 
   const [servicesResult, categoriesResult] = await Promise.all([
-    getServices(businessProfile.id),
-    getServiceCategories(businessProfile.id),
+    getServices(context.businessId),
+    getServiceCategories(context.businessId),
   ]);
   const services = sortServicesForDisplay(
     servicesResult.data ?? [],
@@ -52,34 +32,15 @@ export default async function ServicesPage() {
   );
   const categories = categoriesResult.data ?? [];
 
-  const { data: profileRow } = await supabase
-    .from('profiles')
-    .select(
-      'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
-    )
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  const p = profileRow as {
-    subscription_tier?: string | null;
-    subscription_current_period_end?: string | null;
-    subscription_status?: string | null;
-    stripe_subscription_id?: string | null;
-    stripe_customer_id?: string | null;
-  } | null;
-
-  const hasProAccess = isProAccess(
-    p?.subscription_tier,
-    p?.subscription_current_period_end,
-    p?.subscription_status,
-    p?.stripe_subscription_id,
-    p?.stripe_customer_id
+  const hasProAccess = await ownerHasProAccessForBusiness(
+    createSupabaseAdminClient(),
+    context.businessId
   );
 
   const [addOnsResult, addOnCounts] = await Promise.all([
-    getAddOns(businessProfile.id),
+    getAddOns(context.businessId),
     getAddOnCounts(
-      businessProfile.id,
+      context.businessId,
       services.map(s => s.id)
     ),
   ]);

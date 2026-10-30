@@ -20,6 +20,18 @@ const memberCan = (permission: Parameters<typeof can>[1]) =>
     permission
   );
 
+const coordinatorCan = (permission: Parameters<typeof can>[1]) =>
+  can(
+    { isOwner: false, permissions: permissionsForRole('coordinator') },
+    permission
+  );
+
+const managerCan = (permission: Parameters<typeof can>[1]) =>
+  can(
+    { isOwner: false, permissions: permissionsForRole('manager') },
+    permission
+  );
+
 describe('isDashboardNavItemActive', () => {
   it('matches an exact href', () => {
     expect(
@@ -59,10 +71,51 @@ describe('getVisibleDashboardNavItems', () => {
     const names = getVisibleDashboardNavItems({
       hasShopAccess: true,
       showMembershipsNav: true,
+      showTeamNav: true,
+      showInvoicesNav: true,
       can: memberCan,
     }).map(item => item.name);
 
     expect(names).toEqual(['Dashboard', 'Bookings']);
+  });
+
+  it('keeps a coordinator on the same nav as a member', () => {
+    const names = getVisibleDashboardNavItems({
+      hasShopAccess: true,
+      showMembershipsNav: true,
+      showTeamNav: true,
+      showInvoicesNav: true,
+      can: coordinatorCan,
+    }).map(item => item.name);
+
+    expect(names).toEqual(['Dashboard', 'Bookings']);
+  });
+
+  it('opens the office for a manager and keeps owner locks out of the nav', () => {
+    const names = getVisibleDashboardNavItems({
+      hasShopAccess: true,
+      showMembershipsNav: true,
+      showTeamNav: true,
+      showInvoicesNav: true,
+      can: managerCan,
+    }).map(item => item.name);
+
+    expect(names).toEqual([
+      'Dashboard',
+      'Booking link',
+      'Services',
+      'Bookings',
+      'Reviews',
+      'Quotes',
+      'Invoices',
+      'Expenses',
+      'Customers',
+      'Availability',
+      'Marketing',
+    ]);
+    expect(names).not.toContain('Payments');
+    expect(names).not.toContain('Subscriptions');
+    expect(names).not.toContain('Team');
   });
 
   it('groups payments, invoices, expenses, and subscriptions under Money', () => {

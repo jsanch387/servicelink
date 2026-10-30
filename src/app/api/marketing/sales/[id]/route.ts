@@ -11,8 +11,8 @@ import {
 import { updateSale } from '@/features/marketing/server/updateSale';
 import { validateToggleActiveBody } from '@/features/marketing/server/validatePromoCodeBody';
 import { validateCreateSaleBody } from '@/features/marketing/server/validateSaleBody';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -34,7 +34,7 @@ async function resolveSaleRouteContext(params: Promise<{ id: string }>) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const resolved = await resolveCurrentBusinessId(supabase);
+  const resolved = await requireBusinessPermission(supabase, 'marketing.write');
 
   if (!resolved.ok) {
     return {

@@ -2,7 +2,7 @@
 export const TEAM_MEMBER_ROLES = ['member', 'coordinator'] as const;
 export type TeamMemberRole = (typeof TEAM_MEMBER_ROLES)[number];
 
-/** Roles the owner can pick on an invite. Manager can be stored before its access is finished. */
+/** Roles the owner can pick on an invite. */
 export const ASSIGNABLE_TEAM_ROLES = [
   'member',
   'coordinator',
@@ -13,17 +13,18 @@ export type AssignableTeamRole = (typeof ASSIGNABLE_TEAM_ROLES)[number];
 export const TEAM_ROLE_COPY = {
   member: {
     label: 'Member',
-    description: 'Completes jobs. They can see every booking and run it.',
+    description:
+      'Sees every appointment. Can run the job, take payment, and change who is assigned.',
   },
   coordinator: {
     label: 'Coordinator',
     description:
-      'Schedules jobs. They can add, reschedule, cancel, and delete appointments.',
+      'Same as Member, plus adding, rescheduling, canceling, and deleting appointments.',
   },
   manager: {
     label: 'Manager',
     description:
-      'Runs the shop day to day, except billing, payouts, the team, and deleting the account.',
+      'Same as Coordinator, plus customers, quotes, invoices, expenses, and the shop.',
   },
 } as const;
 

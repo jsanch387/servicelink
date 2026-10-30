@@ -13,8 +13,8 @@ import {
   validateCreatePromoCodeBody,
   validateToggleActiveBody,
 } from '@/features/marketing/server/validatePromoCodeBody';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -36,7 +36,7 @@ async function resolvePromoCodeRouteContext(params: Promise<{ id: string }>) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const resolved = await resolveCurrentBusinessId(supabase);
+  const resolved = await requireBusinessPermission(supabase, 'marketing.write');
 
   if (!resolved.ok) {
     return {

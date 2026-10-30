@@ -64,12 +64,20 @@ export const InviteTeamMemberModal: React.FC<InviteTeamMemberModalProps> = ({
       const button = roleButtonRef.current;
       if (!button) return;
       const rect = button.getBoundingClientRect();
+      const gap = 8;
+      const menuHeight = roleMenuRef.current?.offsetHeight ?? 240;
+      const spaceBelow = window.innerHeight - rect.bottom - gap;
+      const spaceAbove = rect.top - gap;
+      const openUp = spaceBelow < menuHeight && spaceAbove > spaceBelow;
       setMenuStyle({
         position: 'fixed',
-        top: rect.bottom + 8,
+        top: openUp ? undefined : rect.bottom + gap,
+        bottom: openUp ? window.innerHeight - rect.top + gap : undefined,
         left: rect.left,
         width: rect.width,
         zIndex: 200,
+        maxHeight: Math.max(160, openUp ? spaceAbove : spaceBelow),
+        overflowY: 'auto',
       });
     };
     place();
@@ -130,7 +138,7 @@ export const InviteTeamMemberModal: React.FC<InviteTeamMemberModalProps> = ({
             role="listbox"
             aria-label="Role"
             style={menuStyle}
-            className="overflow-hidden rounded-[14px] border border-white/[0.08] bg-[#1c1c1c] p-1 shadow-[0_16px_40px_rgba(0,0,0,0.45)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-200"
+            className="overflow-y-auto rounded-[14px] border border-white/[0.08] bg-[#1c1c1c] p-1 shadow-[0_16px_40px_rgba(0,0,0,0.45)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-200"
           >
             {ASSIGNABLE_TEAM_ROLES.map(option => {
               const copy = teamRoleCopy(option);
@@ -182,10 +190,12 @@ export const InviteTeamMemberModal: React.FC<InviteTeamMemberModalProps> = ({
       title="Send invite"
       maxWidth="sm"
       uniformHorizontalPadding16
+      panelMaxHeightClass="h-[calc(100dvh-env(safe-area-inset-top)-0.75rem)] max-h-[calc(100dvh-env(safe-area-inset-top)-0.75rem)] sm:h-auto sm:max-h-[90vh]"
+      contentClassName="flex flex-col max-sm:min-h-0 max-sm:flex-1"
     >
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-5 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:pb-0"
+        className="flex flex-1 flex-col gap-5 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:flex-none sm:pb-0"
       >
         <Input
           id="team-invite-name"
@@ -263,7 +273,7 @@ export const InviteTeamMemberModal: React.FC<InviteTeamMemberModalProps> = ({
           fullWidth
           loading={sending}
           disabled={sending}
-          className="mt-1"
+          className="mt-auto sm:mt-1"
         >
           Send invite
         </Button>

@@ -10,6 +10,7 @@ import { syncConnectPaymentAccountForBusiness } from '@/features/payments/server
 import type { PaymentSettingsDashboardInitial } from '@/features/payments/types/paymentSettingsDashboard';
 import { isStripeConnectReady } from '@/features/payments/utils/isStripeConnectReady';
 import { paymentSettingsRowToDashboardInitial } from '@/features/payments/utils/paymentSettingsMaps';
+import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -33,6 +34,8 @@ export default async function DashboardPaymentsSettingsPage({
   if (userError || !user) {
     redirect(ROUTES.AUTH.LOGIN);
   }
+
+  await requireDashboardPageAccess('payments.manage');
 
   const stateResult = await getOnboardingState(user.id, supabase);
   if (!stateResult.success || stateResult.data?.status !== 'completed') {

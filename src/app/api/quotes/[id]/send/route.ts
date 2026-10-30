@@ -151,11 +151,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       business_name: string | null;
     };
 
-    if (
-      businessRow.id !== resolved.businessId ||
-      !businessRow.profile_id ||
-      businessRow.profile_id !== user.id
-    ) {
+    if (businessRow.id !== resolved.businessId) {
       logQuoteSend(
         requestId,
         ROUTE_LABEL,
