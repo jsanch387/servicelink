@@ -1,18 +1,13 @@
-# Team — Supabase migrations
+# Team — SQL in this repo
 
-Run in the SQL Editor on the project, in order. Scripts are idempotent.
+These are the scripts that still live in the repo. They are idempotent. Production already has them, plus later role and manager rules that are described in [`../DATABASE.md`](../DATABASE.md) and are not stored as files here.
 
-| File                                                                           | What it does                                                  |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------- |
-| [`001_business_members.sql`](./001_business_members.sql)                       | Members-only table, reject-owner trigger, SELECT RLS          |
-| [`002_team_invites.sql`](./002_team_invites.sql)                               | Pending invite emails + hashed accept links                   |
-| [`003_member_work_select.sql`](./003_member_work_select.sql)                   | Active member SELECT on shop work tables                      |
-| [`004_booking_assignee.sql`](./004_booking_assignee.sql)                       | Optional `bookings.assigned_user_id` (owner or active member) |
-| [`005_member_office_select_revoke.sql`](./005_member_office_select_revoke.sql) | Drop member SELECT on customers, quotes, reviews              |
-| [`006_team_invites_name.sql`](./006_team_invites_name.sql)                     | Owner-typed `team_invites.name` (shop-facing label)           |
-| [`007_team_plan_grandfather.sql`](./007_team_plan_grandfather.sql)             | `team_included` snapshot and `profiles.subscription_plan`     |
-| [`008_team_roles.sql`](./008_team_roles.sql)                                   | `team_invites.role` and allowed hired roles                   |
-| [`009_booking_created_by.sql`](./009_booking_created_by.sql)                   | `bookings.created_by_user_id` for staff-created appointments  |
-| [`010_manager_office_access.sql`](./010_manager_office_access.sql)             | Manager read/write on the office. Members stay closed.        |
+| File                                                                           | What it does                                        |
+| ------------------------------------------------------------------------------ | --------------------------------------------------- |
+| [`002_team_invites.sql`](./002_team_invites.sql)                               | Invite emails and hashed accept links               |
+| [`003_member_work_select.sql`](./003_member_work_select.sql)                   | Active hire SELECT on the job board and shop rows   |
+| [`005_member_office_select_revoke.sql`](./005_member_office_select_revoke.sql) | Drops hire SELECT on customers, quotes, and reviews |
 
-The account owner is **not** backfilled. They stay on `business_profiles.profile_id`.
+`003` also created hire SELECT on customers, quotes, and reviews. `005` removes those. Run `005` after `003` if those scripts are ever applied to a new database. Manager office access is a separate set of policies already on production. It is not in this folder.
+
+The account owner is not a `business_members` row. They stay on `business_profiles.profile_id`.

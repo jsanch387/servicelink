@@ -130,7 +130,9 @@ describe('TeamDashboardPage', () => {
     expect(await screen.findByText('Alex Rivera')).toBeTruthy();
     expect(screen.getByText(/alex@shop.com/)).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'Open Jordan, Member' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Open Jordan, Member' })
+    );
     const detail = screen.getByRole('dialog', { name: 'Team member' });
     expect(within(detail).getByText('jordan@example.com')).toBeTruthy();
     expect(within(detail).getByText('Active')).toBeTruthy();

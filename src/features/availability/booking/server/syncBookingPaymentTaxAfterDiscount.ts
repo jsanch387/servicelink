@@ -45,6 +45,7 @@ export async function syncBookingPaymentTaxAfterDiscount(
     addonDetails: booking.addon_details,
     jobDetails: booking.job_details,
     sessionFees: [],
+    sessionPayment: undefined,
     paidOnlineAmountCents: row.paid_online_amount_cents,
     discount: {
       discountSource: booking.discount_source,

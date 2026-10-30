@@ -7,14 +7,7 @@ export type ParseTeamInviteRoleResult =
   | { ok: true; role: AssignableTeamRole }
   | { ok: false; error: string; status: number };
 
-/** Missing role stays Member so older mobile invites keep working. */
-export function parseTeamInviteRole(
-  value: unknown
-): ParseTeamInviteRoleResult {
-  if (value == null || value === '') {
-    return { ok: true, role: 'member' };
-  }
-
+export function requireTeamRole(value: unknown): ParseTeamInviteRoleResult {
   if (
     typeof value === 'string' &&
     (ASSIGNABLE_TEAM_ROLES as readonly string[]).includes(value)
@@ -27,4 +20,13 @@ export function parseTeamInviteRole(
     error: 'Choose Member, Coordinator, or Manager.',
     status: 400,
   };
+}
+
+/** Missing role stays Member so older mobile invites keep working. */
+export function parseTeamInviteRole(value: unknown): ParseTeamInviteRoleResult {
+  if (value == null || value === '') {
+    return { ok: true, role: 'member' };
+  }
+
+  return requireTeamRole(value);
 }

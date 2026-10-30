@@ -18,38 +18,58 @@ const member: TeamMemberUi = {
 };
 
 describe('TeamMemberDetailPanel', () => {
-  it('shows name, small email, status, and can save or remove', async () => {
+  it('shows the person, status, and can save a name or remove', async () => {
     const user = userEvent.setup();
-    const onSaveName = vi
-      .fn()
-      .mockResolvedValue({ ok: true, name: 'Jordan Lee' });
+    const onSave = vi.fn().mockResolvedValue({ ok: true, name: 'Jordan Lee' });
     const onRemove = vi.fn();
 
     render(
       <TeamMemberDetailPanel
         member={member}
         onClose={vi.fn()}
-        onSaveName={onSaveName}
+        onSave={onSave}
         onRemove={onRemove}
       />
     );
 
     expect(screen.getByRole('heading', { name: 'Team member' })).toBeTruthy();
+    expect(screen.getByText('Jordan')).toBeTruthy();
     expect(screen.getByText('jordan@example.com')).toBeTruthy();
     expect(screen.getByText('Active')).toBeTruthy();
-    expect(screen.getByText('Member')).toBeTruthy();
     expect(screen.getByText(/Sees every appointment/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Save' })).toHaveProperty(
+      'disabled',
+      true
+    );
 
-    expect(screen.queryByText('Display name')).toBeNull();
-
-    const nameField = screen.getByLabelText('Name');
+    const nameField = screen.getByRole('textbox', { name: /^Name/ });
     await user.clear(nameField);
     await user.type(nameField, 'Jordan Lee');
-    await user.click(screen.getByRole('button', { name: 'Save name' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
 
-    expect(onSaveName).toHaveBeenCalledWith(member, 'Jordan Lee');
+    expect(onSave).toHaveBeenCalledWith(member, { name: 'Jordan Lee' });
 
     await user.click(screen.getByRole('button', { name: 'Remove from team' }));
     expect(onRemove).toHaveBeenCalledWith(member);
+  });
+
+  it('saves a new role from the same panel', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn().mockResolvedValue({ ok: true, role: 'coordinator' });
+
+    render(
+      <TeamMemberDetailPanel
+        member={member}
+        onClose={vi.fn()}
+        onSave={onSave}
+        onRemove={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Role' }));
+    await user.click(screen.getByRole('option', { name: /^Coordinator/ }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(onSave).toHaveBeenCalledWith(member, { role: 'coordinator' });
   });
 });

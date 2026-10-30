@@ -58,6 +58,18 @@ describe('isDashboardNavItemActive', () => {
 });
 
 describe('getVisibleDashboardNavItems', () => {
+  it('shows no links when the shop could not be resolved', () => {
+    const names = getVisibleDashboardNavItems({
+      hasShopAccess: true,
+      showMembershipsNav: true,
+      showTeamNav: true,
+      showInvoicesNav: true,
+      can: () => false,
+    }).map(item => item.name);
+
+    expect(names).toEqual([]);
+  });
+
   it('hides onboarding-only items before setup is done', () => {
     const items = getVisibleDashboardNavItems({
       hasShopAccess: false,

@@ -10,7 +10,7 @@ export type UpdateTeamMemberNameResult =
   | { ok: true; name: string }
   | { ok: false; error: string; status: number };
 
-async function inviteIdForActiveMember(
+export async function inviteIdForActiveMember(
   admin: SupabaseClient<Database>,
   params: { businessId: string; memberId: string }
 ): Promise<string | null> {

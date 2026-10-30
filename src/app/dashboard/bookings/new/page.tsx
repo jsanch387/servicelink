@@ -146,9 +146,8 @@ export default async function NewAppointmentPage({
     durationMinutes?: string | string[];
   }>;
 }) {
-  const { supabase, user, context } = await requireDashboardPageAccess(
-    'bookings.write'
-  );
+  const { supabase, user, context } =
+    await requireDashboardPageAccess('bookings.write');
 
   if (context.isOwner) {
     const stateResult = await getOnboardingState(user.id, supabase);

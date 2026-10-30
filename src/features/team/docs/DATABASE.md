@@ -1,122 +1,133 @@
-# Team — database (v1)
+# Team — database
 
-How the feature works: [`TEAM_FEATURE.md`](./TEAM_FEATURE.md).
+How the product behaves: [`TEAM_FEATURE.md`](./TEAM_FEATURE.md).
 
-Teammates the **owner adds**. The person who created the account is **not** in this table.
+The owner is `business_profiles.profile_id`. People they hire are `business_members`. Invites are `team_invites`. Permissions are not rows. The app reads `business_members.role` and checks `ROLE_PERMISSIONS`.
 
-**SQL:** [`migrations/001_business_members.sql`](./migrations/001_business_members.sql) — run in the Supabase SQL Editor.
+```
+business_profiles.profile_id  →  owner (billing, invites, settings)
+business_members              →  hired people (member, coordinator, manager)
+team_invites                  →  one invite row per shop + email
+bookings.assigned_user_id     →  who the job is labeled for
+bookings.created_by_user_id   →  who created the appointment
+```
+
+SQL files that still live in this repo are listed in [`migrations/README.md`](./migrations/README.md). Roles, the invite name, the assignee, who created the appointment, and manager office access are already on the production database. This file describes that current shape.
 
 ---
 
-## Rule
+## How a request is allowed
 
-```
-business_profiles.profile_id  →  account owner (billing, invites, settings)
-business_members              →  people they add (log in and run the shop)
-```
+Two checks, in this order.
 
-One **active** membership per user (v1: a teammate belongs to one shop).
+1. **App.** The API resolves the shop (owned profile, then an active membership) and calls `can(ctx, permission)`. A failed check returns 403 before any write. The owner passes every check.
+2. **Database.** If the signed-in session reads or writes a table directly, row security still applies. The service role skips row security. Booking create, reschedule, cancel, and delete use the service role only after the permission check, and only for that shop.
 
-`resolveCurrentBusinessId` uses **owned shop first**, then an active `business_members` row.
+A hire never becomes the owner by a failed lookup. If the shop cannot be resolved, the sidebar gets no permissions.
 
 ---
 
 ## `business_members`
 
-| Column        | Type        | Notes                                       |
-| ------------- | ----------- | ------------------------------------------- |
-| `id`          | uuid PK     | `gen_random_uuid()`                         |
-| `business_id` | uuid FK     | → `business_profiles(id)` ON DELETE CASCADE |
-| `user_id`     | uuid FK     | → `auth.users(id)` ON DELETE CASCADE        |
-| `role`        | text        | `member` (default), `coordinator`, or `manager`. See [`008_team_roles.sql`](./migrations/008_team_roles.sql). |
-| `status`      | text        | `active` \| `removed`                       |
-| `created_at`  | timestamptz | `now()`                                     |
-| `updated_at`  | timestamptz | `public.set_updated_at()`                   |
+The owner is not in this table. A trigger rejects inserting the shop's `profile_id` as a member.
 
-**Constraints**
+| Column        | Notes                                                   |
+| ------------- | ------------------------------------------------------- |
+| `id`          | uuid primary key                                        |
+| `business_id` | → `business_profiles(id)`                               |
+| `user_id`     | → `auth.users(id)`                                      |
+| `role`        | `member` (default), `coordinator`, or `manager`         |
+| `status`      | `active` or `removed`. Only `active` can open the shop. |
+| `created_at`  |                                                         |
+| `updated_at`  |                                                         |
 
-- Unique `(business_id, user_id)`
-- One **active** row per `user_id`
-- Trigger rejects inserting the shop’s `profile_id` (owner) as a member
+One active membership per user. Unique `(business_id, user_id)`.
 
-**Writes:** authenticated clients are **SELECT only**. Adding/removing members will use the service role later.
+Authenticated clients can SELECT their own row, and the owner can SELECT every row on their shop. Inserts and updates go through the service role (accept, remove, change role).
 
-**RLS (authenticated)**
-
-| Policy                          | Access                                           |
-| ------------------------------- | ------------------------------------------------ |
-| `business_members_self_select`  | Own rows (`user_id = auth.uid()`)                |
-| `business_members_owner_select` | All rows on a shop they own (`profile_id = uid`) |
+Changing an active person's role updates this `role`. It also updates the accepted `team_invites.role` for that person, so a later rejoin does not put the old role back.
 
 ---
 
 ## `team_invites`
 
-Pending email invites. A `business_members` row is created only after they accept.
+A membership row is created only after accept.
 
-**SQL:** [`migrations/002_team_invites.sql`](./migrations/002_team_invites.sql)
+| Column             | Notes                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------ |
+| `id`               | uuid primary key                                                                           |
+| `business_id`      | → `business_profiles(id)`                                                                  |
+| `email`            | Normalized lowercase                                                                       |
+| `name`             | Owner-typed label. Kept after accept. Used on Team and assignee chips.                     |
+| `role`             | `member` (default), `coordinator`, or `manager`. Copied onto `business_members` at accept. |
+| `link_token_hash`  | SHA-256 of the raw URL token. The raw token is not stored.                                 |
+| `status`           | `pending`, `accepted`, `revoked`, or `expired`                                             |
+| `invited_by`       | Owner user id                                                                              |
+| `accepted_user_id` | Set on accept                                                                              |
+| `expires_at`       | 14 days from send                                                                          |
 
-| Column             | Type        | Notes                                                                          |
-| ------------------ | ----------- | ------------------------------------------------------------------------------ |
-| `id`               | uuid PK     | `gen_random_uuid()`                                                            |
-| `business_id`      | uuid FK     | → `business_profiles(id)` ON DELETE CASCADE                                    |
-| `email`            | text        | Normalized lowercase                                                           |
-| `name`             | text        | Owner-typed label. Required on new invites. Not from email. Keep after accept. |
-| `role`             | text        | `member` (default), `coordinator`, or `manager`. Copied onto `business_members` at accept. |
-| `link_token_hash`  | text unique | SHA-256 of the raw URL token                                                   |
-| `status`           | text        | `pending` \| `accepted` \| `revoked` \| `expired`                              |
-| `invited_by`       | uuid FK     | Owner `auth.users` id                                                          |
-| `accepted_user_id` | uuid FK     | Set on accept                                                                  |
-| `expires_at`       | timestamptz | 14 days from send                                                              |
+One invite row per shop and email. A resend or a re-invite after removal reopens that row. It does not insert a second one.
 
-**Writes:** service role. Authenticated owners can SELECT their shop’s rows.
-
----
-
-## Member SELECT (work tables)
-
-**SQL:** [`migrations/003_member_work_select.sql`](./migrations/003_member_work_select.sql)
-
-`auth_is_active_business_member(business_id)` is true when the signed-in user
-has an **active** `business_members` row. SELECT-only policies use that helper
-on bookings, booking requests, and the shop rows needed to render the job
-board. Customers, quotes, and reviews are owner-only
-([`005_member_office_select_revoke.sql`](./migrations/005_member_office_select_revoke.sql)).
-Writes stay owner-only.
+The owner can SELECT their shop's invites. Writes go through the service role.
 
 ---
 
-## Booking assignee
+## Who can read which rows
 
-**SQL:** [`migrations/004_booking_assignee.sql`](./migrations/004_booking_assignee.sql)
+### Any active hire
 
-Optional worker on `bookings`. Null = unassigned. New public bookings stay null.
+`auth_is_active_business_member(business_id)` is true when the signed-in user has an **active** membership on that shop. The role does not matter. Member, coordinator, and manager all match.
 
-| Column             | Type    | Notes                                                                 |
-| ------------------ | ------- | --------------------------------------------------------------------- |
-| `assigned_user_id` | uuid FK | → `auth.users(id)` ON DELETE SET NULL. Owner or an **active** member. |
+That helper allows SELECT on the job board and the shop rows needed to render it:
 
-Not a `business_members` id — the owner is not in that table and can still be assigned.
+- `bookings`, `booking_requests`
+- `business_profiles`, `business_availability`, `business_services`, `business_images`, `business_service_areas`
+- `maintenance_enrollments`, `public_analytics_events`
 
-Trigger rejects anyone who is not the shop `profile_id` or an active member of that `business_id`. Removing a member (app) clears **upcoming confirmed** assignments only; past and completed keep the name.
+It does **not** allow SELECT on customers, quotes, reviews, invoices, or expenses. Those member policies were removed.
 
-No RLS change. Column is readable on existing booking SELECT. Writes stay owner-only until the UI/API slice.
+### Manager only
+
+`auth_is_active_shop_manager(business_id)` is true when that membership is active **and** `role = 'manager'`. Member and coordinator do not match.
+
+That helper is what lets a manager open the office with their own session:
+
+- Customers, quotes, quote links, quote events
+- Invoices and invoice line items (SELECT)
+- Expenses, reviews, review invites
+- Services, add-ons, categories, price options, images, service areas, availability
+- Promo codes, sales, and the booking profile update
+
+Members and coordinators have no policies on those office tables, so a direct read returns nothing.
+
+### Owner only in the database
+
+These stay on the owner session. There is no manager policy.
+
+- `payment_settings`
+- `booking_payments`
+- `booking_invoices`
+- Membership plans, prices, subscribers, and membership invoices
+
+Payment settings, Stripe Connect, and membership plans also require `payments.manage` or `billing.manage` in the API. A hire is refused before those routes talk to Stripe.
+
+Invoice **writes** (create, send, void, mark paid) use the service role after `invoices.write`. Invoice **list and PDF** use the signed-in session, which is why the manager SELECT policy exists. The public invoice page does not use the hire's session.
 
 ---
 
-## Who created the appointment
+## Booking columns
 
-**SQL:** [`migrations/009_booking_created_by.sql`](./migrations/009_booking_created_by.sql)
+| Column               | Notes                                                                                                                                            |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `assigned_user_id`   | Owner or an active member, or null. Not a `business_members` id. Removing a hire clears upcoming confirmed jobs only.                            |
+| `created_by_user_id` | Signed-in user who created the appointment. Null for customer and system bookings. Not cleared when a hire is removed. Not shown in the product. |
 
-| Column               | Type    | Notes                                                                 |
-| -------------------- | ------- | --------------------------------------------------------------------- |
-| `created_by_user_id` | uuid FK | → `auth.users(id)` ON DELETE SET NULL. Null for customer and system bookings. |
-
-Set by the server from the signed-in user when that person creates the appointment. Not shown in the product yet. Removing a teammate does not clear it.
+The assignee trigger rejects anyone who is not the shop owner or an active member of that shop.
 
 ---
 
-## Not in this migration
+## What this repo still has as SQL
 
-- Team plan / seat count
-- Member writes (job run, assign from a teammate, etc.)
+[`migrations/`](./migrations/README.md) has the invite table, member SELECT for the job board, and the script that drops member SELECT on customers, quotes, and reviews.
+
+Do not treat a missing file in that folder as a missing production rule. The live database already has the role values, manager policies, and invoice manager SELECT described above.

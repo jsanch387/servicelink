@@ -8,9 +8,8 @@ import { IconButton } from '@/components/shared';
 import { SupportWidget } from '@/features/contact/components/SupportWidget';
 import {
   DashboardAccessProvider,
-  type DashboardAccessValue,
+  NO_DASHBOARD_ACCESS,
 } from '../context/DashboardAccessContext';
-import { permissionsForRole } from '@/features/team/constants/teamPermissions';
 import { isOwnerEmailAllowedForInvoicesRollout } from '@/features/invoices/config/invoicesRolloutAllowlist';
 import { isOwnerEmailAllowedForTeamRollout } from '@/features/team/config/teamRolloutAllowlist';
 import { useDashboardSidebarCollapsed } from '../hooks/useDashboardSidebarCollapsed';
@@ -18,17 +17,11 @@ import type { DashboardProps } from '../types/dashboard';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardSidebar } from './DashboardSidebar';
 
-const OWNER_ACCESS: DashboardAccessValue = {
-  isOwner: true,
-  role: 'owner',
-  permissions: permissionsForRole('owner'),
-};
-
 export const Dashboard: React.FC<DashboardProps> = ({
   children,
   isOnboardingCompleted = false,
   hasShopAccess = false,
-  dashboardAccess = OWNER_ACCESS,
+  dashboardAccess = NO_DASHBOARD_ACCESS,
   showMembershipsNav = false,
   accountEmail = null,
   hideChrome = false,

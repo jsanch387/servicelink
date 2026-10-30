@@ -50,7 +50,7 @@ Do not send `businessId`. The server resolves the shop from the signed-in owner.
 | ------- | ------ | -------- | ------------------------------------------------------------------------------------------- |
 | `email` | string | Yes      | Invitee. Normalized lowercase.                                                              |
 | `name`  | string | Yes      | Owner-typed label. Trim. Max 80. Do not derive from email. Used on Team and assignee chips. |
-| `role`  | string | No       | `member` (default), `coordinator`, or `manager`. Omitted stays Member.                     |
+| `role`  | string | No       | `member` (default), `coordinator`, or `manager`. Omitted stays Member.                      |
 
 ---
 

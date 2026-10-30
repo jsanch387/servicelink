@@ -15,7 +15,7 @@ import { getHasProAccessForPayments } from '@/features/payments/server/getHasPro
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { getStripePlatform } from '@/libs/stripe/platformClient';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextRequest, NextResponse } from 'next/server';
 
 const LOG = '[stripe:connect-express-dashboard]';
@@ -76,24 +76,27 @@ export async function POST(request: NextRequest) {
       .catch(() => ({}))) as ExpressDashboardBody;
     const mobileClient = body.client === 'mobile';
 
-    const hasPro = await getHasProAccessForPayments(supabase, user.id);
-    if (!hasPro) {
-      console.warn(`${LOG} not_pro`, { authMethod });
-      return NextResponse.json(
-        { success: false, error: 'Pro subscription required' },
-        { status: 403 }
-      );
-    }
-
-    const businessResolved = await resolveCurrentBusinessId(supabase);
+    const businessResolved = await requireBusinessPermission(
+      supabase,
+      'payments.manage'
+    );
     if (!businessResolved.ok) {
-      console.warn(`${LOG} business_resolve_failed`, {
+      console.warn(`${LOG} forbidden`, {
         authMethod,
         httpStatus: businessResolved.status,
       });
       return NextResponse.json(
         { success: false, error: businessResolved.error },
         { status: businessResolved.status }
+      );
+    }
+
+    const hasPro = await getHasProAccessForPayments(supabase, user.id);
+    if (!hasPro) {
+      console.warn(`${LOG} not_pro`, { authMethod });
+      return NextResponse.json(
+        { success: false, error: 'Pro subscription required' },
+        { status: 403 }
       );
     }
 
