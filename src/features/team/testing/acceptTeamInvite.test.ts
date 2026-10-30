@@ -29,6 +29,9 @@ function createAdmin(options?: {
   const update = vi.fn().mockReturnValue({
     eq: vi.fn().mockResolvedValue({ error: null }),
   });
+  const memberUpdate = vi.fn().mockReturnValue({
+    eq: vi.fn().mockResolvedValue({ error: null }),
+  });
   const insert = vi.fn().mockResolvedValue({
     error: options?.insertError ?? null,
   });
@@ -38,6 +41,8 @@ function createAdmin(options?: {
   });
 
   return {
+    insert,
+    memberUpdate,
     from: vi.fn((table: string) => {
       if (table === 'business_members') {
         return {
@@ -49,9 +54,7 @@ function createAdmin(options?: {
             }),
           }),
           insert,
-          update: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }),
+          update: memberUpdate,
         };
       }
       if (table === 'team_invites') {
@@ -123,6 +126,67 @@ describe('acceptTeamInvite', () => {
       businessId: 'biz-1',
       businessName: 'Shop',
     });
-    expect(admin.from).toHaveBeenCalledWith('business_members');
+    expect(admin.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role: 'member',
+        user_id: 'user-1',
+        business_id: 'biz-1',
+      })
+    );
+  });
+
+  it('stores coordinator from the invite', async () => {
+    loadTeamInviteByToken.mockResolvedValue({
+      ok: true,
+      invite: {
+        id: 'inv-1',
+        business_id: 'biz-1',
+        email: 'alex@shop.com',
+        role: 'coordinator',
+      },
+      businessName: 'Shop',
+    });
+    lookupOwnedBusinessId.mockResolvedValue(null);
+    lookupActiveMemberBusinessId.mockResolvedValue(null);
+
+    const admin = createAdmin();
+    const result = await acceptTeamInvite(admin as never, {
+      rawToken: 'token',
+      userId: 'user-1',
+      userEmail: 'alex@shop.com',
+    });
+
+    expect(result.ok).toBe(true);
+    expect(admin.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ role: 'coordinator' })
+    );
+  });
+
+  it('updates the role when they are already on the shop', async () => {
+    loadTeamInviteByToken.mockResolvedValue({
+      ok: true,
+      invite: {
+        id: 'inv-1',
+        business_id: 'biz-1',
+        email: 'alex@shop.com',
+        role: 'coordinator',
+      },
+      businessName: 'Shop',
+    });
+    lookupOwnedBusinessId.mockResolvedValue(null);
+    lookupActiveMemberBusinessId.mockResolvedValue('biz-1');
+
+    const admin = createAdmin({
+      existingMember: { id: 'mem-1', status: 'active' },
+    });
+    const result = await acceptTeamInvite(admin as never, {
+      rawToken: 'token',
+      userId: 'user-1',
+      userEmail: 'alex@shop.com',
+    });
+
+    expect(result.ok).toBe(true);
+    expect(admin.insert).not.toHaveBeenCalled();
+    expect(admin.memberUpdate).toHaveBeenCalledWith({ role: 'coordinator' });
   });
 });

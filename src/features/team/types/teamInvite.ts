@@ -4,6 +4,7 @@ export interface TeamInviteRow {
   id: string;
   business_id: string;
   email: string;
+  role?: string | null;
   link_token_hash: string;
   status: TeamInviteStatus;
   invited_by: string;

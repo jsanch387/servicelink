@@ -10,6 +10,8 @@ export interface TeamMemberUi {
   email: string;
   /** Owner-typed invite name. Null on older rows. */
   name: string | null;
+  /** Hired role. Missing values from older clients are shown as Member. */
+  role?: string | null;
   status: TeamMemberUiStatus;
   source: TeamMemberUiSource;
 }

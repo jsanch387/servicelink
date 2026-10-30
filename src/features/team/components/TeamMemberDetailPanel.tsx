@@ -4,6 +4,7 @@ import { Button, Input } from '@/components/shared';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { TEAM_INVITE_NAME_MAX_LENGTH } from '../constants/teamInvite';
+import { teamRoleCopy } from '../constants/teamRoles';
 import type { TeamMemberUi } from '../types/teamMemberUi';
 import { teamMemberHeading } from '../utils/teamInviteDisplayName';
 
@@ -32,6 +33,7 @@ export function TeamMemberDetailPanel({
 }: TeamMemberDetailPanelProps) {
   const heading = teamMemberHeading(member);
   const status = member.status === 'invited' ? 'Invited' : 'Active';
+  const role = teamRoleCopy(member.role);
   const [name, setName] = useState(member.name?.trim() || '');
   const [error, setError] = useState<string | null>(null);
 
@@ -116,7 +118,19 @@ export function TeamMemberDetailPanel({
               <p className="mt-1 text-xs leading-relaxed text-zinc-500">
                 {member.status === 'invited'
                   ? 'They have not joined this shop yet.'
-                  : 'They can open Bookings and run jobs.'}
+                  : 'They are on this shop.'}
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h3 className="mb-3 text-xs font-semibold tracking-wider text-gray-500">
+              Role
+            </h3>
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
+              <p className="text-sm font-medium text-white">{role.label}</p>
+              <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                {role.description}
               </p>
             </div>
           </section>

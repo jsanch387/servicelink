@@ -62,6 +62,7 @@ export function AvailabilityBookingsView({
 }: AvailabilityBookingsViewProps) {
   const access = useDashboardAccess();
   const canWriteBookings = access.can('bookings.write');
+  const canDeleteBookings = access.can('bookings.delete');
   const canRunBookings = access.can('bookings.run');
   const {
     bookings,
@@ -259,7 +260,7 @@ export function AvailabilityBookingsView({
         }`}
       >
         <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <h1 className="text-3xl font-bold leading-none text-white">
                 Bookings
@@ -368,6 +369,7 @@ export function AvailabilityBookingsView({
           onClose={() => setSelectedBooking(null)}
           readOnly={!canWriteBookings}
           canRunActions={canRunBookings}
+          canDelete={canDeleteBookings}
           onMarkCompleted={handleMarkCompleted}
           onCancel={handleCancel}
           onDelete={handleDelete}

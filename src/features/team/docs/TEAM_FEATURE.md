@@ -2,7 +2,7 @@
 
 How Team works in ServiceLink today. Same product on web and mobile: one shop, one owner, people they hire to run jobs.
 
-This file is the Team product spec for this repo. Schema: [`DATABASE.md`](./DATABASE.md). APIs: [`docs/contracts/`](../../../docs/contracts/).
+This file is the Team product spec for this repo. Schema: [`DATABASE.md`](./DATABASE.md). APIs: [`docs/contracts/`](../../../docs/contracts/). Planned roles: [`ROLES.md`](./ROLES.md).
 
 ---
 
@@ -28,7 +28,7 @@ Team is a billing plan for shops that were not already using it. Shops with `tea
 | Can edit / cancel / reschedule / create appointments          | Yes                                               | No                                      |
 | Can open Settings, Payments, Team, Quotes, Reviews, Customers | Yes                                               | No                                      |
 
-v1 has one hired role: **member**. A `manager` role exists in the permission map but is not used in the product yet.
+v1 has one hired role: **member**. A `manager` role exists in the permission map but is not used in the product yet. The next roles (Member, Coordinator, Manager) are defined in [`ROLES.md`](./ROLES.md) and are not in the product yet.
 
 A person can own a shop **or** be an active member of one shop. Not both. Accepting an invite fails if that login already owns a business or is already active on another team.
 

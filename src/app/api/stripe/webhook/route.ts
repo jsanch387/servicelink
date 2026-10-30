@@ -185,6 +185,8 @@ type StoredBookingCheckoutPayload = {
   jobs?: CreateBookingJobItem[];
   /** Public SMS opt-in from contact checkbox (default true when omitted). */
   agreedToNotifications?: boolean;
+  /** Set by checkout when a signed-in shop user started the payment. */
+  createdByUserId?: string;
 };
 
 function customerFormFromCheckoutStored(
@@ -358,6 +360,12 @@ function parseStoredBookingCheckoutPayload(
         : p.agreedToNotifications === true
           ? true
           : undefined,
+    ...(typeof p.createdByUserId === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      p.createdByUserId.trim()
+    )
+      ? { createdByUserId: p.createdByUserId.trim() }
+      : {}),
   };
 }
 
@@ -760,6 +768,7 @@ export async function POST(request: NextRequest) {
         }),
         discountSnapshot,
         smsOptIn: checkoutSmsOptIn,
+        createdByUserId: bookingPayload.createdByUserId ?? null,
         ...(jobDetails
           ? {
               jobDetails,

@@ -7,6 +7,7 @@ import { loadOwnerBookingSale } from '@/features/marketing/server/loadOwnerBooki
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { loadQuoteServiceCatalog } from '@/features/quotes/server/loadQuoteServiceCatalog';
 import { getServiceCategories } from '@/features/services/categories/api/getServiceCategories';
+import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '@/features/subscriptions/constants/membershipVisitDuration';
 import { normalizeUsPhoneDigits } from '@/lib/formatUsPhone';
 import {
@@ -18,6 +19,7 @@ import {
   isUsableMembershipVehicle,
   resolveMembershipCustomerServiceSnapshot,
 } from '@/features/subscriptions/server/resolveMembershipCustomerServiceSnapshot';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -144,28 +146,23 @@ export default async function NewAppointmentPage({
     durationMinutes?: string | string[];
   }>;
 }) {
-  const supabase = await createSupabaseServerClient();
+  const { supabase, user, context } = await requireDashboardPageAccess(
+    'bookings.write'
+  );
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    redirect(ROUTES.AUTH.LOGIN);
-  }
-
-  const stateResult = await getOnboardingState(user.id, supabase);
-  if (!stateResult.success || stateResult.data?.status !== 'completed') {
-    redirect(ROUTES.DASHBOARD.MAIN);
+  if (context.isOwner) {
+    const stateResult = await getOnboardingState(user.id, supabase);
+    if (!stateResult.success || stateResult.data?.status !== 'completed') {
+      redirect(ROUTES.DASHBOARD.MAIN);
+    }
   }
 
   const { data: businessRow, error: businessError } = await supabase
     .from('business_profiles')
     .select(
-      'id, business_name, business_slug, business_type, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, shop_city, shop_state, shop_zip, free_bookings_count'
+      'id, profile_id, business_name, business_slug, business_type, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, shop_city, shop_state, shop_zip, free_bookings_count'
     )
-    .eq('profile_id', user.id)
+    .eq('id', context.businessId)
     .maybeSingle();
 
   if (businessError || !businessRow) {
@@ -174,6 +171,7 @@ export default async function NewAppointmentPage({
 
   const business = businessRow as {
     id: string;
+    profile_id: string;
     business_name: string;
     business_slug: string | null;
     business_type?: string | null;
@@ -188,12 +186,13 @@ export default async function NewAppointmentPage({
     free_bookings_count?: number | null;
   };
 
-  const { data: ownerProfileRow } = await supabase
+  const admin = createSupabaseAdminClient();
+  const { data: ownerProfileRow } = await admin
     .from('profiles')
     .select(
       'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
     )
-    .eq('user_id', user.id)
+    .eq('user_id', business.profile_id)
     .maybeSingle();
 
   const ownerProfile = ownerProfileRow as {

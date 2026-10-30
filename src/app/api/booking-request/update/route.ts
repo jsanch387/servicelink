@@ -91,7 +91,8 @@ export async function PATCH(request: NextRequest) {
     const result = await BookingRequestService.updateBookingRequestStatus(
       requestId,
       status,
-      statusNotes
+      statusNotes,
+      businessProfile.id
     );
 
     if (!result.success) {

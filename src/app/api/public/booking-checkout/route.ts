@@ -36,6 +36,8 @@ import {
   resolveEffectiveCustomerServiceLocation,
 } from '@/features/business-profile/utils/publicServiceLocation';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
+import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
 import {
@@ -439,10 +441,30 @@ export async function POST(request: NextRequest) {
         );
       }
     }
+    const rawBookingPayload = body.bookingPayload;
+    const ownerManualCheckout =
+      rawBookingPayload != null &&
+      typeof rawBookingPayload === 'object' &&
+      (rawBookingPayload as { ownerManualBooking?: unknown })
+        .ownerManualBooking === true;
+    let createdByUserId: string | null = null;
+    if (ownerManualCheckout) {
+      const auth = await getAuthenticatedUser(request);
+      if (!('error' in auth)) {
+        const permitted = await requireBusinessPermission(
+          auth.supabase,
+          'bookings.write'
+        );
+        if (permitted.ok && permitted.businessId === businessId) {
+          createdByUserId = auth.user.id;
+        }
+      }
+    }
     const bookingPayloadForSession = {
       ...bookingPayload,
       taxRateBps: salesTax.rateBps,
       taxCents: salesTax.taxCents,
+      ...(createdByUserId ? { createdByUserId } : {}),
     };
 
     const currency = normalizeCurrency(settings.currency);

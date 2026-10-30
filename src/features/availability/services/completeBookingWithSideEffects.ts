@@ -57,12 +57,14 @@ export async function completeBookingWithSideEffects(
   sessionClient: SupabaseClient<Database>,
   admin: SupabaseClient<Database>,
   bookingId: string,
-  log: CompleteBookingLog
+  log: CompleteBookingLog,
+  businessId?: string
 ): Promise<CompleteBookingResult | null> {
   const updated = await updateBookingStatus(
     sessionClient,
     bookingId,
-    'completed'
+    'completed',
+    businessId
   );
   if (!updated) return null;
 

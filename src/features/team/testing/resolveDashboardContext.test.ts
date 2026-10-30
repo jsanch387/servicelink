@@ -87,6 +87,27 @@ describe('resolveDashboardContext', () => {
     });
   });
 
+  it('keeps a coordinator on the coordinator permissions', async () => {
+    lookupOwnedBusinessId.mockResolvedValue(null);
+    lookupActiveMembership.mockResolvedValue({
+      businessId: 'biz-member',
+      role: 'coordinator',
+    });
+
+    const result = await resolveDashboardContext(
+      createAuthClient({ id: 'user-2' }) as never
+    );
+
+    expect(result).toMatchObject({
+      ok: true,
+      context: {
+        role: 'coordinator',
+        isOwner: false,
+        permissions: permissionsForRole('coordinator'),
+      },
+    });
+  });
+
   it('maps an unknown assigned role to member', async () => {
     lookupOwnedBusinessId.mockResolvedValue(null);
     lookupActiveMembership.mockResolvedValue({

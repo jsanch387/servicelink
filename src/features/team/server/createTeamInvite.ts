@@ -9,7 +9,10 @@ import {
   PENDING_TEAM_INVITE_STATUS,
   TEAM_INVITE_EXPIRY_DAYS,
 } from '../constants/teamInvite';
-import { ACTIVE_TEAM_MEMBER_STATUS } from '../constants/teamRoles';
+import {
+  ACTIVE_TEAM_MEMBER_STATUS,
+  type AssignableTeamRole,
+} from '../constants/teamRoles';
 import { normalizeTeamInviteEmail } from '../utils/normalizeTeamInviteEmail';
 import { createTeamInviteToken } from '../utils/hashTeamInviteToken';
 import type { TeamMemberUi } from '../types/teamMemberUi';
@@ -18,6 +21,7 @@ export type TeamInviteCreated = {
   id: string;
   email: string;
   name: string | null;
+  role: AssignableTeamRole;
   status: 'pending';
 };
 
@@ -67,6 +71,7 @@ export async function createTeamInvite(
     businessName: string;
     rawEmail: string;
     name: string;
+    role: AssignableTeamRole;
     inviteBaseUrl?: string;
   }
 ): Promise<CreateTeamInviteResult> {
@@ -134,6 +139,7 @@ export async function createTeamInvite(
         accepted_user_id: null,
         invited_by: params.invitedBy,
         name: nextName,
+        role: params.role,
       })
       .eq('id', reuseId);
 
@@ -147,6 +153,7 @@ export async function createTeamInvite(
         business_id: params.businessId,
         email,
         name: nextName,
+        role: params.role,
         link_token_hash: tokenHash,
         status: PENDING_TEAM_INVITE_STATUS,
         invited_by: params.invitedBy,
@@ -184,12 +191,14 @@ export async function createTeamInvite(
       id: inviteId,
       email,
       name: nextName,
+      role: params.role,
       status: PENDING_TEAM_INVITE_STATUS,
     },
     member: {
       id: inviteId,
       email,
       name: nextName,
+      role: params.role,
       status: 'invited',
       source: 'invite',
     },

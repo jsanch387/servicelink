@@ -4,6 +4,7 @@ export const TEAM_PERMISSIONS = [
   'bookings.read',
   'bookings.run',
   'bookings.write',
+  'bookings.delete',
   'customers.read',
   'customers.write',
   'quotes.read',
@@ -27,7 +28,12 @@ export const TEAM_PERMISSIONS = [
 export type TeamPermission = (typeof TEAM_PERMISSIONS)[number];
 
 /** Access role for the current shop. Owner is never a `business_members` row. */
-export const DASHBOARD_ACCESS_ROLES = ['owner', 'member', 'manager'] as const;
+export const DASHBOARD_ACCESS_ROLES = [
+  'owner',
+  'member',
+  'coordinator',
+  'manager',
+] as const;
 export type DashboardAccessRole = (typeof DASHBOARD_ACCESS_ROLES)[number];
 
 const WORK_READ: TeamPermission[] = [
@@ -59,9 +65,17 @@ const SHOP_SETUP: TeamPermission[] = [
   'marketing.write',
 ];
 
+const COORDINATOR: TeamPermission[] = [
+  ...MEMBER_READ,
+  ...JOB_RUN,
+  'bookings.write',
+  'bookings.delete',
+];
+
 export const ROLE_PERMISSIONS: Record<DashboardAccessRole, TeamPermission[]> = {
   owner: [...TEAM_PERMISSIONS],
   member: [...MEMBER_READ, ...JOB_RUN],
+  coordinator: COORDINATOR,
   manager: [...WORK_READ, ...JOB_RUN, ...WORK_WRITE, ...SHOP_SETUP],
 };
 

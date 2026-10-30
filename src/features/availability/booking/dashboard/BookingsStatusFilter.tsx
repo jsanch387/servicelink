@@ -32,7 +32,7 @@ export function BookingsAssignedToMeFilter({
       type="button"
       aria-pressed={pressed}
       onClick={() => onPressedChange(!pressed)}
-      className={`inline-flex h-10 cursor-pointer items-center whitespace-nowrap rounded-[10px] border border-white/15 px-3.5 text-sm transition-colors hover:bg-white/[0.04] ${
+      className={`inline-flex h-8 cursor-pointer items-center whitespace-nowrap rounded-lg border border-white/15 px-2.5 text-xs transition-colors hover:bg-white/[0.04] ${
         pressed
           ? 'bg-white/10 font-medium text-white'
           : 'text-gray-200 hover:border-white/30'
@@ -58,6 +58,7 @@ export function BookingsStatusFilter({
         value={value}
         onChange={onChange}
         menuLabel="Appointments"
+        size="sm"
       />
     </div>
   );

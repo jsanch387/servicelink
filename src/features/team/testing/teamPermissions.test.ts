@@ -31,8 +31,22 @@ describe('teamPermissions', () => {
     expect(can({ isOwner: false, permissions }, 'reviews.read')).toBe(false);
     expect(can({ isOwner: false, permissions }, 'customers.read')).toBe(false);
     expect(can({ isOwner: false, permissions }, 'bookings.write')).toBe(false);
+    expect(can({ isOwner: false, permissions }, 'bookings.delete')).toBe(false);
     expect(can({ isOwner: false, permissions }, 'payments.manage')).toBe(false);
     expect(can({ isOwner: false, permissions }, 'team.manage')).toBe(false);
+  });
+
+  it('lets a coordinator schedule without owner locks', () => {
+    const permissions = permissionsForRole('coordinator');
+
+    expect(can({ isOwner: false, permissions }, 'bookings.read')).toBe(true);
+    expect(can({ isOwner: false, permissions }, 'bookings.run')).toBe(true);
+    expect(can({ isOwner: false, permissions }, 'bookings.write')).toBe(true);
+    expect(can({ isOwner: false, permissions }, 'bookings.delete')).toBe(true);
+    expect(can({ isOwner: false, permissions }, 'customers.read')).toBe(false);
+    expect(can({ isOwner: false, permissions }, 'payments.manage')).toBe(false);
+    expect(can({ isOwner: false, permissions }, 'team.manage')).toBe(false);
+    expect(can({ isOwner: false, permissions }, 'account.delete')).toBe(false);
   });
 
   it('defines manager as shop operator without owner-only keys', () => {
@@ -50,6 +64,7 @@ describe('teamPermissions', () => {
     expect(isTeamPermission('bookings.read')).toBe(true);
     expect(isTeamPermission('bookings.admin')).toBe(false);
     expect(isDashboardAccessRole('member')).toBe(true);
+    expect(isDashboardAccessRole('coordinator')).toBe(true);
     expect(isDashboardAccessRole('admin')).toBe(false);
     expect(permissionsForRole('owner')).toEqual([...TEAM_PERMISSIONS]);
   });

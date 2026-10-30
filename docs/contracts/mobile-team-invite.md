@@ -43,13 +43,14 @@ Do not send `businessId`. The server resolves the shop from the signed-in owner.
 ## Request body (JSON)
 
 ```json
-{ "email": "sam@example.com", "name": "Sam Rivera" }
+{ "email": "sam@example.com", "name": "Sam Rivera", "role": "member" }
 ```
 
 | Field   | Type   | Required | Notes                                                                                       |
 | ------- | ------ | -------- | ------------------------------------------------------------------------------------------- |
 | `email` | string | Yes      | Invitee. Normalized lowercase.                                                              |
 | `name`  | string | Yes      | Owner-typed label. Trim. Max 80. Do not derive from email. Used on Team and assignee chips. |
+| `role`  | string | No       | `member` (default), `coordinator`, or `manager`. Omitted stays Member.                     |
 
 ---
 
@@ -57,6 +58,7 @@ Do not send `businessId`. The server resolves the shop from the signed-in owner.
 
 - **400** if the email is missing or invalid, or if they invite themselves.
 - **400** `{ "ok": false, "error": "Enter their name." }` if `name` is missing, blank, or longer than 80 characters.
+- **400** `{ "ok": false, "error": "Choose Member, Coordinator, or Manager." }` if `role` is present and not one of those three.
 - **409** if that email is already an **active** member of this shop.
 - If a **pending** invite exists for this shop + email: refresh token + 14-day expiry and resend. Non-empty `name` updates the row.
 - If they were **removed** earlier: reopen that invite row (`revoked` → `pending`, new token) and email again.

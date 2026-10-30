@@ -11,5 +11,7 @@ Run in the SQL Editor on the project, in order. Scripts are idempotent.
 | [`005_member_office_select_revoke.sql`](./005_member_office_select_revoke.sql) | Drop member SELECT on customers, quotes, reviews              |
 | [`006_team_invites_name.sql`](./006_team_invites_name.sql)                     | Owner-typed `team_invites.name` (shop-facing label)           |
 | [`007_team_plan_grandfather.sql`](./007_team_plan_grandfather.sql)             | `team_included` snapshot and `profiles.subscription_plan`     |
+| [`008_team_roles.sql`](./008_team_roles.sql)                                   | `team_invites.role` and allowed hired roles                   |
+| [`009_booking_created_by.sql`](./009_booking_created_by.sql)                   | `bookings.created_by_user_id` for staff-created appointments  |
 
 The account owner is **not** backfilled. They stay on `business_profiles.profile_id`.

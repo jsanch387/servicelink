@@ -101,11 +101,11 @@ import {
   quotePublicBookingSalesTax,
   salesTaxEmailLine,
 } from '@/features/availability/booking/utils/publicBookingSalesTax';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { assertPublicBookingsRateLimits } from '@/server/rateLimit/publicApiRateLimit';
 import { supabaseErrorForLogs } from '@/server/logging/structuredLog';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextRequest, NextResponse } from 'next/server';
 
 function publicBookingStoredTax(args: {
@@ -259,6 +259,7 @@ export async function POST(request: NextRequest) {
     }
 
     let ownerAuthMethod: 'bearer' | 'cookie' | 'public' = 'public';
+    let createdByUserId: string | null = null;
 
     const supabase = createSupabaseAdminClient();
 
@@ -462,7 +463,10 @@ export async function POST(request: NextRequest) {
           auth.status
         );
       }
-      const resolved = await resolveCurrentBusinessId(auth.supabase);
+      const resolved = await requireBusinessPermission(
+        auth.supabase,
+        'bookings.write'
+      );
       if (!resolved.ok) {
         logBookingTransaction(requestId, 'warn', 'owner_business', {
           http: resolved.status,
@@ -482,6 +486,7 @@ export async function POST(request: NextRequest) {
         );
       }
       ownerAuthMethod = auth.authMethod;
+      createdByUserId = auth.user.id;
     }
 
     const p = profile as {
@@ -807,6 +812,7 @@ export async function POST(request: NextRequest) {
           ...(typeof publicSmsOptIn === 'boolean'
             ? { smsOptIn: publicSmsOptIn }
             : {}),
+          createdByUserId,
         });
       } catch (createErr) {
         logBookingTransaction(requestId, 'error', 'appointment_create_failed', {
@@ -1115,6 +1121,7 @@ export async function POST(request: NextRequest) {
       ...(typeof publicSmsOptIn === 'boolean'
         ? { smsOptIn: publicSmsOptIn }
         : {}),
+      createdByUserId,
     });
 
     const totalAfterDiscount = discountSnapshot

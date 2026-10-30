@@ -28,7 +28,7 @@ One **active** membership per user (v1: a teammate belongs to one shop).
 | `id`          | uuid PK     | `gen_random_uuid()`                         |
 | `business_id` | uuid FK     | → `business_profiles(id)` ON DELETE CASCADE |
 | `user_id`     | uuid FK     | → `auth.users(id)` ON DELETE CASCADE        |
-| `role`        | text        | `member` (default). Hired admin later.      |
+| `role`        | text        | `member` (default), `coordinator`, or `manager`. See [`008_team_roles.sql`](./migrations/008_team_roles.sql). |
 | `status`      | text        | `active` \| `removed`                       |
 | `created_at`  | timestamptz | `now()`                                     |
 | `updated_at`  | timestamptz | `public.set_updated_at()`                   |
@@ -62,6 +62,7 @@ Pending email invites. A `business_members` row is created only after they accep
 | `business_id`      | uuid FK     | → `business_profiles(id)` ON DELETE CASCADE                                    |
 | `email`            | text        | Normalized lowercase                                                           |
 | `name`             | text        | Owner-typed label. Required on new invites. Not from email. Keep after accept. |
+| `role`             | text        | `member` (default), `coordinator`, or `manager`. Copied onto `business_members` at accept. |
 | `link_token_hash`  | text unique | SHA-256 of the raw URL token                                                   |
 | `status`           | text        | `pending` \| `accepted` \| `revoked` \| `expired`                              |
 | `invited_by`       | uuid FK     | Owner `auth.users` id                                                          |
@@ -100,6 +101,18 @@ Not a `business_members` id — the owner is not in that table and can still be 
 Trigger rejects anyone who is not the shop `profile_id` or an active member of that `business_id`. Removing a member (app) clears **upcoming confirmed** assignments only; past and completed keep the name.
 
 No RLS change. Column is readable on existing booking SELECT. Writes stay owner-only until the UI/API slice.
+
+---
+
+## Who created the appointment
+
+**SQL:** [`migrations/009_booking_created_by.sql`](./migrations/009_booking_created_by.sql)
+
+| Column               | Type    | Notes                                                                 |
+| -------------------- | ------- | --------------------------------------------------------------------- |
+| `created_by_user_id` | uuid FK | → `auth.users(id)` ON DELETE SET NULL. Null for customer and system bookings. |
+
+Set by the server from the signed-in user when that person creates the appointment. Not shown in the product yet. Removing a teammate does not clear it.
 
 ---
 

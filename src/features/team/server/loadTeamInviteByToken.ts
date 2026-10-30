@@ -24,7 +24,7 @@ export async function loadTeamInviteByToken(
   const { data: invite, error } = await db
     .from('team_invites')
     .select(
-      'id, business_id, email, link_token_hash, status, invited_by, accepted_user_id, expires_at, created_at, updated_at'
+      'id, business_id, email, role, link_token_hash, status, invited_by, accepted_user_id, expires_at, created_at, updated_at'
     )
     .eq('link_token_hash', hashTeamInviteToken(token))
     .maybeSingle();

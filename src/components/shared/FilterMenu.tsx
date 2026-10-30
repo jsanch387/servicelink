@@ -32,6 +32,7 @@ export function FilterMenu<T extends string>({
   onChange,
   label = 'Filter',
   menuLabel = 'Filter',
+  size = 'md',
   expanded,
   onExpandedChange,
 }: {
@@ -40,6 +41,7 @@ export function FilterMenu<T extends string>({
   onChange: (id: T) => void;
   label?: string;
   menuLabel?: string;
+  size?: 'sm' | 'md';
   /** When set, the parent owns whether the menu is open. */
   expanded?: boolean;
   onExpandedChange?: (open: boolean) => void;
@@ -106,11 +108,15 @@ export function FilterMenu<T extends string>({
         aria-expanded={open}
         aria-haspopup="listbox"
         onClick={() => setOpen(!open)}
-        className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-[10px] border border-white/15 px-3.5 text-sm text-gray-200 transition-colors hover:border-white/30 hover:bg-white/[0.04]"
+        className={`inline-flex shrink-0 cursor-pointer items-center border border-white/15 text-gray-200 transition-colors hover:border-white/30 hover:bg-white/[0.04] ${
+          size === 'sm'
+            ? 'h-8 gap-1.5 rounded-lg px-2.5 text-xs'
+            : 'h-10 gap-2 rounded-[10px] px-3.5 text-sm'
+        }`}
       >
         <span>{label}</span>
         <AdjustmentsHorizontalIcon
-          className="h-4 w-4 shrink-0 text-gray-400"
+          className={`shrink-0 text-gray-400 ${size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'}`}
           aria-hidden
         />
       </button>

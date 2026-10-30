@@ -3,6 +3,7 @@
 import { toast } from '@/components/shared';
 import { API_ROUTES } from '@/constants/routes';
 import React, { useCallback, useEffect, useState } from 'react';
+import type { AssignableTeamRole } from '../constants/teamRoles';
 import type { TeamMemberUi } from '../types/teamMemberUi';
 import { InviteTeamMemberModal } from './InviteTeamMemberModal';
 import { RemoveTeamMemberModal } from './RemoveTeamMemberModal';
@@ -74,11 +75,15 @@ export const TeamMembersPanel: React.FC<TeamMembersPanelProps> = ({
     };
   }, [loadMembers]);
 
-  const handleInvite = async (email: string, name: string) => {
+  const handleInvite = async (
+    email: string,
+    name: string,
+    role: AssignableTeamRole
+  ) => {
     const response = await fetch(API_ROUTES.TEAM_INVITES, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, name }),
+      body: JSON.stringify({ email, name, role }),
     });
     const result = (await response.json().catch(() => null)) as {
       ok?: boolean;
