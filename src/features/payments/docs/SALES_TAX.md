@@ -42,7 +42,7 @@ The owner create-appointment wizard uses the same formula. A custom job is taxed
 
 Confirmation and job emails include a tax line only when `tax_cents` is greater than 0.
 
-Tap to pay on an existing job reads `booking_payments.tax_cents` and charges the amount still due on that taxed job. It does not look up the shop rate again.
+Tap to pay on an existing job uses the rate already saved on `booking_payments` and applies it to the current price after discounts. It does not look up the shop rate again. Reschedule does the same when a sale or promo changes that price, and rewrites `tax_cents` and the payment total so they match.
 
 ## Quotes
 

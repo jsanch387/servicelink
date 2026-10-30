@@ -278,6 +278,29 @@ describe('computeBookingAmountDue', () => {
     expect(result.adjustedTotalCents).toBe(11_000);
     expect(result.amountDueCents).toBe(5_500);
   });
+
+  it('recomputes tax on the price after a sale, not the pre-sale tax', () => {
+    const result = computeBookingAmountDue({
+      servicePriceCents: 17_500,
+      addonDetails: [],
+      sessionFees: [],
+      paidOnlineAmountCents: 0,
+      sessionPayment: { method: 'cash', amountCents: 16_144 },
+      discount: {
+        discountSource: 'sale',
+        discountType: 'percentage',
+        discountValue: 10,
+        discountCents: 1_750,
+      },
+      taxCents: 438,
+      taxRateBps: 250,
+    });
+
+    expect(result.discountCents).toBe(1_750);
+    expect(result.taxCents).toBe(394);
+    expect(result.adjustedTotalCents).toBe(16_144);
+    expect(result.amountDueCents).toBe(0);
+  });
 });
 
 describe('computeBookingRemainingAmountCents', () => {

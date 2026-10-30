@@ -45,8 +45,10 @@ export async function hydrateBookingRowsForDisplay(
       : new Set<string>();
 
   if (bookingIds.length > 0) {
+    // Payment rows are owner-only under RLS. Read them with the service role
+    // so the amount due includes sales tax for whoever can see the booking.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: paymentRows } = await (supabase as any)
+    const { data: paymentRows } = await (createSupabaseAdminClient() as any)
       .from('booking_payments')
       .select(
         'booking_id, payment_status, payment_method_selected, currency, total_amount_cents, paid_online_amount_cents, remaining_amount_cents, tax_cents, tax_rate_bps'
