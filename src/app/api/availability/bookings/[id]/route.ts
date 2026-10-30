@@ -21,6 +21,7 @@ import {
   updateBookingStatus,
   type BookingStatusUpdate,
 } from '@/features/availability/services/bookingService';
+import { syncBookingPaymentTaxAfterDiscount } from '@/features/availability/booking/server/syncBookingPaymentTaxAfterDiscount';
 import { completeBookingWithSideEffects } from '@/features/availability/services/completeBookingWithSideEffects';
 import { getReviewInviteRequestId } from '@/features/reviews/server/reviewInviteRouteLog';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
@@ -164,6 +165,7 @@ export async function PATCH(
         );
       }
 
+      await syncBookingPaymentTaxAfterDiscount(result.row, admin);
       const payment = await loadPaymentRowForBooking(admin, bookingId.trim());
       const display = attachPaymentSummaryToDisplay(
         mapBookingRowToDisplay(result.row),

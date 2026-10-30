@@ -245,8 +245,9 @@ export async function handleJobCompletedAction(opts: {
 
   const workHandoffStatus = resolveWorkHandoffStatusForCompletion(handoff);
 
+  const adminForInvoice = createSupabaseAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: paymentsData } = await (auth.supabase as any)
+  const { data: paymentsData } = await (adminForInvoice as any)
     .from('booking_payments')
     .select('paid_online_amount_cents, tax_cents, tax_rate_bps')
     .eq('booking_id', bookingId)
@@ -278,7 +279,6 @@ export async function handleJobCompletedAction(opts: {
     taxRateBps: payments?.tax_rate_bps,
   });
 
-  const adminForInvoice = createSupabaseAdminClient();
   const invoiceAlreadyPaid = await customerInvoiceCoversBooking(
     adminForInvoice,
     business.id,

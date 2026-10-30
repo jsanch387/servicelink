@@ -10,7 +10,6 @@ import {
 } from '@/features/availability/booking/server/buildInvoiceSnapshot';
 import { invoiceCoveredByMembership } from '@/features/availability/booking/utils/invoiceCoveredByMembership';
 import { formatSalesTaxRateLabel } from '@/features/payments/utils/salesTaxRate';
-import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import {
   groupInvoiceSnapshotLines,
   type InvoiceLineGroup,
@@ -197,10 +196,6 @@ function JobReceiptBlock({
   includedWhenZero?: boolean;
 }) {
   const option = job.servicePriceOptionLabel?.trim() || null;
-  const vehicle = job.vehicleLabel?.trim() || null;
-  const duration =
-    job.durationMinutes > 0 ? formatDurationMinutes(job.durationMinutes) : null;
-  const meta = [vehicle, duration].filter(Boolean).join(' · ');
 
   return (
     <div
@@ -226,13 +221,6 @@ function JobReceiptBlock({
           includedWhenZero={includedWhenZero}
         />
       </div>
-      {meta ? (
-        <p
-          className={`mt-1 text-[13px] leading-snug text-[#888480] dark:text-[#aaa] ${PUBLIC_INVOICE_TEXT_WRAP_CLASS}`}
-        >
-          {meta}
-        </p>
-      ) : null}
       {job.addOns.map(addOn => (
         <div
           key={`${addOn.name}-${addOn.priceCents}`}
@@ -547,19 +535,6 @@ export function PublicInvoicePageShell({
             )}
           </div>
 
-          {(snapshot.totals.taxCents ?? 0) > 0 ? (
-            <div className="flex items-center justify-between gap-4 border-t border-[#ebe8e1] px-5 py-3 text-[13px] sm:px-6 md:px-8 dark:border-[#2a2a2a]">
-              <span className="text-[#888480]">
-                {snapshot.totals.taxRateBps
-                  ? `Tax (${formatSalesTaxRateLabel(snapshot.totals.taxRateBps)})`
-                  : 'Tax'}
-              </span>
-              <span className="tabular-nums text-[#0f0f0f] dark:text-white">
-                {formatCents(snapshot.totals.taxCents ?? 0)}
-              </span>
-            </div>
-          ) : null}
-
           <VisitSummary
             customerName={snapshot.customer.name}
             serviceName={snapshot.booking.serviceName}
@@ -587,6 +562,18 @@ export function PublicInvoicePageShell({
                     includedWhenZero={coveredByMembership}
                   />
                 ))}
+                {(snapshot.totals.taxCents ?? 0) > 0 ? (
+                  <div
+                    className={`${PUBLIC_INVOICE_LINE_ROW_CLASS} border-t border-[#ebe8e1] pt-4 dark:border-[#2a2a2a]`}
+                  >
+                    <p className="flex-1 leading-snug text-[15px] font-medium text-[#1a1a1a] dark:text-[#f0f0f0]">
+                      {snapshot.totals.taxRateBps
+                        ? `Tax (${formatSalesTaxRateLabel(snapshot.totals.taxRateBps)})`
+                        : 'Tax'}
+                    </p>
+                    <ChargeAmount amountCents={snapshot.totals.taxCents ?? 0} />
+                  </div>
+                ) : null}
               </div>
             </div>
           ) : null}
