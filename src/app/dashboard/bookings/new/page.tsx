@@ -1,7 +1,13 @@
+import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
 import { ROUTES } from '@/constants/routes';
 import { CreateAppointmentWizard } from '@/features/availability/booking/create-appointment';
 import { FREE_BOOKINGS_LIMIT, isProAccess } from '@/features/pricing';
+import type { CustomerBookingPrefill } from '@/features/availability/booking/create-appointment/types/customerBookingPrefill';
 import type { MembershipVisitPrefill } from '@/features/availability/booking/create-appointment/types/membershipVisitPrefill';
+import {
+  CUSTOMER_ASSET_TYPE_VEHICLE,
+  parseVehicleAssetAttributes,
+} from '@/features/customer-management/utils/customerAssetTypes';
 import { loadPublicBookingServiceLocation } from '@/features/business-profile/server/loadPrimaryServiceArea';
 import { loadOwnerBookingSale } from '@/features/marketing/server/loadOwnerBookingSale';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
@@ -131,6 +137,82 @@ async function loadMembershipVisitPrefill(
   };
 }
 
+async function loadCustomerBookingPrefill(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  businessId: string,
+  businessType: string | null | undefined,
+  searchParams: { customerId?: string | string[] }
+): Promise<CustomerBookingPrefill | null> {
+  const customerId = firstParam(searchParams.customerId)?.trim() || '';
+  if (!customerId || !UUID_RE.test(customerId)) return null;
+
+  const { data: customer } = await supabase
+    .from('customers')
+    .select(
+      'id, full_name, phone, email, notes, street_address, unit, city, state, zip'
+    )
+    .eq('id', customerId)
+    .eq('business_id', businessId)
+    .maybeSingle();
+
+  if (!customer) return null;
+
+  const row = customer as {
+    full_name: string;
+    phone: string | null;
+    email: string | null;
+    notes: string | null;
+    street_address: string | null;
+    unit: string | null;
+    city: string | null;
+    state: string | null;
+    zip: string | null;
+  };
+  const address = {
+    street: row.street_address?.trim() || '',
+    unit: row.unit?.trim() || '',
+    city: row.city?.trim() || '',
+    state: row.state?.trim() || '',
+    zip: row.zip?.trim() || '',
+  };
+  const phone = row.phone ? normalizeUsPhoneDigits(row.phone) : '';
+  const notes = row.notes?.trim() || '';
+
+  let vehicles: CustomerBookingPrefill['vehicles'];
+  if (isVehicleRelatedBusinessType(businessType)) {
+    const { data: assets } = await supabase
+      .from('customer_assets')
+      .select('attributes')
+      .eq('customer_id', customerId)
+      .eq('business_id', businessId)
+      .eq('asset_type', CUSTOMER_ASSET_TYPE_VEHICLE)
+      .order('updated_at', { ascending: false })
+      .limit(20);
+    const seen = new Set<string>();
+    vehicles = [];
+    for (const asset of assets ?? []) {
+      const parsed = parseVehicleAssetAttributes(asset.attributes);
+      if (!parsed) continue;
+      const key = [parsed.year, parsed.make, parsed.model]
+        .map(part => part.toLowerCase())
+        .join('|');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      vehicles.push(parsed);
+    }
+    if (vehicles.length === 0) vehicles = undefined;
+  }
+
+  return {
+    customerName: row.full_name.trim() || 'Customer',
+    email: row.email?.trim() || '',
+    phone,
+    notes: notes || undefined,
+    address: isUsableMembershipAddress(address) ? address : undefined,
+    vehicles,
+  };
+}
+
 export default async function NewAppointmentPage({
   searchParams,
 }: {
@@ -142,6 +224,7 @@ export default async function NewAppointmentPage({
     notes?: string | string[];
     planName?: string | string[];
     durationMinutes?: string | string[];
+    customerId?: string | string[];
   }>;
 }) {
   const supabase = await createSupabaseServerClient();
@@ -230,12 +313,19 @@ export default async function NewAppointmentPage({
     categoriesResult,
     activeSale,
     membershipVisit,
+    customerPrefill,
     taxRow,
   ] = await Promise.all([
     loadQuoteServiceCatalog(supabase, business.id),
     getServiceCategories(business.id),
     loadOwnerBookingSale(supabase, business.id),
     loadMembershipVisitPrefill(supabase, business.id, params),
+    loadCustomerBookingPrefill(
+      supabase,
+      business.id,
+      business.business_type,
+      params
+    ),
     supabase
       .from('payment_settings')
       .select('tax_enabled, tax_rate_bps')
@@ -264,6 +354,7 @@ export default async function NewAppointmentPage({
       serviceLocation={serviceLocation}
       activeSale={activeSale}
       membershipVisit={membershipVisit}
+      customerPrefill={membershipVisit ? null : customerPrefill}
       salesTaxEnabled={salesTax?.tax_enabled === true}
       salesTaxRateBps={
         typeof salesTax?.tax_rate_bps === 'number' ? salesTax.tax_rate_bps : 0

@@ -175,6 +175,9 @@ describe('getDashboardPageTitle', () => {
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.TEAM)).toBe('Team');
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.INVOICES)).toBe('Invoices');
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.EXPENSES)).toBe('Expenses');
+    expect(getDashboardPageTitle(ROUTES.DASHBOARD.CUSTOMER('cust_1'))).toBe(
+      'Customers'
+    );
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.INVOICES_NEW)).toBe(
       'New invoice'
     );

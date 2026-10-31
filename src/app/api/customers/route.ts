@@ -155,11 +155,12 @@ export async function GET(request: Request) {
         business_name: string | null;
         business_slug: string | null;
         business_link: string | null;
+        business_type: string | null;
       } | null;
       error: unknown;
     } = await supabase
       .from('business_profiles')
-      .select('business_name, business_slug, business_link')
+      .select('business_name, business_slug, business_link, business_type')
       .eq('id', businessId)
       .single();
 
@@ -239,6 +240,7 @@ export async function GET(request: Request) {
       success: true,
       customers,
       businessName: businessProfile?.business_name ?? null,
+      businessType: businessProfile?.business_type ?? null,
       businessBookingLink,
     });
   } catch (e) {
