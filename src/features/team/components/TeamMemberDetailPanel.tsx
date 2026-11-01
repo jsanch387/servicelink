@@ -123,7 +123,9 @@ export function TeamMemberDetailPanel({
               <p className="truncate text-base font-semibold tracking-tight text-white">
                 {heading}
               </p>
-              <p className="mt-1 truncate text-sm text-white/60">{member.email}</p>
+              <p className="mt-1 truncate text-sm text-white/60">
+                {member.email}
+              </p>
             </div>
             <p
               className={`shrink-0 text-sm font-medium ${
