@@ -190,7 +190,8 @@ async function loadCustomerBookingPrefill(
       .limit(20);
     const seen = new Set<string>();
     vehicles = [];
-    for (const asset of assets ?? []) {
+    const rows = (assets ?? []) as { attributes: unknown }[];
+    for (const asset of rows) {
       const parsed = parseVehicleAssetAttributes(asset.attributes);
       if (!parsed) continue;
       const key = [parsed.year, parsed.make, parsed.model]
