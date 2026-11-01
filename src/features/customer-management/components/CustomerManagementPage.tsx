@@ -7,6 +7,7 @@ import {
   listPageCount,
   listPageItems,
 } from '@/components/shared';
+import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
 import { ROUTES } from '@/constants/routes';
 import { DEMO_NEEDS_ATTENTION_CUSTOMER } from '@/features/customer-management/constants/demoNeedsAttentionCustomer';
 import { useCustomerManagement } from '@/features/customer-management/hooks/useCustomerManagement';
@@ -20,6 +21,7 @@ import { CustomerListEmptyState } from './CustomerListEmptyState';
 import { CustomerManagementPageSkeleton } from './CustomerManagementPageSkeleton';
 import { CustomerMobileList } from './CustomerMobileList';
 import { CustomerSearchAndFilters } from './CustomerSearchAndFilters';
+import { ImportCustomersModal } from './ImportCustomersModal';
 import { CustomersInitialEmptyState } from './CustomersInitialEmptyState';
 
 /** Phone cards stay short. The desktop table has room for a longer page. */
@@ -50,12 +52,14 @@ export const CustomerManagementPage: React.FC = () => {
   const canWriteCustomers = useDashboardAccess().can('customers.write');
   const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] =
     React.useState(false);
+  const [isImportOpen, setIsImportOpen] = React.useState(false);
   const [addCustomerModalBusy, setAddCustomerModalBusy] = React.useState(false);
   const {
     loadStatus,
     loadError,
     reloadCustomers,
     customers,
+    businessType,
     query,
     setQuery,
     statusFilter,
@@ -120,7 +124,9 @@ export const CustomerManagementPage: React.FC = () => {
                     ? () => setIsAddCustomerModalOpen(true)
                     : undefined
                 }
-                onImport={canWriteCustomers ? () => undefined : undefined}
+                onImport={
+                  canWriteCustomers ? () => setIsImportOpen(true) : undefined
+                }
               />
 
               {shouldShowNeedsAttentionDemo ? (
@@ -173,6 +179,19 @@ export const CustomerManagementPage: React.FC = () => {
                 !shouldShowNeedsAttentionDemo && (
                   <CustomerListEmptyState statusFilter={statusFilter} />
                 )}
+
+              {canWriteCustomers ? (
+                <ImportCustomersModal
+                  isOpen={isImportOpen}
+                  onClose={() => setIsImportOpen(false)}
+                  includeVehicles={isVehicleRelatedBusinessType(businessType)}
+                  existingCustomers={customers.map(customer => ({
+                    phone: customer.phone,
+                    email: customer.email,
+                  }))}
+                  onImported={() => void reloadCustomers({ silent: true })}
+                />
+              ) : null}
 
               {canWriteCustomers ? (
                 <Modal

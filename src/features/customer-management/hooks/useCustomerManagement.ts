@@ -44,6 +44,7 @@ export function useCustomerManagement() {
   const [loadStatus, setLoadStatus] = useState<LoadStatus>('loading');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
+  const [businessType, setBusinessType] = useState<string | null>(null);
 
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -74,6 +75,7 @@ export function useCustomerManagement() {
     const result = await fetchCustomersList();
     if (result.ok) {
       setCustomers(result.customers);
+      setBusinessType(result.businessType);
       setSmsBusinessName(result.businessName ?? BUSINESS_NAME_PLACEHOLDER);
       setSmsBookingLink(result.businessBookingLink || BOOKING_LINK_PLACEHOLDER);
       if (!silent) {
@@ -219,6 +221,7 @@ export function useCustomerManagement() {
     loadError,
     reloadCustomers: loadCustomers,
     customers,
+    businessType,
     query,
     setQuery,
     statusFilter,

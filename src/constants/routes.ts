@@ -200,6 +200,7 @@ export const API_ROUTES = {
    */
   PAYMENTS_REVENUE: '/api/payments/revenue',
   CUSTOMERS: '/api/customers',
+  CUSTOMERS_IMPORT: '/api/customers/import',
   /** Completed visits for one customer, newest first. */
   customerVisits: (customerId: string) =>
     `/api/customers/${encodeURIComponent(customerId.trim())}/visits`,

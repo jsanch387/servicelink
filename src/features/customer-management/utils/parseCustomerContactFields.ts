@@ -58,7 +58,7 @@ export function parseCustomerAddressFields(input: {
   return { ok: true, address: { street, unit, city, state, zip } };
 }
 
-const CUSTOMER_NAME_MAX_LENGTH = 120;
+export const CUSTOMER_NAME_MAX_LENGTH = 120;
 
 export type CustomerProfileInput = {
   name: string;
