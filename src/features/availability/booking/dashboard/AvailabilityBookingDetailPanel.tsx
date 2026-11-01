@@ -34,6 +34,8 @@ interface AvailabilityBookingDetailPanelProps {
   readOnly?: boolean;
   /** Complete + collect pay. Defaults to the inverse of `readOnly`. */
   canRunActions?: boolean;
+  /** Permanently delete the appointment. Defaults to the same gate as edit. */
+  canDelete?: boolean;
   onMarkCompleted: (
     id: string,
     args?: CompleteAppointmentConfirmArgs
@@ -98,6 +100,7 @@ export function AvailabilityBookingDetailPanel({
   onClose,
   readOnly = false,
   canRunActions,
+  canDelete,
   onMarkCompleted,
   onCancel,
   onDelete,
@@ -132,7 +135,7 @@ export function AvailabilityBookingDetailPanel({
   const showPaymentSection = canComplete && Boolean(payment);
   const showCompleteTile = isConfirmed && canComplete;
   const showManageTiles = isConfirmed && canManageBooking;
-  const showDeleteTile = canManageBooking;
+  const showDeleteTile = canDelete ?? canManageBooking;
   const showActionsSection =
     showCompleteTile || showManageTiles || showDeleteTile;
   const jobs = booking.jobs ?? [];

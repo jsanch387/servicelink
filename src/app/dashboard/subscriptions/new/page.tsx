@@ -3,6 +3,7 @@ import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelper
 import { CreateSubscriptionPlanPage } from '@/features/subscriptions';
 import { loadMembershipsAccess } from '@/features/subscriptions/server/loadMembershipsAccess';
 import { loadMembershipShopTax } from '@/features/subscriptions/server/membershipSalesTax';
+import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { redirect } from 'next/navigation';
@@ -20,6 +21,8 @@ export default async function NewSubscriptionPlanPage() {
   if (userError || !user) {
     redirect(ROUTES.AUTH.LOGIN);
   }
+
+  await requireDashboardPageAccess('billing.manage');
 
   const stateResult = await getOnboardingState(user.id, supabase);
   if (!stateResult.success || stateResult.data?.status !== 'completed') {

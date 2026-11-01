@@ -11,8 +11,8 @@ import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQue
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import type { CheckoutPaymentMode } from '@/features/payments/types/checkoutPaymentMode';
 import { MAX_SALES_TAX_PERCENT } from '@/features/payments/utils/salesTaxRate';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextRequest, NextResponse } from 'next/server';
 
 const CHECKOUT_MODES: readonly CheckoutPaymentMode[] = [
@@ -42,19 +42,22 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    const businessResolved = await requireBusinessPermission(
+      supabase,
+      'payments.manage'
+    );
+    if (!businessResolved.ok) {
+      return NextResponse.json(
+        { success: false, error: businessResolved.error },
+        { status: businessResolved.status }
+      );
+    }
+
     const hasPro = await getHasProAccessForPayments(supabase, user.id);
     if (!hasPro) {
       return NextResponse.json(
         { success: false, error: 'Pro subscription required' },
         { status: 403 }
-      );
-    }
-
-    const businessResolved = await resolveCurrentBusinessId(supabase);
-    if (!businessResolved.ok) {
-      return NextResponse.json(
-        { success: false, error: businessResolved.error },
-        { status: businessResolved.status }
       );
     }
 

@@ -4,6 +4,7 @@ import { mergeQuoteAssetsPreservingExtra } from '@/features/quotes/shared/quoteA
 import { validateUpdateQuoteBody } from '@/features/quotes/edit/validateUpdateQuoteBody';
 import { loadQuoteSalesTax } from '@/features/quotes/server/loadQuoteSalesTax';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextResponse } from 'next/server';
@@ -117,7 +118,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     const p = parsed.data;
     const salesTax = await loadQuoteSalesTax(
-      supabase,
+      createSupabaseAdminClient(),
       resolved.businessId,
       p.priceCents
     );

@@ -40,7 +40,9 @@ vi.mock('@/features/email/services/resendClient', () => ({
 }));
 
 function postInvite(
-  body: { email?: string; name?: string } = { email: 'jose@shop.com' },
+  body: { email?: string; name?: string; role?: string } = {
+    email: 'jose@shop.com',
+  },
   headers?: HeadersInit
 ) {
   return POST(
@@ -169,8 +171,123 @@ describe('POST /api/team/invites', () => {
         ownerEmail: 'owner@shop.com',
         rawEmail: 'sam@example.com',
         name: 'Sam Rivera',
+        role: 'member',
       })
     );
+  });
+
+  it('passes coordinator when the owner picks that role', async () => {
+    getAuthenticatedUserMock.mockResolvedValue({
+      user: { id: 'owner-1', email: 'owner@shop.com' },
+      supabase: {},
+      authMethod: 'bearer',
+    });
+    requireOwnedBusinessMock.mockResolvedValue({
+      ok: true,
+      businessId: 'biz',
+      userId: 'owner-1',
+    });
+    createTeamInviteMock.mockResolvedValue({
+      ok: true,
+      resent: false,
+      invite: {
+        id: 'inv-1',
+        email: 'sam@example.com',
+        name: 'Sam Rivera',
+        role: 'coordinator',
+        status: 'pending',
+      },
+      member: {
+        id: 'inv-1',
+        email: 'sam@example.com',
+        name: 'Sam Rivera',
+        role: 'coordinator',
+        status: 'invited',
+        source: 'invite',
+      },
+    });
+
+    const response = await postInvite({
+      email: 'sam@example.com',
+      name: 'Sam Rivera',
+      role: 'coordinator',
+    });
+
+    expect(response.status).toBe(201);
+    expect(createTeamInviteMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ role: 'coordinator' })
+    );
+  });
+
+  it('passes manager when the owner picks that role', async () => {
+    getAuthenticatedUserMock.mockResolvedValue({
+      user: { id: 'owner-1', email: 'owner@shop.com' },
+      supabase: {},
+      authMethod: 'bearer',
+    });
+    requireOwnedBusinessMock.mockResolvedValue({
+      ok: true,
+      businessId: 'biz',
+      userId: 'owner-1',
+    });
+    createTeamInviteMock.mockResolvedValue({
+      ok: true,
+      resent: false,
+      invite: {
+        id: 'inv-1',
+        email: 'sam@example.com',
+        name: 'Sam Rivera',
+        role: 'manager',
+        status: 'pending',
+      },
+      member: {
+        id: 'inv-1',
+        email: 'sam@example.com',
+        name: 'Sam Rivera',
+        role: 'manager',
+        status: 'invited',
+        source: 'invite',
+      },
+    });
+
+    const response = await postInvite({
+      email: 'sam@example.com',
+      name: 'Sam Rivera',
+      role: 'manager',
+    });
+
+    expect(response.status).toBe(201);
+    expect(createTeamInviteMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ role: 'manager' })
+    );
+  });
+
+  it('returns 400 for a role the owner cannot assign', async () => {
+    getAuthenticatedUserMock.mockResolvedValue({
+      user: { id: 'owner-1', email: 'owner@shop.com' },
+      supabase: {},
+      authMethod: 'bearer',
+    });
+    requireOwnedBusinessMock.mockResolvedValue({
+      ok: true,
+      businessId: 'biz',
+      userId: 'owner-1',
+    });
+
+    const response = await postInvite({
+      email: 'sam@example.com',
+      name: 'Sam Rivera',
+      role: 'owner',
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      error: 'Choose Member, Coordinator, or Manager.',
+    });
+    expect(createTeamInviteMock).not.toHaveBeenCalled();
   });
 
   it('returns 400 when name is missing', async () => {

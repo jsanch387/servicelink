@@ -6,6 +6,7 @@ import { getSubscriptionPriceDisplay } from '@/features/pricing/server/getSubscr
 import { refreshProfilePlanFromStripeSubscription } from '@/features/pricing/server/refreshProfilePlanFromStripeSubscription';
 import { resolvePlatformBillingAction } from '@/features/pricing/server/resolvePlatformBillingAction';
 import { isOwnerEmailAllowedForTeamRollout } from '@/features/team/config/teamRolloutAllowlist';
+import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -53,6 +54,8 @@ export default async function SettingsPage({
     if (authError || !user) {
       redirect('/login');
     }
+
+    await requireDashboardPageAccess('team.manage');
 
     if (
       params?.tab === 'team' &&

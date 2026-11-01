@@ -2,6 +2,7 @@
 
 import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import React from 'react';
+import { teamRoleCopy } from '../constants/teamRoles';
 import type { TeamMemberUi } from '../types/teamMemberUi';
 import { teamMemberHeading } from '../utils/teamInviteDisplayName';
 
@@ -20,6 +21,7 @@ export const TeamMemberRow: React.FC<TeamMemberRowProps> = ({
   onSelect,
 }) => {
   const heading = teamMemberHeading(member);
+  const roleLabel = teamRoleCopy(member.role).label;
 
   return (
     <li>
@@ -27,7 +29,7 @@ export const TeamMemberRow: React.FC<TeamMemberRowProps> = ({
         type="button"
         onClick={() => onSelect(member)}
         className="flex w-full cursor-pointer items-center gap-3 px-3.5 py-3.5 text-left sm:px-4"
-        aria-label={`Open ${heading}`}
+        aria-label={`Open ${heading}, ${roleLabel}`}
       >
         <span
           aria-hidden
@@ -40,6 +42,8 @@ export const TeamMemberRow: React.FC<TeamMemberRowProps> = ({
             {heading}
           </p>
           <p className="mt-0.5 truncate text-xs text-zinc-500">
+            {roleLabel}
+            <span aria-hidden> · </span>
             {member.email}
           </p>
         </div>

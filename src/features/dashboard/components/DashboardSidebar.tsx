@@ -141,7 +141,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           </nav>
 
           <div
-            className={`flex shrink-0 flex-col gap-1 border-t border-white/[0.06] px-3 pt-2 pb-1 ${
+            className={`flex shrink-0 flex-col gap-1 px-3 pt-2 pb-1 ${
               collapsed ? 'lg:px-2' : ''
             }`}
           >

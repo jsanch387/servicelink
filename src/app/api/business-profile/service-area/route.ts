@@ -6,8 +6,8 @@
  */
 
 import { formatServiceArea } from '@/features/business-profile/utils/businessLocation';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextRequest, NextResponse } from 'next/server';
 
 const MIN_RADIUS = 1;
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { supabase } = auth;
-  const resolved = await resolveCurrentBusinessId(supabase);
+  const resolved = await requireBusinessPermission(supabase, 'profile.write');
   if (!resolved.ok) {
     return NextResponse.json(
       { success: false, error: resolved.error },

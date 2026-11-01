@@ -13,6 +13,7 @@ import { assertCanCreateTeamInvite } from '@/features/team/server/assertCanCreat
 import { createTeamInvite } from '@/features/team/server/createTeamInvite';
 import { requireOwnedBusiness } from '@/features/team/server/requireOwnedBusiness';
 import { parseTeamInviteName } from '@/features/team/utils/parseTeamInviteName';
+import { parseTeamInviteRole } from '@/features/team/utils/parseTeamInviteRole';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextResponse } from 'next/server';
@@ -38,11 +39,16 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => null)) as {
       email?: unknown;
       name?: unknown;
+      role?: unknown;
     } | null;
     const rawEmail = typeof body?.email === 'string' ? body.email : '';
     const parsedName = parseTeamInviteName(body?.name);
     if (!parsedName.ok) {
       return errorJson(parsedName.error, parsedName.status, true);
+    }
+    const parsedRole = parseTeamInviteRole(body?.role);
+    if (!parsedRole.ok) {
+      return errorJson(parsedRole.error, parsedRole.status, true);
     }
 
     const admin = createSupabaseAdminClient();
@@ -71,6 +77,7 @@ export async function POST(request: Request) {
       businessName: shopName,
       rawEmail,
       name: parsedName.name,
+      role: parsedRole.role,
       inviteBaseUrl: getAppBaseUrl(),
     });
 

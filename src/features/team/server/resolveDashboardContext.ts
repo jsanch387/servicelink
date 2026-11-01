@@ -12,7 +12,9 @@ import { lookupOwnedBusinessId } from './lookupOwnedBusinessId';
 function assignedMemberRole(
   role: string
 ): Exclude<DashboardAccessRole, 'owner'> {
-  return role === 'manager' ? 'manager' : 'member';
+  if (role === 'manager') return 'manager';
+  if (role === 'coordinator') return 'coordinator';
+  return 'member';
 }
 
 /**

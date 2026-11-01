@@ -8,6 +8,8 @@ import {
 describe('teamRoles', () => {
   it('accepts member and rejects owner (owner is not in this table)', () => {
     expect(isTeamMemberRole('member')).toBe(true);
+    expect(isTeamMemberRole('coordinator')).toBe(true);
+    expect(isTeamMemberRole('manager')).toBe(false);
     expect(isTeamMemberRole('owner')).toBe(false);
     expect(isTeamMemberRole('admin')).toBe(false);
   });

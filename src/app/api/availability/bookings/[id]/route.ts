@@ -1,13 +1,14 @@
 /**
  * PATCH /api/availability/bookings/[id]
  *
- * Owner-only (RLS): update status (completed / cancelled) or reschedule
- * (scheduledDate + startTime for confirmed bookings). A real slot change
- * emails and texts the customer. Web and mobile share this handler.
+ * Requires bookings.write. Status and reschedule writes use the service-role
+ * client, scoped to the caller's shop. A real slot change emails and texts
+ * the customer. Web and mobile share this handler.
  *
  * DELETE /api/availability/bookings/[id]
  *
- * Owner-only (RLS): permanently remove the booking.
+ * Requires bookings.delete. The delete uses the service-role client, scoped
+ * to the caller's shop.
  *
  * Auth: `getAuthenticatedUser` (mobile Bearer or web cookie) — same as `/actions`.
  */
@@ -132,6 +133,7 @@ export async function PATCH(
     }
 
     const { businessId } = authResult;
+    const admin = createSupabaseAdminClient();
 
     if (hasReschedule) {
       const d = scheduledDate!.trim();
@@ -149,7 +151,7 @@ export async function PATCH(
         );
       }
 
-      const result = await rescheduleBookingForOwner(supabase, {
+      const result = await rescheduleBookingForOwner(admin, {
         businessId,
         bookingId: bookingId.trim(),
         scheduledDate: d,
@@ -163,7 +165,6 @@ export async function PATCH(
         );
       }
 
-      const admin = createSupabaseAdminClient();
       await syncBookingPaymentTaxAfterDiscount(result.row, admin);
       const payment = await loadPaymentRowForBooking(admin, bookingId.trim());
       const display = attachPaymentSummaryToDisplay(
@@ -192,19 +193,21 @@ export async function PATCH(
       status === 'completed'
         ? ((
             await completeBookingWithSideEffects(
-              supabase as SupabaseClient<Database>,
-              createSupabaseAdminClient(),
+              admin,
+              admin,
               bookingId,
               {
                 requestId: getReviewInviteRequestId(request),
                 source: 'web_patch',
-              }
+              },
+              businessId
             )
           )?.booking ?? null)
         : await updateBookingStatus(
-            supabase as SupabaseClient<Database>,
+            admin,
             bookingId,
-            status as BookingStatusUpdate
+            status as BookingStatusUpdate,
+            businessId
           );
 
     if (!updated) {
@@ -248,16 +251,18 @@ export async function DELETE(
       );
     }
 
-    const authResult = await getWritableBusinessId(auth.supabase);
-    if ('status' in authResult) {
+    const resolved = await requireBusinessPermission(
+      auth.supabase,
+      'bookings.delete'
+    );
+    if (!resolved.ok) {
       return NextResponse.json(
-        { success: false, error: authResult.error },
-        { status: authResult.status }
+        { success: false, error: resolved.error },
+        { status: resolved.status }
       );
     }
-
-    const result = await deleteBookingForOwner(auth.supabase, {
-      businessId: authResult.businessId,
+    const result = await deleteBookingForOwner(createSupabaseAdminClient(), {
+      businessId: resolved.businessId,
       bookingId: bookingId.trim(),
     });
 

@@ -83,6 +83,8 @@ export interface CreateBookingPayload {
   subtotal_cents: number | null;
   discount_cents: number | null;
   discount_label: string | null;
+  /** Shop user who created the appointment. Null for customer and system creates. */
+  created_by_user_id: string | null;
 }
 
 function mapCustomerToRow(
@@ -114,6 +116,7 @@ function mapCustomerToRow(
   | 'subtotal_cents'
   | 'discount_cents'
   | 'discount_label'
+  | 'created_by_user_id'
 > {
   return {
     customer_name: c.fullName.trim(),
@@ -167,6 +170,8 @@ export async function createBooking(
      * Omit for owner manual so we do not overwrite an existing preference.
      */
     smsOptIn?: boolean;
+    /** Signed-in owner or teammate. Omit for customer and system creates. */
+    createdByUserId?: string | null;
   }
 ): Promise<{ id: string; customerId: string; visitId: string }> {
   const addonDetails =
@@ -242,6 +247,7 @@ export async function createBooking(
     visit_job_count: visitJobCount,
     job_details: jobDetails,
     ...discountColumns,
+    created_by_user_id: payload.createdByUserId?.trim() || null,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -397,6 +403,8 @@ export async function createBookingForExistingCustomer(
     bookingCustomerNotes?: string | null;
     /** Server-derived origin. Required on every new appointment. */
     bookingSource: BookingSource;
+    /** Signed-in owner or teammate. Omit for customer and system creates. */
+    createdByUserId?: string | null;
   }
 ): Promise<{ id: string }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -476,6 +484,7 @@ export async function createBookingForExistingCustomer(
     visit_job_count: 1,
     job_details: null,
     ...bookingDiscountColumnsFromSnapshot(null),
+    created_by_user_id: payload.createdByUserId?.trim() || null,
   };
 
   const { data, error } = await db
@@ -600,22 +609,25 @@ export async function listBookingsForBusiness(
 export type BookingStatusUpdate = 'completed' | 'cancelled';
 
 /**
- * Updates a booking's status. Use with authenticated client; RLS ensures
- * only the business owner can update. Returns the updated row or null if
- * not found / not allowed.
+ * Updates a booking's status. Owner sessions can rely on RLS. After a
+ * permission check, pass the service-role client and `businessId` so the
+ * update stays on that shop. Returns null when the row is missing.
  */
 export async function updateBookingStatus(
   supabase: SupabaseClient<Database>,
   bookingId: string,
-  status: BookingStatusUpdate
+  status: BookingStatusUpdate,
+  businessId?: string
 ): Promise<BookingRow | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  let query = (supabase as any)
     .from(TABLE)
     .update({ status })
-    .eq('id', bookingId)
-    .select()
-    .maybeSingle();
+    .eq('id', bookingId);
+  if (businessId) {
+    query = query.eq('business_id', businessId);
+  }
+  const { data, error } = await query.select().maybeSingle();
 
   if (error) {
     throw error;
@@ -842,8 +854,8 @@ export type DeleteBookingForOwnerResult =
   | { ok: false; error: string; httpStatus: number };
 
 /**
- * Permanently deletes a booking owned by the business. Related payment /
- * invite rows cascade via FK. Use with authenticated client (RLS).
+ * Permanently deletes a booking on this shop. Related payment and invite
+ * rows cascade via FK. After a permission check, pass the service-role client.
  */
 export async function deleteBookingForOwner(
   supabase: SupabaseClient<Database>,
