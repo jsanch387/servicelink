@@ -60,7 +60,6 @@ export async function syncBookingPaymentTaxAfterDiscount(
     },
     taxCents: row.tax_cents,
     taxRateBps: rate,
-    sessionPayment: undefined,
   });
   const remaining = Math.max(0, due.amountDueCents);
   if (
