@@ -3,7 +3,7 @@
 import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { FilterButton } from './FilterButton';
+import { FilterButton, filterButtonClassName } from './FilterButton';
 
 export type FilterMenuOption<T extends string = string> = {
   id: T;
@@ -12,17 +12,10 @@ export type FilterMenuOption<T extends string = string> = {
 
 const MENU_WIDTH = 220;
 
-const triggerClassName = {
-  outline:
-    'inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-[10px] border border-white/15 px-3.5 text-sm text-gray-200 transition-colors hover:border-white/30 hover:bg-white/[0.04] max-sm:h-11 max-sm:min-h-11',
-  solid:
-    'inline-flex h-9 min-h-9 shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-white/30 bg-[#2c2c2c] px-3.5 text-sm text-gray-100 transition-colors hover:border-white/45 hover:bg-[#343434]',
-} as const;
-
 export function filterMenuTriggerClassName(
-  tone: keyof typeof triggerClassName = 'outline'
+  _tone: 'outline' | 'solid' = 'solid'
 ): string {
-  return triggerClassName[tone];
+  return filterButtonClassName;
 }
 
 function panelStyle(trigger: HTMLElement): React.CSSProperties {
@@ -47,7 +40,6 @@ export function FilterMenu<T extends string>({
   label = 'Filter',
   menuLabel = 'Filter',
   className = '',
-  tone = 'outline',
   expanded,
   onExpandedChange,
 }: {
@@ -57,8 +49,8 @@ export function FilterMenu<T extends string>({
   label?: string;
   menuLabel?: string;
   className?: string;
-  /** `solid` is a filled gray control. `outline` keeps the quiet hairline. */
-  tone?: keyof typeof triggerClassName;
+  /** Accepted so existing screens can pass it. Every filter uses the filled control. */
+  tone?: 'outline' | 'solid';
   /** When set, the parent owns whether the menu is open. */
   expanded?: boolean;
   onExpandedChange?: (open: boolean) => void;
@@ -118,38 +110,20 @@ export function FilterMenu<T extends string>({
 
   return (
     <>
-      {tone === 'solid' ? (
-        <button
-          ref={buttonRef}
-          type="button"
-          aria-label={ariaLabel}
-          aria-expanded={open}
-          aria-haspopup="listbox"
-          onClick={() => setOpen(!open)}
-          className={`${filterMenuTriggerClassName('solid')} ${className}`}
-        >
-          <span>{label}</span>
-          <AdjustmentsHorizontalIcon
-            className="h-4 w-4 shrink-0 text-gray-400"
-            aria-hidden
-          />
-        </button>
-      ) : (
-        <FilterButton
-          ref={buttonRef}
-          aria-label={ariaLabel}
-          aria-expanded={open}
-          aria-haspopup="listbox"
-          onClick={() => setOpen(!open)}
-          className={className}
-        >
-          <span>{label}</span>
-          <AdjustmentsHorizontalIcon
-            className="h-3.5 w-3.5 shrink-0 text-gray-400"
-            aria-hidden
-          />
-        </FilterButton>
-      )}
+      <FilterButton
+        ref={buttonRef}
+        aria-label={ariaLabel}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => setOpen(!open)}
+        className={className}
+      >
+        <span>{label}</span>
+        <AdjustmentsHorizontalIcon
+          className="h-4 w-4 shrink-0 text-gray-400"
+          aria-hidden
+        />
+      </FilterButton>
       {open && typeof document !== 'undefined'
         ? createPortal(
             <div
