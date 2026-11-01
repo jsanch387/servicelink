@@ -1,6 +1,7 @@
 import type { CustomerBookingMetrics } from '@/features/customer-management/server/aggregateBookingsPerCustomer';
 import { normalizeEmailForLookup } from '@/features/customer-management/server/normalizeCustomerContact';
 import type {
+  CustomerAddress,
   CustomerMaintenanceEnrollmentSummary,
   CustomerRecord,
 } from '@/features/customer-management/types';
@@ -14,6 +15,16 @@ import type { CustomerDbRow } from './customerDbRow';
  * Maps `customers` row + optional booking aggregates → UI model.
  * `note` is **profile-only** (`customers.notes`), never booking-specific text.
  */
+function addressFromRow(row: CustomerDbRow): CustomerAddress | null {
+  const street = row.street_address?.trim() ?? '';
+  const unit = row.unit?.trim() ?? '';
+  const city = row.city?.trim() ?? '';
+  const state = row.state?.trim() ?? '';
+  const zip = row.zip?.trim() ?? '';
+  if (!street && !city && !zip) return null;
+  return { street, unit, city, state, zip };
+}
+
 export function mapCustomerRowToRecord(
   row: CustomerDbRow,
   metrics?: CustomerBookingMetrics | null,
@@ -86,6 +97,7 @@ export function mapCustomerRowToRecord(
       maintenanceVisitsCompleted,
       status: metrics.lifecycle,
       note: row.notes ?? '',
+      address: addressFromRow(row),
       maintenanceEnrollment: maintenance ?? null,
     };
   }
@@ -105,6 +117,7 @@ export function mapCustomerRowToRecord(
     maintenanceVisitsCompleted,
     status: 'new',
     note: row.notes ?? '',
+    address: addressFromRow(row),
     maintenanceEnrollment: maintenance ?? null,
   };
 }

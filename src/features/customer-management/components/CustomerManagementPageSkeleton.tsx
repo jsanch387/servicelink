@@ -5,54 +5,45 @@ const pulse = 'animate-pulse rounded-lg bg-white/10';
 export const CustomerManagementPageSkeleton: React.FC = () => {
   return (
     <>
-      <div className="mb-6 sm:mb-8">
-        <div className={`h-8 w-40 max-w-full ${pulse}`} />
-        <div className={`mt-2 h-4 w-72 max-w-full ${pulse}`} />
-      </div>
-
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 flex flex-col gap-x-2 gap-y-3 sm:flex-row sm:items-center sm:justify-between">
         <div className={`h-11 w-full rounded-xl sm:max-w-sm ${pulse}`} />
-        <div className={`h-10 w-24 rounded-[10px] ${pulse}`} />
+        <div className="flex justify-start gap-2 sm:justify-end">
+          <div className={`h-10 w-24 rounded-[10px] ${pulse}`} />
+          <div className={`h-10 w-36 rounded-[10px] ${pulse}`} />
+        </div>
       </div>
 
-      <div className="hidden md:block rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/10 flex gap-8">
-          {[1, 2, 3, 4, 5, 6].map(i => (
+      <div className="hidden overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] md:block">
+        <div className="flex gap-8 border-b border-white/[0.08] px-5 py-3.5">
+          {[1, 2, 3, 4, 5].map(i => (
             <div key={i} className={`h-3 w-16 ${pulse}`} />
           ))}
         </div>
         {[1, 2, 3, 4, 5].map(row => (
           <div
             key={row}
-            className="px-4 py-4 border-b border-white/5 last:border-0 flex items-center gap-6"
+            className="flex items-center gap-6 border-b border-white/[0.06] px-5 py-4 last:border-0"
           >
             <div className={`h-4 w-36 ${pulse}`} />
             <div className={`h-4 w-28 ${pulse}`} />
-            <div className={`h-4 w-20 ${pulse}`} />
+            <div className={`h-4 w-8 ${pulse}`} />
             <div className={`h-4 w-16 ${pulse}`} />
-            <div className={`h-6 w-14 rounded-full ${pulse}`} />
-            <div className={`h-4 w-20 ${pulse}`} />
+            <div className={`h-4 w-16 ${pulse}`} />
           </div>
         ))}
       </div>
 
-      <div className="md:hidden space-y-3">
+      <div className="space-y-2 md:hidden">
         {[1, 2, 3].map(i => (
           <div
             key={i}
-            className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-4 animate-pulse"
+            className="space-y-3 rounded-[10px] border border-white/[0.08] bg-white/[0.03] p-4"
           >
-            <div className="flex justify-between gap-3">
-              <div className="flex-1 space-y-2">
-                <div className="h-5 w-40 bg-white/10 rounded" />
-                <div className="h-3 w-full max-w-[220px] bg-white/10 rounded" />
-              </div>
-              <div className="h-5 w-5 bg-white/10 rounded shrink-0" />
+            <div className="flex items-center justify-between gap-3">
+              <div className={`h-4 w-40 ${pulse}`} />
+              <div className={`h-4 w-16 ${pulse}`} />
             </div>
-            <div className="h-3 w-full bg-white/10 rounded" />
-            <div className="pt-3 border-t border-white/10 flex justify-end">
-              <div className="h-4 w-24 bg-white/10 rounded" />
-            </div>
+            <div className={`h-3 w-full max-w-[220px] ${pulse}`} />
           </div>
         ))}
       </div>

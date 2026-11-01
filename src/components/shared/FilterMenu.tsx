@@ -11,6 +11,19 @@ export type FilterMenuOption<T extends string = string> = {
 
 const MENU_WIDTH = 220;
 
+const triggerClassName = {
+  outline:
+    'inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-[10px] border border-white/15 px-3.5 text-sm text-gray-200 transition-colors hover:border-white/30 hover:bg-white/[0.04] max-sm:h-11 max-sm:min-h-11',
+  solid:
+    'inline-flex h-9 min-h-9 shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-white/30 bg-[#2c2c2c] px-3.5 text-sm text-gray-100 transition-colors hover:border-white/45 hover:bg-[#343434]',
+} as const;
+
+export function filterMenuTriggerClassName(
+  tone: keyof typeof triggerClassName = 'outline'
+): string {
+  return triggerClassName[tone];
+}
+
 function panelStyle(trigger: HTMLElement): React.CSSProperties {
   const rect = trigger.getBoundingClientRect();
   const left = Math.min(
@@ -32,6 +45,8 @@ export function FilterMenu<T extends string>({
   onChange,
   label = 'Filter',
   menuLabel = 'Filter',
+  className = '',
+  tone = 'outline',
   expanded,
   onExpandedChange,
 }: {
@@ -40,6 +55,9 @@ export function FilterMenu<T extends string>({
   onChange: (id: T) => void;
   label?: string;
   menuLabel?: string;
+  className?: string;
+  /** `solid` is a filled gray control. `outline` keeps the quiet hairline. */
+  tone?: keyof typeof triggerClassName;
   /** When set, the parent owns whether the menu is open. */
   expanded?: boolean;
   onExpandedChange?: (open: boolean) => void;
@@ -106,7 +124,7 @@ export function FilterMenu<T extends string>({
         aria-expanded={open}
         aria-haspopup="listbox"
         onClick={() => setOpen(!open)}
-        className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-[10px] border border-white/15 px-3.5 text-sm text-gray-200 transition-colors hover:border-white/30 hover:bg-white/[0.04]"
+        className={`${filterMenuTriggerClassName(tone)} ${className}`}
       >
         <span>{label}</span>
         <AdjustmentsHorizontalIcon

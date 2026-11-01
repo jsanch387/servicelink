@@ -7,60 +7,65 @@ import {
   listPageCount,
   listPageItems,
 } from '@/components/shared';
+import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
+import { ROUTES } from '@/constants/routes';
 import { DEMO_NEEDS_ATTENTION_CUSTOMER } from '@/features/customer-management/constants/demoNeedsAttentionCustomer';
 import { useCustomerManagement } from '@/features/customer-management/hooks/useCustomerManagement';
 import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
-import { formatCustomerCurrency } from '@/features/customer-management/utils/customerFormatting';
 import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
-import React, { useEffect, useState } from 'react';
-import { AddCustomerModalBody } from './AddCustomerModalBody';
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { CustomerDesktopTable } from './CustomerDesktopTable';
-import { CustomerDetailPanel } from './CustomerDetailPanel';
+import { AddCustomerModalBody } from './AddCustomerModalBody';
 import { CustomerListEmptyState } from './CustomerListEmptyState';
 import { CustomerManagementPageSkeleton } from './CustomerManagementPageSkeleton';
 import { CustomerMobileList } from './CustomerMobileList';
-import { CustomerPageHeader } from './CustomerPageHeader';
 import { CustomerSearchAndFilters } from './CustomerSearchAndFilters';
+import { ImportCustomersModal } from './ImportCustomersModal';
 import { CustomersInitialEmptyState } from './CustomersInitialEmptyState';
-import { DeleteCustomerModalBody } from './DeleteCustomerModalBody';
 
-const CUSTOMER_PAGE_SIZE = 10;
+/** Phone cards stay short. The desktop table has room for a longer page. */
+const CUSTOMER_PAGE_SIZE_MOBILE = 10;
+const CUSTOMER_PAGE_SIZE_DESKTOP = 20;
+const DESKTOP_TABLE_QUERY = '(min-width: 768px)';
 
-interface CustomerManagementPageProps {
-  hasProCheckInAccess: boolean;
+function subscribeDesktopTable(onStoreChange: () => void): () => void {
+  const mq = window.matchMedia(DESKTOP_TABLE_QUERY);
+  mq.addEventListener('change', onStoreChange);
+  return () => mq.removeEventListener('change', onStoreChange);
 }
 
-export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
-  hasProCheckInAccess,
-}) => {
+function desktopTableSnapshot(): boolean {
+  return window.matchMedia(DESKTOP_TABLE_QUERY).matches;
+}
+
+function useDesktopCustomerTable(): boolean {
+  return useSyncExternalStore(
+    subscribeDesktopTable,
+    desktopTableSnapshot,
+    () => false
+  );
+}
+
+export const CustomerManagementPage: React.FC = () => {
+  const router = useRouter();
   const canWriteCustomers = useDashboardAccess().can('customers.write');
   const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] =
     React.useState(false);
+  const [isImportOpen, setIsImportOpen] = React.useState(false);
   const [addCustomerModalBusy, setAddCustomerModalBusy] = React.useState(false);
   const {
     loadStatus,
     loadError,
     reloadCustomers,
     customers,
+    businessType,
     query,
     setQuery,
     statusFilter,
     setStatusFilter,
     filteredCustomers,
-    selectedCustomer,
-    setSelectedCustomer,
-    activeDeleteCustomer,
-    setActiveDeleteCustomer,
-    isDeletingCustomer,
-    deleteCustomerError,
-    isSavingNote,
-    saveNoteError,
-    setSaveNoteError,
-    openDeleteCustomerModal,
-    confirmDeleteCustomer,
-    saveCustomerNote,
     createCustomer,
-    openCustomerSms,
   } = useCustomerManagement();
   const hasAnyRealDueCustomers = customers.some(isCustomerNeedsAttention);
   const shouldShowNeedsAttentionDemo =
@@ -70,16 +75,17 @@ export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
   const customersForDisplay = shouldShowNeedsAttentionDemo
     ? [DEMO_NEEDS_ATTENTION_CUSTOMER]
     : filteredCustomers;
+  const isDesktopTable = useDesktopCustomerTable();
+  const pageSize = isDesktopTable
+    ? CUSTOMER_PAGE_SIZE_DESKTOP
+    : CUSTOMER_PAGE_SIZE_MOBILE;
   const [page, setPage] = useState(0);
-  const pageCount = listPageCount(
-    customersForDisplay.length,
-    CUSTOMER_PAGE_SIZE
-  );
+  const pageCount = listPageCount(customersForDisplay.length, pageSize);
   const currentPage = Math.min(page, pageCount - 1);
   const pageCustomers = listPageItems(
     customersForDisplay,
     currentPage,
-    CUSTOMER_PAGE_SIZE
+    pageSize
   );
 
   useEffect(() => {
@@ -89,41 +95,38 @@ export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full min-w-0 max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="w-full min-w-0 px-4 pb-8 pt-6 sm:px-6 lg:px-8">
           {loadStatus === 'loading' && <CustomerManagementPageSkeleton />}
 
           {loadStatus === 'error' && (
-            <>
-              <CustomerPageHeader />
-              <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.03] p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <p className="text-sm text-gray-300">{loadError}</p>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => void reloadCustomers()}
-                  className="shrink-0"
-                >
-                  Try again
-                </Button>
-              </div>
-            </>
+            <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-gray-300">{loadError}</p>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void reloadCustomers()}
+                className="shrink-0"
+              >
+                Try again
+              </Button>
+            </div>
           )}
 
           {loadStatus === 'ready' && (
             <>
-              <CustomerPageHeader
-                onAddCustomer={
-                  canWriteCustomers
-                    ? () => setIsAddCustomerModalOpen(true)
-                    : undefined
-                }
-              />
-
               <CustomerSearchAndFilters
                 query={query}
                 onQueryChange={setQuery}
                 statusFilter={statusFilter}
                 onStatusFilterChange={setStatusFilter}
+                onAddCustomer={
+                  canWriteCustomers
+                    ? () => setIsAddCustomerModalOpen(true)
+                    : undefined
+                }
+                onImport={
+                  canWriteCustomers ? () => setIsImportOpen(true) : undefined
+                }
               />
 
               {shouldShowNeedsAttentionDemo ? (
@@ -137,12 +140,16 @@ export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
                 <>
                   <CustomerDesktopTable
                     customers={pageCustomers}
-                    onRowClick={setSelectedCustomer}
+                    onRowClick={customer =>
+                      router.push(ROUTES.DASHBOARD.CUSTOMER(customer.id))
+                    }
                   />
 
                   <CustomerMobileList
                     customers={pageCustomers}
-                    onOpenDetail={setSelectedCustomer}
+                    onOpenDetail={customer =>
+                      router.push(ROUTES.DASHBOARD.CUSTOMER(customer.id))
+                    }
                   />
 
                   <ListPagination
@@ -158,7 +165,13 @@ export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
                 (statusFilter === 'needs_attention' ? (
                   <CustomerListEmptyState statusFilter={statusFilter} />
                 ) : (
-                  <CustomersInitialEmptyState />
+                  <CustomersInitialEmptyState
+                    onAddCustomer={
+                      canWriteCustomers
+                        ? () => setIsAddCustomerModalOpen(true)
+                        : undefined
+                    }
+                  />
                 ))}
 
               {customers.length > 0 &&
@@ -167,68 +180,33 @@ export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
                   <CustomerListEmptyState statusFilter={statusFilter} />
                 )}
 
-              {selectedCustomer && (
-                <CustomerDetailPanel
-                  customer={selectedCustomer}
-                  hasProCheckInAccess={hasProCheckInAccess}
-                  onClose={() => setSelectedCustomer(null)}
-                  onMessageCustomer={mode => {
-                    openCustomerSms(selectedCustomer, mode);
-                  }}
-                  onDeleteCustomer={
-                    canWriteCustomers
-                      ? () => openDeleteCustomerModal(selectedCustomer)
-                      : undefined
-                  }
-                  onSaveNote={
-                    canWriteCustomers
-                      ? note => saveCustomerNote(selectedCustomer.id, note)
-                      : undefined
-                  }
-                  isSavingNote={isSavingNote}
-                  saveNoteError={saveNoteError}
-                  onDismissSaveNoteError={() => setSaveNoteError(null)}
-                  formatCurrency={formatCustomerCurrency}
+              {canWriteCustomers ? (
+                <ImportCustomersModal
+                  isOpen={isImportOpen}
+                  onClose={() => setIsImportOpen(false)}
+                  includeVehicles={isVehicleRelatedBusinessType(businessType)}
+                  existingCustomers={customers.map(customer => ({
+                    phone: customer.phone,
+                    email: customer.email,
+                  }))}
+                  onImported={() => void reloadCustomers({ silent: true })}
                 />
-              )}
+              ) : null}
 
               {canWriteCustomers ? (
-                <>
-                  <Modal
-                    isOpen={isAddCustomerModalOpen}
+                <Modal
+                  isOpen={isAddCustomerModalOpen}
+                  onClose={() => setIsAddCustomerModalOpen(false)}
+                  title="Add customer"
+                  maxWidth="sm"
+                  preventClose={addCustomerModalBusy}
+                >
+                  <AddCustomerModalBody
                     onClose={() => setIsAddCustomerModalOpen(false)}
-                    title="Add customer"
-                    maxWidth="sm"
-                    preventClose={addCustomerModalBusy}
-                  >
-                    <AddCustomerModalBody
-                      onClose={() => setIsAddCustomerModalOpen(false)}
-                      onBusyChange={setAddCustomerModalBusy}
-                      createCustomer={createCustomer}
-                    />
-                  </Modal>
-
-                  <Modal
-                    isOpen={Boolean(activeDeleteCustomer)}
-                    onClose={() => {
-                      if (!isDeletingCustomer) {
-                        setActiveDeleteCustomer(null);
-                      }
-                    }}
-                    title="Delete customer"
-                    maxWidth="sm"
-                  >
-                    {activeDeleteCustomer && (
-                      <DeleteCustomerModalBody
-                        customer={activeDeleteCustomer}
-                        isDeleting={isDeletingCustomer}
-                        error={deleteCustomerError}
-                        onConfirm={() => void confirmDeleteCustomer()}
-                        onClose={() => setActiveDeleteCustomer(null)}
-                      />
-                    )}
-                  </Modal>
-                </>
+                    onBusyChange={setAddCustomerModalBusy}
+                    createCustomer={createCustomer}
+                  />
+                </Modal>
               ) : null}
             </>
           )}

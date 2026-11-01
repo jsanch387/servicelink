@@ -1,4 +1,8 @@
-import type { CustomerLifecycle } from '@/features/customer-management/types';
+import type {
+  CustomerLifecycle,
+  CustomerRecord,
+} from '@/features/customer-management/types';
+import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
 import React from 'react';
 
 interface CustomerStatusBadgeProps {
@@ -14,6 +18,24 @@ const STATUS_STYLES: Record<CustomerLifecycle, string> = {
 const STATUS_LABELS: Record<CustomerLifecycle, string> = {
   new: 'New',
   returning: 'Returning',
+};
+
+/**
+ * List mark: one word, no chip. Due wins, then Returning, then a quiet New.
+ * Color is the scan. The word is there so it does not depend on color alone.
+ */
+export const CustomerListStatus: React.FC<{ customer: CustomerRecord }> = ({
+  customer,
+}) => {
+  if (isCustomerNeedsAttention(customer)) {
+    return <span className="text-sm font-medium text-amber-300">Due</span>;
+  }
+  if (customer.status === 'returning') {
+    return (
+      <span className="text-sm font-medium text-emerald-400">Returning</span>
+    );
+  }
+  return <span className="text-sm text-white/60">New</span>;
 };
 
 export const CustomerStatusBadge: React.FC<CustomerStatusBadgeProps> = ({
