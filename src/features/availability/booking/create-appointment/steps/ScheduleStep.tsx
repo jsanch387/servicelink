@@ -112,6 +112,15 @@ export function ScheduleStep({
         ) : null}
       </div>
 
+      {sameDayHeadsUp ? (
+        <div
+          className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3"
+          role="status"
+        >
+          <p className="text-sm leading-snug text-zinc-300">{sameDayHeadsUp}</p>
+        </div>
+      ) : null}
+
       <TimeSlotGrid
         selectedDate={selectedDate}
         serviceDurationMinutes={duration}
@@ -127,15 +136,6 @@ export function ScheduleStep({
         selectDateHint="Select a date to see times."
         noSlotsHint="No available times — try another day."
       />
-
-      {sameDayHeadsUp ? (
-        <div
-          className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3"
-          role="status"
-        >
-          <p className="text-sm leading-snug text-zinc-300">{sameDayHeadsUp}</p>
-        </div>
-      ) : null}
     </div>
   );
 }

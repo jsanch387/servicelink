@@ -178,6 +178,7 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     icon: UserGroupIcon,
     requiresOnboarding: true,
     requiredPermission: 'customers.read',
+    activePathPrefix: '/dashboard/customers',
   },
   {
     name: 'Availability',

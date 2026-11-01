@@ -700,6 +700,11 @@ export type Database = {
           email: string | null;
           phone_normalized: string | null;
           email_normalized: string | null;
+          street_address: string | null;
+          unit: string | null;
+          city: string | null;
+          state: string | null;
+          zip: string | null;
           notes: string | null;
           /** Transactional SMS opt-in (appointments / membership updates). */
           sms_opt_in: boolean;
@@ -715,6 +720,11 @@ export type Database = {
           email?: string | null;
           phone_normalized?: string | null;
           email_normalized?: string | null;
+          street_address?: string | null;
+          unit?: string | null;
+          city?: string | null;
+          state?: string | null;
+          zip?: string | null;
           notes?: string | null;
           sms_opt_in?: boolean;
           maintenance_visits_completed?: number;
@@ -729,6 +739,11 @@ export type Database = {
           email?: string | null;
           phone_normalized?: string | null;
           email_normalized?: string | null;
+          street_address?: string | null;
+          unit?: string | null;
+          city?: string | null;
+          state?: string | null;
+          zip?: string | null;
           notes?: string | null;
           sms_opt_in?: boolean;
           maintenance_visits_completed?: number;

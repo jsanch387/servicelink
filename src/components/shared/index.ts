@@ -38,7 +38,7 @@ export { EchoBarsLoader } from './EchoBarsLoader';
 export type { EchoBarsLoaderProps, EchoBarsLoaderSize } from './EchoBarsLoader';
 export type { DropdownSelectOption } from './DropdownSelect';
 export { FilterButton } from './FilterButton';
-export { FilterMenu } from './FilterMenu';
+export { FilterMenu, filterMenuTriggerClassName } from './FilterMenu';
 export type { FilterMenuOption } from './FilterMenu';
 export { FilterPills } from './FilterPills';
 export type { FilterPillOption } from './FilterPills';

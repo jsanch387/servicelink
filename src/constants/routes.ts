@@ -120,6 +120,8 @@ export const ROUTES = {
     EXPENSES: '/dashboard/expenses',
     AVAILABILITY: '/dashboard/availability',
     CUSTOMERS: '/dashboard/customers',
+    CUSTOMER: (customerId: string) =>
+      `/dashboard/customers/${encodeURIComponent(customerId.trim())}`,
     /** Owner: add and manage teammates. */
     TEAM: '/dashboard/team',
     PAYMENTS: '/dashboard/payments',
@@ -198,6 +200,15 @@ export const API_ROUTES = {
    */
   PAYMENTS_REVENUE: '/api/payments/revenue',
   CUSTOMERS: '/api/customers',
+  CUSTOMERS_IMPORT: '/api/customers/import',
+  /** Completed visits for one customer, newest first. */
+  customerVisits: (customerId: string) =>
+    `/api/customers/${encodeURIComponent(customerId.trim())}/visits`,
+  /** Saved vehicles for one customer. Vehicle shops only. */
+  customerVehicles: (customerId: string) =>
+    `/api/customers/${encodeURIComponent(customerId.trim())}/vehicles`,
+  customerVehicle: (customerId: string, vehicleId: string) =>
+    `/api/customers/${encodeURIComponent(customerId.trim())}/vehicles/${encodeURIComponent(vehicleId.trim())}`,
   /** Shop bookings list (owner or active member). */
   AVAILABILITY_BOOKINGS: '/api/availability/bookings',
   /** Owner + active teammates who can be assigned to a booking. */
@@ -808,5 +819,16 @@ export function getOwnerCreateAppointmentPath(args: {
     'durationMinutes',
     String(Math.max(30, Math.round(args.visitDurationMinutes)))
   );
+  return `${ROUTES.DASHBOARD.BOOKINGS_NEW}?${q.toString()}`;
+}
+
+/** Owner New booking wizard with a customer profile prefilled. */
+export function getOwnerCreateAppointmentForCustomerPath(
+  customerId: string
+): string {
+  const id = customerId.trim();
+  if (!id) return ROUTES.DASHBOARD.BOOKINGS_NEW;
+  const q = new URLSearchParams();
+  q.set('customerId', id);
   return `${ROUTES.DASHBOARD.BOOKINGS_NEW}?${q.toString()}`;
 }
