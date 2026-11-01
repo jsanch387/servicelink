@@ -90,12 +90,12 @@ export function TeamMemberDetailPanel({
         onClick={onClose}
       />
       <div
-        className="fixed inset-0 z-50 flex min-h-0 min-w-0 flex-col overscroll-none bg-[#0f0f0f] motion-safe:animate-in motion-safe:slide-in-from-right motion-safe:duration-200 md:inset-y-0 md:left-auto md:right-0 md:w-full md:max-w-lg md:border-l md:border-white/[0.08] md:shadow-2xl"
+        className="fixed inset-0 z-50 flex min-h-0 min-w-0 flex-col overscroll-none bg-[#0f0f0f] outline-none motion-safe:animate-in motion-safe:slide-in-from-right motion-safe:duration-200 md:inset-y-0 md:left-auto md:right-0 md:w-full md:max-w-lg md:shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="team-member-detail-title"
       >
-        <header className="flex shrink-0 items-center gap-1 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:pt-3">
+        <header className="flex shrink-0 items-center gap-2 px-2 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2 md:pt-3">
           <IconButton
             icon={<ArrowLeftIcon className="h-5 w-5" />}
             onClick={onClose}
@@ -111,8 +111,8 @@ export function TeamMemberDetailPanel({
           </h2>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-8 pt-4 scrollbar-dark [-webkit-overflow-scrolling:touch]">
-          <section className="mb-8 flex items-center gap-3">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-4 pb-6 pt-2 scrollbar-dark [-webkit-overflow-scrolling:touch]">
+          <section className="flex items-center gap-3">
             <span
               aria-hidden
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-sm font-semibold text-white"
@@ -123,7 +123,7 @@ export function TeamMemberDetailPanel({
               <p className="truncate text-base font-semibold tracking-tight text-white">
                 {heading}
               </p>
-              <p className="truncate text-sm text-white/60">{member.email}</p>
+              <p className="mt-1 truncate text-sm text-white/60">{member.email}</p>
             </div>
             <p
               className={`shrink-0 text-sm font-medium ${
@@ -136,10 +136,11 @@ export function TeamMemberDetailPanel({
             </p>
           </section>
 
-          <form onSubmit={handleSave} className="flex flex-col gap-6">
+          <form onSubmit={handleSave} className="flex flex-col gap-4">
             <TeamRoleSelect
               value={role}
               disabled={isSaving}
+              showDescription={false}
               error={roleError}
               onChange={next => {
                 setRole(next);

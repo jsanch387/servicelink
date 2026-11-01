@@ -24,6 +24,8 @@ interface TeamRoleSelectProps {
   onChange: (role: AssignableTeamRole) => void;
   disabled?: boolean;
   error?: string;
+  /** Closed field repeats the line already shown inside the menu. */
+  showDescription?: boolean;
 }
 
 export function TeamRoleSelect({
@@ -31,6 +33,7 @@ export function TeamRoleSelect({
   onChange,
   disabled = false,
   error,
+  showDescription = true,
 }: TeamRoleSelectProps) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -59,7 +62,6 @@ export function TeamRoleSelect({
         width: rect.width,
         zIndex: 200,
         maxHeight: Math.max(160, openUp ? spaceAbove : spaceBelow),
-        overflowY: 'auto',
       });
     };
     place();
@@ -91,49 +93,54 @@ export function TeamRoleSelect({
     open && typeof document !== 'undefined'
       ? createPortal(
           <div
-            ref={menuRef}
             id={menuId}
             role="listbox"
             aria-label="Role"
             style={menuStyle}
-            className="overflow-y-auto rounded-[14px] border border-white/[0.08] bg-[#1c1c1c] p-1 shadow-[0_16px_40px_rgba(0,0,0,0.45)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-200"
+            className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#1c1c1c] shadow-[0_16px_40px_rgba(0,0,0,0.45)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-200"
           >
-            {ASSIGNABLE_TEAM_ROLES.map(option => {
-              const copy = teamRoleCopy(option);
-              const isSelected = option === value;
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  role="option"
-                  aria-selected={isSelected}
-                  className={`flex w-full cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2.5 text-left ${
-                    isSelected ? 'bg-white/[0.06]' : 'hover:bg-white/[0.04]'
-                  }`}
-                  onClick={() => {
-                    onChange(option);
-                    setOpen(false);
-                  }}
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium text-white">
-                      {copy.label}
+            <div
+              ref={menuRef}
+              className="overflow-y-auto p-1.5"
+              style={{ maxHeight: menuStyle.maxHeight }}
+            >
+              {ASSIGNABLE_TEAM_ROLES.map(option => {
+                const copy = teamRoleCopy(option);
+                const isSelected = option === value;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left ${
+                      isSelected ? 'bg-white/[0.06]' : 'hover:bg-white/[0.04]'
+                    }`}
+                    onClick={() => {
+                      onChange(option);
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium text-white">
+                        {copy.label}
+                      </span>
+                      <span className="mt-0.5 block text-sm leading-relaxed text-white/60">
+                        {copy.description}
+                      </span>
                     </span>
-                    <span className="mt-0.5 block text-sm leading-relaxed text-white/60">
-                      {copy.description}
-                    </span>
-                  </span>
-                  {isSelected ? (
-                    <CheckIcon
-                      className="h-4 w-4 shrink-0 text-white"
-                      aria-hidden
-                    />
-                  ) : (
-                    <span className="h-4 w-4 shrink-0" aria-hidden />
-                  )}
-                </button>
-              );
-            })}
+                    {isSelected ? (
+                      <CheckIcon
+                        className="h-4 w-4 shrink-0 text-white"
+                        aria-hidden
+                      />
+                    ) : (
+                      <span className="h-4 w-4 shrink-0" aria-hidden />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>,
           document.body
         )
@@ -169,11 +176,11 @@ export function TeamRoleSelect({
         <p className="mt-2 text-sm text-red-400" role="alert">
           {error}
         </p>
-      ) : (
+      ) : showDescription ? (
         <p className="mt-2 text-sm leading-relaxed text-white/60">
           {selected.description}
         </p>
-      )}
+      ) : null}
       {menu}
     </div>
   );
