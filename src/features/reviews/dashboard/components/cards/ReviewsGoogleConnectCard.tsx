@@ -85,27 +85,16 @@ export const ReviewsGoogleConnectCard: React.FC<
       className="flex h-full w-full flex-col"
     >
       <div className="flex h-full flex-col gap-4">
-        <div className="flex min-w-0 items-start gap-3">
-          <span
-            className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-white/15"
-            aria-hidden
-          >
-            <GoogleIcon className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <h2 className="text-base font-bold leading-tight tracking-tight text-white sm:text-lg">
-              {title}
-            </h2>
-            <p className="mt-0.5 text-sm leading-snug text-zinc-400">{lead}</p>
-            {connectError ? (
-              <p
-                className="mt-3 text-xs leading-relaxed text-red-300"
-                role="alert"
-              >
-                {connectError}
-              </p>
-            ) : null}
-          </div>
+        <div className="min-w-0">
+          <h2 className="text-base font-bold leading-tight tracking-tight text-white sm:text-lg">
+            {title}
+          </h2>
+          <p className="mt-0.5 text-sm leading-snug text-zinc-400">{lead}</p>
+          {connectError ? (
+            <p className="mt-3 text-xs leading-relaxed text-red-300" role="alert">
+              {connectError}
+            </p>
+          ) : null}
         </div>
         {action ? <div className="mt-auto shrink-0 pt-1">{action}</div> : null}
       </div>
