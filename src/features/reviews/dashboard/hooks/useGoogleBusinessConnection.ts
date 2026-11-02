@@ -122,63 +122,66 @@ export function useGoogleBusinessConnection(
     }
   }, [enabled]);
 
-  const pullReviews = useCallback(async (options?: { quiet?: boolean }) => {
-    if (!enabled) return false;
-    if (!options?.quiet) setConnectError(null);
-    setPullLoading(true);
-    try {
-      const response = await fetch(API_ROUTES.REVIEWS_GOOGLE_PULL, {
-        method: 'POST',
-      });
-      const json = (await response.json().catch(() => null)) as {
-        success?: boolean;
-        importedCount?: number;
-        error?: string;
-      } | null;
+  const pullReviews = useCallback(
+    async (options?: { quiet?: boolean }) => {
+      if (!enabled) return false;
+      if (!options?.quiet) setConnectError(null);
+      setPullLoading(true);
+      try {
+        const response = await fetch(API_ROUTES.REVIEWS_GOOGLE_PULL, {
+          method: 'POST',
+        });
+        const json = (await response.json().catch(() => null)) as {
+          success?: boolean;
+          importedCount?: number;
+          error?: string;
+        } | null;
 
-      if (!response.ok || !json?.success) {
-        if (response.status === 429) {
-          const retryHeader = Number(response.headers.get('Retry-After'));
-          const retrySec =
-            Number.isFinite(retryHeader) && retryHeader > 0
-              ? retryHeader
-              : GOOGLE_REVIEW_MANUAL_PULL_COOLDOWN_MS / 1000;
-          setRefreshLockedUntil(Date.now() + retrySec * 1000);
+        if (!response.ok || !json?.success) {
+          if (response.status === 429) {
+            const retryHeader = Number(response.headers.get('Retry-After'));
+            const retrySec =
+              Number.isFinite(retryHeader) && retryHeader > 0
+                ? retryHeader
+                : GOOGLE_REVIEW_MANUAL_PULL_COOLDOWN_MS / 1000;
+            setRefreshLockedUntil(Date.now() + retrySec * 1000);
+            if (!options?.quiet) {
+              setConnectError(
+                typeof json?.error === 'string' && json.error.trim()
+                  ? json.error
+                  : GOOGLE_REVIEW_PULL_COOLDOWN_MESSAGE
+              );
+            }
+            return false;
+          }
           if (!options?.quiet) {
             setConnectError(
               typeof json?.error === 'string' && json.error.trim()
                 ? json.error
-                : GOOGLE_REVIEW_PULL_COOLDOWN_MESSAGE
+                : 'Could not pull Google reviews.'
             );
           }
           return false;
         }
+
+        setImportedCount(
+          typeof json.importedCount === 'number' ? json.importedCount : 0
+        );
+        setLastSyncedAt(new Date().toISOString());
+        return true;
+      } catch {
         if (!options?.quiet) {
           setConnectError(
-            typeof json?.error === 'string' && json.error.trim()
-              ? json.error
-              : 'Could not pull Google reviews.'
+            'Something went wrong. Check your connection and try again.'
           );
         }
         return false;
+      } finally {
+        setPullLoading(false);
       }
-
-      setImportedCount(
-        typeof json.importedCount === 'number' ? json.importedCount : 0
-      );
-      setLastSyncedAt(new Date().toISOString());
-      return true;
-    } catch {
-      if (!options?.quiet) {
-        setConnectError(
-          'Something went wrong. Check your connection and try again.'
-        );
-      }
-      return false;
-    } finally {
-      setPullLoading(false);
-    }
-  }, [enabled]);
+    },
+    [enabled]
+  );
 
   useEffect(() => {
     if (!refreshCoolingDown) return;

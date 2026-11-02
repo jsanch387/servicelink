@@ -31,6 +31,7 @@ export function startGoogleBusinessConnect(args: {
   request: Request;
   userId: string;
   businessId: string;
+  client?: 'web' | 'mobile';
 }): StartGoogleBusinessConnectResult {
   const config = getGoogleBusinessOAuthConfig();
   if (!config) {
@@ -45,6 +46,7 @@ export function startGoogleBusinessConnect(args: {
     businessId: args.businessId,
     userId: args.userId,
     secret: config.clientSecret,
+    client: args.client === 'mobile' ? 'mobile' : 'web',
   });
 
   return {

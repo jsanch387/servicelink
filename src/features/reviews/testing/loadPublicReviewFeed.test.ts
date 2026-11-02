@@ -10,9 +10,9 @@ function createFeedDb(tables: Record<string, unknown[]>) {
       });
       const order = vi.fn().mockReturnValue({ limit });
       const eqHidden = vi.fn().mockReturnValue({ order });
-      const eqBusiness = vi.fn().mockReturnValue(
-        table === 'reviews' ? { eq: eqHidden } : { order }
-      );
+      const eqBusiness = vi
+        .fn()
+        .mockReturnValue(table === 'reviews' ? { eq: eqHidden } : { order });
       return {
         select: vi.fn().mockReturnValue({ eq: eqBusiness }),
       };

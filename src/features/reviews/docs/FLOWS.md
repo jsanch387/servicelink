@@ -4,13 +4,13 @@ Human-readable reference for how the reviews feature works today: product rules,
 
 **Related docs**
 
-| Doc                                                  | Use when                            |
-| ---------------------------------------------------- | ----------------------------------- |
-| [DATABASE.md](./DATABASE.md)                         | Schema, RLS, tokens, SQL examples   |
-| [SERVER.md](./SERVER.md)                             | Server modules and loading strategy |
+| Doc                                                  | Use when                              |
+| ---------------------------------------------------- | ------------------------------------- |
+| [DATABASE.md](./DATABASE.md)                         | Schema, RLS, tokens, SQL examples     |
+| [SERVER.md](./SERVER.md)                             | Server modules and loading strategy   |
 | [GOOGLE_REVIEWS.md](./GOOGLE_REVIEWS.md)             | Google connect, pull, import, display |
-| [REVIEW_INVITES_TABLE.md](./REVIEW_INVITES_TABLE.md) | `review_invites` columns            |
-| [REVIEWS_TABLE.md](./REVIEWS_TABLE.md)               | `reviews` columns                   |
+| [REVIEW_INVITES_TABLE.md](./REVIEW_INVITES_TABLE.md) | `review_invites` columns              |
+| [REVIEWS_TABLE.md](./REVIEWS_TABLE.md)               | `reviews` columns                     |
 
 ---
 

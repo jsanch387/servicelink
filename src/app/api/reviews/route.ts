@@ -1,14 +1,24 @@
 import type { ReviewsListResponse } from '@/features/reviews/dashboard/api/types';
 import { loadDashboardReviewFeed } from '@/features/reviews/dashboard/server/loadDashboardReviewFeed';
 import { PUBLIC_REVIEW_PAGE_SIZE } from '@/features/reviews/utils/pagePublicReviews';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const resolved = await requireBusinessPermission(supabase, 'reviews.read');
+    const auth = await getAuthenticatedUser(request);
+    if ('error' in auth) {
+      return NextResponse.json(
+        { success: false, error: auth.error } satisfies ReviewsListResponse,
+        { status: 401 }
+      );
+    }
+
+    const resolved = await requireBusinessPermission(
+      auth.supabase,
+      'reviews.read'
+    );
 
     if (!resolved.ok) {
       return NextResponse.json(
@@ -22,15 +32,22 @@ export async function GET(request: Request) {
       offsetParam == null || offsetParam === '' ? 0 : Number(offsetParam);
     if (!Number.isInteger(offset) || offset < 0) {
       return NextResponse.json(
-        { success: false, error: 'Invalid review page' } satisfies ReviewsListResponse,
+        {
+          success: false,
+          error: 'Invalid review page',
+        } satisfies ReviewsListResponse,
         { status: 400 }
       );
     }
 
-    const feed = await loadDashboardReviewFeed(supabase, resolved.businessId, {
-      offset,
-      limit: PUBLIC_REVIEW_PAGE_SIZE,
-    });
+    const feed = await loadDashboardReviewFeed(
+      auth.supabase,
+      resolved.businessId,
+      {
+        offset,
+        limit: PUBLIC_REVIEW_PAGE_SIZE,
+      }
+    );
 
     if (!feed.ok) {
       return NextResponse.json(

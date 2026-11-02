@@ -103,8 +103,6 @@ export async function loadDashboardGoogleReviews(
   return reviews.map(review => ({ ...review, isHidden: false }));
 }
 
-export function googleReviewsSummaryFromList(
-  reviews: PublicProfileReview[]
-) {
+export function googleReviewsSummaryFromList(reviews: PublicProfileReview[]) {
   return reviews.length > 0 ? deriveReviewsSummary(reviews) : null;
 }

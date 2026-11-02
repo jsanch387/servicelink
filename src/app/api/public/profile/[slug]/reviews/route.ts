@@ -56,7 +56,8 @@ export async function GET(
     }
 
     const offsetParam = request.nextUrl.searchParams.get('offset');
-    const offset = offsetParam == null || offsetParam === '' ? 0 : Number(offsetParam);
+    const offset =
+      offsetParam == null || offsetParam === '' ? 0 : Number(offsetParam);
     if (!Number.isInteger(offset) || offset < 0) {
       return NextResponse.json(
         { success: false, error: 'Invalid review page' },

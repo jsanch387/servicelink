@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { isGoogleReviewSyncStale } from '../server/googleReviewSyncFreshness';
 import { runScheduledGoogleReviewPulls } from '../server/runScheduledGoogleReviewPulls';
 
-function adminReturning(rows: { business_id: string }[] | null, error: { message: string } | null = null) {
+function adminReturning(
+  rows: { business_id: string }[] | null,
+  error: { message: string } | null = null
+) {
   return {
     from: () => ({
       select: () => ({
@@ -22,15 +25,13 @@ describe('isGoogleReviewSyncStale', () => {
   });
 
   it('is fresh inside the 12 hour window', () => {
-    expect(
-      isGoogleReviewSyncStale('2026-11-01T14:00:00.000Z', now)
-    ).toBe(false);
+    expect(isGoogleReviewSyncStale('2026-11-01T14:00:00.000Z', now)).toBe(
+      false
+    );
   });
 
   it('is stale after 12 hours', () => {
-    expect(
-      isGoogleReviewSyncStale('2026-11-01T11:00:00.000Z', now)
-    ).toBe(true);
+    expect(isGoogleReviewSyncStale('2026-11-01T11:00:00.000Z', now)).toBe(true);
   });
 });
 

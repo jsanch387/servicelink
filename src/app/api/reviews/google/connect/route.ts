@@ -29,10 +29,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let client: 'web' | 'mobile' = 'web';
+    try {
+      const body = (await request.json()) as { client?: unknown };
+      if (body?.client === 'mobile') client = 'mobile';
+    } catch {
+      client = 'web';
+    }
+
     const started = startGoogleBusinessConnect({
       request,
       userId: auth.user.id,
       businessId: resolved.businessId,
+      client,
     });
 
     if (!started.ok) {

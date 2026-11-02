@@ -7,22 +7,30 @@ import {
   getGoogleBusinessRedirectUri,
   GOOGLE_CONNECT_STATE_COOKIE,
 } from '@/features/reviews/google-connect/server/googleBusinessOAuth';
-import { googleConnectReturnPath } from '@/features/reviews/google-connect/server/googleConnectReturnPath';
+import {
+  googleConnectReturnPath,
+  googleReviewsMobileBridgePath,
+} from '@/features/reviews/google-connect/server/googleConnectReturnPath';
 import { verifyGoogleConnectState } from '@/features/reviews/google-connect/server/googleConnectState';
 import { pullGoogleBusinessReviews } from '@/features/reviews/google-connect/server/pullGoogleBusinessReviews';
 import { upsertGoogleBusinessConnection } from '@/features/reviews/google-connect/server/upsertGoogleBusinessConnection';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
 
-function reviewsRedirect(
+function finishConnect(
   request: NextRequest,
-  notice: 'connected' | 'error'
+  notice: 'connected' | 'error',
+  client: 'web' | 'mobile'
 ): NextResponse {
-  const url = new URL(googleConnectReturnPath(notice), request.url);
-  const response = NextResponse.redirect(url);
+  const path =
+    client === 'mobile'
+      ? googleReviewsMobileBridgePath(notice)
+      : googleConnectReturnPath(notice);
+  const response = NextResponse.redirect(new URL(path, request.url));
   response.cookies.set({
     name: GOOGLE_CONNECT_STATE_COOKIE,
     value: '',
@@ -30,6 +38,26 @@ function reviewsRedirect(
     maxAge: 0,
   });
   return response;
+}
+
+function clientFromState(state: string, secret: string): 'web' | 'mobile' {
+  const verified = verifyGoogleConnectState({
+    state,
+    nonce: '',
+    secret,
+  });
+  return verified.ok ? verified.value.client : 'web';
+}
+
+async function mobileOwnerCanConnect(userId: string): Promise<boolean> {
+  try {
+    const admin = createSupabaseAdminClient();
+    const { data, error } = await admin.auth.admin.getUserById(userId);
+    if (error) return false;
+    return isGoogleReviewsRolloutEmail(data.user?.email);
+  } catch {
+    return false;
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -41,13 +69,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const state = request.nextUrl.searchParams.get('state')?.trim() ?? '';
+    const returnClient = clientFromState(state, config.clientSecret);
+
     const denied = request.nextUrl.searchParams.get('error');
     if (denied) {
-      return reviewsRedirect(request, 'error');
+      return finishConnect(request, 'error', returnClient);
     }
 
     const code = request.nextUrl.searchParams.get('code')?.trim() ?? '';
-    const state = request.nextUrl.searchParams.get('state')?.trim() ?? '';
     const nonce = request.cookies.get(GOOGLE_CONNECT_STATE_COOKIE)?.value ?? '';
 
     const verified = verifyGoogleConnectState({
@@ -56,16 +86,23 @@ export async function GET(request: NextRequest) {
       secret: config.clientSecret,
     });
     if (!verified.ok || !code) {
-      return reviewsRedirect(request, 'error');
+      return finishConnect(request, 'error', returnClient);
     }
 
-    const auth = await getAuthenticatedUser(request);
-    if (
-      'error' in auth ||
-      auth.user.id !== verified.value.userId ||
-      !isGoogleReviewsRolloutEmail(auth.user.email)
-    ) {
-      return reviewsRedirect(request, 'error');
+    if (verified.value.client === 'mobile') {
+      const allowed = await mobileOwnerCanConnect(verified.value.userId);
+      if (!allowed) {
+        return finishConnect(request, 'error', 'mobile');
+      }
+    } else {
+      const auth = await getAuthenticatedUser(request);
+      if (
+        'error' in auth ||
+        auth.user.id !== verified.value.userId ||
+        !isGoogleReviewsRolloutEmail(auth.user.email)
+      ) {
+        return finishConnect(request, 'error', 'web');
+      }
     }
 
     const exchanged = await exchangeGoogleBusinessCode({
@@ -75,7 +112,7 @@ export async function GET(request: NextRequest) {
       redirectUri: getGoogleBusinessRedirectUri(request),
     });
     if (!exchanged.ok) {
-      return reviewsRedirect(request, 'error');
+      return finishConnect(request, 'error', verified.value.client);
     }
 
     const fetched = await fetchGoogleBusinessLocationPick(
@@ -94,7 +131,7 @@ export async function GET(request: NextRequest) {
       location,
     });
     if (!saved.ok) {
-      return reviewsRedirect(request, 'error');
+      return finishConnect(request, 'error', verified.value.client);
     }
 
     const pulled = await pullGoogleBusinessReviews(verified.value.businessId);
@@ -104,9 +141,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return reviewsRedirect(request, 'connected');
+    return finishConnect(request, 'connected', verified.value.client);
   } catch (error) {
     console.error('[reviews:google-connect] callback failed', error);
-    return reviewsRedirect(request, 'error');
+    return finishConnect(request, 'error', 'web');
   }
 }

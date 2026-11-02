@@ -14,10 +14,14 @@ describe('ReviewsSetupEmptyState', () => {
 
     expect(screen.getByRole('heading', { name: 'After a visit' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(screen.getByRole('heading', { name: 'One review each' })).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { name: 'One review each' })
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByRole('heading', { name: 'Your reply' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(screen.getByRole('heading', { name: 'Google reviews' })).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { name: 'Google reviews' })
+    ).toBeTruthy();
   });
 });

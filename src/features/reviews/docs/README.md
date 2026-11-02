@@ -13,10 +13,10 @@ Start with **[FLOWS.md](./FLOWS.md)** for how the feature works end-to-end. Use 
 
 ## Database tables
 
-| Doc                                                  | When to read                      |
-| ---------------------------------------------------- | --------------------------------- |
-| [REVIEW_INVITES_TABLE.md](./REVIEW_INVITES_TABLE.md) | `review_invites` column reference |
-| [REVIEWS_TABLE.md](./REVIEWS_TABLE.md)               | `reviews` column reference        |
+| Doc                                                  | When to read                                     |
+| ---------------------------------------------------- | ------------------------------------------------ |
+| [REVIEW_INVITES_TABLE.md](./REVIEW_INVITES_TABLE.md) | `review_invites` column reference                |
+| [REVIEWS_TABLE.md](./REVIEWS_TABLE.md)               | `reviews` column reference                       |
 | [GOOGLE_REVIEWS.md](./GOOGLE_REVIEWS.md)             | `google_business_connections` + `google_reviews` |
 
 Migration SQL is referenced in DATABASE.md; run migrations in Supabase in order (`review_invites` → `reviews` → per-customer unique indexes → `004_google_business_connections` → `005_google_reviews`).

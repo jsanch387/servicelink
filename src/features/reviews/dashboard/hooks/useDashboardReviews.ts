@@ -27,9 +27,9 @@ export interface UseDashboardReviewsResult {
 
 const EMPTY_SUMMARY = deriveReviewsSummary([]);
 
-async function fetchReviewPage(offset: number): Promise<
-  Extract<ReviewsListResponse, { success: true }>
-> {
+async function fetchReviewPage(
+  offset: number
+): Promise<Extract<ReviewsListResponse, { success: true }>> {
   const path = offset > 0 ? `/api/reviews?offset=${offset}` : '/api/reviews';
   const response = await fetch(path, { method: 'GET' });
   const json = (await response
@@ -37,7 +37,8 @@ async function fetchReviewPage(offset: number): Promise<
     .catch(() => null)) as ReviewsListResponse | null;
 
   if (!response.ok || !json?.success) {
-    const message = json && !json.success ? json.error : 'Failed to load reviews';
+    const message =
+      json && !json.success ? json.error : 'Failed to load reviews';
     throw new Error(message);
   }
 
@@ -46,7 +47,8 @@ async function fetchReviewPage(offset: number): Promise<
 
 export function useDashboardReviews(): UseDashboardReviewsResult {
   const [reviews, setReviews] = useState<DashboardReview[]>([]);
-  const [summary, setSummary] = useState<PublicProfileReviewsSummary>(EMPTY_SUMMARY);
+  const [summary, setSummary] =
+    useState<PublicProfileReviewsSummary>(EMPTY_SUMMARY);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
@@ -83,7 +85,9 @@ export function useDashboardReviews(): UseDashboardReviewsResult {
       const json = await fetchReviewPage(reviews.length);
       setReviews(current => {
         const seen = new Set(current.map(review => review.id));
-        const next = (json.reviews ?? []).filter(review => !seen.has(review.id));
+        const next = (json.reviews ?? []).filter(
+          review => !seen.has(review.id)
+        );
         return [...current, ...next];
       });
       setHasMore(json.hasMore === true);

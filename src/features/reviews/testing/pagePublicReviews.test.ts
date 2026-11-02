@@ -37,8 +37,13 @@ describe('pageMergedPublicReviews', () => {
   });
 
   it('returns the next page and clears hasMore on the last slice', () => {
-    const reviews = Array.from({ length: PUBLIC_REVIEW_PAGE_SIZE + 1 }, (_, index) =>
-      review(`r-${index}`, `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`)
+    const reviews = Array.from(
+      { length: PUBLIC_REVIEW_PAGE_SIZE + 1 },
+      (_, index) =>
+        review(
+          `r-${index}`,
+          `2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`
+        )
     );
 
     const first = pageMergedPublicReviews(reviews, 0, PUBLIC_REVIEW_PAGE_SIZE);

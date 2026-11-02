@@ -31,7 +31,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const loaded = await loadGoogleBusinessConnectionStatus(resolved.businessId);
+    const loaded = await loadGoogleBusinessConnectionStatus(
+      resolved.businessId
+    );
     if (!loaded.ok) {
       return NextResponse.json(
         { success: false, error: loaded.error },

@@ -37,7 +37,10 @@ export async function refreshGoogleAccessToken(args: {
       status: response.status,
       error: json?.error,
     });
-    return { ok: false, error: 'Google sign-in expired. Connect Google again.' };
+    return {
+      ok: false,
+      error: 'Google sign-in expired. Connect Google again.',
+    };
   }
 
   const expiresIn =

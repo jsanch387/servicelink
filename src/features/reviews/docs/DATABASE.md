@@ -311,12 +311,12 @@ where business_id = $1
 
 ## UI surfaces that consume this data
 
-| Surface                    | Data source                         | Filter                                            |
-| -------------------------- | ----------------------------------- | ------------------------------------------------- |
-| `/dashboard/reviews`       | `reviews` + `google_reviews`        | All ServiceLink rows; Google labeled, no reply    |
-| Public profile Reviews tab | `reviews` + `google_reviews`        | ServiceLink `is_hidden = false`; Google separate  |
-| Profile header rating      | `reviews` aggregate                 | `is_hidden = false` (Google not mixed in)         |
-| `/review/[token]` form     | `review_invites` + booking snapshot | Valid pending invite                              |
+| Surface                    | Data source                         | Filter                                           |
+| -------------------------- | ----------------------------------- | ------------------------------------------------ |
+| `/dashboard/reviews`       | `reviews` + `google_reviews`        | All ServiceLink rows; Google labeled, no reply   |
+| Public profile Reviews tab | `reviews` + `google_reviews`        | ServiceLink `is_hidden = false`; Google separate |
+| Profile header rating      | `reviews` aggregate                 | `is_hidden = false` (Google not mixed in)        |
+| `/review/[token]` form     | `review_invites` + booking snapshot | Valid pending invite                             |
 
 Code (UI only today; mocks until API wired):
 

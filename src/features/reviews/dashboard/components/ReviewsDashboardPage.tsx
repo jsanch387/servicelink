@@ -5,10 +5,7 @@ import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
 import { bcp47ForBookingLocale } from '@/libs/i18n/publicBookingUi';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  GOOGLE_CONNECT_RETURN_CONNECTED,
-  GOOGLE_CONNECT_RETURN_ERROR,
-} from '../copy/googleConnectCopy';
+import { GOOGLE_CONNECT_RETURN_ERROR } from '../copy/googleConnectCopy';
 import { useDashboardReviews } from '../hooks/useDashboardReviews';
 import { useGoogleBusinessConnection } from '../hooks/useGoogleBusinessConnection';
 import type { DashboardReview, ReviewsDashboardFilterId } from '../types';
@@ -48,14 +45,10 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
   } = useDashboardReviews();
   const {
     connected: googleConnected,
-    importedCount,
     connectLoading,
-    pullLoading,
-    refreshCoolingDown,
     connectError,
     reviewReloadNonce,
     startConnect,
-    pullReviews,
   } = useGoogleBusinessConnection(showGoogleConnect);
   const [googleReturnNotice, setGoogleReturnNotice] = useState<
     'connected' | 'error' | null
@@ -132,16 +125,9 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
     <ReviewsDashboardShell>
       <ReviewsDashboardHeader />
 
-      {showGoogleConnect && googleReturnNotice ? (
-        <p
-          className={`mb-4 text-sm ${
-            googleReturnNotice === 'error' ? 'text-red-300' : 'text-zinc-400'
-          }`}
-          role="status"
-        >
-          {googleReturnNotice === 'error'
-            ? GOOGLE_CONNECT_RETURN_ERROR
-            : GOOGLE_CONNECT_RETURN_CONNECTED}
+      {showGoogleConnect && googleReturnNotice === 'error' ? (
+        <p className="mb-4 text-sm text-red-300" role="alert">
+          {GOOGLE_CONNECT_RETURN_ERROR}
         </p>
       ) : null}
 
@@ -150,35 +136,27 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
           showGoogleConnect ? 'mb-6 grid gap-3 lg:grid-cols-2' : 'mb-6'
         }
       >
-          {showLoadingSkeleton ? (
-            <div
-              className="h-40 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.02]"
-              aria-hidden
+        {showLoadingSkeleton ? (
+          <div
+            className="h-40 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.02]"
+            aria-hidden
+          />
+        ) : loadStatus !== 'error' ? (
+          <ReviewsSummaryCard
+            summary={summary}
+            bookingFlowLocale={bookingFlowLocale}
+          />
+        ) : null}
+        {showGoogleConnect ? (
+          <div className={loadStatus === 'error' ? 'lg:col-span-2' : 'h-full'}>
+            <ReviewsGoogleConnectCard
+              connected={googleKnownConnected}
+              connectLoading={connectLoading}
+              connectError={connectError}
+              onConnect={() => void startConnect()}
             />
-          ) : loadStatus !== 'error' ? (
-            <ReviewsSummaryCard
-              summary={summary}
-              bookingFlowLocale={bookingFlowLocale}
-            />
-          ) : null}
-          {showGoogleConnect ? (
-            <div className={loadStatus === 'error' ? 'lg:col-span-2' : 'h-full'}>
-              <ReviewsGoogleConnectCard
-                connected={googleKnownConnected}
-                importedCount={importedCount}
-                connectLoading={connectLoading}
-                pullLoading={pullLoading}
-                refreshCoolingDown={refreshCoolingDown}
-                connectError={connectError}
-                onConnect={() => void startConnect()}
-                onPullReviews={() => {
-                  void pullReviews().then(ok => {
-                    if (ok) void reloadReviews();
-                  });
-                }}
-              />
-            </div>
-          ) : null}
+          </div>
+        ) : null}
       </div>
 
       {showLoadingSkeleton ? (

@@ -217,9 +217,8 @@ export default function PrivacyPage() {
               When a business connects Google, we receive and store the
               connected listing, the tokens Google gives us so we can keep the
               connection, and the review details Google returns. Those details
-              can include the star rating, review text, reviewer name and
-              photo, review date, and a reply the business already posted on
-              Google.
+              can include the star rating, review text, reviewer name and photo,
+              review date, and a reply the business already posted on Google.
             </p>
             <p className="text-base leading-relaxed mt-4">
               We use this information to show those reviews to the business
@@ -229,21 +228,21 @@ export default function PrivacyPage() {
               which comes only from reviews left through ServiceLink.
             </p>
             <p className="text-base leading-relaxed mt-4">
-              We do not sell Google user data. We do not use it for
-              advertising, and we do not use it to train generalized
-              artificial intelligence or machine learning models. We do not
-              allow people to read it except to provide this feature, keep
-              ServiceLink secure, comply with the law, or respond to a support
-              request. Companies that host ServiceLink process it only to run
-              the product. We do not share it with other businesses.
+              We do not sell Google user data. We do not use it for advertising,
+              and we do not use it to train generalized artificial intelligence
+              or machine learning models. We do not allow people to read it
+              except to provide this feature, keep ServiceLink secure, comply
+              with the law, or respond to a support request. Companies that host
+              ServiceLink process it only to run the product. We do not share it
+              with other businesses.
             </p>
             <p className="text-base leading-relaxed mt-4">
               A business owner can remove ServiceLink&apos;s access in their
               Google Account settings. They can also email us and ask us to
               disconnect Google and delete the stored connection and imported
-              reviews. Deleting the ServiceLink account deletes that
-              connection, the tokens, and the imported reviews with the rest of
-              that business&apos;s data.
+              reviews. Deleting the ServiceLink account deletes that connection,
+              the tokens, and the imported reviews with the rest of that
+              business&apos;s data.
             </p>
             <p className="text-base leading-relaxed mt-4">
               Our use of information received from Google APIs follows the{' '}

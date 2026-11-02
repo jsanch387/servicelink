@@ -4,10 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ReviewsGoogleConnectCard } from '../components/cards/ReviewsGoogleConnectCard';
 import {
   GOOGLE_CONNECT_CONNECTED_LEAD,
+  GOOGLE_CONNECT_CONNECTED_STATUS,
   GOOGLE_CONNECT_CONNECTED_TITLE,
   GOOGLE_CONNECT_CTA,
   GOOGLE_CONNECT_LEAD,
-  GOOGLE_CONNECT_REFRESH_CTA,
   GOOGLE_CONNECT_TITLE,
 } from '../copy/googleConnectCopy';
 
@@ -36,41 +36,16 @@ describe('ReviewsGoogleConnectCard', () => {
     expect(onConnect).toHaveBeenCalledTimes(1);
   });
 
-  it('shows only pull after Google is connected', () => {
-    render(
-      <ReviewsGoogleConnectCard
-        connected
-        onConnect={() => undefined}
-        onPullReviews={() => undefined}
-      />
-    );
+  it('shows a connected status instead of another action', () => {
+    render(<ReviewsGoogleConnectCard connected onConnect={() => undefined} />);
 
     expect(
       screen.getByRole('heading', { name: GOOGLE_CONNECT_CONNECTED_TITLE })
     ).toBeTruthy();
     expect(screen.getByText(GOOGLE_CONNECT_CONNECTED_LEAD)).toBeTruthy();
     expect(
-      screen.queryByRole('button', { name: GOOGLE_CONNECT_CTA })
-    ).toBeNull();
-    expect(
-      screen.getByRole('button', { name: GOOGLE_CONNECT_REFRESH_CTA })
+      screen.getByRole('status', { name: GOOGLE_CONNECT_CONNECTED_STATUS })
     ).toBeTruthy();
-  });
-
-  it('calls onPullReviews when the pull CTA is clicked', async () => {
-    const user = userEvent.setup();
-    const onPullReviews = vi.fn();
-    render(
-      <ReviewsGoogleConnectCard
-        connected
-        onConnect={() => undefined}
-        onPullReviews={onPullReviews}
-      />
-    );
-
-    await user.click(
-      screen.getByRole('button', { name: GOOGLE_CONNECT_REFRESH_CTA })
-    );
-    expect(onPullReviews).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });

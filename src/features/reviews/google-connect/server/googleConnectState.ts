@@ -7,17 +7,21 @@ type GoogleConnectStatePayload = {
   userId: string;
   nonce: string;
   exp: number;
+  /** Set only for the mobile app. The return browser has no ServiceLink cookie. */
+  client?: 'mobile';
 };
 
 export type VerifiedGoogleConnectState = {
   businessId: string;
   userId: string;
+  client: 'web' | 'mobile';
 };
 
 export function createGoogleConnectState(args: {
   businessId: string;
   userId: string;
   secret: string;
+  client?: 'web' | 'mobile';
   now?: number;
 }): { state: string; nonce: string } {
   const nonce = randomBytes(16).toString('hex');
@@ -26,11 +30,14 @@ export function createGoogleConnectState(args: {
     userId: args.userId.trim(),
     nonce,
     exp: (args.now ?? Date.now()) + GOOGLE_CONNECT_STATE_TTL_MS,
+    ...(args.client === 'mobile' ? { client: 'mobile' as const } : {}),
   };
   const body = Buffer.from(JSON.stringify(payload), 'utf8').toString(
     'base64url'
   );
-  const sig = createHmac('sha256', args.secret).update(body).digest('base64url');
+  const sig = createHmac('sha256', args.secret)
+    .update(body)
+    .digest('base64url');
   return { state: `${body}.${sig}`, nonce };
 }
 
@@ -42,7 +49,7 @@ export function verifyGoogleConnectState(args: {
 }): { ok: true; value: VerifiedGoogleConnectState } | { ok: false } {
   const trimmedState = args.state.trim();
   const trimmedNonce = args.nonce.trim();
-  if (!trimmedState || !trimmedNonce || !args.secret) {
+  if (!trimmedState || !args.secret) {
     return { ok: false };
   }
 
@@ -86,13 +93,16 @@ export function verifyGoogleConnectState(args: {
     return { ok: false };
   }
 
-  const nonceBuf = Buffer.from(payload.nonce);
-  const cookieBuf = Buffer.from(trimmedNonce);
-  if (
-    nonceBuf.length !== cookieBuf.length ||
-    !timingSafeEqual(nonceBuf, cookieBuf)
-  ) {
-    return { ok: false };
+  const isMobile = payload.client === 'mobile';
+  if (!isMobile) {
+    const nonceBuf = Buffer.from(payload.nonce);
+    const cookieBuf = Buffer.from(trimmedNonce);
+    if (
+      nonceBuf.length !== cookieBuf.length ||
+      !timingSafeEqual(nonceBuf, cookieBuf)
+    ) {
+      return { ok: false };
+    }
   }
 
   if ((args.now ?? Date.now()) > payload.exp) {
@@ -104,6 +114,7 @@ export function verifyGoogleConnectState(args: {
     value: {
       businessId: payload.businessId.trim(),
       userId: payload.userId.trim(),
+      client: isMobile ? 'mobile' : 'web',
     },
   };
 }

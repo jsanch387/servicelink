@@ -51,7 +51,7 @@ Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit tes
 | `booking-reminders`        | Tomorrow’s confirmed bookings: owner push + customer email/SMS  | [`availability/.../reminders`](../../availability/booking/server/reminders/README.md) |
 | `quote-request-follow-ups` | Unanswered quote requests in a 3-day window: one owner push/day | [`quotes/.../reminders`](../../quotes/server/reminders/README.md)                     |
 | `quote-customer-reminders` | Sent quotes still open 2–3 days later: one customer email + SMS | [`quotes/.../reminders`](../../quotes/server/reminders/README.md)                     |
-| `google-review-pulls`      | Connected Google listings: import reviews without a manual pull | [`reviews/docs/GOOGLE_REVIEWS.md`](../../reviews/docs/GOOGLE_REVIEWS.md)             |
+| `google-review-pulls`      | Connected Google listings: import reviews without a manual pull | [`reviews/docs/GOOGLE_REVIEWS.md`](../../reviews/docs/GOOGLE_REVIEWS.md)              |
 
 ### booking-reminders
 

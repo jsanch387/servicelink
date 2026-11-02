@@ -85,9 +85,8 @@ export async function fetchGoogleBusinessLocationPick(
     const accountsJson = (await accountsRes.json().catch(() => null)) as {
       accounts?: GoogleAccount[];
     } | null;
-    const accounts = (Array.isArray(accountsJson?.accounts)
-      ? accountsJson.accounts
-      : []
+    const accounts = (
+      Array.isArray(accountsJson?.accounts) ? accountsJson.accounts : []
     ).filter(
       (account): account is { name: string } =>
         typeof account.name === 'string' && account.name.trim().length > 0

@@ -45,6 +45,7 @@ Owner dashboard docs: `src/features/subscriptions/docs/`.
 | [mobile-maintenance-enrollment.md](./mobile-maintenance-enrollment.md)       | Maintenance plans                                                     |
 | [mobile-onboarding-complete.md](./mobile-onboarding-complete.md)             | Onboarding complete                                                   |
 | [mobile-stripe-connect-onboarding.md](./mobile-stripe-connect-onboarding.md) | Connect onboarding                                                    |
+| [mobile-google-reviews-connect.md](./mobile-google-reviews-connect.md)       | Connect Google reviews and confirm the import                         |
 | [mobile-create-payment-link.md](./mobile-create-payment-link.md)             | Create payment → Payment link (`POST /api/payments/link`)             |
 | [mobile-create-payment-tap-to-pay.md](./mobile-create-payment-tap-to-pay.md) | Create payment → Tap to pay (`POST /api/payments/tap-to-pay/intent`)  |
 | [mobile-payments-transactions.md](./mobile-payments-transactions.md)         | Payments → Transactions (`GET /api/payments/transactions`)            |

@@ -25,7 +25,30 @@ describe('googleConnectState', () => {
 
     expect(verified).toEqual({
       ok: true,
-      value: { businessId: 'biz-1', userId: 'user-1' },
+      value: { businessId: 'biz-1', userId: 'user-1', client: 'web' },
+    });
+  });
+
+  it('accepts a mobile state without the browser nonce', () => {
+    const now = 1_700_000_000_000;
+    const created = createGoogleConnectState({
+      businessId: 'biz-1',
+      userId: 'user-1',
+      secret,
+      client: 'mobile',
+      now,
+    });
+
+    const verified = verifyGoogleConnectState({
+      state: created.state,
+      nonce: '',
+      secret,
+      now,
+    });
+
+    expect(verified).toEqual({
+      ok: true,
+      value: { businessId: 'biz-1', userId: 'user-1', client: 'mobile' },
     });
   });
 

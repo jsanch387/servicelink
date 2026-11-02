@@ -93,6 +93,47 @@ describe('POST /api/reviews/google/connect', () => {
       request: expect.any(Request),
       userId: 'user-1',
       businessId: 'biz-1',
+      client: 'web',
     });
+  });
+
+  it('starts a mobile connect when the app asks for it', async () => {
+    getAuthenticatedUserMock.mockResolvedValue({
+      user: { id: 'user-1', email: 'jesuss387@gmail.com' },
+      supabase: {},
+      authMethod: 'bearer',
+    });
+    resolveCurrentBusinessIdMock.mockResolvedValue({
+      ok: true,
+      businessId: 'biz-1',
+    });
+    startGoogleBusinessConnectMock.mockReturnValue({
+      ok: true,
+      url: 'https://accounts.google.com/o/oauth2/v2/auth?state=mobile',
+      cookie: {
+        name: 'sl_gbp_oauth',
+        value: 'nonce',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: false,
+        path: '/',
+        maxAge: 600,
+      },
+    });
+
+    const res = await POST(
+      new NextRequest('http://localhost:3000/api/reviews/google/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client: 'mobile' }),
+      })
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.success).toBe(true);
+    expect(startGoogleBusinessConnectMock).toHaveBeenCalledWith(
+      expect.objectContaining({ client: 'mobile', businessId: 'biz-1' })
+    );
   });
 });

@@ -33,7 +33,10 @@ export async function loadPublicReviewSummary(
 
     const failed = counts.find(row => row.error);
     if (failed?.error) {
-      console.error('[reviews] loadPublicReviewSummary query failed', failed.error);
+      console.error(
+        '[reviews] loadPublicReviewSummary query failed',
+        failed.error
+      );
       return {
         status: 'error',
         message: failed.error.message ?? 'Failed to load review summary',

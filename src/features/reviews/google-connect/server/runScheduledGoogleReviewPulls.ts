@@ -19,7 +19,9 @@ export async function runScheduledGoogleReviewPulls(
   admin: SupabaseClient,
   options?: {
     limit?: number;
-    pull?: (businessId: string) => Promise<{ ok: boolean; importedCount?: number }>;
+    pull?: (
+      businessId: string
+    ) => Promise<{ ok: boolean; importedCount?: number }>;
   }
 ): Promise<ScheduledGoogleReviewPullsResult> {
   const limit = options?.limit ?? GOOGLE_REVIEW_PULL_BATCH;

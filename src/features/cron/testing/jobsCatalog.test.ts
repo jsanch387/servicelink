@@ -45,9 +45,9 @@ describe('CRON_JOBS catalog', () => {
 
   it('registers google review pulls', () => {
     expect(CRON_JOBS.map(job => job.id)).toContain('google-review-pulls');
-    expect(
-      CRON_JOBS.find(job => job.id === 'google-review-pulls')?.path
-    ).toBe(API_ROUTES.INTERNAL_CRON_GOOGLE_REVIEW_PULLS);
+    expect(CRON_JOBS.find(job => job.id === 'google-review-pulls')?.path).toBe(
+      API_ROUTES.INTERNAL_CRON_GOOGLE_REVIEW_PULLS
+    );
   });
 
   it('runs all jobs on the same daily slot', () => {
