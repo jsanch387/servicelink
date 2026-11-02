@@ -1,4 +1,4 @@
-export const GOOGLE_CONNECT_TITLE = 'Bring your Google reviews over';
+export const GOOGLE_CONNECT_TITLE = 'Bring your Google reviews';
 
 export const GOOGLE_CONNECT_LEAD =
   'Connect Google and your reviews show on your ServiceLink page.';
