@@ -25,10 +25,13 @@ import { ReviewsSetupEmptyState } from './list/ReviewsSetupEmptyState';
 
 export interface ReviewsDashboardPageProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
+  /** Prod test: Google connect card is only for the allowlisted account. */
+  showGoogleConnect?: boolean;
 }
 
 export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
   bookingFlowLocale = 'en',
+  showGoogleConnect = false,
 }) => {
   const locale = bcp47ForBookingLocale(bookingFlowLocale);
   const {
@@ -53,7 +56,7 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
     reviewReloadNonce,
     startConnect,
     pullReviews,
-  } = useGoogleBusinessConnection();
+  } = useGoogleBusinessConnection(showGoogleConnect);
   const [googleReturnNotice, setGoogleReturnNotice] = useState<
     'connected' | 'error' | null
   >(null);
@@ -129,7 +132,7 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
     <ReviewsDashboardShell>
       <ReviewsDashboardHeader />
 
-      {googleReturnNotice ? (
+      {showGoogleConnect && googleReturnNotice ? (
         <p
           className={`mb-4 text-sm ${
             googleReturnNotice === 'error' ? 'text-red-300' : 'text-zinc-400'
@@ -142,7 +145,11 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
         </p>
       ) : null}
 
-      <div className="mb-6 grid gap-3 lg:grid-cols-2">
+      <div
+        className={
+          showGoogleConnect ? 'mb-6 grid gap-3 lg:grid-cols-2' : 'mb-6'
+        }
+      >
           {showLoadingSkeleton ? (
             <div
               className="h-40 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.02]"
@@ -154,22 +161,24 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
               bookingFlowLocale={bookingFlowLocale}
             />
           ) : null}
-          <div className={loadStatus === 'error' ? 'lg:col-span-2' : 'h-full'}>
-            <ReviewsGoogleConnectCard
-              connected={googleKnownConnected}
-              importedCount={importedCount}
-              connectLoading={connectLoading}
-              pullLoading={pullLoading}
-              refreshCoolingDown={refreshCoolingDown}
-              connectError={connectError}
-              onConnect={() => void startConnect()}
-              onPullReviews={() => {
-                void pullReviews().then(ok => {
-                  if (ok) void reloadReviews();
-                });
-              }}
-            />
-          </div>
+          {showGoogleConnect ? (
+            <div className={loadStatus === 'error' ? 'lg:col-span-2' : 'h-full'}>
+              <ReviewsGoogleConnectCard
+                connected={googleKnownConnected}
+                importedCount={importedCount}
+                connectLoading={connectLoading}
+                pullLoading={pullLoading}
+                refreshCoolingDown={refreshCoolingDown}
+                connectError={connectError}
+                onConnect={() => void startConnect()}
+                onPullReviews={() => {
+                  void pullReviews().then(ok => {
+                    if (ok) void reloadReviews();
+                  });
+                }}
+              />
+            </div>
+          ) : null}
       </div>
 
       {showLoadingSkeleton ? (

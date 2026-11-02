@@ -34,7 +34,7 @@ describe('POST /api/reviews/google/sync', () => {
 
   it('returns listing details when Google finds a location', async () => {
     getAuthenticatedUserMock.mockResolvedValue({
-      user: { id: 'user-1' },
+      user: { id: 'user-1', email: 'jesuss387@gmail.com' },
       supabase: {},
       authMethod: 'cookie',
     });

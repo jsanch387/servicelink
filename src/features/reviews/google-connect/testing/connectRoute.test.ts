@@ -55,7 +55,7 @@ describe('POST /api/reviews/google/connect', () => {
 
   it('returns a Google URL on success', async () => {
     getAuthenticatedUserMock.mockResolvedValue({
-      user: { id: 'user-1' },
+      user: { id: 'user-1', email: 'jesuss387@gmail.com' },
       supabase: {},
       authMethod: 'cookie',
     });

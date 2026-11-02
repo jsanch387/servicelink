@@ -2,6 +2,7 @@ import {
   GOOGLE_REVIEW_PULL_COOLDOWN_MESSAGE,
   googleReviewPullRetryAfterSec,
 } from '@/features/reviews/google-connect/googleReviewPullCooldown';
+import { isGoogleReviewsRolloutEmail } from '@/features/reviews/google-connect/googleReviewsRolloutAllowlist';
 import { loadGoogleBusinessConnectionStatus } from '@/features/reviews/google-connect/server/loadGoogleBusinessConnectionStatus';
 import { pullGoogleBusinessReviews } from '@/features/reviews/google-connect/server/pullGoogleBusinessReviews';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
@@ -15,6 +16,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: auth.error },
         { status: auth.status }
+      );
+    }
+
+    if (!isGoogleReviewsRolloutEmail(auth.user.email)) {
+      return NextResponse.json(
+        { success: false, error: 'Google reviews are not available yet.' },
+        { status: 403 }
       );
     }
 

@@ -1,4 +1,5 @@
 import { ROUTES } from '@/constants/routes';
+import { isGoogleReviewsRolloutEmail } from '@/features/reviews/google-connect/googleReviewsRolloutAllowlist';
 import { exchangeGoogleBusinessCode } from '@/features/reviews/google-connect/server/exchangeGoogleBusinessCode';
 import { fetchGoogleBusinessLocationPick } from '@/features/reviews/google-connect/server/fetchGoogleBusinessLocations';
 import {
@@ -59,7 +60,11 @@ export async function GET(request: NextRequest) {
     }
 
     const auth = await getAuthenticatedUser(request);
-    if ('error' in auth || auth.user.id !== verified.value.userId) {
+    if (
+      'error' in auth ||
+      auth.user.id !== verified.value.userId ||
+      !isGoogleReviewsRolloutEmail(auth.user.email)
+    ) {
       return reviewsRedirect(request, 'error');
     }
 

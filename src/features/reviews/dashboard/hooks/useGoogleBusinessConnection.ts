@@ -24,7 +24,9 @@ export type UseGoogleBusinessConnectionResult = {
   pullReviews: () => Promise<boolean>;
 };
 
-export function useGoogleBusinessConnection(): UseGoogleBusinessConnectionResult {
+export function useGoogleBusinessConnection(
+  enabled = true
+): UseGoogleBusinessConnectionResult {
   const [connected, setConnected] = useState(false);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>('loading');
   const [importedCount, setImportedCount] = useState<number | null>(null);
@@ -50,6 +52,12 @@ export function useGoogleBusinessConnection(): UseGoogleBusinessConnectionResult
   const refreshCoolingDown = refreshLockedUntilEffective > Date.now();
 
   useEffect(() => {
+    if (!enabled) {
+      setLoadStatus('ready');
+      setConnected(false);
+      return;
+    }
+
     let cancelled = false;
 
     const load = async () => {
@@ -79,9 +87,10 @@ export function useGoogleBusinessConnection(): UseGoogleBusinessConnectionResult
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [enabled]);
 
   const startConnect = useCallback(async () => {
+    if (!enabled) return;
     setConnectError(null);
     setConnectLoading(true);
     try {
@@ -111,9 +120,10 @@ export function useGoogleBusinessConnection(): UseGoogleBusinessConnectionResult
     } finally {
       setConnectLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
   const pullReviews = useCallback(async (options?: { quiet?: boolean }) => {
+    if (!enabled) return false;
     if (!options?.quiet) setConnectError(null);
     setPullLoading(true);
     try {
@@ -168,7 +178,7 @@ export function useGoogleBusinessConnection(): UseGoogleBusinessConnectionResult
     } finally {
       setPullLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     if (!refreshCoolingDown) return;
@@ -181,6 +191,7 @@ export function useGoogleBusinessConnection(): UseGoogleBusinessConnectionResult
   }, [refreshCoolingDown, refreshLockedUntilEffective]);
 
   useEffect(() => {
+    if (!enabled) return;
     if (autoRefreshStarted.current) return;
     if (loadStatus !== 'ready' || !connected) return;
     if (!isGoogleReviewSyncStale(lastSyncedAt)) return;
@@ -188,7 +199,7 @@ export function useGoogleBusinessConnection(): UseGoogleBusinessConnectionResult
     void pullReviews({ quiet: true }).then(ok => {
       if (ok) setReviewReloadNonce(nonce => nonce + 1);
     });
-  }, [connected, lastSyncedAt, loadStatus, pullReviews]);
+  }, [connected, enabled, lastSyncedAt, loadStatus, pullReviews]);
 
   return {
     connected,
