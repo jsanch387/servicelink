@@ -1250,6 +1250,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       google_business_connections: {
         Row: {
@@ -1297,6 +1298,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       payment_accounts: {
         Row: {

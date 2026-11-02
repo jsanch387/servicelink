@@ -5,7 +5,7 @@ import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextResponse } from 'next/server';
 
-export async function GET(request?: Request) {
+export async function GET(request: Request) {
   try {
     const supabase = await createSupabaseServerClient();
     const resolved = await requireBusinessPermission(supabase, 'reviews.read');
@@ -17,9 +17,7 @@ export async function GET(request?: Request) {
       );
     }
 
-    const offsetParam = request
-      ? new URL(request.url).searchParams.get('offset')
-      : null;
+    const offsetParam = new URL(request.url).searchParams.get('offset');
     const offset =
       offsetParam == null || offsetParam === '' ? 0 : Number(offsetParam);
     if (!Number.isInteger(offset) || offset < 0) {

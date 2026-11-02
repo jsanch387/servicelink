@@ -35,7 +35,7 @@ export async function runScheduledGoogleReviewPulls(
     throw new Error('Could not list Google connections for review pull.');
   }
 
-  const businessIds = (data ?? [])
+  const businessIds = ((data ?? []) as { business_id?: string }[])
     .map(row => row.business_id)
     .filter((id): id is string => typeof id === 'string' && id.length > 0);
 

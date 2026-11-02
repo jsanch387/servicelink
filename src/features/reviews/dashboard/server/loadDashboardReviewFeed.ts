@@ -107,7 +107,7 @@ export async function loadDashboardReviewFeed(
       .map(row => tryMapReviewRowToDashboardReview(row))
       .filter((review): review is DashboardReview => review !== null);
 
-    const googleReviews = (googleResult.data ?? [])
+    const googleReviews = ((googleResult.data ?? []) as unknown[])
       .map(row => mapGoogleReviewRowToPublic(row))
       .filter((review): review is NonNullable<typeof review> => review !== null)
       .map(review => ({ ...review, isHidden: false }));

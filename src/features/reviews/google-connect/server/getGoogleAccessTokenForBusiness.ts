@@ -4,6 +4,16 @@ import { refreshGoogleAccessToken } from './refreshGoogleAccessToken';
 
 const ACCESS_TOKEN_REFRESH_BUFFER_MS = 60 * 1000;
 
+type GoogleConnectionTokenRow = {
+  id: string;
+  refresh_token: string;
+  access_token: string | null;
+  access_token_expires_at: string | null;
+  google_account_name: string | null;
+  google_location_name: string | null;
+  google_location_title: string | null;
+};
+
 export type GoogleAccessTokenContext = {
   connectionId: string;
   accessToken: string;
@@ -28,13 +38,14 @@ export async function getGoogleAccessTokenForBusiness(
   }
 
   const admin = createSupabaseAdminClient();
-  const { data: connection, error } = await admin
+  const { data, error } = await admin
     .from('google_business_connections')
     .select(
       'id, refresh_token, access_token, access_token_expires_at, google_account_name, google_location_name, google_location_title'
     )
     .eq('business_id', businessId)
     .maybeSingle();
+  const connection = data as GoogleConnectionTokenRow | null;
 
   if (error) {
     console.error('[reviews:google-connect] token load failed', error);
@@ -83,7 +94,7 @@ export async function getGoogleAccessTokenForBusiness(
       access_token: refreshed.accessToken,
       access_token_expires_at: refreshed.expiresAt,
       updated_at: new Date().toISOString(),
-    })
+    } as never)
     .eq('id', connection.id);
   if (tokenUpdateError) {
     console.error(

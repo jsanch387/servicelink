@@ -39,7 +39,7 @@ export async function syncGoogleBusinessListing(
       google_location_name: fetched.location.googleLocationName,
       google_location_title: fetched.location.googleLocationTitle,
       updated_at: now,
-    })
+    } as never)
     .eq('id', token.context.connectionId);
 
   if (saveError) {

@@ -22,7 +22,7 @@ export async function upsertGoogleBusinessConnection(args: {
       scopes: args.tokens.scopes,
       connected_at: now,
       updated_at: now,
-    },
+    } as never,
     { onConflict: 'business_id' }
   );
 

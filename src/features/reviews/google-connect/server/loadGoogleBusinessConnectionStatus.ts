@@ -18,11 +18,16 @@ export async function loadGoogleBusinessConnectionStatus(
   }
 
   const admin = createSupabaseAdminClient();
-  const { data, error } = await admin
+  const { data: row, error } = await admin
     .from('google_business_connections')
     .select('id, google_location_title, last_synced_at')
     .eq('business_id', trimmed)
     .maybeSingle();
+  const data = row as {
+    id: string;
+    google_location_title: string | null;
+    last_synced_at: string | null;
+  } | null;
 
   if (error) {
     console.error('[reviews:google-connect] status load failed', error);

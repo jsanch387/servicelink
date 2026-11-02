@@ -94,8 +94,8 @@ export async function loadPublicReviewFeed(
       .map(row => tryMapReviewRowToPublicProfile(row))
       .filter((review): review is PublicProfileReview => review !== null);
 
-    const googleReviews = (googleResult.data ?? [])
-      .map((row: unknown) => mapGoogleReviewRowToPublic(row))
+    const googleReviews = ((googleResult.data ?? []) as unknown[])
+      .map(row => mapGoogleReviewRowToPublic(row))
       .filter((review): review is PublicProfileReview => review !== null);
 
     return {

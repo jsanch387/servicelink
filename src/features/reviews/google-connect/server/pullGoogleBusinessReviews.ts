@@ -133,7 +133,7 @@ export async function pullGoogleBusinessReviews(
         owner_reply_body: review.ownerReplyBody,
         owner_replied_at: review.ownerRepliedAt,
         updated_at: now,
-      })),
+      })) as never,
       { onConflict: 'business_id,provider_review_id' }
     );
     if (error) {
@@ -148,7 +148,7 @@ export async function pullGoogleBusinessReviews(
 
   const { error: syncStampError } = await admin
     .from('google_business_connections')
-    .update({ last_synced_at: now, updated_at: now })
+    .update({ last_synced_at: now, updated_at: now } as never)
     .eq('id', token.context.connectionId);
   if (syncStampError) {
     console.error(

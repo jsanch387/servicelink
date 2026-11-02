@@ -74,7 +74,7 @@ export async function loadPublicGoogleReviews(businessId: string): Promise<{
     return { reviews: [], count: 0 };
   }
 
-  const reviews = (data ?? [])
+  const reviews = ((data ?? []) as unknown[])
     .map(row => mapGoogleReviewRowToPublic(row))
     .filter((review): review is PublicProfileReview => review !== null);
   return { reviews, count: reviews.length };
