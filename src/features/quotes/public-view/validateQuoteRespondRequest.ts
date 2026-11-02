@@ -2,6 +2,7 @@
  * Pure validation for POST /api/quotes/respond (before DB).
  */
 
+import { parseQuotePaymentChoice } from '@/features/quotes/shared/quotePaymentCollection';
 import { toTimeWithSeconds } from '@/features/quotes/shared/validateQuotePayloadFields';
 import {
   formatQuoteAddressDisplayLine,
@@ -26,6 +27,8 @@ export type ValidatedQuoteRespondRequest =
       displayLine: string;
       /** Present when the customer picks a slot (quote had no schedule). */
       schedule: QuoteRespondSchedule | null;
+      /** Set when the quote requires a deposit, full payment, or a choice. */
+      paymentChoice: 'deposit' | 'full' | 'pay_in_person' | null;
     }
   | { token: string; decision: 'decline' };
 
@@ -83,6 +86,7 @@ export function validateQuoteRespondRequest(
     serviceAddress?: string;
     address?: unknown;
     schedule?: unknown;
+    paymentChoice?: unknown;
   };
 
   const token = body.token?.trim();
@@ -99,6 +103,15 @@ export function validateQuoteRespondRequest(
       return { ok: false, error: scheduleParsed.error, status: 400 };
     }
 
+    const paymentChoice = parseQuotePaymentChoice(body.paymentChoice);
+    if (paymentChoice === undefined) {
+      return {
+        ok: false,
+        error: 'Choose how to pay for this quote',
+        status: 400,
+      };
+    }
+
     const structured = validateStructuredQuoteRespondAddress(body.address);
     if (structured.ok) {
       return {
@@ -109,6 +122,7 @@ export function validateQuoteRespondRequest(
           address: structured.address,
           displayLine: formatQuoteAddressDisplayLine(structured.address),
           schedule: scheduleParsed.schedule,
+          paymentChoice,
         },
       };
     }
@@ -129,6 +143,7 @@ export function validateQuoteRespondRequest(
           address,
           displayLine: serviceAddress,
           schedule: scheduleParsed.schedule,
+          paymentChoice,
         },
       };
     }

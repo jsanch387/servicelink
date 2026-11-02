@@ -1,5 +1,6 @@
 'use client';
 
+import { DropdownSelect } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import {
   ChevronDownIcon,
@@ -9,7 +10,6 @@ import {
 import Link from 'next/link';
 import React, { useMemo, useState } from 'react';
 import { getCategoryNameById } from './getCategoryNameById';
-import { ServiceCategoryDropdown } from './ServiceCategoryDropdown';
 import type { ServiceCategoryRow } from './categoryTypes';
 
 export interface ServiceCategoryPickerSectionProps {
@@ -40,6 +40,17 @@ export const ServiceCategoryPickerSection: React.FC<
 
   const summaryLabel =
     getCategoryNameById(categories, selectedCategoryId) ?? 'No category';
+
+  const categoryOptions = useMemo(
+    () => [
+      { value: '', label: 'No category' },
+      ...sortedCategories.map(category => ({
+        value: category.id,
+        label: category.name,
+      })),
+    ],
+    [sortedCategories]
+  );
 
   return (
     <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 mb-6 sm:mb-8">
@@ -83,10 +94,11 @@ export const ServiceCategoryPickerSection: React.FC<
             </div>
           ) : (
             <div className="mt-4 space-y-3">
-              <ServiceCategoryDropdown
-                categories={categories}
-                selectedCategoryId={selectedCategoryId}
-                onSelect={onSelect}
+              <DropdownSelect
+                label="Assign to category"
+                value={selectedCategoryId ?? ''}
+                onChange={value => onSelect(value ? value : null)}
+                options={categoryOptions}
               />
               <Link
                 href={manageCategoriesHref}

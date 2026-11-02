@@ -24,6 +24,8 @@ Contract for mobile onboarding: [`docs/contracts/mobile-onboarding-complete.md`]
 | `STRIPE_SECRET_KEY`                            | Yes                             | Stripe secret key (starts with `sk_`). From [Stripe Dashboard → Developers → API keys](https://dashboard.stripe.com/apikeys).                                                                                                                                                                                                               |
 | `STRIPE_PRO_PRICE_ID`                          | Yes                             | Stripe Price ID for **new** Pro monthly signups (e.g. `$20/mo` `price_xxx`). Create a Product in [Stripe Dashboard → Products](https://dashboard.stripe.com/products), then add a recurring price. **Do not** migrate existing subscribers off a legacy price — Stripe keeps them on their current price until they cancel and resubscribe. |
 | `STRIPE_PRO_YEARLY_PRICE_ID`                   | Yes for yearly checkout         | Stripe Price ID for **new** Pro yearly signups (e.g. `$200/yr` `price_xxx`) on the same Pro product. Checkout passes `billingInterval: "year"` from `/dashboard/upgrade`.                                                                                                                                                                   |
+| `STRIPE_TEAM_PRICE_ID`                         | Yes for Team checkout           | Stripe Price ID for Team monthly (`$60/mo`). New signups use Checkout. An existing Pro subscription opens a Stripe confirmation page and moves onto this price only after the owner confirms the prorated charge. Shops with `business_profiles.team_included` already have Team.                                                           |
+| `STRIPE_TEAM_YEARLY_PRICE_ID`                  | Yes for yearly Team checkout    | Stripe Price ID for **new** Team yearly signups (`$600/yr`). Same rule as the monthly Team price: new checkouts and an owner who chooses Team, not a bulk migration.                                                                                                                                                                        |
 | `STRIPE_WEBHOOK_SECRET`                        | Yes (for webhook)               | Signing secret (starts with `whsec_`). From Stripe Dashboard → Developers → Webhooks → your endpoint → Signing secret.                                                                                                                                                                                                                      |
 | `STRIPE_CONNECT_WEBHOOK_SECRET`                | Yes (for Connect webhook)       | Signing secret for `/api/stripe/webhook-connect` destination that listens to **Connected and v2 accounts** events (booking checkout payments).                                                                                                                                                                                              |
 | `NEXT_PUBLIC_SITE_URL`                         | No                              | Base URL for success/cancel redirects (e.g. `https://yoursite.com`). Falls back to `VERCEL_URL` or `http://localhost:3000`.                                                                                                                                                                                                                 |
@@ -49,11 +51,10 @@ Contract for mobile onboarding: [`docs/contracts/mobile-onboarding-complete.md`]
 
 `POST /api/stripe/create-checkout-session` must not create a second Pro subscription while one is already `active` or `trialing` on the Stripe customer (legacy double-billing bug).
 
-1. If `profiles.stripe_subscription_id` points at a healthy or resumable subscription:
-   - **Open invoice** → Checkout in **payment** mode for that invoice (same subscription; card/Link retry).
-   - **No open invoice** and status is `active`/`trialing` → **400** `DUPLICATE_SUBSCRIPTION_BLOCKED`.
-   - Resumable failure status without an open invoice → **409** `PAYMENT_RETRY_REQUIRED` (use Settings → Customer Portal).
-2. Before creating a **new** subscription Checkout, the API lists Stripe subscriptions for `stripe_customer_id` (`active` + `trialing`). If any exist → **400** `DUPLICATE_SUBSCRIPTION_BLOCKED`.
+1. If this customer still has an open subscription:
+   - **Active or trialing** → **400** `DUPLICATE_SUBSCRIPTION_BLOCKED`. Manage it in the billing portal.
+   - **Past due, unpaid, incomplete, or paused** → **409** `BILLING_PORTAL_REQUIRED`. Checkout does not start a second subscription. **Reactivate** charges the card already on file. The billing portal is for a different card or canceling.
+2. Before creating a **new** subscription Checkout, the API lists Stripe subscriptions for `stripe_customer_id`. If any are still open → blocked as above.
 3. After `checkout.session.completed`, the webhook **logs an alert** if the customer somehow has 2+ active/trialing subscriptions (monitoring only — does not auto-cancel).
 
 Canceled / ended subscriptions are not blocked: resubscribe creates a new sub on the **same** `stripe_customer_id`.
@@ -167,7 +168,7 @@ Existing Pro subscribers: interval is filled on the next `customer.subscription.
 
 ## Webhook idempotency table
 
-We store event IDs for every event type we process: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`. Other events are acknowledged with 200 but not stored. Create this table in Supabase:
+We store event IDs for every event type we process: `checkout.session.completed`, `checkout.session.expired`, `payment_intent.succeeded`, `payment_intent.canceled`, `payment_intent.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`. Other events are acknowledged with 200 but not stored. Create this table in Supabase:
 
 ```sql
 CREATE TABLE IF NOT EXISTS stripe_webhook_events (
@@ -258,21 +259,18 @@ where subscription_status in ('past_due', 'unpaid')
 
 ## Configuring webhooks in Stripe
 
+**Event checklist (source of truth):** [`CONNECT_WEBHOOK_EVENTS.md`](./CONNECT_WEBHOOK_EVENTS.md).
+
 We use **two** webhook destinations with different account scopes:
 
-1. **Platform billing webhook** (`/api/stripe/webhook`)  
-   Scope: **Your account**  
-   Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`.
+1. **Platform billing webhook** (`/api/stripe/webhook`) — scope **Your account**. ServiceLink Pro only.
+2. **Connect webhook** (`/api/stripe/webhook-connect`) — scope **Connected and v2 accounts**. Booking checkout, memberships, maintenance card enroll, create-payment links, and create-payment Tap to Pay.
 
-2. **Connect booking checkout webhook** (`/api/stripe/webhook-connect`)  
-   Scope: **Connected and v2 accounts**  
-   Events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` (and optionally `account.updated`).
-
-Why this split: production booking payments are created on connected accounts. Without a connected-account destination, live customer charges can succeed while booking finalization webhook logic never runs.
+Why this split: live customer charges are created on connected accounts. Without a connected-account destination, Stripe can charge the card while our booking / membership / payment-link logic never runs.
 
 1. Stripe Dashboard → Developers → Webhooks → Add destination.
-2. Create destination #1: URL `https://your-domain.com/api/stripe/webhook`, scope **Your account**, select platform billing events.
-3. Create destination #2: URL `https://your-domain.com/api/stripe/webhook-connect`, scope **Connected and v2 accounts**, select connect checkout events.
+2. Create destination #1: URL `https://your-domain.com/api/stripe/webhook`, scope **Your account**, select the platform events in `CONNECT_WEBHOOK_EVENTS.md`.
+3. Create destination #2: URL `https://your-domain.com/api/stripe/webhook-connect`, scope **Connected and v2 accounts**, select the **full required Connect list** in that same file (not checkout-only).
 4. Copy signing secrets:
    - destination #1 → `STRIPE_WEBHOOK_SECRET`
    - destination #2 → `STRIPE_CONNECT_WEBHOOK_SECRET`
@@ -339,4 +337,4 @@ When a recurring payment fails (card declined, expired, etc.), Stripe sends `inv
 - Retrieves the subscription from Stripe and updates `subscription_status` and `subscription_current_period_end` on the profile (same as `customer.subscription.updated`), so failed payments are reflected in the database even if the update event is missed or ordered differently.
 - Sends **one** ServiceLink "payment failed" email per failure episode via `notifyPaymentFailedOnce` (see **Payment failed email** above). Keep Stripe's own failed-payment customer email **off** to avoid duplicates — we send our on-brand one instead.
 
-Stripe will retry automatically. The app also shows an in-app banner on Settings when `subscription_status` is `past_due` or `unpaid`, with an “Update payment method” button that opens the Customer Portal.
+Stripe retries a failed renewal, then cancels the subscription if the retries are used up. While the subscription is `past_due`, **Reactivate** charges the card already on file. **Manage billing** opens the Customer Portal to use a different card or cancel. After Stripe cancels the subscription, the customer subscribes again through Checkout.

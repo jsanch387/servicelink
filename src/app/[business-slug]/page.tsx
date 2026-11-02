@@ -6,10 +6,26 @@
  */
 
 import { StructuredData } from '@/components/shared';
+import { publicSpecialtyLabels } from '@/constants/businessSpecialties';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { ViewTracker } from '@/features/analytics';
-import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
+import { PublicBusinessProfileView } from '@/features/business-profile/components/PublicBusinessProfileView';
+import { PublicProfileLandingScrollReset } from '@/features/business-profile/components/PublicProfileLandingScrollReset';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
+import {
+  getProfileCoverDisplaySrc,
+  getProfileLogoDisplaySrc,
+} from '@/features/business-profile/utils/workPhotoSrc';
+import { loadPrimaryServiceArea } from '@/features/business-profile/server/loadPrimaryServiceArea';
+import {
+  generatePublicProfileShareDescription,
+  generatePublicProfileShareTitle,
+  resolvePublicProfileTradeLine,
+} from '@/features/business-profile/utils/publicProfileShareCopy';
+import {
+  formatServiceCoverageLabel,
+  toPublicServiceCoverage,
+} from '@/features/business-profile/utils/primaryServiceArea';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
 import {
@@ -26,11 +42,9 @@ import {
 import { sortServicesForDisplay } from '@/features/services/categories/utils/sortServicesForDisplay';
 import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
 import type { ServiceRow } from '@/features/services/types/services';
-import {
-  maxPortfolioImagesForSubscription,
-  type OwnerSubscriptionFieldsForPortfolio,
-} from '@/features/pricing/utils/maxPortfolioImagesForSubscription';
+import type { OwnerSubscriptionFieldsForPortfolio } from '@/features/pricing/utils/maxPortfolioImagesForSubscription';
 import { PublicMembershipSubscribeSuccessReturn } from '@/features/subscriptions/components/PublicMembershipSubscribeSuccessReturn';
+import { hasPublicMembershipPlans } from '@/features/subscriptions/server/hasPublicMembershipPlans';
 import { loadPublicMembershipPlans } from '@/features/subscriptions/server/loadPublicMembershipPlans';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
@@ -41,6 +55,7 @@ import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
+import { preload } from 'react-dom';
 
 function firstSearchParam(
   value: string | string[] | undefined
@@ -64,6 +79,7 @@ type PublicBusinessProfileRow = {
   id: string;
   business_name: string;
   business_type: string | null;
+  specialties?: string[] | null;
   service_area: string | null;
   bio: string | null;
   logo_path: string | null;
@@ -91,8 +107,8 @@ async function fetchBusinessProfileBySlug(
 
     const profile = profileData as PublicBusinessProfileRow;
 
-    // Fetch services, categories, and images in parallel
-    const [servicesResult, categoriesResult, imagesResult] = await Promise.all([
+    // Services on first paint; gallery images load when the Gallery tab opens.
+    const [servicesResult, categoriesResult] = await Promise.all([
       supabase
         .from('business_services')
         .select('*')
@@ -105,11 +121,6 @@ async function fetchBusinessProfileBySlug(
         .eq('business_id', profile.id)
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: true }),
-      supabase
-        .from('business_images')
-        .select('*')
-        .eq('business_id', profile.id)
-        .order('position', { ascending: true }),
     ]);
 
     const services = sortServicesForDisplay(
@@ -118,28 +129,13 @@ async function fetchBusinessProfileBySlug(
     );
     const serviceCategories = (categoriesResult.data ??
       []) as ServiceCategoryRow[];
-    const images = imagesResult.data || [];
-
-    // Add preview URLs to images
-    const imagesWithUrls = images.map(img => ({
-      ...(img as {
-        id: string;
-        business_id: string;
-        storage_path: string;
-        position: number;
-        created_at: string;
-      }),
-      preview_url: MediaService.getPublicUrl(
-        (img as { storage_path: string }).storage_path
-      ),
-    }));
 
     // Add logo and banner URLs if they exist
     const logoUrl = profile.logo_path
-      ? MediaService.getPublicUrl(profile.logo_path)
+      ? MediaService.getPublicUrl(profile.logo_path, false)
       : null;
     const bannerUrl = profile.banner_path
-      ? MediaService.getPublicUrl(profile.banner_path)
+      ? MediaService.getPublicUrl(profile.banner_path, false)
       : null;
 
     // Construct complete business profile
@@ -147,7 +143,7 @@ async function fetchBusinessProfileBySlug(
       ...profile,
       services,
       serviceCategories,
-      images: imagesWithUrls,
+      images: [],
       logo_url: logoUrl,
       cover_image_url: bannerUrl,
     } as unknown as CompleteBusinessProfile;
@@ -174,15 +170,12 @@ export default async function PublicProfilePage({
     initialTabParam === 'subscriptions' ? 'subscriptions' : undefined;
 
   const adminGate = createSupabaseAdminClient();
-  if (!(await isPublicBusinessSlugVisible(adminGate, slug))) {
-    notFound();
-  }
+  const [isVisible, businessProfile] = await Promise.all([
+    isPublicBusinessSlugVisible(adminGate, slug),
+    fetchBusinessProfileBySlug(slug),
+  ]);
 
-  // Fetch the business profile by slug
-  const businessProfile = await fetchBusinessProfileBySlug(slug);
-
-  // If profile not found, show 404
-  if (!businessProfile) {
+  if (!isVisible || !businessProfile) {
     notFound();
   }
 
@@ -196,45 +189,59 @@ export default async function PublicProfilePage({
     cookieValue: cookieStore.get(BOOKING_FLOW_LOCALE_COOKIE_NAME)?.value,
   });
 
-  // Derive verified badge and portfolio visibility from owner's subscription
   const profileId = (businessProfile as { profile_id?: string }).profile_id;
-  let showVerifiedBadge = false;
-  let ownerTier: 'free' | 'pro' = 'free';
-  let ownerSubscriptionRow: OwnerSubscriptionFieldsForPortfolio | null = null;
-  if (profileId) {
-    const { data: ownerProfile } = await adminGate
-      .from('profiles')
-      .select(
-        'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
-      )
-      .eq('user_id', profileId)
-      .maybeSingle();
-    const row = ownerProfile as {
-      subscription_tier?: string | null;
-      subscription_current_period_end?: string | null;
-      subscription_status?: string | null;
-      stripe_subscription_id?: string | null;
-      stripe_customer_id?: string | null;
-    } | null;
-    ownerSubscriptionRow = row;
-    const hasPro = isProAccess(
-      row?.subscription_tier,
-      row?.subscription_current_period_end,
-      row?.subscription_status,
-      row?.stripe_subscription_id,
-      row?.stripe_customer_id
-    );
-    ownerTier = hasPro ? 'pro' : 'free';
-    showVerifiedBadge = hasPro;
-  }
+  const profileIdForCap =
+    (businessProfile as { profile_id?: string | null }).profile_id ?? null;
+  const freeBookingsCount =
+    (businessProfile as { free_bookings_count?: number | null })
+      .free_bookings_count ?? null;
 
-  // Gallery: cap visible images by plan (4 Free, 8 Pro); soft limit — DB may hold more for Free.
-  const maxGalleryImages =
-    maxPortfolioImagesForSubscription(ownerSubscriptionRow);
-  const displayProfile: CompleteBusinessProfile = {
-    ...businessProfile,
-    images: businessProfile.images.slice(0, maxGalleryImages),
-  };
+  const [
+    ownerProfileResult,
+    freeTierGate,
+    publicReviewSummaryResult,
+    primaryServiceArea,
+  ] = await Promise.all([
+    profileId
+      ? adminGate
+          .from('profiles')
+          .select(
+            'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+          )
+          .eq('user_id', profileId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    resolvePublicBookingFreeTierGate(adminGate, {
+      profileId: profileIdForCap,
+      freeBookingsCount,
+    }),
+    loadPublicReviewSummary(adminGate, businessProfile.id),
+    loadPrimaryServiceArea(adminGate, businessProfile.id),
+  ]);
+
+  const ownerSubscriptionRow = (ownerProfileResult.data ??
+    null) as OwnerSubscriptionFieldsForPortfolio | null;
+  const hasPro = isProAccess(
+    ownerSubscriptionRow?.subscription_tier,
+    ownerSubscriptionRow?.subscription_current_period_end,
+    ownerSubscriptionRow?.subscription_status,
+    ownerSubscriptionRow?.stripe_subscription_id,
+    ownerSubscriptionRow?.stripe_customer_id
+  );
+  const ownerTier: 'free' | 'pro' = hasPro ? 'pro' : 'free';
+  const showVerifiedBadge = hasPro;
+  const { reachedFreeCap: publicFreeBookingsCapReached } = freeTierGate;
+
+  const [publicActiveSale, hasPublicSubscriptionPlans] = await Promise.all([
+    loadPublicActiveSale(adminGate, businessProfile.id, {
+      ownerHasPro: ownerTier === 'pro',
+    }),
+    hasPublicMembershipPlans(adminGate, businessProfile.id, {
+      ownerHasPro: ownerTier === 'pro',
+    }),
+  ]);
+
+  const displayProfile: CompleteBusinessProfile = businessProfile;
 
   const showRequestQuoteCta =
     isProAccessForPublicQuoteRequests(
@@ -245,42 +252,23 @@ export default async function PublicProfilePage({
       ownerSubscriptionRow?.stripe_customer_id
     ) && displayProfile.accept_quote_req === true;
 
-  const profileIdForCap =
-    (businessProfile as { profile_id?: string | null }).profile_id ?? null;
-  const freeBookingsCount =
-    (businessProfile as { free_bookings_count?: number | null })
-      .free_bookings_count ?? null;
-  const { reachedFreeCap: publicFreeBookingsCapReached } =
-    await resolvePublicBookingFreeTierGate(adminGate, {
-      profileId: profileIdForCap,
-      freeBookingsCount,
-    });
-
-  const publicReviewSummaryResult = await loadPublicReviewSummary(
-    adminGate,
-    businessProfile.id
-  );
   const publicReviewSummary = publicReviewSummaryFromLoadResult(
     publicReviewSummaryResult
   );
   const publicGoogleReviewCount = await countPublicGoogleReviews(
     businessProfile.id
   );
-
-  const publicActiveSale = await loadPublicActiveSale(
-    adminGate,
-    businessProfile.id,
-    { ownerHasPro: ownerTier === 'pro' }
-  );
-
-  const publicSubscriptionPlans = await loadPublicMembershipPlans(
-    adminGate,
-    businessProfile.id,
-    { ownerHasPro: ownerTier === 'pro' }
-  );
+  const publicServiceCoverage = primaryServiceArea
+    ? toPublicServiceCoverage(primaryServiceArea)
+    : null;
 
   // Post-Checkout success: render confirmation only (no profile flash).
   if (membershipCheckout === 'success') {
+    const publicSubscriptionPlans = await loadPublicMembershipPlans(
+      adminGate,
+      businessProfile.id,
+      { ownerHasPro: ownerTier === 'pro' }
+    );
     const successPlan =
       (membershipPlanId
         ? publicSubscriptionPlans.find(p => p.id === membershipPlanId)
@@ -304,18 +292,30 @@ export default async function PublicProfilePage({
     );
   }
 
+  const lcpImageSrc = displayProfile.cover_image_url?.trim()
+    ? getProfileCoverDisplaySrc(displayProfile.cover_image_url)
+    : displayProfile.logo_url?.trim()
+      ? getProfileLogoDisplaySrc(displayProfile.logo_url)
+      : null;
+  if (lcpImageSrc) {
+    preload(lcpImageSrc, { as: 'image', fetchPriority: 'high' });
+  }
+
   return (
-    <div className="min-h-screen bg-neutral-900">
+    <div className="min-h-screen bg-neutral-900 [overflow-anchor:none]">
+      <PublicProfileLandingScrollReset />
       {/* View Tracking */}
       <ViewTracker businessSlug={slug} />
 
       {/* Structured Data for SEO */}
-      <StructuredData businessProfile={displayProfile} slug={slug} />
-
-      <BusinessProfileView
+      <StructuredData
         businessProfile={displayProfile}
-        initialMode="view"
-        isPublic={true}
+        slug={slug}
+        bookingFlowLocale={bookingFlowLocale}
+      />
+
+      <PublicBusinessProfileView
+        businessProfile={displayProfile}
         showVerifiedBadge={showVerifiedBadge}
         showRequestQuoteCta={showRequestQuoteCta}
         publicOwnerHasProForPriceOptions={ownerTier === 'pro'}
@@ -325,9 +325,18 @@ export default async function PublicProfilePage({
         publicGoogleReviewCount={publicGoogleReviewCount}
         publicProfileSlug={slug}
         publicActiveSale={publicActiveSale}
-        publicSubscriptionPlans={publicSubscriptionPlans}
+        hasPublicSubscriptionPlans={hasPublicSubscriptionPlans}
         initialTab={initialTab}
         membershipCheckoutCanceled={membershipCheckout === 'cancel'}
+        coverageLabel={
+          publicServiceCoverage
+            ? formatServiceCoverageLabel(
+                publicServiceCoverage.city,
+                publicServiceCoverage.stateCode,
+                publicServiceCoverage.radiusMiles
+              )
+            : null
+        }
       />
     </div>
   );
@@ -357,7 +366,7 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
     const { data: profileData } = await supabase
       .from('business_profiles')
       .select(
-        'business_name, business_type, service_area, bio, logo_path, banner_path, phone_number_call'
+        'business_name, business_type, specialties, service_area, bio, logo_path, banner_path, phone_number_call'
       )
       .eq('business_slug', slug)
       .single();
@@ -375,54 +384,56 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
     const businessProfile = {
       business_name: profile.business_name,
       business_type: profile.business_type,
+      specialties: profile.specialties,
       service_area: profile.service_area,
       bio: profile.bio,
       logo_url: profile.logo_path
-        ? MediaService.getPublicUrl(profile.logo_path)
+        ? MediaService.getPublicUrl(profile.logo_path, false)
         : null,
       cover_image_url: profile.banner_path
-        ? MediaService.getPublicUrl(profile.banner_path)
+        ? MediaService.getPublicUrl(profile.banner_path, false)
         : null,
       phone_number_call: profile.phone_number_call,
     };
 
-    // Generate dynamic content for SEO
     const businessName = businessProfile.business_name;
-    const businessType =
-      businessProfile.business_type || 'Professional Services';
     const serviceArea = businessProfile.service_area || '';
-    const bio =
-      businessProfile.bio ||
-      `Professional ${businessType.toLowerCase()} services`;
-    // Services and images count for metadata generation (for future use)
-    // const _servicesCount = businessProfile.services?.length || 0;
-    // const _imagesCount = businessProfile.images?.length || 0;
+    const tradeLine = resolvePublicProfileTradeLine({
+      businessType: businessProfile.business_type,
+      specialties: businessProfile.specialties,
+    });
+    const title = generatePublicProfileShareTitle({
+      businessName,
+      tradeLine,
+      serviceArea,
+    });
+    const description = generatePublicProfileShareDescription({
+      bio: businessProfile.bio,
+      businessName,
+      tradeLine,
+      serviceArea,
+    });
+    const specialtyLabels = publicSpecialtyLabels(
+      businessProfile.business_type,
+      businessProfile.specialties
+    );
 
-    // Create dynamic title and description
-    const title = serviceArea
-      ? `${businessName} - ${businessType} in ${serviceArea} | ServiceLink`
-      : `${businessName} - ${businessType} | ServiceLink`;
-
-    const description = bio.length > 160 ? `${bio.substring(0, 157)}...` : bio;
-
-    // Generate keywords based on business data
     const keywords = [
       businessName,
-      businessType,
+      ...specialtyLabels,
       serviceArea,
       'professional services',
-      'business profile',
-      'contact directly',
-      'ServiceLink',
     ]
       .filter(Boolean)
       .join(', ');
 
-    // Generate canonical URL
     const canonicalUrl = `${siteUrl}/${slug}`;
+    const imageAlt = tradeLine
+      ? `${businessName} · ${tradeLine}`
+      : businessName;
 
     return {
-      title,
+      title: { absolute: title },
       description,
       keywords,
       canonical: canonicalUrl,
@@ -431,7 +442,7 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
         title,
         description,
         url: canonicalUrl,
-        siteName: 'ServiceLink',
+        siteName: businessName,
         locale: 'en_US',
         type: 'website',
         images: [
@@ -442,7 +453,7 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
               MARKETING_IMAGES.brand.logo,
             width: 1200,
             height: 630,
-            alt: `${businessName} - ${businessType}`,
+            alt: imageAlt,
           },
         ],
       },
@@ -455,8 +466,6 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
             businessProfile.logo_url ||
             MARKETING_IMAGES.brand.logo,
         ],
-        site: '@servicelink',
-        creator: '@servicelink',
       },
       alternates: {
         canonical: canonicalUrl,

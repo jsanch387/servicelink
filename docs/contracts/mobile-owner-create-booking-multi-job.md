@@ -236,7 +236,7 @@ Legacy single-job body (no `jobs`) returns the same shape with `jobCount: 1`.
 | `404` | Business not found                                                                                                     |
 | `500` | Unexpected failure (booking rolled back)                                                                               |
 
-Owner schedule override: no `409` for time-off / lead time.
+Owner schedule override: no `409` for time-off / lead time. **Existing booking overlap + buffer time** still `409`s (same as single-job owner create). Buffer is stored as `business_availability.buffer_time` (text token, not minutes). See [FLOWS.md](../../src/features/availability/docs/FLOWS.md).
 
 ---
 

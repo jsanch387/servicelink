@@ -1,6 +1,6 @@
 'use client';
 
-import { GlassCard } from '@/components/shared';
+import { Button, GlassCard } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { formatBookingWallTime } from '@/features/availability/booking/utils/formatBookingWallTime';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
@@ -8,8 +8,8 @@ import {
   bcp47ForBookingLocale,
   publicBookingUi,
 } from '@/libs/i18n/publicBookingUi';
-import { CheckIcon } from '@heroicons/react/24/solid';
-import Link from 'next/link';
+import { formatSalesTaxRateLabel } from '@/features/payments/utils/salesTaxRate';
+import { SubscriptionSuccessCheckmark } from '@/features/subscriptions/components/SubscriptionSuccessCheckmark';
 import type { AddOnDisplay } from '../types';
 
 function formatMoney(
@@ -86,6 +86,8 @@ export function BookingPaymentSuccess({
   totalAmountCents,
   durationMinutes,
   servicePriceCents,
+  taxCents = 0,
+  taxRateBps = 0,
   selectedAddOns = [],
   customerVehicleYear,
   customerVehicleMake,
@@ -104,6 +106,9 @@ export function BookingPaymentSuccess({
   totalAmountCents: number;
   durationMinutes: number | null;
   servicePriceCents: number | null;
+  /** Frozen tax on this charge. Zero hides the tax line. */
+  taxCents?: number | null;
+  taxRateBps?: number | null;
   selectedAddOns?: AddOnDisplay[];
   customerVehicleYear?: string | null;
   customerVehicleMake?: string | null;
@@ -133,11 +138,22 @@ export function BookingPaymentSuccess({
     Number.isFinite(totalAmountCents) && totalAmountCents > 0
       ? totalAmountCents
       : null;
+  const safeTaxCents =
+    typeof taxCents === 'number' && Number.isFinite(taxCents) && taxCents > 0
+      ? Math.round(taxCents)
+      : 0;
+  const taxRateLabel = formatSalesTaxRateLabel(taxRateBps ?? 0);
+  const taxLabel =
+    safeTaxCents > 0
+      ? taxRateLabel
+        ? ui.common.salesTax(taxRateLabel)
+        : null
+      : null;
 
   return (
     <div className="flex flex-col w-full min-h-[55vh] max-w-2xl mx-auto px-4 sm:px-6 py-10 pb-16 sm:pb-24">
-      <div className="self-center w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center mb-8 shadow-lg shadow-emerald-500/25">
-        <CheckIcon className="w-10 h-10 text-white" />
+      <div className="self-center mb-8">
+        <SubscriptionSuccessCheckmark />
       </div>
 
       <h2 className="text-2xl font-bold text-white mb-2 text-center">
@@ -154,11 +170,6 @@ export function BookingPaymentSuccess({
         showBlur={true}
         className="w-full mb-8"
       >
-        <div className="px-4 py-3 border-b border-white/10">
-          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
-            {ui.bookingPaymentSuccess.cardHeader}
-          </p>
-        </div>
         <div className="p-4 sm:p-6 space-y-4">
           <div>
             <p className="text-xs text-gray-500 mb-0.5">{ui.common.service}</p>
@@ -214,6 +225,14 @@ export function BookingPaymentSuccess({
           {safeTotal != null && (
             <>
               <div className="h-px bg-white/10" />
+              {taxLabel ? (
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <p className="text-gray-400">{taxLabel}</p>
+                  <p className="tabular-nums text-gray-300">
+                    {formatMoney(safeTaxCents, currency, bookingFlowLocale)}
+                  </p>
+                </div>
+              ) : null}
               <div className="flex justify-between items-center">
                 <p className="text-sm font-medium text-white">
                   {ui.common.total}
@@ -286,16 +305,13 @@ export function BookingPaymentSuccess({
         </div>
       </GlassCard>
 
-      <p className="self-center text-xs text-gray-500 text-center mb-6 max-w-sm px-2">
+      <Button href={`/${businessSlug}`} variant="inverse" fullWidth>
+        {ui.bookingPaymentSuccess.backToProfile}
+      </Button>
+
+      <p className="text-sm text-gray-400 text-center mt-4">
         {ui.bookingPaymentSuccess.confirmationNote}
       </p>
-
-      <Link
-        href={`/${businessSlug}`}
-        className="self-center inline-flex items-center justify-center min-h-[48px] px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-100 transition-colors"
-      >
-        {ui.bookingPaymentSuccess.backToProfile}
-      </Link>
     </div>
   );
 }

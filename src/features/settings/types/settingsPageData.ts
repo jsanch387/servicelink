@@ -1,5 +1,8 @@
 import type { PlanId } from '@/features/pricing';
-import type { BillingInterval } from '@/features/pricing/types';
+import type {
+  BillingInterval,
+  PlatformBillingAction,
+} from '@/features/pricing/types';
 
 export interface SettingsPageData {
   businessProfile: {
@@ -17,6 +20,8 @@ export interface SettingsPageData {
     fullLink?: string;
   } | null;
   planId?: PlanId;
+  /** Live Team subscription. The billed plan name on the settings card. */
+  isTeamPlan?: boolean;
   subscriptionStatus?: string | null;
   subscriptionCurrentPeriodEnd?: string | null;
   subscriptionCancelAtPeriodEnd?: boolean;
@@ -24,6 +29,10 @@ export interface SettingsPageData {
   subscriptionMonthlyPrice?: string | null;
   /** Stripe recurring interval when on Pro. */
   subscriptionBillingInterval?: BillingInterval | null;
+  /** Live Stripe billing action for the plan card and payment banner. */
+  billingAction?: PlatformBillingAction;
+  /** From `profiles.stripe_customer_id` — portal access after Pro is revoked. */
+  stripeCustomerId?: string | null;
   accountEmail?: string;
   signedInWithGoogle?: boolean;
   /** Pending new email while Supabase email-change confirmation is outstanding. */

@@ -16,6 +16,9 @@ describe('notificationMinimalDisplayTitle', () => {
       'New quote request'
     );
     expect(
+      notificationMinimalDisplayTitle('quote_request_followup', 'quote', '')
+    ).toBe('Quote request waiting');
+    expect(
       notificationMinimalDisplayTitle('review_submitted', 'review', '')
     ).toBe('New review');
     expect(
@@ -34,6 +37,12 @@ describe('notificationMinimalDisplayTitle', () => {
     expect(
       notificationMinimalDisplayTitle('stripe', 'payment_failed', 'Something')
     ).toBe('Payment failed');
+  });
+
+  it('customer invoice paid is not a generic payment', () => {
+    expect(
+      notificationMinimalDisplayTitle('customer_invoice_paid', 'invoice', '')
+    ).toBe('Invoice paid');
   });
 
   it('generic payment-ish blob', () => {
@@ -79,6 +88,9 @@ describe('notificationMinimalDisplayTitle', () => {
     expect(
       notificationMinimalDisplayTitle('booking_reminder', 'booking', '')
     ).toBe('Upcoming appointment');
+    expect(notificationMinimalDisplayTitle('job_assigned', 'booking', '')).toBe(
+      'Job assigned'
+    );
   });
 
   it('customer / billing', () => {

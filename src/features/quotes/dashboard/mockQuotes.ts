@@ -23,6 +23,13 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     vehicleYear: '2021',
     vehicleMake: 'Tesla',
     vehicleModel: 'Model 3',
+    assets: [
+      {
+        type: 'vehicle',
+        label: '2021 Tesla Model 3',
+        attributes: { year: '2021', make: 'Tesla', model: 'Model 3' },
+      },
+    ],
     serviceStreet: null,
     serviceUnit: null,
     serviceCity: null,
@@ -34,6 +41,9 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     servicePriceCents: null,
     addonDetails: null,
     publicToken: 'demo-token-jordan-viewed',
+    viewedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+    customerReminderSentAt: null,
+    communications: [],
   },
   {
     id: 'a1b2c3d4-e5f6-4a5b-8c9d-000000000002',
@@ -55,6 +65,13 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     vehicleYear: '2018',
     vehicleMake: 'Honda',
     vehicleModel: 'CR-V',
+    assets: [
+      {
+        type: 'vehicle',
+        label: '2018 Honda CR-V',
+        attributes: { year: '2018', make: 'Honda', model: 'CR-V' },
+      },
+    ],
     serviceStreet: null,
     serviceUnit: null,
     serviceCity: null,
@@ -66,6 +83,24 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     servicePriceCents: null,
     addonDetails: null,
     publicToken: 'demo-token-sam-sent',
+    viewedAt: null,
+    customerReminderSentAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    communications: [
+      {
+        channel: 'email',
+        type: 'quote_reminder',
+        status: 'sent',
+        sentAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+        toAddress: 'sam.r@example.com',
+      },
+      {
+        channel: 'sms',
+        type: 'quote_reminder',
+        status: 'sent',
+        sentAt: new Date(Date.now() - 3600000 * 2 + 4000).toISOString(),
+        toAddress: '5105550142',
+      },
+    ],
   },
   {
     id: 'a1b2c3d4-e5f6-4a5b-8c9d-000000000003',
@@ -87,6 +122,7 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     vehicleYear: null,
     vehicleMake: null,
     vehicleModel: null,
+    assets: null,
     serviceStreet: null,
     serviceUnit: null,
     serviceCity: null,
@@ -98,6 +134,9 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     servicePriceCents: null,
     addonDetails: null,
     publicToken: 'demo-token-alex-draft',
+    viewedAt: null,
+    customerReminderSentAt: null,
+    communications: [],
   },
   {
     id: 'a1b2c3d4-e5f6-4a5b-8c9d-000000000004',
@@ -120,6 +159,13 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     vehicleYear: '2024',
     vehicleMake: 'Ford',
     vehicleModel: 'F-150',
+    assets: [
+      {
+        type: 'vehicle',
+        label: '2024 Ford F-150',
+        attributes: { year: '2024', make: 'Ford', model: 'F-150' },
+      },
+    ],
     serviceStreet: null,
     serviceUnit: null,
     serviceCity: null,
@@ -131,6 +177,9 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     servicePriceCents: null,
     addonDetails: null,
     publicToken: 'demo-token-morgan-requested',
+    viewedAt: null,
+    customerReminderSentAt: null,
+    communications: [],
   },
   {
     id: 'a1b2c3d4-e5f6-4a5b-8c9d-000000000005',
@@ -152,6 +201,13 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     vehicleYear: '2020',
     vehicleMake: 'BMW',
     vehicleModel: '330i',
+    assets: [
+      {
+        type: 'vehicle',
+        label: '2020 BMW 330i',
+        attributes: { year: '2020', make: 'BMW', model: '330i' },
+      },
+    ],
     serviceStreet: null,
     serviceUnit: null,
     serviceCity: null,
@@ -163,6 +219,9 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     servicePriceCents: null,
     addonDetails: null,
     publicToken: 'demo-token-casey-approved',
+    viewedAt: new Date(Date.now() - 3600000 * 24 * 6).toISOString(),
+    customerReminderSentAt: null,
+    communications: [],
   },
   {
     id: 'a1b2c3d4-e5f6-4a5b-8c9d-000000000006',
@@ -184,6 +243,13 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     vehicleYear: '2015',
     vehicleMake: 'Subaru',
     vehicleModel: 'Outback',
+    assets: [
+      {
+        type: 'vehicle',
+        label: '2015 Subaru Outback',
+        attributes: { year: '2015', make: 'Subaru', model: 'Outback' },
+      },
+    ],
     serviceStreet: null,
     serviceUnit: null,
     serviceCity: null,
@@ -195,6 +261,9 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     servicePriceCents: null,
     addonDetails: null,
     publicToken: 'demo-token-riley-declined',
+    viewedAt: new Date(Date.now() - 3600000 * 24 * 13).toISOString(),
+    customerReminderSentAt: null,
+    communications: [],
   },
 ];
 

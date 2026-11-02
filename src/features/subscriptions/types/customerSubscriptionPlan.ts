@@ -14,8 +14,11 @@ export interface SubscriptionCadenceOption {
   intervalUnit: SubscriptionCadenceUnit;
   /** Stripe-style interval count (1 = weekly, 2 = every 2 weeks). */
   intervalCount: number;
-  /** Price charged each billing period, in cents. */
+  /** Plan price each billing period, in cents, before tax. */
   priceCents: number;
+  /** Tax added on top when the shop rate is on. Omitted when there is no tax. */
+  taxCents?: number;
+  taxRateBps?: number;
   /** Pre-select this option when the card loads. */
   isDefault?: boolean;
 }

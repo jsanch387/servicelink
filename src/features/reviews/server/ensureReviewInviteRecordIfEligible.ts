@@ -10,6 +10,7 @@ export type EnsureReviewInviteRecordResult =
       skipped: false;
       inviteId: string;
       rawReviewToken: string;
+      reusedExisting: boolean;
     }
   | { ok: true; skipped: true; reason: string }
   | { ok: false; error: string };
@@ -46,17 +47,11 @@ async function findInviteByBookingId(
   return data ? { id: String(data.id) } : null;
 }
 
-function expiresAtFromNow(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + INVITE_EXPIRY_DAYS);
-  return d.toISOString();
-}
-
-async function hasPendingInviteForCustomer(
+async function findPendingInviteForCustomer(
   supabase: SupabaseClient,
   businessId: string,
   customerId: string
-): Promise<boolean> {
+): Promise<{ id: string } | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('review_invites')
@@ -68,12 +63,31 @@ async function hasPendingInviteForCustomer(
     .maybeSingle();
 
   if (error) throw error;
-  return Boolean(data?.id);
+  return data ? { id: String(data.id) } : null;
+}
+
+function expiresAtFromNow(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + INVITE_EXPIRY_DAYS);
+  return d.toISOString();
+}
+
+function createInviteToken(): { rawToken: string; linkTokenHash: string } {
+  const rawToken = crypto.randomBytes(32).toString('base64url');
+  const linkTokenHash = crypto
+    .createHash('sha256')
+    .update(rawToken)
+    .digest('hex');
+  return { rawToken, linkTokenHash };
 }
 
 /**
- * Creates a review invite row when eligible — no SMS/email. Used by job_completed
- * so the invoice page can surface a review CTA without a separate mobile POST.
+ * Creates or reuses the customer's single open review invite — no SMS/email.
+ * Used by job_completed so the invoice can surface a review CTA.
+ *
+ * One pending invite per customer (DB unique). Later completes reuse that row
+ * and rotate the hashed token so we can attach a working link without creating
+ * a second invite (and therefore a second review).
  */
 export async function ensureReviewInviteRecordIfEligible(
   supabase: SupabaseClient,
@@ -100,15 +114,46 @@ export async function ensureReviewInviteRecordIfEligible(
     return { ok: true, skipped: true, reason: 'customer_already_reviewed' };
   }
 
-  if (await hasPendingInviteForCustomer(supabase, businessId, customerId)) {
-    return { ok: true, skipped: true, reason: 'pending_invite_exists' };
-  }
+  const pendingInvite = await findPendingInviteForCustomer(
+    supabase,
+    businessId,
+    customerId
+  );
+  const { rawToken, linkTokenHash } = createInviteToken();
 
-  const rawToken = crypto.randomBytes(32).toString('base64url');
-  const linkTokenHash = crypto
-    .createHash('sha256')
-    .update(rawToken)
-    .digest('hex');
+  if (pendingInvite) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: refreshed, error: refreshError } = await (supabase as any)
+      .from('review_invites')
+      .update({
+        link_token_hash: linkTokenHash,
+        expires_at: expiresAtFromNow(),
+        last_notification_error: null,
+      })
+      .eq('id', pendingInvite.id)
+      .eq('status', 'pending')
+      .select('id')
+      .maybeSingle();
+
+    if (refreshError) {
+      return {
+        ok: false,
+        error: refreshError.message ?? 'Failed to refresh review invite',
+      };
+    }
+
+    if (!refreshed?.id) {
+      return { ok: true, skipped: true, reason: 'customer_already_reviewed' };
+    }
+
+    return {
+      ok: true,
+      skipped: false,
+      inviteId: String(refreshed.id),
+      rawReviewToken: rawToken,
+      reusedExisting: true,
+    };
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: inserted, error: insertError } = await (supabase as any)
@@ -136,5 +181,6 @@ export async function ensureReviewInviteRecordIfEligible(
     skipped: false,
     inviteId: String(inserted.id),
     rawReviewToken: rawToken,
+    reusedExisting: false,
   };
 }

@@ -14,6 +14,8 @@ export interface BookingPaymentRowInput {
   total_amount_cents: number | null;
   paid_online_amount_cents: number | null;
   remaining_amount_cents: number | null;
+  tax_cents?: number | null;
+  tax_rate_bps?: number | null;
 }
 
 export function attachPaymentSummaryToDisplay(
@@ -41,6 +43,8 @@ export function attachPaymentSummaryToDisplay(
             : null,
       discountCents: row.discount_cents,
     },
+    taxCents: payment.tax_cents,
+    taxRateBps: payment.tax_rate_bps,
   });
 
   return {
@@ -52,6 +56,8 @@ export function attachPaymentSummaryToDisplay(
       totalAmountCents: amountDue.adjustedTotalCents,
       paidOnlineAmountCents: amountDue.paidOnlineCents,
       remainingAmountCents: Math.max(0, amountDue.amountDueCents),
+      taxCents: amountDue.taxCents,
+      taxRateBps: amountDue.taxRateBps,
     },
   };
 }

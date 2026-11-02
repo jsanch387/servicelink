@@ -1,6 +1,5 @@
 'use client';
 
-import { Button, Modal } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import type { PublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
@@ -33,6 +32,7 @@ import { ServicePathChooser } from './steps/ServicePathChooser';
 import { VehicleStep } from './steps/VehicleStep';
 import { canAddAnotherJob } from './utils/createAppointmentJobs';
 import type { MembershipVisitPrefill } from './types/membershipVisitPrefill';
+import type { CustomerBookingPrefill } from './types/customerBookingPrefill';
 
 export interface CreateAppointmentWizardProps {
   businessId: string;
@@ -44,6 +44,10 @@ export interface CreateAppointmentWizardProps {
   serviceLocation: PublicBookingServiceLocation;
   activeSale?: PublicActiveSale | null;
   membershipVisit?: MembershipVisitPrefill | null;
+  customerPrefill?: CustomerBookingPrefill | null;
+  /** Business sales tax. Off leaves every total unchanged. */
+  salesTaxEnabled?: boolean;
+  salesTaxRateBps?: number;
 }
 
 export function CreateAppointmentWizard({
@@ -56,6 +60,9 @@ export function CreateAppointmentWizard({
   serviceLocation,
   activeSale = null,
   membershipVisit = null,
+  customerPrefill = null,
+  salesTaxEnabled = false,
+  salesTaxRateBps = 0,
 }: CreateAppointmentWizardProps) {
   const router = useRouter();
   const ctrl = useCreateAppointmentController({
@@ -65,6 +72,7 @@ export function CreateAppointmentWizard({
     catalog: serviceCatalog,
     serviceLocation,
     membershipVisit,
+    customerPrefill,
   });
   const {
     step,
@@ -83,10 +91,6 @@ export function CreateAppointmentWizard({
     jobIndex,
     notice,
     goContinue,
-    confirmScheduleDespiteConflict,
-    dismissScheduleConflictModal,
-    setExactStartConflict,
-    showScheduleConflictModal,
     goBack,
     servicePhase,
     servicePath,
@@ -106,6 +110,7 @@ export function CreateAppointmentWizard({
     setApplySale,
     visitDuration,
     flexibleWeeklySchedule,
+    bufferTime,
     blockedSlots,
     scheduleDataLoading,
     reviewJobs,
@@ -236,6 +241,8 @@ export function CreateAppointmentWizard({
         value={visit.locationType}
         onChange={setLocationType}
         shopAddressMissing={shopAddressMissing}
+        shopAddressLabel={serviceLocation.shopAddressLabel}
+        coverageLabel={serviceLocation.coverageLabel}
       />
     );
   } else if (step === CREATE_APPOINTMENT_STEP.ADDRESS) {
@@ -243,7 +250,11 @@ export function CreateAppointmentWizard({
   } else if (step === CREATE_APPOINTMENT_STEP.VEHICLE) {
     body = (
       <div className="space-y-4">
-        <VehicleStep vehicle={draft.vehicle} onChange={patchVehicle} />
+        <VehicleStep
+          vehicle={draft.vehicle}
+          onChange={patchVehicle}
+          savedVehicles={customerPrefill?.vehicles}
+        />
         {showAddAnotherJob ? (
           <AddAnotherJobCard
             onPress={addAnotherJob}
@@ -260,9 +271,9 @@ export function CreateAppointmentWizard({
         startTime={visit.startTime}
         weeklySchedule={flexibleWeeklySchedule}
         existingBookings={blockedSlots}
+        bufferTime={bufferTime}
         scheduleLoading={scheduleDataLoading}
         onChange={setSchedule}
-        onExactStartConflictChange={setExactStartConflict}
       />
     );
   } else if (isReview) {
@@ -282,6 +293,8 @@ export function CreateAppointmentWizard({
         onAddAnotherJob={addAnotherJob}
         addAnotherDisabled={!addJobGate.ok || isSubmitting}
         membershipCovered={Boolean(membershipId)}
+        salesTaxEnabled={salesTaxEnabled}
+        salesTaxRateBps={salesTaxRateBps}
       />
     );
   }
@@ -324,6 +337,8 @@ export function CreateAppointmentWizard({
             <SelectionSummaryCard
               draft={draft}
               membershipCovered={Boolean(membershipId)}
+              salesTaxEnabled={salesTaxEnabled}
+              salesTaxRateBps={salesTaxRateBps}
             />
           </div>
         ) : null}
@@ -337,41 +352,6 @@ export function CreateAppointmentWizard({
           secondaryDisabled={isSubmitting}
         />
       </div>
-
-      <Modal
-        isOpen={showScheduleConflictModal}
-        onClose={dismissScheduleConflictModal}
-        title="Time already booked"
-        maxWidth="sm"
-        uniformHorizontalPadding16
-        titleClassName="font-bold"
-        contentClassName="!pt-4 sm:!pt-5 !pb-4 sm:!pb-5"
-      >
-        <p className="text-sm leading-relaxed text-gray-300">
-          You already have an appointment at this start time. Continue anyway if
-          you want to double-book it.
-        </p>
-        <div className="mt-5 grid grid-cols-2 gap-2.5">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            fullWidth
-            onClick={dismissScheduleConflictModal}
-          >
-            Change time
-          </Button>
-          <Button
-            type="button"
-            variant="inverse"
-            size="sm"
-            fullWidth
-            onClick={confirmScheduleDespiteConflict}
-          >
-            Continue
-          </Button>
-        </div>
-      </Modal>
     </div>
   );
 }

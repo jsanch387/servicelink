@@ -4,13 +4,13 @@ import { Button, Input, Select } from '@/components/shared';
 import {
   getSpecialtiesForBusinessType,
   sanitizeBusinessSpecialties,
+  specialtiesAllowedForBusinessType,
 } from '@/constants/businessSpecialties';
 import {
   getBusinessTypeSelectOptions,
   getIndustryOnboardingCopy,
 } from '@/constants/businessTypes';
-import { trackSignupLeadOnce } from '@/features/analytics/utils/signupLeadTracking';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import { SpecialtyChips } from './SpecialtyChips';
 
@@ -41,10 +41,6 @@ export const Step1BusinessNameAndType: React.FC<
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
-  useEffect(() => {
-    trackSignupLeadOnce();
-  }, []);
-
   const onboardingCopy = getIndustryOnboardingCopy(businessType);
   const specialtyOptions = businessType
     ? getSpecialtiesForBusinessType(businessType)
@@ -55,13 +51,9 @@ export const Step1BusinessNameAndType: React.FC<
     specialties.length > 0;
 
   const handleTypeChange = (value: string) => {
-    const allowed = new Set<string>(
-      getSpecialtiesForBusinessType(value).map(option => option.slug)
-    );
-    const kept = specialties.filter(slug => allowed.has(slug));
     onUpdate({
       businessType: value,
-      specialties: value === 'Other' && kept.length === 0 ? ['other'] : kept,
+      specialties: specialtiesAllowedForBusinessType(value, specialties),
     });
   };
 
@@ -119,7 +111,7 @@ export const Step1BusinessNameAndType: React.FC<
             required
           />
           <Select
-            label="What type of business is this?"
+            label="Business type"
             placeholder="Pick one"
             value={businessType}
             onChange={handleTypeChange}

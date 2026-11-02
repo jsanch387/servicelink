@@ -79,6 +79,51 @@ describe('runCustomerBookingReminders', () => {
     expect(notifyCustomerForBookingReminder).toHaveBeenCalledTimes(1);
   });
 
+  it('notifies every booking with contact info', async () => {
+    vi.mocked(notifyCustomerForBookingReminder).mockResolvedValue({
+      email: 'sent',
+      sms: 'sent',
+    });
+
+    const rows = [1, 2, 3].map(n => ({
+      id: `b${n}`,
+      business_id: 'biz-1',
+      scheduled_date: '2026-08-21',
+      start_time: '09:00',
+      service_name: 'Wash',
+      customer_name: `Alex ${n}`,
+      customer_email: `a${n}@example.com`,
+      customer_phone: `+1555555010${n}`,
+      customer_id: `c${n}`,
+    }));
+
+    const from = vi.fn().mockImplementation((table: string) => {
+      if (table === 'bookings') {
+        return bookingsQuery(rows);
+      }
+      if (table === 'business_profiles') {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [{ id: 'biz-1', business_name: 'Urban' }],
+              error: null,
+            }),
+          }),
+        };
+      }
+      return {};
+    });
+
+    const result = await runCustomerBookingReminders({ from } as never, {
+      now: new Date('2026-08-20T14:00:00.000Z'),
+    });
+
+    expect(result.considered).toBe(3);
+    expect(result.emailSent).toBe(3);
+    expect(result.smsSent).toBe(3);
+    expect(notifyCustomerForBookingReminder).toHaveBeenCalledTimes(3);
+  });
+
   it('dry-run does not notify', async () => {
     const from = vi.fn().mockImplementation((table: string) => {
       if (table === 'bookings') {

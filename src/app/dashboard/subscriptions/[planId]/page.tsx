@@ -5,6 +5,7 @@ import { isOwnerEmailAllowedForMembershipsRollout } from '@/features/subscriptio
 import { getMembershipPlanForBusiness } from '@/features/subscriptions/server/getMembershipPlan';
 import { listOwnerCustomerMemberships } from '@/features/subscriptions/server/listOwnerCustomerMemberships';
 import { loadMembershipsAccess } from '@/features/subscriptions/server/loadMembershipsAccess';
+import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { notFound, redirect } from 'next/navigation';
@@ -29,6 +30,8 @@ export default async function SubscriptionPlanDetailPage({
   if (userError || !user) {
     redirect(ROUTES.AUTH.LOGIN);
   }
+
+  await requireDashboardPageAccess('billing.manage');
 
   if (!isOwnerEmailAllowedForMembershipsRollout(user.email)) {
     redirect(ROUTES.DASHBOARD.MAIN);

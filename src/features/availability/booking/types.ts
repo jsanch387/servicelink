@@ -69,6 +69,10 @@ export interface PublicBookingPaymentSettings {
   depositType: 'fixed' | 'percent';
   depositValue: number;
   currency: string;
+  /** Sales tax switch from payment settings. */
+  taxEnabled: boolean;
+  /** Hundredths of a percent. 8.25% is 825. */
+  taxRateBps: number;
 }
 
 export interface AvailabilityBookingPageProps {
@@ -100,6 +104,11 @@ export interface AvailabilityBookingPageProps {
    * Ignored for owner manual bookings (treated as `'none'`).
    */
   minimumNotice?: string;
+  /**
+   * Gap between appointments from `business_availability.buffer_time`.
+   * Applied for customers and owner manual bookings.
+   */
+  bufferTime?: string;
   /** Fetched from API when businessSlug is set; omit to use [] or fetch internally. */
   existingBookings?: ExistingBooking[];
   /** Dashboard owner flow (`for=owner`); changes confirmation copy and CTA. */
@@ -129,6 +138,8 @@ export interface AvailabilityBookingPageProps {
   initialCustomerServiceChoice?: 'mobile' | 'shop' | null;
   /** Live sale for this business (Pro only); auto-applies when appointment date qualifies. */
   activeSale?: PublicActiveSale | null;
+  /** Owner policy customers must accept. Null when not required. */
+  bookingPolicy?: { text: string } | null;
   /**
    * Public multi-job visit (`/book?visit=1`). When set, price/duration/submit use
    * `jobs[]` instead of the single-service URL fields.
@@ -252,6 +263,12 @@ export interface CreateBookingRequest {
   durationMinutes?: number;
   scheduledDate: string; // YYYY-MM-DD
   startTime: string; // HH:mm — visit arrival / first job start
+  /**
+   * IANA timezone of the person booking (browser). Used so lead-time / "too
+   * soon" checks match the wall-clock slots they picked. Server falls back
+   * to America/Los_Angeles when omitted.
+   */
+  timeZone?: string;
   customer: CustomerFormData;
   /**
    * When checkout mode is `customer_choice` and the customer confirms without
@@ -305,4 +322,9 @@ export interface CreateBookingRequest {
    * Default true when omitted on public create; owner manual should omit.
    */
   agreedToNotifications?: boolean;
+  /**
+   * Public customers only: required when the business has a booking policy.
+   * Owner manual should omit.
+   */
+  agreedToPolicy?: boolean;
 }

@@ -35,6 +35,7 @@ export {
 } from './utils/reviewDisplay';
 
 export {
+  hasVisibleReviewBody,
   reviewCollapsedMaxChars,
   reviewTextNeedsExpand,
   truncateReviewText,

@@ -9,7 +9,7 @@ import {
   bcp47ForBookingLocale,
   publicBookingUi,
 } from '@/libs/i18n/publicBookingUi';
-import { CheckIcon } from '@heroicons/react/24/solid';
+import { SubscriptionSuccessCheckmark } from '@/features/subscriptions/components/SubscriptionSuccessCheckmark';
 import Link from 'next/link';
 import React from 'react';
 import type { AddOnDisplay, CustomerFormData } from '../types';
@@ -28,6 +28,8 @@ interface BookingSuccessProps {
   saleSubtotalCents?: number;
   saleEstimatedTotalCents?: number;
   saleAppliesLine?: string | null;
+  salesTaxCents?: number;
+  salesTaxLabel?: string | null;
   customer: CustomerFormData;
   date: string;
   time: string;
@@ -71,6 +73,8 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
   saleSubtotalCents,
   saleEstimatedTotalCents,
   saleAppliesLine,
+  salesTaxCents,
+  salesTaxLabel,
   customer,
   date,
   time,
@@ -96,11 +100,16 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
     saleSubtotalCents > 0 &&
     saleEstimatedTotalCents != null &&
     saleEstimatedTotalCents < saleSubtotalCents;
+  const showSalesTax =
+    salesTaxCents != null && salesTaxCents > 0 && Boolean(salesTaxLabel);
+  const successTotalCents =
+    (showSalePricing ? saleEstimatedTotalCents! : (totalPriceCents ?? 0)) +
+    (showSalesTax ? salesTaxCents! : 0);
 
   return (
     <div className="flex flex-col w-full min-h-[55vh] max-w-2xl mx-auto px-4 sm:px-6 py-10 pb-16 sm:pb-24">
-      <div className="self-center w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center mb-8 shadow-lg shadow-emerald-500/25">
-        <CheckIcon className="w-10 h-10 text-white" />
+      <div className="self-center mb-8">
+        <SubscriptionSuccessCheckmark />
       </div>
 
       <h2 className="text-2xl font-bold text-white mb-2 text-center">
@@ -194,6 +203,14 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
               {saleAppliesLine ? (
                 <div className="space-y-2">
                   <BookingSaleAppliesNotice line={saleAppliesLine} />
+                  {showSalesTax ? (
+                    <div className="flex justify-between items-center gap-3 text-sm">
+                      <p className="text-zinc-400">{salesTaxLabel}</p>
+                      <p className="tabular-nums text-zinc-300">
+                        {formatPrice(salesTaxCents!)}
+                      </p>
+                    </div>
+                  ) : null}
                   <div className="flex justify-between items-center gap-3">
                     <p className="text-sm font-medium text-white">
                       {ui.common.total}
@@ -204,24 +221,38 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
                           {formatPrice(saleSubtotalCents!)}
                         </p>
                         <p className="text-lg font-semibold text-white tabular-nums">
-                          {formatPrice(saleEstimatedTotalCents!)}
+                          {formatPrice(successTotalCents)}
                         </p>
                       </div>
                     ) : (
                       <p className="text-lg font-semibold text-white">
-                        {formatPrice(totalPriceCents)}
+                        {formatPrice(
+                          showSalesTax ? successTotalCents : totalPriceCents!
+                        )}
                       </p>
                     )}
                   </div>
                 </div>
               ) : (
-                <div className="flex justify-between items-center">
-                  <p className="text-sm font-medium text-white">
-                    {ui.common.total}
-                  </p>
-                  <p className="text-lg font-semibold text-white">
-                    {formatPrice(totalPriceCents)}
-                  </p>
+                <div className="space-y-2">
+                  {showSalesTax ? (
+                    <div className="flex justify-between items-center gap-3 text-sm">
+                      <p className="text-zinc-400">{salesTaxLabel}</p>
+                      <p className="tabular-nums text-zinc-300">
+                        {formatPrice(salesTaxCents!)}
+                      </p>
+                    </div>
+                  ) : null}
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm font-medium text-white">
+                      {ui.common.total}
+                    </p>
+                    <p className="text-lg font-semibold text-white">
+                      {formatPrice(
+                        showSalesTax ? successTotalCents : totalPriceCents!
+                      )}
+                    </p>
+                  </div>
                 </div>
               )}
             </>
@@ -271,7 +302,7 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
         href={
           isOwnerManualBooking ? ROUTES.DASHBOARD.BOOKINGS : `/${businessSlug}`
         }
-        className="self-center inline-flex items-center justify-center min-h-[48px] px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-100 transition-colors cursor-pointer"
+        className="w-full flex items-center justify-center min-h-[48px] px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-100 transition-colors cursor-pointer"
       >
         {isOwnerManualBooking
           ? ui.bookingSuccess.goToBookings

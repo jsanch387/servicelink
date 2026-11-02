@@ -1,7 +1,9 @@
 import { ROUTES } from '@/constants/routes';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { PaymentsTransactionsPage } from '@/features/payments';
+import { getBusinessStripeConnectReady } from '@/features/payments/server/getBusinessStripeConnectReady';
 import { getHasProAccessForPayments } from '@/features/payments/server/getHasProAccessForPayments';
+import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -19,12 +21,24 @@ export default async function DashboardPaymentsTransactionsPage() {
     redirect(ROUTES.AUTH.LOGIN);
   }
 
+  await requireDashboardPageAccess('payments.manage');
+
   const stateResult = await getOnboardingState(user.id, supabase);
   if (!stateResult.success || stateResult.data?.status !== 'completed') {
     redirect(ROUTES.DASHBOARD.MAIN);
   }
 
   const hasProAccess = await getHasProAccessForPayments(supabase, user.id);
+  const businessId = stateResult.data?.businessProfile?.id;
+  const stripeConnectReady =
+    hasProAccess && businessId
+      ? await getBusinessStripeConnectReady(supabase, businessId)
+      : false;
 
-  return <PaymentsTransactionsPage hasProAccess={hasProAccess} />;
+  return (
+    <PaymentsTransactionsPage
+      hasProAccess={hasProAccess}
+      stripeConnectReady={stripeConnectReady}
+    />
+  );
 }

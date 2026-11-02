@@ -25,6 +25,7 @@ import {
 import { planDescriptionForDisplay } from '../utils/planDescription';
 import { isOwnerSubscriberInActiveList } from '../utils/ownerSubscriberDisplay';
 import { DeleteMembershipPlanModal } from './DeleteMembershipPlanModal';
+import { MembershipTaxCaption } from './MembershipTaxCaption';
 import { SubscriptionsProPausedBanner } from './gates/SubscriptionsProPausedBanner';
 import { OwnerSubscriptionsSubscribers } from './OwnerSubscriptionsSubscribers';
 
@@ -194,21 +195,25 @@ export const OwnerSubscriptionPlanDetailPage: React.FC<
             <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
               <ul className="divide-y divide-white/[0.06]">
                 {plan.cadenceOptions.map(option => (
-                  <li
-                    key={option.id}
-                    className="flex items-center justify-between gap-4 px-4 py-3.5 sm:px-5"
-                  >
-                    <p className="min-w-0 truncate text-sm font-medium text-white">
-                      {formatCadenceOptionLabel(option)}
-                    </p>
-                    <p className="shrink-0 text-right tabular-nums">
-                      <span className="text-base font-semibold tracking-tight text-white sm:text-lg">
-                        {formatSubscriptionPriceCents(option.priceCents)}
-                      </span>
-                      <span className="ml-1 text-xs text-zinc-500 sm:text-sm">
-                        {formatCadencePriceSuffix(option)}
-                      </span>
-                    </p>
+                  <li key={option.id} className="px-4 py-3.5 sm:px-5">
+                    <div className="flex items-center justify-between gap-4">
+                      <p className="min-w-0 truncate text-sm font-medium text-white">
+                        {formatCadenceOptionLabel(option)}
+                      </p>
+                      <p className="m-0 shrink-0 tabular-nums">
+                        <span className="text-base font-semibold tracking-tight text-white sm:text-lg">
+                          {formatSubscriptionPriceCents(option.priceCents)}
+                        </span>
+                        <span className="ml-1 text-xs text-zinc-500 sm:text-sm">
+                          {formatCadencePriceSuffix(option)}
+                        </span>
+                      </p>
+                    </div>
+                    <MembershipTaxCaption
+                      priceCents={option.priceCents}
+                      taxCents={option.taxCents}
+                      taxRateBps={option.taxRateBps}
+                    />
                   </li>
                 ))}
               </ul>

@@ -5,6 +5,7 @@
  */
 
 import { isProAccess } from '@/features/pricing/utils/isProAccess';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export async function ownerHasProAccessForBusiness(
@@ -20,7 +21,7 @@ export async function ownerHasProAccessForBusiness(
   const profileId = (biz as { profile_id?: string | null } | null)?.profile_id;
   if (!profileId?.trim()) return false;
 
-  const { data: profileRow } = await supabase
+  const { data: profileRow } = await createSupabaseAdminClient()
     .from('profiles')
     .select(
       'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'

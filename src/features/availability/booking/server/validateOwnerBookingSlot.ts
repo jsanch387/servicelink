@@ -4,11 +4,13 @@
  */
 
 import type { ExistingBooking } from '@/features/availability/booking/types';
+import { shouldRejectExistingBookingOverlap } from '@/features/availability/booking/utils/shouldRejectExistingBookingOverlap';
 import {
   bookingOverlapsExistingBookings,
   bookingOverlapsTimeOff,
   isSlotWithinWeeklyHours,
 } from '@/features/availability/booking/utils/slotGeneration';
+import { bufferTimeToMinutes } from '@/features/availability/utils/bufferTime';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import {
   DEFAULT_SCHEDULE,
@@ -79,11 +81,14 @@ export type ValidateOwnerBookingSlotParams = {
   durationMinutes: number;
   /** When moving an existing booking, omit it from overlap checks. */
   excludeBookingId?: string | null;
+  /** Owner create / owner reschedule may stack jobs; public paths stay blocked. */
+  allowExistingBookingOverlap?: boolean;
 };
 
 /**
  * Loads availability + same-day bookings and checks weekly window, time off,
- * and double-booking (excluding `excludeBookingId` when set).
+ * and (unless `allowExistingBookingOverlap`) other jobs, excluding
+ * `excludeBookingId` when set.
  */
 export async function validateOwnerBookingSlot(
   supabase: SupabaseClient<Database>,
@@ -173,11 +178,15 @@ export async function validateOwnerBookingSlot(
       );
 
     if (
+      shouldRejectExistingBookingOverlap(
+        params.allowExistingBookingOverlap === true
+      ) &&
       bookingOverlapsExistingBookings(
         scheduledDate,
         startTimeHHmm,
         durationMinutes,
-        existingForOverlap
+        existingForOverlap,
+        bufferTimeToMinutes(availabilityRow?.buffer_time)
       )
     ) {
       return { ok: false, code: 'existing_booking_conflict' };

@@ -4,6 +4,7 @@ import {
   Button,
   DropdownSelect,
   FormStepSection,
+  IconButton,
   Input,
   PhoneInput,
   SmsNotificationsConsent,
@@ -22,6 +23,7 @@ import {
   PublicFlowStickyBackHeader,
   publicFlowBackNavClassName,
 } from '@/components/shared';
+import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React, { useMemo, useState } from 'react';
 import type {
@@ -29,6 +31,7 @@ import type {
   PublicQuoteRequestFormErrors,
 } from '../types';
 import { PublicQuoteRequestSuccess } from './PublicQuoteRequestSuccess';
+import { PublicQuoteRequestSummaryCard } from './PublicQuoteRequestSummaryCard';
 
 interface PublicQuoteRequestScreenProps {
   businessSlug: string;
@@ -37,16 +40,18 @@ interface PublicQuoteRequestScreenProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
-type QuoteRequestStep = 'contact' | 'vehicle' | 'request';
+type QuoteRequestStep = 'contact' | 'vehicle' | 'request' | 'review';
 
 const INITIAL_FORM: PublicQuoteRequestFormData = {
   customerName: '',
   customerEmail: '',
   customerPhone: '',
-  serviceRequested: '',
   vehicleYear: '',
   vehicleMake: '',
   vehicleModel: '',
+  vehicle2Year: '',
+  vehicle2Make: '',
+  vehicle2Model: '',
   timeline: '',
   details: '',
 };
@@ -59,6 +64,14 @@ function isValidEmail(value: string): boolean {
 
 function isValidPhoneDigits(value: string): boolean {
   return /^\d{10}$/.test(value.trim());
+}
+
+function isCompleteVehicle(year: string, make: string, model: string): boolean {
+  return (
+    isValidVehicleYearFourDigit(year.trim()) &&
+    make.trim().length > 0 &&
+    model.trim().length > 0
+  );
 }
 
 export const PublicQuoteRequestScreen: React.FC<
@@ -82,6 +95,8 @@ export const PublicQuoteRequestScreen: React.FC<
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [step, setStep] = useState<QuoteRequestStep>('contact');
+  const [hasSecondVehicle, setHasSecondVehicle] = useState(false);
+  const [returnToReview, setReturnToReview] = useState(false);
   const [agreedToSmsNotifications, setAgreedToSmsNotifications] =
     useState(true);
 
@@ -90,8 +105,8 @@ export const PublicQuoteRequestScreen: React.FC<
   const steps = useMemo(
     () =>
       showVehicleFields
-        ? (['contact', 'vehicle', 'request'] as QuoteRequestStep[])
-        : (['contact', 'request'] as QuoteRequestStep[]),
+        ? (['contact', 'vehicle', 'request', 'review'] as QuoteRequestStep[])
+        : (['contact', 'request', 'review'] as QuoteRequestStep[]),
     [showVehicleFields]
   );
 
@@ -114,28 +129,39 @@ export const PublicQuoteRequestScreen: React.FC<
     [form.customerEmail, form.customerName, form.customerPhone]
   );
 
-  const isVehicleValid = useMemo(
-    () =>
-      !showVehicleFields ||
-      (isValidVehicleYearFourDigit(form.vehicleYear.trim()) &&
-        form.vehicleMake.trim().length > 0 &&
-        form.vehicleModel.trim().length > 0),
-    [form.vehicleMake, form.vehicleModel, form.vehicleYear, showVehicleFields]
-  );
+  const isVehicleValid = useMemo(() => {
+    if (!showVehicleFields) return true;
+    if (
+      !isCompleteVehicle(form.vehicleYear, form.vehicleMake, form.vehicleModel)
+    ) {
+      return false;
+    }
+    if (!hasSecondVehicle) return true;
+    return isCompleteVehicle(
+      form.vehicle2Year,
+      form.vehicle2Make,
+      form.vehicle2Model
+    );
+  }, [
+    form.vehicle2Make,
+    form.vehicle2Model,
+    form.vehicle2Year,
+    form.vehicleMake,
+    form.vehicleModel,
+    form.vehicleYear,
+    hasSecondVehicle,
+    showVehicleFields,
+  ]);
 
-  const isRequestValid = useMemo(
-    () =>
-      form.serviceRequested.trim().length > 0 && form.details.trim().length > 0,
-    [form.serviceRequested, form.details]
-  );
+  const isRequestValid = form.details.trim().length > 0;
+  const canSubmit = isContactFieldsValid && isVehicleValid && isRequestValid;
 
   const canProceedCurrentStep = useMemo(() => {
     if (step === 'contact') return isContactFieldsValid;
     if (step === 'vehicle') return isVehicleValid;
-    return isRequestValid;
-  }, [isContactFieldsValid, isRequestValid, isVehicleValid, step]);
-
-  const canSubmit = isContactFieldsValid && isVehicleValid && isRequestValid;
+    if (step === 'request') return isRequestValid;
+    return canSubmit;
+  }, [canSubmit, isContactFieldsValid, isRequestValid, isVehicleValid, step]);
 
   const stepIndex = steps.indexOf(step);
   const isLastStep = stepIndex === steps.length - 1;
@@ -144,10 +170,12 @@ export const PublicQuoteRequestScreen: React.FC<
   });
 
   const headerBackLabel = useMemo(() => {
+    if (returnToReview && step !== 'review') return ui.nav.backToReview;
     if (step === 'contact') return ui.nav.backToProfile;
     if (step === 'vehicle') return ui.nav.backToYourDetails;
+    if (step === 'review') return qf.backToRequest;
     return showVehicleFields ? ui.nav.backToVehicle : ui.nav.backToYourDetails;
-  }, [showVehicleFields, step, ui.nav]);
+  }, [qf.backToRequest, returnToReview, showVehicleFields, step, ui.nav]);
 
   useScrollWindowToTopOnChange([step]);
 
@@ -159,6 +187,23 @@ export const PublicQuoteRequestScreen: React.FC<
     if (errors[key]) setErrors(prev => ({ ...prev, [key]: undefined }));
   };
 
+  const applyVehicleErrors = (
+    target: PublicQuoteRequestFormErrors,
+    prefix: '' | '2'
+  ) => {
+    const yearKey = prefix === '2' ? 'vehicle2Year' : 'vehicleYear';
+    const makeKey = prefix === '2' ? 'vehicle2Make' : 'vehicleMake';
+    const modelKey = prefix === '2' ? 'vehicle2Model' : 'vehicleModel';
+    const year = prefix === '2' ? form.vehicle2Year : form.vehicleYear;
+    const make = prefix === '2' ? form.vehicle2Make : form.vehicleMake;
+    const model = prefix === '2' ? form.vehicle2Model : form.vehicleModel;
+    if (!isValidVehicleYearFourDigit(year.trim())) {
+      target[yearKey] = qf.errVehicleYear;
+    }
+    if (!make.trim()) target[makeKey] = qf.errVehicleMake;
+    if (!model.trim()) target[modelKey] = qf.errVehicleModel;
+  };
+
   const validate = (): boolean => {
     const next: PublicQuoteRequestFormErrors = {};
 
@@ -166,12 +211,9 @@ export const PublicQuoteRequestScreen: React.FC<
     if (!isValidEmail(form.customerEmail)) next.customerEmail = qf.errEmail;
     if (!isValidPhoneDigits(form.customerPhone))
       next.customerPhone = qf.errPhone;
-    if (!form.serviceRequested.trim()) next.serviceRequested = qf.errService;
     if (showVehicleFields) {
-      if (!isValidVehicleYearFourDigit(form.vehicleYear.trim()))
-        next.vehicleYear = qf.errVehicleYear;
-      if (!form.vehicleMake.trim()) next.vehicleMake = qf.errVehicleMake;
-      if (!form.vehicleModel.trim()) next.vehicleModel = qf.errVehicleModel;
+      applyVehicleErrors(next, '');
+      if (hasSecondVehicle) applyVehicleErrors(next, '2');
     }
     if (!form.details.trim()) next.details = qf.errDetails;
 
@@ -186,12 +228,9 @@ export const PublicQuoteRequestScreen: React.FC<
     if (!isValidPhoneDigits(form.customerPhone))
       all.customerPhone = qf.errPhone;
     if (showVehicleFields) {
-      if (!isValidVehicleYearFourDigit(form.vehicleYear.trim()))
-        all.vehicleYear = qf.errVehicleYear;
-      if (!form.vehicleMake.trim()) all.vehicleMake = qf.errVehicleMake;
-      if (!form.vehicleModel.trim()) all.vehicleModel = qf.errVehicleModel;
+      applyVehicleErrors(all, '');
+      if (hasSecondVehicle) applyVehicleErrors(all, '2');
     }
-    if (!form.serviceRequested.trim()) all.serviceRequested = qf.errService;
     if (!form.details.trim()) all.details = qf.errDetails;
 
     const filtered: PublicQuoteRequestFormErrors =
@@ -206,11 +245,15 @@ export const PublicQuoteRequestScreen: React.FC<
               vehicleYear: all.vehicleYear,
               vehicleMake: all.vehicleMake,
               vehicleModel: all.vehicleModel,
+              vehicle2Year: all.vehicle2Year,
+              vehicle2Make: all.vehicle2Make,
+              vehicle2Model: all.vehicle2Model,
             }
-          : {
-              serviceRequested: all.serviceRequested,
-              details: all.details,
-            };
+          : step === 'request'
+            ? {
+                details: all.details,
+              }
+            : all;
     setErrors(prev => ({ ...prev, ...filtered }));
     return !Object.values(filtered).some(Boolean);
   };
@@ -230,10 +273,15 @@ export const PublicQuoteRequestScreen: React.FC<
             customerName: form.customerName,
             customerEmail: form.customerEmail,
             customerPhone: form.customerPhone,
-            serviceRequested: form.serviceRequested,
             vehicleYear: showVehicleFields ? form.vehicleYear : '',
             vehicleMake: showVehicleFields ? form.vehicleMake : '',
             vehicleModel: showVehicleFields ? form.vehicleModel : '',
+            vehicle2Year:
+              showVehicleFields && hasSecondVehicle ? form.vehicle2Year : '',
+            vehicle2Make:
+              showVehicleFields && hasSecondVehicle ? form.vehicle2Make : '',
+            vehicle2Model:
+              showVehicleFields && hasSecondVehicle ? form.vehicle2Model : '',
             timeline: form.timeline,
             details: form.details,
           }),
@@ -260,12 +308,43 @@ export const PublicQuoteRequestScreen: React.FC<
     }
 
     if (!canProceedCurrentStep && !validateCurrentStep()) return;
+    if (returnToReview) {
+      setReturnToReview(false);
+      setStep('review');
+      return;
+    }
     setStep(steps[stepIndex + 1]);
   };
 
+  const goToStepFromReview = (next: QuoteRequestStep) => {
+    setReturnToReview(true);
+    setStep(next);
+  };
+
   const handleBack = () => {
+    if (returnToReview && step !== 'review') {
+      setReturnToReview(false);
+      setStep('review');
+      return;
+    }
     if (stepIndex <= 0) return;
     setStep(steps[stepIndex - 1]);
+  };
+
+  const handleRemoveSecondVehicle = () => {
+    setHasSecondVehicle(false);
+    setForm(prev => ({
+      ...prev,
+      vehicle2Year: '',
+      vehicle2Make: '',
+      vehicle2Model: '',
+    }));
+    setErrors(prev => ({
+      ...prev,
+      vehicle2Year: undefined,
+      vehicle2Make: undefined,
+      vehicle2Model: undefined,
+    }));
   };
 
   const headerClassName = publicFlowBackNavClassName;
@@ -279,6 +358,8 @@ export const PublicQuoteRequestScreen: React.FC<
             businessSlug={businessSlug}
             form={form}
             showVehicleFields={showVehicleFields}
+            showSecondVehicle={hasSecondVehicle}
+            bookingFlowLocale={bookingFlowLocale}
           />
         </div>
       </main>
@@ -288,7 +369,7 @@ export const PublicQuoteRequestScreen: React.FC<
   return (
     <main className="min-h-screen bg-[var(--dashboard-bg)]">
       <PublicFlowStickyBackHeader>
-        {step === 'contact' ? (
+        {step === 'contact' && !returnToReview ? (
           <Link href={profileBackHref} className={headerClassName}>
             <PublicFlowBackNavLabel label={headerBackLabel} />
           </Link>
@@ -363,59 +444,126 @@ export const PublicQuoteRequestScreen: React.FC<
           ) : null}
 
           {step === 'vehicle' && showVehicleFields ? (
-            <FormStepSection title={cf.vehicle}>
-              <BookingVehicleFields
-                value={{
-                  vehicleYear: form.vehicleYear,
-                  vehicleMake: form.vehicleMake,
-                  vehicleModel: form.vehicleModel,
-                }}
-                onChange={updates => setForm(prev => ({ ...prev, ...updates }))}
-                errors={{
-                  vehicleYear: errors.vehicleYear,
-                  vehicleMake: errors.vehicleMake,
-                  vehicleModel: errors.vehicleModel,
-                }}
-                bookingFlowLocale={bookingFlowLocale}
+            <div className="space-y-6">
+              <FormStepSection title={cf.vehicle}>
+                <BookingVehicleFields
+                  value={{
+                    vehicleYear: form.vehicleYear,
+                    vehicleMake: form.vehicleMake,
+                    vehicleModel: form.vehicleModel,
+                  }}
+                  onChange={updates =>
+                    setForm(prev => ({ ...prev, ...updates }))
+                  }
+                  errors={{
+                    vehicleYear: errors.vehicleYear,
+                    vehicleMake: errors.vehicleMake,
+                    vehicleModel: errors.vehicleModel,
+                  }}
+                  bookingFlowLocale={bookingFlowLocale}
+                />
+              </FormStepSection>
+              {hasSecondVehicle ? (
+                <FormStepSection
+                  title={qf.secondVehicle}
+                  action={
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      icon={<XMarkIcon />}
+                      onClick={handleRemoveSecondVehicle}
+                      aria-label={qf.removeVehicle}
+                      title={qf.removeVehicle}
+                    />
+                  }
+                >
+                  <BookingVehicleFields
+                    value={{
+                      vehicleYear: form.vehicle2Year,
+                      vehicleMake: form.vehicle2Make,
+                      vehicleModel: form.vehicle2Model,
+                    }}
+                    onChange={updates =>
+                      setForm(prev => ({
+                        ...prev,
+                        vehicle2Year: updates.vehicleYear ?? prev.vehicle2Year,
+                        vehicle2Make: updates.vehicleMake ?? prev.vehicle2Make,
+                        vehicle2Model:
+                          updates.vehicleModel ?? prev.vehicle2Model,
+                      }))
+                    }
+                    errors={{
+                      vehicleYear: errors.vehicle2Year,
+                      vehicleMake: errors.vehicle2Make,
+                      vehicleModel: errors.vehicle2Model,
+                    }}
+                    bookingFlowLocale={bookingFlowLocale}
+                  />
+                </FormStepSection>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setHasSecondVehicle(true)}
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-white/25 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition-colors hover:border-white/40 hover:bg-white/[0.06]"
+                >
+                  <PlusIcon className="h-5 w-5 shrink-0" aria-hidden />
+                  {qf.addAnotherVehicle}
+                </button>
+              )}
+            </div>
+          ) : null}
+
+          {step === 'request' ? (
+            <FormStepSection title={qf.quoteDetails}>
+              <TextArea
+                label={qf.detailsLabel}
+                value={form.details}
+                onChange={v => setField('details', v)}
+                placeholder={qf.detailsPlaceholder}
+                rows={5}
+                required
+                maxLength={700}
+                hideCharCount
+                inputClassName="!rounded-[10px]"
+                error={errors.details}
+              />
+              <DropdownSelect
+                label={qf.whenOptional}
+                value={form.timeline}
+                onChange={v => setField('timeline', v)}
+                options={timelineOptions}
+                placeholder={qf.whenPlaceholder}
               />
             </FormStepSection>
           ) : null}
 
-          {step === 'request' ? (
+          {step === 'review' ? (
             <div className="space-y-6">
               {submitError ? (
                 <p className="text-sm text-red-400" role="alert">
                   {submitError}
                 </p>
               ) : null}
-              <FormStepSection title={qf.quoteDetails}>
-                <Input
-                  label={qf.serviceRequested}
-                  value={form.serviceRequested}
-                  onChange={v => setField('serviceRequested', v)}
-                  placeholder={qf.serviceRequestedPlaceholder}
-                  required
-                  error={errors.serviceRequested}
-                />
-                <DropdownSelect
-                  label={qf.whenOptional}
-                  value={form.timeline}
-                  onChange={v => setField('timeline', v)}
-                  options={timelineOptions}
-                  placeholder={qf.whenPlaceholder}
-                />
-              </FormStepSection>
-              <TextArea
-                label={qf.detailsLabel}
-                value={form.details}
-                onChange={v => setField('details', v)}
-                placeholder={qf.detailsPlaceholder}
-                rows={4}
-                required
-                maxLength={700}
-                hideCharCount
-                inputClassName="!rounded-[10px]"
-                error={errors.details}
+              <div>
+                <h2 className="text-xl font-black tracking-tight text-white sm:text-2xl">
+                  {qf.reviewTitle}
+                </h2>
+                <p className="mt-0.5 max-w-xl text-sm text-gray-500">
+                  {qf.reviewSubtitle}
+                </p>
+              </div>
+              <PublicQuoteRequestSummaryCard
+                form={form}
+                showVehicleFields={showVehicleFields}
+                showSecondVehicle={hasSecondVehicle}
+                bookingFlowLocale={bookingFlowLocale}
+                edits={{
+                  onEditContact: () => goToStepFromReview('contact'),
+                  onEditVehicle: showVehicleFields
+                    ? () => goToStepFromReview('vehicle')
+                    : undefined,
+                  onEditRequest: () => goToStepFromReview('request'),
+                }}
               />
             </div>
           ) : null}
@@ -434,7 +582,13 @@ export const PublicQuoteRequestScreen: React.FC<
           loading={isLastStep && isSubmitting}
           onClick={() => void handlePrimaryAction()}
         >
-          {isLastStep ? qf.submitRequest : ui.common.continue}
+          {isLastStep
+            ? qf.submitRequest
+            : returnToReview
+              ? ui.nav.backToReview
+              : step === 'request'
+                ? qf.reviewRequest
+                : ui.common.continue}
         </Button>
       </QuoteStickyBar>
     </main>

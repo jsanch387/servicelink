@@ -8,6 +8,7 @@ import {
 } from '@/libs/i18n/publicBookingUi';
 import React from 'react';
 import { reviewBodyTextClass } from '../../constants/reviewTypography';
+import { hasVisibleReviewBody } from '../../utils/reviewTextDisplay';
 import { ReviewCardHeader } from '../display/ReviewCardHeader';
 import { ReviewExpandableText } from '../display/ReviewExpandableText';
 import { ReviewOwnerReplyDisplay } from '../display/ReviewOwnerReplyDisplay';
@@ -38,7 +39,7 @@ export const ProfileReviewCard: React.FC<ProfileReviewCardProps> = ({
         source={review.source}
       />
 
-      {review.body.trim() ? (
+      {hasVisibleReviewBody(review.body) ? (
         <div className="mt-3 sm:mt-4">
           <ReviewExpandableText
             text={review.body}

@@ -15,9 +15,12 @@ export const FramedCtaButton: React.FC<FramedCtaButtonProps> = ({
   className = '',
   showArrow = false,
 }) => {
+  const isExternal = href.startsWith('http://') || href.startsWith('https://');
+
   return (
     <Link
       href={href}
+      {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
       className={`group relative inline-flex min-h-[52px] w-full items-center justify-center gap-2.5 bg-white/[0.04] px-8 py-3 text-base font-black uppercase tracking-[0.12em] text-gray-100 shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_16px_40px_rgba(0,0,0,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/[0.07] hover:text-white hover:shadow-[0_0_36px_rgba(255,255,255,0.1),0_20px_48px_rgba(0,0,0,0.32)] focus:outline-none focus:ring-2 focus:ring-white/35 focus:ring-offset-2 focus:ring-offset-[#0f0f0f] active:translate-y-0 active:scale-[0.99] sm:w-auto sm:min-w-[14rem] ${className}`}
     >
       <span className="pointer-events-none absolute inset-0 border border-white/30 transition-colors duration-300 group-hover:border-white/50" />

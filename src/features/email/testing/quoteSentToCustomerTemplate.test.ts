@@ -49,6 +49,40 @@ describe('buildQuoteSentToCustomerHtml', () => {
   it('includes the review link href', () => {
     const html = buildQuoteSentToCustomerHtml(basePayload());
     expect(html).toContain('https://example.com/q/test-token');
+    expect(html).toContain('width="100%"');
+    expect(html).toContain('display:block;padding:14px 24px');
+  });
+
+  it('shows tax above the total when the quote includes tax', () => {
+    const html = buildQuoteSentToCustomerHtml({
+      ...basePayload(),
+      priceCents: 85_00,
+      salesTax: { label: 'Tax (2.25%)', taxCents: 191 },
+    });
+
+    expect(html).toContain('Tax (2.25%)');
+    expect(html).toContain('$1.91');
+    expect(html).toContain('$86.91');
+  });
+
+  it('omits cards for details that were not provided', () => {
+    const html = buildQuoteSentToCustomerHtml({
+      ...basePayload(),
+      serviceName: '   ',
+      vehicleLine: '   ',
+      note: '   ',
+      customerRequestMessage: '   ',
+      salesTax: null,
+      addonDetails: [{ name: '  ', priceCents: 20_00 }],
+      payment: null,
+      expiresAt: null,
+    });
+
+    expect(html).not.toMatch(/>\s*Vehicle\s*</);
+    expect(html).not.toMatch(/>\s*Notes\s*</);
+    expect(html).not.toMatch(/>\s*Payment\s*</);
+    expect(html).not.toContain('Tax (');
+    expect(html).not.toMatch(/>\s*Service\s*</);
   });
 
   it('shows customer-choose copy when schedule is omitted', () => {
@@ -58,5 +92,27 @@ describe('buildQuoteSentToCustomerHtml', () => {
       scheduledStartTime: null,
     });
     expect(html).toContain('You&#039;ll choose when you accept');
+  });
+
+  it('keeps payment in its own section', () => {
+    const html = buildQuoteSentToCustomerHtml({
+      ...basePayload(),
+      priceCents: 85_00,
+      salesTax: { label: 'Tax (2.25%)', taxCents: 191 },
+      payment: { collection: 'customer_choice', depositCents: 10_00 },
+    });
+
+    const serviceAt = html.search(/>\s*Service\s*</);
+    const whenAt = html.search(/>\s*When\s*</);
+    const totalAt = html.search(/>\s*Total\s*</);
+    const paymentAt = html.search(/>\s*Payment\s*</);
+    expect(serviceAt).toBeGreaterThan(-1);
+    expect(whenAt).toBeGreaterThan(serviceAt);
+    expect(totalAt).toBeGreaterThan(whenAt);
+    expect(paymentAt).toBeGreaterThan(totalAt);
+    expect(html).toContain('You choose how to pay');
+    expect(html).toContain(
+      'Pay a $10 deposit, pay $86.91 in full, or pay in person.'
+    );
   });
 });

@@ -18,6 +18,7 @@ import {
   type BookingAmountDueResult,
 } from './computeBookingAmountDue';
 import { generateInvoicePublicToken } from './generateInvoicePublicToken';
+import { salesTaxEmailLine } from '@/features/availability/booking/utils/publicBookingSalesTax';
 import { generateInvoiceShortCode } from './generateInvoiceShortCode';
 import type {
   JobCompletedRequestBody,
@@ -342,6 +343,17 @@ export async function persistJobCompletedTransaction(
   ]);
 
   const reviewInvite = await ensureReviewInviteRecordIfEligible(admin, booking);
+  if (!reviewInvite.ok) {
+    console.warn('[job_completed] review invite failed', {
+      bookingId,
+      error: reviewInvite.error,
+    });
+  } else if (reviewInvite.skipped) {
+    console.info('[job_completed] review invite skipped', {
+      bookingId,
+      reason: reviewInvite.reason,
+    });
+  }
   const includeReviewHint =
     reviewInvite.ok &&
     !reviewInvite.skipped &&
@@ -404,7 +416,7 @@ export async function persistJobCompletedTransaction(
     });
     shortCode = inserted.shortCode;
 
-    const transitioned = await markBookingCompleted(sessionClient, bookingId);
+    const transitioned = await markBookingCompleted(admin, bookingId);
     if (!transitioned) {
       const tokenAfterRace = await loadExistingInvoiceToken(admin, bookingId);
       if (tokenAfterRace) {
@@ -496,6 +508,10 @@ export async function persistJobCompletedTransaction(
             discountCents: snapshot.totals.discountCents,
           }
         : null,
+    salesTax: salesTaxEmailLine(
+      snapshot.totals.taxRateBps ?? 0,
+      snapshot.totals.taxCents ?? 0
+    ),
     reviewUrl: snapshot.reviewUrl,
     coveredByMembership: snapshot.coveredByMembership === true,
     jobs: snapshot.jobs?.map(job => ({

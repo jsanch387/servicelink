@@ -3,8 +3,16 @@
 import { Button, GlassCard, Modal } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
+import { QuoteNotesConversation } from '@/features/quotes/shared/components/QuoteNotesConversation';
 import { QuoteServiceSummaryCard } from '@/features/quotes/shared/components/QuoteServiceSummaryCard';
+import { QuoteTaxTotal } from '@/features/quotes/shared/components/QuoteTaxTotal';
 import { resolveCustomerRequestRawText } from '@/features/quotes/shared/resolveCustomerRequestRawText';
+import {
+  extraQuoteAssetHeading,
+  formatQuoteAssetLine,
+  formatQuoteAssetsCardLine,
+  quoteAssetsSectionHeading,
+} from '@/features/quotes/shared/quoteAssets';
 import {
   copyTextToClipboard,
   copyTextToClipboardSync,
@@ -21,14 +29,18 @@ import {
 import { CheckIcon as CheckIconSolid } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
 import { useDashboardQuoteDetail } from '../hooks/useDashboardQuoteDetail';
 import type { DashboardQuote } from '../types';
+import { buildQuoteActivityTimeline } from '../utils/buildQuoteActivityTimeline';
 import {
   getCustomerEmailDisplay,
   getCustomerPhoneLink,
 } from '../utils/customerContactDisplay';
 import { isDashboardQuoteEditableByOwner } from '../utils/isDashboardQuoteEditableByOwner';
 import { parseDeleteQuoteApiResponse } from '../utils/parseDeleteQuoteApiResponse';
+import { quotePublicLinkExpiryCopy } from '../utils/formatQuotePublicLinkExpiry';
+import { formatQuoteRequestWaitingLabel } from '../utils/formatQuoteRequestWaitingLabel';
 import { parsePublicQuoteRequestNote } from '../utils/parsePublicQuoteRequestNote';
 import {
   getPublicQuoteAbsoluteUrl,
@@ -39,12 +51,12 @@ import {
   formatQuoteDetailTime12,
 } from '../utils/quoteDetailFormat';
 import {
-  formatQuoteCurrency,
   getQuoteOutcomeDotClass,
   getQuoteStatusBlurClass,
   getQuoteStatusLabel,
 } from '../utils/quoteStatusUi';
 import { DeleteQuoteModalBody } from './DeleteQuoteModalBody';
+import { QuoteActivityTimeline } from './QuoteActivityTimeline';
 import { QuoteDetailLoadingSkeleton } from './QuoteDetailLoadingSkeleton';
 
 interface QuoteDetailScreenProps {
@@ -57,6 +69,7 @@ export const QuoteDetailScreen: React.FC<QuoteDetailScreenProps> = ({
   const router = useRouter();
   const { quote, loadStatus, loadError, reloadQuote } =
     useDashboardQuoteDetail(quoteId);
+  const canWriteQuotes = useDashboardAccess().can('quotes.write');
   const [copied, setCopied] = useState(false);
   const copyFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
@@ -174,6 +187,9 @@ export const QuoteDetailScreen: React.FC<QuoteDetailScreenProps> = ({
       deleting={deleting}
       deleteError={deleteError}
       onConfirmDelete={() => void handleDelete()}
+      showDeleteButton={canWriteQuotes}
+      showQuoteLinkCard={canWriteQuotes}
+      showWriteActions={canWriteQuotes}
     />
   );
 };
@@ -195,6 +211,7 @@ export interface QuoteDetailContentProps {
   /** When set and the row is editable, used instead of the edit URL (e.g. new quote with prefill for demos). */
   primaryHrefOverride?: string;
   showDeleteButton?: boolean;
+  showWriteActions?: boolean;
   /** Hide until a public link exists; off for mock rows with fake tokens. */
   showQuoteLinkCard?: boolean;
   /** When set, shows a “Service location” card. */
@@ -218,6 +235,7 @@ export function QuoteDetailContent({
   infoBanner,
   primaryHrefOverride,
   showDeleteButton = true,
+  showWriteActions = true,
   showQuoteLinkCard = true,
   serviceLocationLine,
   showActivityCard = true,
@@ -230,7 +248,12 @@ export function QuoteDetailContent({
   const hasCustomerDetails = Boolean(
     customerNameDisplay || emailDisplay || phoneLink
   );
-  const vehicleLine = quote.vehicleLine?.trim() || null;
+  const assetLines = (quote.assets ?? [])
+    .map(asset => formatQuoteAssetLine(asset))
+    .filter((line): line is string => Boolean(line));
+  const vehicleLine = assetLines[0] ?? quote.vehicleLine?.trim() ?? null;
+  const storedExtraCount =
+    formatQuoteAssetsCardLine(quote.assets, quote.vehicleLine)?.extraCount ?? 0;
   const hasPublicLink = Boolean(quote.publicToken.trim());
   const publicPath = getPublicQuotePath(quote.publicToken);
   const canEdit = isDashboardQuoteEditableByOwner(quote.status);
@@ -243,6 +266,18 @@ export function QuoteDetailContent({
 
   const customerRequestRaw = resolveCustomerRequestRawText(quote);
   const parsedCustomerRequest = parsePublicQuoteRequestNote(customerRequestRaw);
+  const extraAssets =
+    (quote.assets ?? []).length > 1
+      ? (quote.assets ?? []).slice(1)
+      : parsedCustomerRequest.secondVehicleLine?.trim()
+        ? [
+            {
+              type: 'vehicle',
+              label: parsedCustomerRequest.secondVehicleLine.trim(),
+              attributes: {},
+            },
+          ]
+        : [];
   const isCustomerRequestSource = quote.source === 'customer_requested';
   const hasScheduledDate = Boolean(quote.scheduledDate?.trim());
   const timingFromRequest = parsedCustomerRequest.preferredTiming?.trim() ?? '';
@@ -255,8 +290,8 @@ export function QuoteDetailContent({
     ? parsedCustomerRequest.detailsOnly.trim()
     : '';
   const ownerNoteTrimmed = quote.note?.trim() ?? '';
-  const showOwnerNotesOnlyBlock =
-    !isCustomerRequestSource && ownerNoteTrimmed.length > 0;
+  const showNotesConversation =
+    customerDetailsTrimmed.length > 0 || ownerNoteTrimmed.length > 0;
 
   return (
     <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
@@ -289,12 +324,14 @@ export function QuoteDetailContent({
               className="border-white/[0.08] bg-white/[0.03]"
             >
               <div className="space-y-4">
-                <QuoteServiceSummaryCard
-                  serviceName={quote.serviceName}
-                  durationMinutes={quote.durationMinutes}
-                  totalCents={quote.totalCents}
-                  addOns={quote.addonDetails}
-                />
+                {!isPendingRequest ? (
+                  <QuoteServiceSummaryCard
+                    serviceName={quote.serviceName}
+                    durationMinutes={quote.durationMinutes}
+                    totalCents={quote.totalCents}
+                    addOns={quote.addonDetails}
+                  />
+                ) : null}
 
                 {hasScheduledDate && !showActivityCard ? (
                   <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
@@ -314,6 +351,21 @@ export function QuoteDetailContent({
                   </div>
                 ) : null}
 
+                {isPendingRequest ? (
+                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
+                    <p className="mb-1 text-xs font-medium text-gray-500">
+                      Waiting
+                    </p>
+                    <p className="text-sm font-medium text-gray-200">
+                      {formatQuoteRequestWaitingLabel(quote.createdAt)}
+                    </p>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      They asked {formatQuoteDetailDateLong(quote.createdAt)}.
+                      Requests stay open until you send a quote.
+                    </p>
+                  </div>
+                ) : null}
+
                 {preferredTimingTrimmed ? (
                   <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
                     <p className="mb-1 text-xs font-medium text-gray-500">
@@ -325,50 +377,35 @@ export function QuoteDetailContent({
                   </div>
                 ) : null}
 
-                {customerDetailsTrimmed ? (
-                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
-                    <p className="mb-1.5 text-xs font-medium text-gray-500">
-                      Customer note
-                    </p>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
-                      {customerDetailsTrimmed}
-                    </p>
-                  </div>
-                ) : null}
-
-                {isCustomerRequestSource && ownerNoteTrimmed ? (
-                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
-                    <p className="mb-1.5 text-xs font-medium text-gray-500">
-                      Your notes
-                    </p>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
-                      {ownerNoteTrimmed}
-                    </p>
-                  </div>
-                ) : null}
-
-                {showOwnerNotesOnlyBlock ? (
-                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
-                    <p className="mb-1.5 text-xs font-medium text-gray-500">
-                      Notes
-                    </p>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
-                      {ownerNoteTrimmed}
-                    </p>
-                  </div>
-                ) : null}
-
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-white/[0.07] bg-white/[0.04] px-4 py-3.5">
-                  <p className="text-sm font-medium text-gray-300">Total</p>
-                  <p className="text-right text-2xl font-bold tabular-nums text-white sm:text-3xl">
-                    {quote.totalCents > 0
-                      ? formatQuoteCurrency(quote.totalCents)
-                      : 'TBD'}
-                  </p>
-                </div>
+                <QuoteTaxTotal
+                  priceCents={quote.totalCents}
+                  taxCents={quote.taxCents ?? 0}
+                  taxRateBps={quote.taxRateBps ?? 0}
+                  emptyLabel="TBD"
+                  prominent
+                />
               </div>
             </GlassCard>
           </section>
+
+          {showNotesConversation ? (
+            <section className="space-y-2">
+              <h2 className="text-sm font-semibold text-gray-200">Notes</h2>
+              <GlassCard
+                blurColor="bg-zinc-600"
+                rounded="rounded-2xl"
+                className="border-white/[0.08] bg-white/[0.03]"
+              >
+                <QuoteNotesConversation
+                  customerNote={customerDetailsTrimmed}
+                  businessNote={ownerNoteTrimmed}
+                  customerLabel={customerNameDisplay || 'Customer'}
+                  businessLabel="You"
+                  viewer="owner"
+                />
+              </GlassCard>
+            </section>
+          ) : null}
 
           {hasCustomerDetails ? (
             <section className="space-y-2">
@@ -423,13 +460,37 @@ export function QuoteDetailContent({
 
           {vehicleLine ? (
             <section className="space-y-2">
-              <h2 className="text-sm font-semibold text-gray-200">Vehicle</h2>
+              <h2 className="text-sm font-semibold text-gray-200">
+                {quoteAssetsSectionHeading(quote.assets)}
+              </h2>
               <GlassCard
                 blurColor="bg-zinc-600"
                 rounded="rounded-2xl"
                 className="border-white/[0.08] bg-white/[0.03]"
               >
-                <p className="text-sm text-gray-300">{vehicleLine}</p>
+                <p className="flex flex-wrap items-baseline gap-x-2 text-sm text-gray-300">
+                  <span>{vehicleLine}</span>
+                  {Math.max(storedExtraCount, extraAssets.length) > 0 ? (
+                    <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs font-medium text-gray-400 ring-1 ring-inset ring-white/10">
+                      +{Math.max(storedExtraCount, extraAssets.length)}
+                    </span>
+                  ) : null}
+                </p>
+                {extraAssets.map((asset, index) => {
+                  const line = formatQuoteAssetLine(asset);
+                  if (!line) return null;
+                  return (
+                    <div
+                      key={`${asset.type}-${line}-${index}`}
+                      className="mt-3 border-t border-white/[0.07] pt-3"
+                    >
+                      <p className="mb-1 text-xs font-medium text-gray-500">
+                        {extraQuoteAssetHeading(asset, index)}
+                      </p>
+                      <p className="text-sm text-gray-300">{line}</p>
+                    </div>
+                  );
+                })}
               </GlassCard>
             </section>
           ) : null}
@@ -464,6 +525,11 @@ export function QuoteDetailContent({
                     ? 'Send this to your customer so they can review the quote and accept or decline.'
                     : 'A shareable link appears here after you send the quote.'}
                 </p>
+                {hasPublicLink && quote.publicLinkExpiresAt ? (
+                  <p className="mt-2 text-sm text-gray-400">
+                    {quotePublicLinkExpiryCopy(quote.publicLinkExpiresAt)}
+                  </p>
+                ) : null}
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <Button
                     type="button"
@@ -514,19 +580,14 @@ export function QuoteDetailContent({
                 rounded="rounded-2xl"
                 className="border-white/[0.08] bg-white/[0.03]"
               >
-                <dl className="space-y-3 text-sm">
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-gray-500">Created</dt>
-                    <dd className="text-right text-gray-300">
-                      {formatQuoteDetailDateLong(quote.createdAt)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-gray-500">Last activity</dt>
-                    <dd className="text-right text-gray-300">
-                      {formatQuoteDetailDateLong(quote.activityAt)}
-                    </dd>
-                  </div>
+                <QuoteActivityTimeline
+                  items={buildQuoteActivityTimeline({
+                    createdAt: quote.createdAt,
+                    viewedAt: quote.viewedAt,
+                    communications: quote.communications,
+                  })}
+                />
+                <dl className="mt-4 space-y-3 border-t border-white/[0.07] pt-4 text-sm">
                   {quote.scheduledDate ? (
                     <div className="flex justify-between gap-4">
                       <dt className="text-gray-500">Scheduled</dt>
@@ -550,41 +611,43 @@ export function QuoteDetailContent({
             </section>
           ) : null}
 
-          <div
-            className={
-              showDeleteButton
-                ? 'grid grid-cols-1 gap-3 sm:grid-cols-2'
-                : 'grid grid-cols-1'
-            }
-          >
-            <Button
-              href={primaryHref}
-              variant="inverse"
-              size="md"
-              fullWidth
-              disabled={!canEdit}
-              title={
-                canEdit
-                  ? undefined
-                  : 'Editing is only available before the customer accepts or declines.'
+          {showWriteActions ? (
+            <div
+              className={
+                showDeleteButton
+                  ? 'grid grid-cols-1 gap-3 sm:grid-cols-2'
+                  : 'grid grid-cols-1'
               }
-              icon={<PencilSquareIcon className="h-4 w-4" aria-hidden />}
             >
-              {isPendingRequest ? 'Create quote' : 'Edit quote'}
-            </Button>
-            {showDeleteButton ? (
               <Button
-                type="button"
-                variant="danger"
+                href={primaryHref}
+                variant="inverse"
                 size="md"
                 fullWidth
-                onClick={onOpenDelete}
-                icon={<TrashIcon className="h-4 w-4" aria-hidden />}
+                disabled={!canEdit}
+                title={
+                  canEdit
+                    ? undefined
+                    : 'Editing is only available before the customer accepts or declines.'
+                }
+                icon={<PencilSquareIcon className="h-4 w-4" aria-hidden />}
               >
-                Delete quote
+                {isPendingRequest ? 'Create quote' : 'Edit quote'}
               </Button>
-            ) : null}
-          </div>
+              {showDeleteButton ? (
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="md"
+                  fullWidth
+                  onClick={onOpenDelete}
+                  icon={<TrashIcon className="h-4 w-4" aria-hidden />}
+                >
+                  Delete quote
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         {showDeleteButton ? (

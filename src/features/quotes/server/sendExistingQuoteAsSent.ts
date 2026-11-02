@@ -2,7 +2,16 @@ import {
   sendQuoteSentToCustomerEmail,
   type QuoteSentToCustomerPayload,
 } from '@/features/email';
+import { quoteSentEmailPayment } from '@/features/email/quote-sent-to-customer/quoteSentToCustomerTemplate';
+import { quotePublicLinkExpiresAt } from '@/features/quotes/shared/quotePublicLinkTtl';
 import type { ValidatedSendQuoteBody } from '@/features/quotes/send/validateSendQuoteBody';
+import type { QuotePaymentSnapshot } from '@/features/quotes/server/quotePaymentSnapshot';
+import { quoteSalesTaxLabel } from '@/features/quotes/shared/quoteSalesTax';
+import type { PublicBookingSalesTaxQuote } from '@/features/availability/booking/utils/publicBookingSalesTax';
+import {
+  mergeQuoteAssetsPreservingExtra,
+  normalizeQuoteAssets,
+} from '@/features/quotes/shared/quoteAssets';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
@@ -24,6 +33,8 @@ export async function sendExistingQuoteAsSent(params: {
   ownerUserId: string;
   businessDisplayName: string;
   payload: ValidatedSendQuoteBody;
+  payment: QuotePaymentSnapshot;
+  salesTax: PublicBookingSalesTaxQuote;
   /** e.g. `request.nextUrl.origin` or `NEXT_PUBLIC_SITE_URL` */
   siteOrigin: string;
 }): Promise<SendExistingQuoteAsSentResult> {
@@ -34,6 +45,8 @@ export async function sendExistingQuoteAsSent(params: {
     ownerUserId,
     businessDisplayName,
     payload: p,
+    payment,
+    salesTax,
     siteOrigin,
   } = params;
 
@@ -42,7 +55,7 @@ export async function sendExistingQuoteAsSent(params: {
 
   const { data: row, error: loadErr } = await db
     .from('quotes')
-    .select('id, status, business_id, request_message')
+    .select('id, status, business_id, request_message, assets')
     .eq('id', quoteId)
     .eq('business_id', businessId)
     .maybeSingle();
@@ -54,6 +67,7 @@ export async function sendExistingQuoteAsSent(params: {
   const rowTyped = row as {
     status: string;
     request_message: string | null;
+    assets?: unknown;
   };
   const status = rowTyped.status;
   const customerRequestForEmail = rowTyped.request_message?.trim() || null;
@@ -79,8 +93,18 @@ export async function sendExistingQuoteAsSent(params: {
       vehicle_year: p.vehicleYear,
       vehicle_make: p.vehicleMake,
       vehicle_model: p.vehicleModel,
+      assets: mergeQuoteAssetsPreservingExtra(
+        normalizeQuoteAssets(rowTyped.assets),
+        {
+          year: p.vehicleYear,
+          make: p.vehicleMake,
+          model: p.vehicleModel,
+        }
+      ),
       service_name: p.serviceName,
       price_cents: p.priceCents,
+      tax_rate_bps: salesTax.rateBps,
+      tax_cents: salesTax.taxCents,
       duration_minutes: p.durationMinutes,
       note: p.note,
       scheduled_date: p.scheduledDate,
@@ -89,6 +113,9 @@ export async function sendExistingQuoteAsSent(params: {
       service_price_option_id: p.servicePriceOptionId,
       service_price_cents: p.servicePriceCents,
       addon_details: p.addonDetails,
+      payment_collection: payment.payment_collection,
+      deposit_type: payment.deposit_type,
+      deposit_value: payment.deposit_value,
       status: 'sent',
       sent_at: now,
       created_by_user_id: ownerUserId,
@@ -129,9 +156,7 @@ export async function sendExistingQuoteAsSent(params: {
 
   const rawToken = crypto.randomBytes(32).toString('base64url');
   const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-  const expiresAt = new Date(
-    Date.now() + 1000 * 60 * 60 * 24 * 14
-  ).toISOString();
+  const expiresAt = quotePublicLinkExpiresAt();
 
   const { error: linkError } = await db.from('quote_public_links').insert({
     quote_id: quoteId,
@@ -164,6 +189,14 @@ export async function sendExistingQuoteAsSent(params: {
       serviceName: p.serviceName,
       businessName: businessDisplayName,
       priceCents: p.priceCents,
+      ...(salesTax.taxCents > 0
+        ? {
+            salesTax: {
+              label: quoteSalesTaxLabel(salesTax.rateBps),
+              taxCents: salesTax.taxCents,
+            },
+          }
+        : {}),
       scheduledDate: p.scheduledDate,
       scheduledStartTime: p.scheduledStartTimeForDb,
       durationMinutes: p.durationMinutes,
@@ -171,7 +204,14 @@ export async function sendExistingQuoteAsSent(params: {
       customerRequestMessage: customerRequestForEmail,
       vehicleLine,
       publicQuoteUrl: publicUrl,
+      expiresAt,
       addonDetails: p.addonDetails,
+      payment: quoteSentEmailPayment({
+        collection: payment.payment_collection,
+        depositType: payment.deposit_type,
+        depositValue: payment.deposit_value,
+        totalCents: salesTax.totalCents,
+      }),
     };
     const emailResult = await sendQuoteSentToCustomerEmail(
       p.customerEmail,

@@ -38,6 +38,7 @@ export function receiptRowsHtml(args: {
   periodLabel: string;
   eventDateLabel: string;
   eventDateLabelKey: string;
+  salesTax?: { label: string; taxCents: number };
 }): string {
   const plan = escapeHtml(args.planName.trim() || 'Your plan');
   const cadence = escapeHtml(args.cadenceLabel.trim() || 'Recurring');
@@ -56,6 +57,14 @@ export function receiptRowsHtml(args: {
       ${row('Plan', plan)}
       ${row('Schedule', cadence)}
       ${row('Period', period)}
+      ${
+        args.salesTax && args.salesTax.taxCents > 0
+          ? row(
+              escapeHtml(args.salesTax.label),
+              formatInvoiceMoney(args.salesTax.taxCents)
+            )
+          : ''
+      }
       ${row(eventKey, eventDate, true)}
     </table>`;
 }

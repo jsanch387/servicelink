@@ -1,9 +1,12 @@
 import { loadDashboardQuoteById } from '@/features/quotes/dashboard/server/loadDashboardQuoteById';
 import { isDashboardQuoteEditableByOwner } from '@/features/quotes/dashboard/utils/isDashboardQuoteEditableByOwner';
+import { mergeQuoteAssetsPreservingExtra } from '@/features/quotes/shared/quoteAssets';
 import { validateUpdateQuoteBody } from '@/features/quotes/edit/validateUpdateQuoteBody';
+import { loadQuoteSalesTax } from '@/features/quotes/server/loadQuoteSalesTax';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -30,7 +33,7 @@ export async function GET(request: Request, { params }: RouteContext) {
     }
 
     const { supabase } = auth;
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(supabase, 'quotes.read');
 
     if (!resolved.ok) {
       return NextResponse.json(
@@ -73,7 +76,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     }
 
     const supabase = await createSupabaseServerClient();
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(supabase, 'quotes.write');
 
     if (!resolved.ok) {
       return NextResponse.json(
@@ -114,6 +117,11 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     }
 
     const p = parsed.data;
+    const salesTax = await loadQuoteSalesTax(
+      createSupabaseAdminClient(),
+      resolved.businessId,
+      p.priceCents
+    );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase as any)
       .from('quotes')
@@ -124,8 +132,15 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         vehicle_year: p.vehicleYear,
         vehicle_make: p.vehicleMake,
         vehicle_model: p.vehicleModel,
+        assets: mergeQuoteAssetsPreservingExtra(existing.quote.assets, {
+          year: p.vehicleYear,
+          make: p.vehicleMake,
+          model: p.vehicleModel,
+        }),
         service_name: p.serviceName,
         price_cents: p.priceCents,
+        tax_rate_bps: salesTax.rateBps,
+        tax_cents: salesTax.taxCents,
         duration_minutes: p.durationMinutes,
         note: p.note,
         scheduled_date: p.scheduledDate,
@@ -181,7 +196,7 @@ export async function DELETE(_req: Request, { params }: RouteContext) {
     }
 
     const supabase = await createSupabaseServerClient();
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(supabase, 'quotes.write');
 
     if (!resolved.ok) {
       return NextResponse.json(

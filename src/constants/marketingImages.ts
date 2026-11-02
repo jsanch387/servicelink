@@ -20,6 +20,13 @@ export const MARKETING_IMAGES = {
     heroMock: '/marketing/landing/landing-page-mock.png',
     display: '/marketing/landing/landing-page-display.png',
   },
+  shops: {
+    blacklabel: '/marketing/shops/blacklabel.png',
+    nanoblue: '/marketing/shops/nanoblue.png',
+    ridefresh: '/marketing/shops/ridefresh.png',
+    apexmobile: '/marketing/shops/apexmobile.png',
+    elev8te: '/marketing/shops/elev8te.png',
+  },
   marketplace: {
     boat: '/marketplace/boat.png',
     ceramic: '/marketplace/ceramic.png',
@@ -35,8 +42,13 @@ export const MARKETING_IMAGES = {
     instagram: '/marketing/resources/guide-instagram-cover.webp',
     comparison2026:
       '/marketing/resources/guide-servicelink-vs-detailermade-cover.webp',
+    comparisonUrable:
+      '/marketing/resources/guide-servicelink-vs-urable-cover.webp',
+    comparisonDetailDeck:
+      '/marketing/resources/guide-servicelink-vs-detaildeck-cover.webp',
     startBusiness:
       '/marketing/resources/guide-start-mobile-detailing-cover.webp',
+    pricing: '/marketing/resources/guide-mobile-detailing-pricing-cover.webp',
   },
   store: {
     googlePlay: '/store/google-play.png',

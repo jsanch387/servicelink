@@ -1,26 +1,19 @@
 import type { DashboardQuoteStatus, QuotesDashboardFilterId } from '../types';
 
-const OPEN_STATUSES: DashboardQuoteStatus[] = [
-  'draft',
-  'requested',
-  'sent',
-  'viewed',
-];
-
-const CLOSED_STATUSES: DashboardQuoteStatus[] = [
-  'approved',
-  'declined',
-  'expired',
-  'cancelled',
-];
+const REQUESTED_STATUSES: DashboardQuoteStatus[] = ['draft', 'requested'];
+const AWAITING_REPLY_STATUSES: DashboardQuoteStatus[] = ['sent', 'viewed'];
+const APPROVED_STATUSES: DashboardQuoteStatus[] = ['approved'];
 
 export function quoteMatchesFilter(
   status: DashboardQuoteStatus,
   filter: QuotesDashboardFilterId
 ): boolean {
   if (filter === 'all') return true;
-  if (filter === 'open') return OPEN_STATUSES.includes(status);
-  return CLOSED_STATUSES.includes(status);
+  if (filter === 'requested') return REQUESTED_STATUSES.includes(status);
+  if (filter === 'awaiting_reply') {
+    return AWAITING_REPLY_STATUSES.includes(status);
+  }
+  return APPROVED_STATUSES.includes(status);
 }
 
 export function getQuoteStatusLabel(status: DashboardQuoteStatus): string {
@@ -89,9 +82,11 @@ export function formatQuoteListCreatedAt(iso: string): string {
 }
 
 export function formatQuoteCurrency(cents: number): string {
+  const whole = Math.round(cents) % 100 === 0;
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: whole ? 0 : 2,
   }).format(cents / 100);
 }

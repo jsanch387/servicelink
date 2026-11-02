@@ -3,7 +3,6 @@
 import { Button } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import {
-  blockCoversDate,
   toTimeOffIntervalFields,
   type BlockTimeEntry,
 } from '@/features/availability/types/blockTime';
@@ -12,108 +11,29 @@ import type {
   ExistingBooking,
   TimeOffInterval,
 } from '@/features/availability/booking/types';
-import {
-  SyncBookingsConfirmModal,
-  SyncBookingsCtaCard,
-} from '@/features/calendar-sync';
+// Hidden on web for now — calendar lives in the mobile app.
+// import {
+//   SyncBookingsConfirmModal,
+//   SyncBookingsCtaCard,
+// } from '@/features/calendar-sync';
+import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
+import { shopHasBookingAssignees } from '@/features/team/utils/shopHasBookingAssignees';
 import { FreeBookingsTracker, FREE_BOOKINGS_LIMIT } from '@/features/pricing';
-import { CalendarIcon, PlusIcon } from '@heroicons/react/24/outline';
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useState,
-} from 'react';
-import { AvailabilityBookingCard } from './AvailabilityBookingCard';
-import { AvailabilityBookingsViewSkeleton } from './AvailabilityBookingCardSkeleton';
+import { PlusIcon } from '@heroicons/react/24/outline';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { AvailabilityBookingDetailPanel } from './AvailabilityBookingDetailPanel';
-import { BookingsStatusFilter } from './BookingsStatusFilter';
-import { BookingsViewModeToggle } from './BookingsViewModeToggle';
-import { DayPlannerView } from './DayPlannerView';
-import { localDateKey } from './dayPlannerUtils';
+import { BookingsCalendar } from './calendar/BookingsCalendar';
+import { CalendarModeToggle } from './calendar/CalendarModeToggle';
+import type { CalendarMode } from './calendar/types';
+import {
+  BookingsAssignedToMeFilter,
+  BookingsStatusFilter,
+  type BookingsStatusFilterValue,
+} from './BookingsStatusFilter';
 import { useAvailabilityBookings } from './hooks/useAvailabilityBookings';
+import { useBookingAssignees } from './hooks/useBookingAssignees';
+import { useNewAppointmentAction } from './hooks/useNewAppointmentAction';
 import type { AvailabilityBookingDisplay } from './types';
-
-type TabId = 'upcoming' | 'past' | 'cancelled';
-type LayoutMode = 'list' | 'planner';
-
-function sortByDateThenTime(
-  a: AvailabilityBookingDisplay,
-  b: AvailabilityBookingDisplay
-): number {
-  const dateCompare = a.date.localeCompare(b.date);
-  if (dateCompare !== 0) return dateCompare;
-  return a.time.localeCompare(b.time);
-}
-
-/** YYYY-MM-DD → "Mar 25" */
-function formatDayGroupLabel(dateStr: string): string {
-  const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function maxCreatedAtMs(bookings: AvailabilityBookingDisplay[]): number {
-  return Math.max(
-    ...bookings.map(b => new Date(b.createdAt).getTime()),
-    Number.NEGATIVE_INFINITY
-  );
-}
-
-/**
- * One heading per calendar day; order matches each tab (upcoming asc, past desc,
- * cancelled by most recent cancellation in that day).
- */
-function groupBookingsByDayForTab(
-  list: AvailabilityBookingDisplay[],
-  tab: TabId
-): {
-  dateKey: string;
-  label: string;
-  bookings: AvailabilityBookingDisplay[];
-}[] {
-  if (list.length === 0) return [];
-
-  const map = new Map<string, AvailabilityBookingDisplay[]>();
-  for (const b of list) {
-    const arr = map.get(b.date) ?? [];
-    arr.push(b);
-    map.set(b.date, arr);
-  }
-
-  for (const arr of map.values()) {
-    if (tab === 'cancelled') {
-      arr.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-    } else if (tab === 'past') {
-      arr.sort((a, b) => -sortByDateThenTime(a, b));
-    } else {
-      arr.sort(sortByDateThenTime);
-    }
-  }
-
-  const dayKeys = [...map.keys()];
-  if (tab === 'upcoming') {
-    dayKeys.sort((a, b) => a.localeCompare(b));
-  } else if (tab === 'past') {
-    dayKeys.sort((a, b) => b.localeCompare(a));
-  } else {
-    dayKeys.sort(
-      (a, b) => maxCreatedAtMs(map.get(b)!) - maxCreatedAtMs(map.get(a)!)
-    );
-  }
-
-  return dayKeys.map(dateKey => ({
-    dateKey,
-    label: formatDayGroupLabel(dateKey),
-    bookings: map.get(dateKey)!,
-  }));
-}
 
 export interface AvailabilityBookingsViewProps {
   /** Public page slug for customer booking URL; when missing, New appointment is disabled. */
@@ -122,10 +42,13 @@ export interface AvailabilityBookingsViewProps {
   freeBookingsUsed?: number;
   /** When false (Pro), hide the free bookings tracker. */
   showFreeBookingsTracker?: boolean;
-  /** Owner time-off blocks for planner overlay (from availability). */
+  /** Owner time-off blocks for the calendar overlay. */
   timeOffBlocks?: BlockTimeEntry[];
-  /** Weekly hours for reschedule slot picker (same rules as public booking). */
+  /** Weekly hours for reschedule slot picker (hours + time off still apply). */
   weeklySchedule: WeeklySchedule;
+  bufferTime?: string;
+  /** Invoices are Pro-only. */
+  canCreateInvoice?: boolean;
 }
 
 export function AvailabilityBookingsView({
@@ -134,130 +57,61 @@ export function AvailabilityBookingsView({
   showFreeBookingsTracker = true,
   timeOffBlocks = [],
   weeklySchedule,
+  bufferTime = 'none',
+  canCreateInvoice = true,
 }: AvailabilityBookingsViewProps) {
+  const access = useDashboardAccess();
+  const canWriteBookings = access.can('bookings.write');
+  const canDeleteBookings = access.can('bookings.delete');
+  const canRunBookings = access.can('bookings.run');
   const {
     bookings,
     isLoading,
+    isLoadingMore,
+    listPageIndex,
+    hasNextListPage,
+    setListPage,
     error,
+    loadListPage,
+    loadRange,
     updateBookingStatus,
     completeBookingJob,
     rescheduleBooking,
+    updateBookingAssignee,
     deleteBooking,
   } = useAvailabilityBookings();
-  const [activeTab, setActiveTab] = useState<TabId>('upcoming');
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('list');
-  const [plannerDateKey, setPlannerDateKey] = useState(() =>
-    localDateKey(new Date())
-  );
+  const { assignees } = useBookingAssignees();
+  const canAssignBookings = shopHasBookingAssignees(assignees);
+  const [activeTab, setActiveTab] =
+    useState<BookingsStatusFilterValue>('upcoming');
+  const [assignedToMe, setAssignedToMe] = useState(false);
+  const [calendarMode, setCalendarMode] = useState<CalendarMode>('list');
   const [selectedBooking, setSelectedBooking] =
     useState<AvailabilityBookingDisplay | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
-  const [syncCalendarModalOpen, setSyncCalendarModalOpen] = useState(false);
-  const [newAppointmentNotice, setNewAppointmentNotice] = useState<
-    string | null
-  >(null);
+  // const [syncCalendarModalOpen, setSyncCalendarModalOpen] = useState(false);
 
   const trimmedSlug = businessSlug?.trim() ?? '';
-  const newAppointmentHref = trimmedSlug
-    ? ROUTES.DASHBOARD.BOOKINGS_NEW
-    : undefined;
-
   const manualBookingBlockedByCap = useMemo(() => {
     if (!showFreeBookingsTracker) return false;
     return freeBookingsUsed >= FREE_BOOKINGS_LIMIT;
   }, [showFreeBookingsTracker, freeBookingsUsed]);
 
-  const newAppointmentEnabled =
-    Boolean(newAppointmentHref) && !manualBookingBlockedByCap;
-
-  const freeCapNotice = `You've reached your free plan limit (${FREE_BOOKINGS_LIMIT} appointments). Upgrade to Pro for unlimited bookings.`;
-  const missingSlugNotice =
-    'Set your public page URL under Business profile to create bookings from here.';
-
-  const newAppointmentTitle = manualBookingBlockedByCap
-    ? freeCapNotice
-    : !newAppointmentHref
-      ? missingSlugNotice
-      : undefined;
-
-  const newAppointmentAriaLabel = manualBookingBlockedByCap
-    ? 'New appointment unavailable. Free plan booking limit reached.'
-    : newAppointmentHref
-      ? 'New appointment for a customer'
-      : 'New appointment unavailable. Set your public page URL under Business profile first.';
-
-  useEffect(() => {
-    if (!newAppointmentNotice) return;
-    const timer = setTimeout(() => setNewAppointmentNotice(null), 4500);
-    return () => clearTimeout(timer);
-  }, [newAppointmentNotice]);
-
-  const handleNewAppointmentClick = () => {
-    if (manualBookingBlockedByCap) {
-      setNewAppointmentNotice(freeCapNotice);
-      return;
-    }
-    if (!newAppointmentHref) {
-      setNewAppointmentNotice(missingSlugNotice);
-    }
-  };
-
-  const { upcoming, past, cancelled } = useMemo(() => {
-    const now = new Date();
-    const today = now.toISOString().slice(0, 10);
-    const upcoming: AvailabilityBookingDisplay[] = [];
-    const past: AvailabilityBookingDisplay[] = [];
-    const cancelled: AvailabilityBookingDisplay[] = [];
-
-    for (const b of bookings) {
-      if (b.status === 'cancelled') {
-        cancelled.push(b);
-        continue;
-      }
-      if (b.status === 'completed') {
-        past.push(b);
-        continue;
-      }
-      if (b.date > today || (b.date === today && b.status === 'confirmed')) {
-        upcoming.push(b);
-      } else {
-        past.push(b);
-      }
-    }
-
-    upcoming.sort(sortByDateThenTime);
-    past.sort((a, b) => -sortByDateThenTime(a, b));
-    cancelled.sort(
-      (a, b) =>
-        -new Date(a.createdAt).getTime() + new Date(b.createdAt).getTime()
-    );
-    return { upcoming, past, cancelled };
-  }, [bookings]);
-
-  const filteredList =
-    activeTab === 'upcoming'
-      ? upcoming
-      : activeTab === 'past'
-        ? past
-        : cancelled;
-
-  const groupedByDay = useMemo(
-    () => groupBookingsByDayForTab(filteredList, activeTab),
-    [filteredList, activeTab]
-  );
-
-  /** Day planner shows every booking that day (incl. cancelled), not list-tab filter. */
-  const plannerDayBookings = useMemo(
-    () =>
-      bookings.filter(b => b.date === plannerDateKey).sort(sortByDateThenTime),
-    [bookings, plannerDateKey]
-  );
-
-  const plannerDayTimeOff = useMemo(
-    () => timeOffBlocks.filter(b => blockCoversDate(b, plannerDateKey)),
-    [timeOffBlocks, plannerDateKey]
+  const newAppointment = useNewAppointmentAction({
+    hasPublicPageSlug: Boolean(trimmedSlug),
+    atFreeBookingCap: manualBookingBlockedByCap,
+  });
+  const loadCurrentList = useCallback(() => {
+    void loadListPage(activeTab, { assignedToMe });
+  }, [activeTab, assignedToMe, loadListPage]);
+  const loadVisibleRange = useCallback(
+    (from: string, to: string) => {
+      void loadRange(from, to, { assignedToMe });
+    },
+    [assignedToMe, loadRange]
   );
 
   const timeOffIntervalsForSlots = useMemo<TimeOffInterval[]>(
@@ -327,6 +181,28 @@ export function AvailabilityBookingsView({
     setSelectedBooking(null);
   };
 
+  const handleAssign = useCallback(
+    async (userId: string | null) => {
+      if (!selectedBooking) {
+        return { success: false as const, error: 'No appointment selected.' };
+      }
+      setAssigningId(selectedBooking.id);
+      const result = await updateBookingAssignee(selectedBooking.id, userId);
+      setAssigningId(null);
+      if (!result.success) {
+        return {
+          success: false as const,
+          error: result.error ?? 'Could not update assignee',
+        };
+      }
+      setSelectedBooking(prev =>
+        prev ? { ...prev, assignedUserId: userId } : prev
+      );
+      return { success: true as const };
+    },
+    [selectedBooking, updateBookingAssignee]
+  );
+
   const handleReschedule = useCallback(
     async (id: string, scheduledDate: string, startTime: string) => {
       setUpdateError(null);
@@ -377,126 +253,48 @@ export function AvailabilityBookingsView({
   }, [selectedBooking]);
 
   return (
-    <main className="relative flex min-h-0 flex-1 flex-col overflow-x-hidden bg-[#0f0f0f] text-white">
+    <main className="relative flex h-full min-h-0 flex-1 flex-col overflow-x-hidden text-white">
       <div
-        className={`min-h-0 flex-1 pb-36 ${selectedBooking ? 'overflow-hidden' : 'overflow-y-auto'}`}
+        className={`min-h-0 flex-1 ${
+          selectedBooking ? 'overflow-hidden' : 'overflow-y-auto'
+        }`}
       >
-        <header className="sticky top-0 z-10 w-full border-b border-white/[0.05] bg-[#0f0f0f]/80 px-3 pt-4 pb-3 backdrop-blur-xl sm:px-4 sm:pt-6 sm:pb-4 md:px-6 md:pt-8 lg:px-8">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1 text-left">
-              <h1 className="text-xl font-black tracking-tight sm:text-2xl">
+        <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-3xl font-bold leading-none text-white">
                 Bookings
               </h1>
-              <p className="mt-0.5 text-sm text-gray-500">
-                Manage your appointments
+              <p className="mt-1 text-gray-400">
+                Appointments on the list or the calendar.
               </p>
             </div>
-            <SyncBookingsCtaCard
-              variant="header"
-              onSyncClick={() => setSyncCalendarModalOpen(true)}
-            />
-          </div>
-        </header>
-
-        <div className="mx-auto w-full max-w-xl px-3 py-4 sm:px-4 sm:py-5 md:px-6 lg:max-w-3xl lg:px-8 lg:py-6">
-          {(error || updateError) && (
-            <div className="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-400">
-              {error ?? updateError}
-            </div>
-          )}
-          {showFreeBookingsTracker && (
-            <FreeBookingsTracker
-              bookingsUsed={freeBookingsUsed}
-              className="mb-4"
-            />
-          )}
-          <div className="mb-4 flex w-full flex-row items-center justify-between gap-2">
-            <BookingsViewModeToggle
-              value={layoutMode}
-              onChange={setLayoutMode}
-              className="flex min-w-0 shrink justify-start"
-            />
-            {layoutMode === 'list' ? (
-              <BookingsStatusFilter
-                value={activeTab}
-                onChange={setActiveTab}
-                className="shrink-0"
-              />
+            {canWriteBookings ? (
+              <Button
+                href={newAppointment.enabled ? newAppointment.href : undefined}
+                onClick={
+                  newAppointment.enabled
+                    ? undefined
+                    : newAppointment.onBlockedClick
+                }
+                variant="inverse"
+                size="sm"
+                icon={<PlusIcon className="h-4 w-4" aria-hidden />}
+                className="w-full shrink-0 sm:w-auto"
+                title={newAppointment.title}
+                aria-label={newAppointment.ariaLabel}
+              >
+                New appointment
+              </Button>
             ) : null}
-          </div>
-          {isLoading ? (
-            <AvailabilityBookingsViewSkeleton />
-          ) : layoutMode === 'planner' ? (
-            <DayPlannerView
-              dateKey={plannerDateKey}
-              onDateKeyChange={setPlannerDateKey}
-              dayBookings={plannerDayBookings}
-              dayTimeOffBlocks={plannerDayTimeOff}
-              onSelectBooking={booking => {
-                setUpdateError(null);
-                setSelectedBooking(booking);
-              }}
-            />
-          ) : filteredList.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/[0.05]">
-                <CalendarIcon className="h-8 w-8 text-gray-600" />
-              </div>
-              <h3 className="font-bold text-gray-400">No bookings</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {activeTab === 'upcoming'
-                  ? 'No upcoming appointments.'
-                  : activeTab === 'past'
-                    ? 'No past appointments.'
-                    : 'No cancelled bookings.'}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-6 sm:space-y-7">
-              {groupedByDay.map(group => (
-                <section
-                  key={group.dateKey}
-                  aria-labelledby={`bookings-day-${group.dateKey}`}
-                >
-                  <h2
-                    id={`bookings-day-${group.dateKey}`}
-                    className="mb-3 text-sm font-bold tracking-tight text-gray-400 sm:text-base"
-                  >
-                    {group.label}
-                  </h2>
-                  <div className="space-y-3">
-                    {group.bookings.map(booking => (
-                      <AvailabilityBookingCard
-                        key={booking.id}
-                        booking={booking}
-                        onClick={() => {
-                          setUpdateError(null);
-                          setSelectedBooking(booking);
-                        }}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div
-        className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[#0f0f0f]/95 px-3 pt-3 backdrop-blur-md sm:px-4 md:px-6 lg:left-64 lg:px-8 safe-area-pb"
-        style={{
-          paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
-        }}
-      >
-        <div className="mx-auto w-full max-w-lg space-y-3 lg:max-w-2xl">
-          {newAppointmentNotice ? (
+          </header>
+          {newAppointment.notice ? (
             <div
               role="status"
               aria-live="polite"
-              className="rounded-xl border border-white/10 bg-white/[0.06] px-3.5 py-3 text-sm leading-relaxed text-zinc-300"
+              className="mb-6 rounded-xl border border-white/10 bg-white/[0.06] px-3.5 py-3 text-sm leading-relaxed text-zinc-300"
             >
-              <p>{newAppointmentNotice}</p>
+              <p>{newAppointment.notice}</p>
               {manualBookingBlockedByCap ? (
                 <a
                   href={ROUTES.DASHBOARD.UPGRADE}
@@ -507,20 +305,61 @@ export function AvailabilityBookingsView({
               ) : null}
             </div>
           ) : null}
-          <Button
-            href={newAppointmentEnabled ? newAppointmentHref : undefined}
-            onClick={
-              newAppointmentEnabled ? undefined : handleNewAppointmentClick
+          {(error || updateError) && (
+            <div className="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-400">
+              {error ?? updateError}
+            </div>
+          )}
+          {showFreeBookingsTracker && (
+            <FreeBookingsTracker
+              bookingsUsed={freeBookingsUsed}
+              className="mb-6"
+            />
+          )}
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CalendarModeToggle
+              value={calendarMode}
+              onChange={setCalendarMode}
+            />
+            <div className="flex items-center justify-end gap-2">
+              {canAssignBookings ? (
+                <BookingsAssignedToMeFilter
+                  pressed={assignedToMe}
+                  onPressedChange={setAssignedToMe}
+                />
+              ) : null}
+              {calendarMode === 'list' ? (
+                <BookingsStatusFilter
+                  value={activeTab}
+                  onChange={setActiveTab}
+                />
+              ) : null}
+            </div>
+          </div>
+          <BookingsCalendar
+            bookings={bookings}
+            isLoading={isLoading}
+            isLoadingMore={isLoadingMore}
+            listPage={calendarMode === 'list' ? listPageIndex : 0}
+            hasNextListPage={calendarMode === 'list' && hasNextListPage}
+            onListPageChange={
+              calendarMode === 'list'
+                ? page => void setListPage(page)
+                : undefined
             }
-            variant="inverse"
-            fullWidth
-            className="font-semibold"
-            icon={<PlusIcon className="h-4 w-4" aria-hidden />}
-            title={newAppointmentTitle}
-            aria-label={newAppointmentAriaLabel}
-          >
-            New appointment
-          </Button>
+            mode={calendarMode}
+            onModeChange={setCalendarMode}
+            listFilter={activeTab}
+            assignedToMe={assignedToMe}
+            assigneeOptions={assignees}
+            timeOffBlocks={timeOffBlocks}
+            onListActive={loadCurrentList}
+            onVisibleRangeChange={loadVisibleRange}
+            onSelectBooking={booking => {
+              setUpdateError(null);
+              setSelectedBooking(booking);
+            }}
+          />
         </div>
       </div>
 
@@ -528,24 +367,34 @@ export function AvailabilityBookingsView({
         <AvailabilityBookingDetailPanel
           booking={selectedBooking}
           onClose={() => setSelectedBooking(null)}
+          readOnly={!canWriteBookings}
+          canRunActions={canRunBookings}
+          canDelete={canDeleteBookings}
           onMarkCompleted={handleMarkCompleted}
           onCancel={handleCancel}
           onDelete={handleDelete}
-          onReschedule={handleReschedule}
+          onReschedule={canWriteBookings ? handleReschedule : undefined}
           isUpdating={updatingId === selectedBooking.id}
           isRescheduling={reschedulingId === selectedBooking.id}
           updateError={updateError}
           weeklySchedule={weeklySchedule}
           timeOffBlocks={timeOffIntervalsForSlots}
+          bufferTime={bufferTime}
           existingBookingsForSlotGrid={existingBookingsForReschedule}
+          canCreateInvoice={canCreateInvoice}
+          assigneeOptions={assignees}
+          onAssign={canAssignBookings ? handleAssign : undefined}
+          isAssigning={assigningId === selectedBooking.id}
         />
       )}
 
+      {/* Hidden on web for now — calendar lives in the mobile app.
       <SyncBookingsConfirmModal
         isOpen={syncCalendarModalOpen}
         onClose={() => setSyncCalendarModalOpen(false)}
         isProSubscriber={!showFreeBookingsTracker}
       />
+      */}
     </main>
   );
 }

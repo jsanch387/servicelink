@@ -3,12 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   createSupabaseServerClientMock,
-  resolveCurrentBusinessIdMock,
+  requireBusinessPermissionMock,
   loadDashboardReviewsMock,
   loadDashboardGoogleReviewsMock,
 } = vi.hoisted(() => ({
   createSupabaseServerClientMock: vi.fn(),
-  resolveCurrentBusinessIdMock: vi.fn(),
+  requireBusinessPermissionMock: vi.fn(),
   loadDashboardReviewsMock: vi.fn(),
   loadDashboardGoogleReviewsMock: vi.fn(),
 }));
@@ -17,8 +17,9 @@ vi.mock('@/libs/supabase/server', () => ({
   createSupabaseServerClient: createSupabaseServerClientMock,
 }));
 
-vi.mock('@/server/resolveCurrentBusinessId', () => ({
-  resolveCurrentBusinessId: resolveCurrentBusinessIdMock,
+vi.mock('@/features/team/server/requireBusinessPermission', () => ({
+  requireBusinessPermission: (...args: unknown[]) =>
+    requireBusinessPermissionMock(...args),
 }));
 
 vi.mock('@/features/reviews/dashboard/server/loadDashboardReviews', () => ({
@@ -37,7 +38,7 @@ describe('GET /api/reviews', () => {
   });
 
   it('returns auth/business resolution errors', async () => {
-    resolveCurrentBusinessIdMock.mockResolvedValue({
+    requireBusinessPermissionMock.mockResolvedValue({
       ok: false,
       status: 401,
       error: 'Unauthorized',
@@ -52,7 +53,7 @@ describe('GET /api/reviews', () => {
   });
 
   it('returns server helper errors', async () => {
-    resolveCurrentBusinessIdMock.mockResolvedValue({
+    requireBusinessPermissionMock.mockResolvedValue({
       ok: true,
       businessId: 'biz-1',
     });
@@ -70,7 +71,7 @@ describe('GET /api/reviews', () => {
   });
 
   it('returns reviews on success', async () => {
-    resolveCurrentBusinessIdMock.mockResolvedValue({
+    requireBusinessPermissionMock.mockResolvedValue({
       ok: true,
       businessId: 'biz-1',
     });
@@ -87,7 +88,7 @@ describe('GET /api/reviews', () => {
   });
 
   it('returns 500 on unexpected throw', async () => {
-    resolveCurrentBusinessIdMock.mockRejectedValue(new Error('boom'));
+    requireBusinessPermissionMock.mockRejectedValue(new Error('boom'));
 
     const res = await GET();
     const json = await res.json();

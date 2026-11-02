@@ -12,6 +12,7 @@ The web/API server sends pushes via the **Expo Push API**. Pushes are **not** tr
 | Broadcast route             | `POST /api/internal/push/broadcast` → `src/app/api/internal/push/broadcast/route.ts` |
 | Single-user internal route  | `POST /api/internal/push/send` → `src/app/api/internal/push/send/route.ts`           |
 | Day-before booking reminder | `GET /api/internal/cron/booking-reminders` (Vercel Cron)                             |
+| Stale quote request digest  | `GET /api/internal/cron/quote-request-follow-ups` (Vercel Cron)                      |
 | Token table (Supabase)      | `user_push_tokens`                                                                   |
 
 ---
@@ -116,8 +117,11 @@ These are sent automatically when business events occur. `reference_id` is alway
 | `review`          | Review UUID          | Review **detail** screen for that id                                |
 | `subscriber`      | Membership UUID      | Subscriber **detail** (`customer_memberships.id`)                   |
 | `membership`      | Membership UUID      | **Alias for `subscriber`** — older payloads used this type          |
+| `invoice`         | Invoice UUID         | Invoice **bill** for that id (`invoices.id`)                        |
 
-**Server sources:** `notifyOwnerForAvailabilityBookingCreated`, `notifyOwnerForBookingReminder`, `notifyOwnerForPublicQuoteRequest`, `notifyOwnerForReviewSubmitted`, `notifyOwnerForNewMembershipSubscriber`, `notifyOwnerMembershipVisitNeeded`, `POST /api/booking-request/submit`, etc.
+**Server sources:** `notifyOwnerForAvailabilityBookingCreated`, `notifyOwnerForBookingReminder`, `notifyOwnerForPublicQuoteRequest`, `notifyOwnerForReviewSubmitted`, `notifyOwnerForNewMembershipSubscriber`, `notifyOwnerMembershipVisitNeeded`, `notifyAssigneeForJobAssigned`, `notifyOwnerInvoicePaid`, `POST /api/booking-request/submit`, etc.
+
+`invoice` is sent when a shop invoice becomes paid (owner marked it paid, or the customer paid by card). `reference_id` is `invoices.id`. Title is `Invoice paid`. Body is `{customer} · {amount}`, or just the amount when the name is blank. The same row is already in `notifications` (`type` `customer_invoice_paid`). A second paid event for that invoice does not send another push.
 
 `subscriber` / `membership` `reference_id` is always `customer_memberships.id` — the same id as web `/dashboard/subscriptions/subscribers/{id}` and `GET /api/memberships/subscribers/{id}`.
 
@@ -125,23 +129,26 @@ These are sent automatically when business events occur. `reference_id` is alway
 
 Used when ops sends a **feature announcement** via `POST /api/internal/push/broadcast`. There is **no entity UUID** — `reference_id` is a **screen slug** the app understands.
 
-| `reference_type` | `reference_id` (screen slug) | Navigate to                                                 |
-| ---------------- | ---------------------------- | ----------------------------------------------------------- |
-| `screen`         | `home`                       | App home / dashboard tab                                    |
-| `screen`         | `bookings`                   | Bookings / calendar list (also the day-before reminder tap) |
-| `screen`         | `quotes`                     | Quotes list                                                 |
-| `screen`         | `customers`                  | Customers list                                              |
-| `screen`         | `reviews`                    | Reviews list                                                |
-| `screen`         | `payments`                   | Payments / payouts settings                                 |
-| `screen`         | `payments_connect`           | Stripe Connect onboarding / connect status                  |
-| `screen`         | `maintenance`                | Maintenance enrollments                                     |
-| `screen`         | `availability`               | Availability / calendar settings                            |
-| `screen`         | `services`                   | Services management                                         |
-| `screen`         | `profile`                    | Business profile edit                                       |
-| `screen`         | `qr_code`                    | Business QR code (view / share)                             |
-| `screen`         | `notification_settings`      | Notification settings (push + customer SMS)                 |
-| `screen`         | `upgrade`                    | Pro / upgrade paywall                                       |
-| `screen`         | `settings`                   | Account / settings                                          |
+| `reference_type` | `reference_id` (screen slug)   | Navigate to                                                      |
+| ---------------- | ------------------------------ | ---------------------------------------------------------------- |
+| `screen`         | `home`                         | App home / dashboard tab                                         |
+| `screen`         | `bookings`                     | Bookings / calendar list (also the day-before reminder tap)      |
+| `screen`         | `quotes`                       | Quotes list                                                      |
+| `screen`         | `customers`                    | Customers list                                                   |
+| `screen`         | `reviews`                      | Reviews list                                                     |
+| `screen`         | `payments`                     | Payments / payouts settings                                      |
+| `screen`         | `payments_connect`             | Stripe Connect onboarding / connect status                       |
+| `screen`         | `maintenance`                  | Maintenance enrollments                                          |
+| `screen`         | `availability`                 | Availability / calendar settings                                 |
+| `screen`         | `services`                     | Services management                                              |
+| `screen`         | `profile`                      | Business profile edit                                            |
+| `screen`         | `booking_link`                 | Booking link edit → **Booking** tab                              |
+| `screen`         | `booking_link_contact`         | Booking link edit → **Contact** tab (phone + socials)            |
+| `screen`         | `booking_link_customer_policy` | Booking link edit → **Booking** tab, scrolled to Customer policy |
+| `screen`         | `qr_code`                      | Business QR code (view / share)                                  |
+| `screen`         | `notification_settings`        | Notification settings (push + customer SMS)                      |
+| `screen`         | `upgrade`                      | Pro / upgrade paywall                                            |
+| `screen`         | `settings`                     | Account / settings                                               |
 
 **Convention:** `reference_type: "screen"` + `reference_id: "<slug>"`.
 
@@ -174,21 +181,25 @@ Use the `_edit` suffix types when the announcement should land on an **edit** fl
 
 Keep push routing and universal linking in sync. Example mapping (mobile team adjusts to match actual navigator paths):
 
-| `reference_type` | `reference_id`          | Suggested deep link                                    |
-| ---------------- | ----------------------- | ------------------------------------------------------ |
-| `screen`         | `payments`              | `servicelinkmobile://payments`                         |
-| `screen`         | `payments_connect`      | `servicelinkmobile://payments/connect`                 |
-| `screen`         | `bookings`              | `servicelinkmobile://bookings`                         |
-| `booking`        | `{uuid}`                | `servicelinkmobile://bookings/{uuid}`                  |
-| `booking_edit`   | `{uuid}`                | `servicelinkmobile://bookings/{uuid}/edit`             |
-| `quote`          | `{uuid}`                | `servicelinkmobile://quotes/{uuid}`                    |
-| `quote_edit`     | `{uuid}`                | `servicelinkmobile://quotes/{uuid}/edit`               |
-| `review`         | `{uuid}`                | `servicelinkmobile://reviews/{uuid}`                   |
-| `customer`       | `{uuid}`                | `servicelinkmobile://customers/{uuid}`                 |
-| `subscriber`     | `{uuid}`                | `servicelinkmobile://subscriptions/subscribers/{uuid}` |
-| `membership`     | `{uuid}`                | Same as `subscriber` (alias)                           |
-| `screen`         | `maintenance`           | `servicelinkmobile://maintenance`                      |
-| `screen`         | `notification_settings` | `servicelinkmobile://more/notifications`               |
+| `reference_type` | `reference_id`                 | Suggested deep link                                                                            |
+| ---------------- | ------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `screen`         | `payments`                     | `servicelinkmobile://payments`                                                                 |
+| `screen`         | `payments_connect`             | `servicelinkmobile://payments/connect`                                                         |
+| `screen`         | `bookings`                     | `servicelinkmobile://bookings`                                                                 |
+| `booking`        | `{uuid}`                       | `servicelinkmobile://bookings/{uuid}`                                                          |
+| `booking_edit`   | `{uuid}`                       | `servicelinkmobile://bookings/{uuid}/edit`                                                     |
+| `quote`          | `{uuid}`                       | `servicelinkmobile://quotes/{uuid}`                                                            |
+| `invoice`        | `{uuid}`                       | `servicelinkmobile://invoices/{uuid}`                                                          |
+| `quote_edit`     | `{uuid}`                       | `servicelinkmobile://quotes/{uuid}/edit`                                                       |
+| `review`         | `{uuid}`                       | `servicelinkmobile://reviews/{uuid}`                                                           |
+| `customer`       | `{uuid}`                       | `servicelinkmobile://customers/{uuid}`                                                         |
+| `subscriber`     | `{uuid}`                       | `servicelinkmobile://subscriptions/subscribers/{uuid}`                                         |
+| `membership`     | `{uuid}`                       | Same as `subscriber` (alias)                                                                   |
+| `screen`         | `maintenance`                  | `servicelinkmobile://maintenance`                                                              |
+| `screen`         | `notification_settings`        | `servicelinkmobile://more/notifications`                                                       |
+| `screen`         | `booking_link`                 | `servicelinkmobile://more/booking-link?openEdit=1&editTab=booking`                             |
+| `screen`         | `booking_link_contact`         | `servicelinkmobile://more/booking-link?openEdit=1&editTab=contact`                             |
+| `screen`         | `booking_link_customer_policy` | `servicelinkmobile://more/booking-link?openEdit=1&editTab=booking&editSection=customer_policy` |
 
 Implementation pattern:
 
@@ -216,19 +227,23 @@ function resolvePushDestination(referenceType: string, referenceId: string) {
 
 ### 1. Transactional (automatic)
 
-Server sends to **one owner** when an event happens. Also inserts a row into **`notifications`** for the in-app bell.
+Server sends to **one user** when an event happens. Also inserts a row into **`notifications`** for the in-app bell.
 
-| Event                             | `reference_type`  | `reference_id`                            |
-| --------------------------------- | ----------------- | ----------------------------------------- |
-| New availability booking          | `booking`         | Booking id                                |
-| Day-before appointment reminder   | `screen`          | `bookings`                                |
-| Legacy booking request            | `booking_request` | Booking request id                        |
-| Public quote request              | `quote`           | Quote id                                  |
-| Review submitted                  | `review`          | Review id                                 |
-| New membership subscriber         | `subscriber`      | Membership id (`customer_memberships.id`) |
-| Subscription needs a visit        | `subscriber`      | Membership id                             |
+| Event                           | Recipient | `reference_type`  | `reference_id`                            |
+| ------------------------------- | --------- | ----------------- | ----------------------------------------- |
+| New availability booking        | Owner     | `booking`         | Booking id                                |
+| Day-before appointment reminder | Owner     | `screen`          | `bookings`                                |
+| Legacy booking request          | Owner     | `booking_request` | Booking request id                        |
+| Public quote request            | Owner     | `quote`           | Quote id                                  |
+| Stale quote request digest      | Owner     | `screen`          | `quotes`                                  |
+| Review submitted                | Owner     | `review`          | Review id                                 |
+| New membership subscriber       | Owner     | `subscriber`      | Membership id (`customer_memberships.id`) |
+| Subscription needs a visit      | Owner     | `subscriber`      | Membership id                             |
+| Job assigned                    | Assignee  | `booking`         | Booking id                                |
 
 Day-before reminders are sent by **GET `/api/internal/cron/booking-reminders`** (daily 14:00 UTC). Cron feature: [`src/features/cron/docs/README.md`](../../src/features/cron/docs/README.md). Auth: Vercel `Authorization: Bearer $CRON_SECRET`, or `x-internal-push-secret` for a manual run. Title is **Upcoming appointment**; body is **You have an appointment coming up.** One push per owner. Tap uses table B: `screen` → `bookings` (calendar / bookings list) — no booking UUID.
+
+Stale quote-request digests are sent by **GET `/api/internal/cron/quote-request-follow-ups`** (same daily 14:00 UTC slot). Title is **Quote request waiting**; body is **1 quote is waiting on you.** / **N quotes are waiting on you.** One push per owner per local day (`America/Chicago`) for **3 days** after a request is 24h old, then we stop. Skipped that day if they already got a **New quote request** ping. Cron retries are no-ops (`dedupe_key`). Inbox type is `quote_request_followup`. Tap uses table B: `screen` → `quotes`. Unanswered **requests** do not expire; sent quote **links** expire after **14 days** (shown on `/q/` as **Valid until …**).
 
 ### 2. Broadcast (manual — product updates)
 
@@ -331,6 +346,57 @@ Same `data` shape as broadcast, but requires `userId` instead of `testEmail`. Us
   }
 }
 ```
+
+**Socials on booking link → Contact tab:**
+
+```json
+{
+  "title": "Add Instagram & TikTok to your booking link",
+  "body": "Show customers your socials — tap to add your usernames.",
+  "data": {
+    "reference_type": "screen",
+    "reference_id": "booking_link_contact"
+  }
+}
+```
+
+**Customer policy (ships today — no app change):** tap opens More → Booking link in edit mode on the **Booking** tab. The user still scrolls to Customer policy.
+
+```json
+{
+  "title": "Set up your customer policy",
+  "body": "Customers must agree before they can book.",
+  "data": {
+    "reference_type": "screen",
+    "reference_id": "booking_link"
+  }
+}
+```
+
+**Customer policy (after mobile ships `booking_link_customer_policy`):** tap opens the same edit screen and scrolls to Customer policy. Extra fields in `data` are ignored — routing is only `reference_type` + `reference_id`.
+
+```json
+{
+  "title": "Set up your customer policy",
+  "body": "Customers must agree before they can book.",
+  "data": {
+    "reference_type": "screen",
+    "reference_id": "booking_link_customer_policy"
+  }
+}
+```
+
+If you also insert an in-app inbox row, match the push `data` (routing is not driven by `type`):
+
+| Column           | Value (today)                              | Value (after app ships)                    |
+| ---------------- | ------------------------------------------ | ------------------------------------------ |
+| `reference_type` | `screen`                                   | `screen`                                   |
+| `reference_id`   | `booking_link`                             | `booking_link_customer_policy`             |
+| `type`           | `booking_link.customer_policy`             | `booking_link.customer_policy`             |
+| `title`          | Set up your customer policy                | Set up your customer policy                |
+| `body`           | Customers must agree before they can book. | Customers must agree before they can book. |
+
+`type` is inbox copy only. Broadcast push does **not** insert inbox rows unless you add that later.
 
 **Deep link to a specific booking edit:**
 
@@ -450,6 +516,8 @@ If a new slug requires server validation (e.g. allowlist), extend `parseInternal
 
 | Date       | Change                                                                                       |
 | ---------- | -------------------------------------------------------------------------------------------- |
+| 2026-08-31 | Quote-request digest: `screen` → `quotes` (count body, once per owner per day)               |
+| 2026-08-31 | Added `booking_link`, `booking_link_contact`, `booking_link_customer_policy` screen slugs    |
 | 2026-08-20 | Day-before owner reminder: `screen` → `bookings` (no booking UUID)                           |
 | 2026-08-19 | Added `subscriber` deep link (membership id → subscriber detail); `membership` kept as alias |
 | 2026-08-06 | Added `screen` → `notification_settings` slug + SMS launch example                           |

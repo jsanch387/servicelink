@@ -15,6 +15,19 @@ vi.mock('@/components/shared', () => ({
       {children}
     </div>
   ),
+  Button: ({
+    children,
+    href,
+    className,
+  }: {
+    children: React.ReactNode;
+    href?: string;
+    className?: string;
+  }) => (
+    <a href={href} className={className}>
+      {children}
+    </a>
+  ),
 }));
 
 vi.mock('next/link', () => ({
@@ -59,7 +72,13 @@ describe('BookingPaymentSuccess', () => {
       screen.getByRole('heading', { name: /Deposit received/i })
     ).toBeTruthy();
     expect(
-      screen.getByText(/deposit was received through ServiceLink/i)
+      screen.getByText(/You're booked with Acme Detail\. Deposit paid\./i)
+    ).toBeTruthy();
+    expect(screen.queryByText(/^Your booking$/i)).toBeNull();
+    expect(screen.getByText(/^Payment$/)).toBeTruthy();
+    expect(screen.queryByText(/ServiceLink payment/i)).toBeNull();
+    expect(
+      screen.getByText(/A confirmation email is on its way/i)
     ).toBeTruthy();
     expect(screen.getByText(/Paid now/i)).toBeTruthy();
     expect(screen.getAllByText(/\$50\.00/).length).toBeGreaterThanOrEqual(1);
@@ -76,7 +95,44 @@ describe('BookingPaymentSuccess', () => {
         remainingAmountCents={0}
       />
     );
-    expect(screen.getByText(/paid in full through ServiceLink/i)).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { name: /Payment received/i })
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/You're booked with Acme Detail\. Paid in full\./i)
+    ).toBeTruthy();
+    expect(screen.queryByText(/ServiceLink/i)).toBeNull();
+    expect(screen.queryByText(/^Your booking$/i)).toBeNull();
+    expect(screen.getByText(/^Payment$/)).toBeTruthy();
+    expect(
+      screen.getByText(/A confirmation email is on its way/i)
+    ).toBeTruthy();
+    expect(screen.getByRole('link', { name: /back to profile/i })).toBeTruthy();
+  });
+
+  it('shows the tax line between the service price and the total', () => {
+    render(
+      <BookingPaymentSuccess
+        {...defaultProps}
+        servicePriceCents={85_00}
+        selectedAddOns={[]}
+        taxCents={191}
+        taxRateBps={225}
+        totalAmountCents={86_91}
+        paidOnlineAmountCents={10_00}
+        remainingAmountCents={76_91}
+      />
+    );
+
+    expect(screen.getByText('Tax (2.25%)')).toBeTruthy();
+    expect(screen.getByText('$1.91')).toBeTruthy();
+    expect(screen.getByText('$86.91')).toBeTruthy();
+    expect(screen.getByText('$85.00')).toBeTruthy();
+  });
+
+  it('hides the tax line when the booking was not taxed', () => {
+    render(<BookingPaymentSuccess {...defaultProps} />);
+    expect(screen.queryByText(/Tax \(/)).toBeNull();
   });
 
   it('links back to the public profile slug', () => {

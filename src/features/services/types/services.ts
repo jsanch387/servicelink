@@ -24,6 +24,10 @@ export interface GetServicesResult {
 export interface UpdateServicePayload {
   name: string;
   description: string;
+  /** Empty string clears the stored Spanish name. */
+  name_es?: string | null;
+  /** Empty string clears the stored Spanish description. */
+  description_es?: string | null;
   price_cents: number | null;
   duration_minutes: number | null;
   price_options_enabled?: boolean;
@@ -41,6 +45,8 @@ export interface UpdateServiceResult {
 export interface CreateServicePayload {
   name: string;
   description: string;
+  name_es?: string | null;
+  description_es?: string | null;
   price_cents: number | null;
   duration_minutes: number | null;
   category_id?: string | null;

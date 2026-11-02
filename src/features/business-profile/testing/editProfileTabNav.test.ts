@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { tabForSaveErrors } from '../components/edit/EditProfileTabNav';
+import { parseEditProfileTab, tabForSaveErrors } from '../utils/editProfileTab';
+
+describe('parseEditProfileTab', () => {
+  it('accepts edit tabs and ignores unknown values', () => {
+    expect(parseEditProfileTab('booking')).toBe('booking');
+    expect(parseEditProfileTab('details')).toBe('details');
+    expect(parseEditProfileTab('gallery')).toBeUndefined();
+    expect(parseEditProfileTab(undefined)).toBeUndefined();
+  });
+});
 
 describe('tabForSaveErrors', () => {
   it('routes gallery errors to photos', () => {
@@ -16,7 +25,13 @@ describe('tabForSaveErrors', () => {
   });
 
   it('routes shop errors to booking', () => {
-    expect(tabForSaveErrors(['Shop street address is required'])).toBe(
+    expect(tabForSaveErrors(['Choose a suggested shop address'])).toBe(
+      'booking'
+    );
+  });
+
+  it('routes policy errors to booking', () => {
+    expect(tabForSaveErrors(['Add your customer policy or turn it off.'])).toBe(
       'booking'
     );
   });
@@ -27,10 +42,7 @@ describe('tabForSaveErrors', () => {
 
   it('prefers booking when shop and location errors are combined', () => {
     expect(
-      tabForSaveErrors([
-        'ZIP is required',
-        'Shop address requires city, state, and ZIP',
-      ])
+      tabForSaveErrors(['ZIP is required', 'Choose a suggested shop address'])
     ).toBe('booking');
   });
 });

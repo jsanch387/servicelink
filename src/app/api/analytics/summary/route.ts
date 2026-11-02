@@ -10,21 +10,22 @@ import {
 } from '@/features/analytics/constants';
 import { getLinkViewsSummary } from '@/features/analytics/server/getLinkViewsSummary';
 import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const resolved = await requireBusinessPermission(
+      supabase,
+      'dashboard.read'
+    );
 
-    if (authError || !user) {
+    if (!resolved.ok) {
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
+        { success: false, error: resolved.error },
+        { status: resolved.status }
       );
     }
 
@@ -47,14 +48,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { data: ownedProfile, error: profileError } = await supabase
-      .from('business_profiles')
-      .select('id')
-      .eq('id', businessProfileId)
-      .eq('profile_id', user.id)
-      .single();
-
-    if (profileError || !ownedProfile) {
+    if (businessProfileId !== resolved.businessId) {
       return NextResponse.json(
         { success: false, error: 'Business profile not found' },
         { status: 404 }

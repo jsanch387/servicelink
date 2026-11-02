@@ -1,5 +1,11 @@
 import { DashboardWrapper } from '@/features/dashboard/components/DashboardWrapper';
+import {
+  NO_DASHBOARD_ACCESS,
+  type DashboardAccessValue,
+} from '@/features/dashboard/constants/dashboardAccess';
 import { isOwnerEmailAllowedForMembershipsRollout } from '@/features/subscriptions/config/membershipsRolloutAllowlist';
+import { lookupRemovedMembership } from '@/features/team/server/lookupRemovedMembership';
+import { resolveDashboardContext } from '@/features/team/server/resolveDashboardContext';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { Metadata } from 'next';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -30,6 +36,7 @@ export default async function DashboardLayout({
   } = await supabase.auth.getUser();
 
   let isOnboardingCompleted = false;
+  let onboardingStatus: string | null = null;
   if (user?.id) {
     const { data: profileRow } = await supabase
       .from('profiles')
@@ -37,19 +44,43 @@ export default async function DashboardLayout({
       .eq('user_id', user.id)
       .maybeSingle();
 
-    isOnboardingCompleted =
+    onboardingStatus =
       (profileRow as { onboarding_status?: string | null } | null)
-        ?.onboarding_status === 'completed';
+        ?.onboarding_status ?? null;
+    isOnboardingCompleted = onboardingStatus === 'completed';
   }
+
+  const access = user?.id ? await resolveDashboardContext(supabase) : null;
+  const dashboardAccess: DashboardAccessValue = access?.ok
+    ? {
+        isOwner: access.context.isOwner,
+        role: access.context.role,
+        permissions: access.context.permissions,
+      }
+    : NO_DASHBOARD_ACCESS;
+  const hasShopAccess =
+    isOnboardingCompleted ||
+    (access?.ok === true && access.context.isOwner === false);
 
   const showMembershipsNav = isOwnerEmailAllowedForMembershipsRollout(
     user?.email
   );
+  const hideChrome =
+    user?.id &&
+    access?.ok !== true &&
+    onboardingStatus !== 'in_progress' &&
+    onboardingStatus !== 'completed'
+      ? (await lookupRemovedMembership(supabase, user.id)) != null
+      : false;
 
   return (
     <DashboardWrapper
       isOnboardingCompleted={isOnboardingCompleted}
+      hasShopAccess={hasShopAccess}
+      dashboardAccess={dashboardAccess}
       showMembershipsNav={showMembershipsNav}
+      accountEmail={user?.email?.trim() || null}
+      hideChrome={hideChrome}
     >
       {children}
     </DashboardWrapper>

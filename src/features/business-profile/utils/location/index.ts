@@ -15,6 +15,11 @@ export {
   sanitizeZipInput,
   validateBusinessLocation,
 } from '../businessLocation';
+export {
+  coverageErrorFromMessages,
+  formatServiceCoverageLabel,
+  validateServiceCoverage,
+} from '../primaryServiceArea';
 export type {
   BusinessLocationFields,
   ShopAddressParts,
@@ -22,11 +27,14 @@ export type {
 
 export {
   DEFAULT_SERVICE_LOCATION_UI,
+  formatShopPickerQuery,
   mobileServiceIsOffered,
   serviceLocationModeHint,
   serviceLocationPersistFromUi,
   serviceLocationUiFromProfile,
+  shopAddressFromStructuredLocation,
   shopAddressIsOffered,
+  shopAddressNeedsUpdate,
   validateServiceLocation,
 } from '../serviceLocationMode';
 export type {

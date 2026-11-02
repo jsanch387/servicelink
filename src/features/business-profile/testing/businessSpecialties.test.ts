@@ -3,8 +3,11 @@ import {
   deriveSpecialtiesFromBusinessType,
   getSpecialtiesForBusinessType,
   hasDetailingMarketplaceListing,
+  publicSpecialtyLabels,
+  publicTradeLine,
   resolveBusinessSpecialties,
   sanitizeBusinessSpecialties,
+  specialtiesAllowedForBusinessType,
 } from '@/constants/businessSpecialties';
 
 describe('business specialties', () => {
@@ -14,10 +17,19 @@ describe('business specialties', () => {
     ).toEqual([
       'detailing',
       'window_tinting',
+      'ppf',
       'auto_glass',
       'mobile_repair',
       'other',
     ]);
+    expect(
+      getSpecialtiesForBusinessType('Vehicle Services').find(
+        item => item.slug === 'ppf'
+      )
+    ).toEqual({ slug: 'ppf', label: 'PPF' });
+    expect(
+      getSpecialtiesForBusinessType('Pet Services').map(item => item.slug)
+    ).not.toContain('ppf');
   });
 
   it('derives detailing for legacy auto shops', () => {
@@ -53,9 +65,54 @@ describe('business specialties', () => {
     ).toBe(false);
   });
 
+  it('drops niches that do not belong to the new industry', () => {
+    expect(
+      specialtiesAllowedForBusinessType('Pet Services', [
+        'detailing',
+        'pet_grooming',
+      ])
+    ).toEqual(['pet_grooming']);
+    expect(specialtiesAllowedForBusinessType('Other', ['detailing'])).toEqual([
+      'other',
+    ]);
+  });
+
   it('drops unknown specialty slugs', () => {
     expect(
       sanitizeBusinessSpecialties(['detailing', 'not-a-real-tag', 'detailing'])
     ).toEqual(['detailing']);
+  });
+
+  it('formats public bio chips and hides other', () => {
+    expect(
+      publicSpecialtyLabels('Vehicle Services', [
+        'detailing',
+        'window_tinting',
+        'other',
+      ])
+    ).toEqual(['Auto detailing', 'Window tinting']);
+    expect(publicSpecialtyLabels('Vehicle Services', null)).toEqual([]);
+    expect(publicSpecialtyLabels('Auto & Detailing', null)).toEqual([
+      'Auto detailing',
+    ]);
+  });
+
+  it('builds a customer-facing trade line from specialties', () => {
+    expect(publicTradeLine('Vehicle Services', ['detailing'])).toBe(
+      'Auto detailing'
+    );
+    expect(
+      publicTradeLine('Vehicle Services', ['detailing', 'window_tinting'])
+    ).toBe('Auto detailing and window tinting');
+    expect(
+      publicTradeLine('Vehicle Services', [
+        'detailing',
+        'window_tinting',
+        'auto_glass',
+      ])
+    ).toBe('Auto detailing and more');
+    expect(publicTradeLine('Vehicle Services', ['other'])).toBe('');
+    expect(publicTradeLine('Vehicle Services', null)).toBe('');
+    expect(publicTradeLine('Auto & Detailing', null)).toBe('Auto detailing');
   });
 });

@@ -1,5 +1,6 @@
 'use client';
 
+import { formatSalesTaxRateLabel } from '@/features/payments/utils/salesTaxRate';
 import type {
   AvailabilityBookingDisplay,
   AvailabilityBookingJobDisplay,
@@ -66,12 +67,21 @@ function PricingTotals({
   discount,
   showBookingDiscount,
   priceEstimatedTotal,
+  taxCents = 0,
+  taxRateBps = 0,
 }: {
   priceLineTotal: number;
   discount: AvailabilityBookingDisplay['discount'];
   showBookingDiscount: boolean;
   priceEstimatedTotal: number;
+  taxCents?: number;
+  taxRateBps?: number;
 }) {
+  const showTax = taxCents > 0;
+  const totalCents = priceEstimatedTotal + (showTax ? taxCents : 0);
+  const taxRateLabel = formatSalesTaxRateLabel(taxRateBps);
+  const taxLabel = taxRateLabel ? `Tax (${taxRateLabel})` : 'Tax';
+
   return (
     <div className="border-t border-white/[0.06] bg-white/[0.02] px-4 py-3">
       <div className="space-y-1.5 text-sm">
@@ -83,9 +93,19 @@ function PricingTotals({
             </span>
           </div>
         ) : null}
+        {showTax ? (
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="text-gray-400">{taxLabel}</span>
+            <span className="shrink-0 tabular-nums text-gray-300">
+              {formatDollars(taxCents)}
+            </span>
+          </div>
+        ) : null}
         <div
           className={`flex items-baseline justify-between gap-3 ${
-            showBookingDiscount ? 'mt-2 border-t border-white/[0.06] pt-2' : ''
+            showBookingDiscount || showTax
+              ? 'mt-2 border-t border-white/[0.06] pt-2'
+              : ''
           }`}
         >
           <span className="font-medium text-white">Total</span>
@@ -95,12 +115,12 @@ function PricingTotals({
                 {formatDollars(priceLineTotal)}
               </span>
               <span className="font-semibold tabular-nums text-white">
-                {formatDollars(priceEstimatedTotal)}
+                {formatDollars(totalCents)}
               </span>
             </div>
           ) : (
             <span className="font-semibold tabular-nums text-white">
-              {formatDollars(priceLineTotal)}
+              {formatDollars(totalCents)}
             </span>
           )}
         </div>
@@ -122,6 +142,15 @@ export function BookingDetailServiceSection({
 }: BookingDetailServiceSectionProps) {
   const jobs = booking.jobs ?? [];
   const bookingDiscount = booking.discount;
+  const taxCents =
+    typeof booking.payment?.taxCents === 'number' &&
+    booking.payment.taxCents > 0
+      ? booking.payment.taxCents
+      : 0;
+  const taxRateBps =
+    taxCents > 0 && typeof booking.payment?.taxRateBps === 'number'
+      ? booking.payment.taxRateBps
+      : 0;
 
   if (jobs.length > 0) {
     const priceLineTotal = jobs.reduce(
@@ -157,6 +186,8 @@ export function BookingDetailServiceSection({
             discount={bookingDiscount}
             showBookingDiscount={showBookingDiscount}
             priceEstimatedTotal={priceEstimatedTotal}
+            taxCents={taxCents}
+            taxRateBps={taxRateBps}
           />
         </div>
       </section>
@@ -195,56 +226,40 @@ export function BookingDetailServiceSection({
         </div>
 
         {showPriceBreakdown ? (
-          <div className="border-t border-white/[0.06] bg-white/[0.02] px-4 py-3">
-            <div className="space-y-1.5 text-sm">
-              {booking.servicePriceCents != null ? (
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-gray-300">Service</span>
-                  <span className="tabular-nums text-gray-200">
-                    {formatDollars(booking.servicePriceCents)}
-                  </span>
-                </div>
-              ) : null}
-              {booking.addonDetails?.map(a => (
-                <div
-                  key={a.id}
-                  className="flex items-baseline justify-between gap-3"
-                >
-                  <span className="text-gray-300">{a.name}</span>
-                  <span className="tabular-nums text-gray-200">
-                    +{formatDollars(a.priceCents)}
-                  </span>
-                </div>
-              ))}
-              {showBookingDiscount && bookingDiscount ? (
-                <div className="flex items-baseline justify-between gap-3 pt-1">
-                  <span className="min-w-0 text-amber-200/90">
-                    {bookingDiscount.label}
-                  </span>
-                  <span className="shrink-0 tabular-nums text-amber-200/90">
-                    −{formatDollars(bookingDiscount.discountCents)}
-                  </span>
-                </div>
-              ) : null}
-              <div className="mt-2 flex items-baseline justify-between gap-3 border-t border-white/[0.06] pt-2">
-                <span className="font-medium text-white">Total</span>
-                {showBookingDiscount ? (
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-sm tabular-nums text-zinc-500 line-through decoration-zinc-500/70">
-                      {formatDollars(priceLineTotal)}
-                    </span>
-                    <span className="font-semibold tabular-nums text-white">
-                      {formatDollars(priceEstimatedTotal)}
+          <>
+            {booking.servicePriceCents != null ||
+            (booking.addonDetails?.length ?? 0) > 0 ? (
+              <div className="space-y-1.5 border-t border-white/[0.06] bg-white/[0.02] px-4 py-3 text-sm">
+                {booking.servicePriceCents != null ? (
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-gray-300">Service</span>
+                    <span className="tabular-nums text-gray-200">
+                      {formatDollars(booking.servicePriceCents)}
                     </span>
                   </div>
-                ) : (
-                  <span className="font-semibold tabular-nums text-white">
-                    {formatDollars(priceLineTotal)}
-                  </span>
-                )}
+                ) : null}
+                {booking.addonDetails?.map(a => (
+                  <div
+                    key={a.id}
+                    className="flex items-baseline justify-between gap-3"
+                  >
+                    <span className="text-gray-300">{a.name}</span>
+                    <span className="tabular-nums text-gray-200">
+                      +{formatDollars(a.priceCents)}
+                    </span>
+                  </div>
+                ))}
               </div>
-            </div>
-          </div>
+            ) : null}
+            <PricingTotals
+              priceLineTotal={priceLineTotal}
+              discount={bookingDiscount}
+              showBookingDiscount={showBookingDiscount}
+              priceEstimatedTotal={priceEstimatedTotal}
+              taxCents={taxCents}
+              taxRateBps={taxRateBps}
+            />
+          </>
         ) : null}
       </div>
     </section>

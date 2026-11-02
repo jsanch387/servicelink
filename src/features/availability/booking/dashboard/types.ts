@@ -3,6 +3,8 @@
  * UI / mock only. Kept separate from request booking.
  */
 
+import type { BookingSource } from '@/features/booking-attribution/constants';
+
 export type AvailabilityBookingStatus = 'confirmed' | 'completed' | 'cancelled';
 
 export interface AvailabilityBookingAddress {
@@ -38,12 +40,15 @@ export interface BookingPaymentSummaryDisplay {
   totalAmountCents: number;
   paidOnlineAmountCents: number;
   remainingAmountCents: number;
+  /** Frozen tax on this job. Zero or omitted means the price had no tax. */
+  taxCents?: number;
+  taxRateBps?: number;
 }
 
 export interface AvailabilityBookingDisplay {
   id: string;
   /** Server-derived origin of this booking; null for legacy/system rows. */
-  bookingSource?: 'public' | 'owner' | null;
+  bookingSource?: BookingSource | null;
   customerName: string;
   customerPhone: string;
   customerEmail: string;
@@ -81,4 +86,6 @@ export interface AvailabilityBookingDisplay {
   willSendReviewInviteOnComplete?: boolean;
   /** Present when booking has payment summary data. */
   payment?: BookingPaymentSummaryDisplay | null;
+  /** Shop worker on this job. Null / omitted = unassigned. */
+  assignedUserId?: string | null;
 }

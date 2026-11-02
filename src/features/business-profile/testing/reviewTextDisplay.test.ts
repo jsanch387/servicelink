@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  hasVisibleReviewBody,
   reviewCollapsedMaxChars,
   reviewTextNeedsExpand,
   truncateReviewText,
@@ -24,5 +25,13 @@ describe('reviewTextDisplay', () => {
   it('detects when expand is needed', () => {
     expect(reviewTextNeedsExpand('short', 180)).toBe(false);
     expect(reviewTextNeedsExpand('x'.repeat(200), 180)).toBe(true);
+  });
+
+  it('hides blank and star-only placeholder comments', () => {
+    expect(hasVisibleReviewBody('')).toBe(false);
+    expect(hasVisibleReviewBody('   ')).toBe(false);
+    expect(hasVisibleReviewBody('—')).toBe(false);
+    expect(hasVisibleReviewBody('  —  ')).toBe(false);
+    expect(hasVisibleReviewBody('Great work.')).toBe(true);
   });
 });

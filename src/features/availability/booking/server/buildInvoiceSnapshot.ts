@@ -86,8 +86,11 @@ export interface BookingInvoiceSnapshot {
      */
     discountCents?: number;
     paidCents: number;
-    /** Amount charged after discount. */
+    /** Amount charged after discount. Includes sales tax when it was collected. */
     totalCents: number;
+    /** Frozen sales tax included in `totalCents`. Omitted on older snapshots. */
+    taxCents?: number;
+    taxRateBps?: number;
   };
   reviewUrl: string | null;
 }
@@ -316,6 +319,12 @@ export function buildInvoiceSnapshot(
       discountCents,
       paidCents,
       totalCents: input.amountDue.adjustedTotalCents,
+      ...(input.amountDue.taxCents > 0
+        ? {
+            taxCents: input.amountDue.taxCents,
+            taxRateBps: input.amountDue.taxRateBps,
+          }
+        : {}),
     },
     reviewUrl,
   };

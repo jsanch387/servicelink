@@ -1,4 +1,5 @@
 import { API_ROUTES } from '@/constants/routes';
+import { trackMetaCompleteRegistrationOnce } from '@/features/analytics/utils/metaCompleteRegistration';
 import { signupAttributionSyncedKey } from '../constants';
 import type { MarketingUtmAttribution } from '../types';
 import { getStoredMarketingUtms } from './utmCapture';
@@ -42,7 +43,7 @@ export async function tryRecordSignupAttribution(
 
     const result = (await response.json()) as {
       success?: boolean;
-      data?: { recorded?: boolean; skipped?: boolean };
+      data?: { recorded?: boolean; eventId?: string };
     };
 
     if (!response.ok || !result.success) return;
@@ -54,6 +55,10 @@ export async function tryRecordSignupAttribution(
     }
 
     clearPendingSignupAttribution();
+
+    if (result.data?.recorded) {
+      trackMetaCompleteRegistrationOnce(userId, result.data.eventId);
+    }
   } catch {
     // non-blocking — will retry on next authenticated page load
   }

@@ -2,9 +2,11 @@ import type {
   QuoteDbRow,
   QuotePublicLinkRow,
 } from '@/features/quotes/dashboard/api/types';
+import { DASHBOARD_QUOTE_SELECT } from '@/features/quotes/dashboard/server/dashboardQuoteSelect';
+import { loadQuoteOutboundEventsByQuoteIds } from '@/features/quotes/dashboard/server/loadQuoteOutboundEvents';
 import { mapQuoteRowToDashboardQuote } from '@/features/quotes/dashboard/server/mapQuoteRowToDashboardQuote';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
@@ -18,7 +20,7 @@ export async function GET(request: Request) {
     }
 
     const { supabase } = auth;
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(supabase, 'quotes.read');
 
     if (!resolved.ok) {
       return NextResponse.json(
@@ -32,38 +34,7 @@ export async function GET(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('quotes')
-      .select(
-        `
-          id,
-          status,
-          source,
-          customer_name,
-          customer_email,
-          customer_phone,
-          service_name,
-          price_cents,
-          duration_minutes,
-          created_at,
-          updated_at,
-          scheduled_date,
-          scheduled_start_time,
-          note,
-          request_message,
-          vehicle_year,
-          vehicle_make,
-          vehicle_model,
-          customer_street_address,
-          customer_unit_apt,
-          customer_city,
-          customer_state,
-          customer_zip,
-          service_address,
-          service_id,
-          service_price_option_id,
-          service_price_cents,
-          addon_details
-        `
-      )
+      .select(DASHBOARD_QUOTE_SELECT)
       .eq('business_id', businessId)
       .order('updated_at', { ascending: false });
 
@@ -79,6 +50,7 @@ export async function GET(request: Request) {
     const quoteIds = rows.map(row => row.id);
 
     const tokenByQuoteId = new Map<string, string>();
+    const expiresByQuoteId = new Map<string, string>();
     if (quoteIds.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: linksData, error: linksError } = await (supabase as any)
@@ -100,13 +72,24 @@ export async function GET(request: Request) {
           // Keep newest active link per quote (query is already newest first).
           if (!tokenByQuoteId.has(link.quote_id)) {
             tokenByQuoteId.set(link.quote_id, link.token_hash);
+            expiresByQuoteId.set(link.quote_id, link.expires_at);
           }
         }
       }
     }
 
+    const communicationsByQuoteId = await loadQuoteOutboundEventsByQuoteIds(
+      supabase,
+      quoteIds
+    );
+
     const quotes = rows.map(row =>
-      mapQuoteRowToDashboardQuote(row, tokenByQuoteId.get(row.id) ?? '')
+      mapQuoteRowToDashboardQuote(
+        row,
+        tokenByQuoteId.get(row.id) ?? '',
+        expiresByQuoteId.get(row.id) ?? null,
+        communicationsByQuoteId.get(row.id) ?? []
+      )
     );
 
     return NextResponse.json({ success: true, quotes });

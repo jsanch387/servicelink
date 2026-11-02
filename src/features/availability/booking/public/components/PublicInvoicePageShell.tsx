@@ -9,7 +9,7 @@ import {
   type InvoiceSnapshotLine,
 } from '@/features/availability/booking/server/buildInvoiceSnapshot';
 import { invoiceCoveredByMembership } from '@/features/availability/booking/utils/invoiceCoveredByMembership';
-import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import { formatSalesTaxRateLabel } from '@/features/payments/utils/salesTaxRate';
 import {
   groupInvoiceSnapshotLines,
   type InvoiceLineGroup,
@@ -188,30 +188,18 @@ function VisitSummary({
 
 function JobReceiptBlock({
   job,
-  isLast,
   includedWhenZero = false,
 }: {
   job: InvoiceSnapshotJob;
-  isLast: boolean;
   includedWhenZero?: boolean;
 }) {
   const option = job.servicePriceOptionLabel?.trim() || null;
-  const vehicle = job.vehicleLabel?.trim() || null;
-  const duration =
-    job.durationMinutes > 0 ? formatDurationMinutes(job.durationMinutes) : null;
-  const meta = [vehicle, duration].filter(Boolean).join(' · ');
 
   return (
-    <div
-      className={
-        isLast
-          ? undefined
-          : 'border-b border-[#ebe8e1] pb-4 dark:border-[#2a2a2a]'
-      }
-    >
+    <div>
       <div className={PUBLIC_INVOICE_LINE_ROW_CLASS}>
         <div className={`flex-1 ${PUBLIC_INVOICE_TEXT_WRAP_CLASS}`}>
-          <p className="leading-snug text-[15px] font-medium text-[#1a1a1a] dark:text-[#f0f0f0]">
+          <p className="leading-snug text-[14px] text-[#1a1a1a] dark:text-[#f0f0f0]">
             {job.serviceName}
           </p>
           {option ? (
@@ -222,16 +210,10 @@ function JobReceiptBlock({
         </div>
         <ChargeAmount
           amountCents={job.servicePriceCents}
+          size="sm"
           includedWhenZero={includedWhenZero}
         />
       </div>
-      {meta ? (
-        <p
-          className={`mt-1 text-[13px] leading-snug text-[#888480] dark:text-[#aaa] ${PUBLIC_INVOICE_TEXT_WRAP_CLASS}`}
-        >
-          {meta}
-        </p>
-      ) : null}
       {job.addOns.map(addOn => (
         <div
           key={`${addOn.name}-${addOn.priceCents}`}
@@ -261,12 +243,11 @@ function JobsChargesSection({
   includedWhenZero?: boolean;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {jobs.map((job, index) => (
         <JobReceiptBlock
           key={`${job.serviceName}-${index}`}
           job={job}
-          isLast={index === jobs.length - 1}
           includedWhenZero={includedWhenZero}
         />
       ))}
@@ -311,7 +292,9 @@ function ServiceChargeRow({
       primary={line.label}
       secondary={line.detailLabel?.trim() || null}
       amountCents={line.amountCents}
+      amountSize="sm"
       includedWhenZero={includedWhenZero}
+      primaryClassName="text-[14px] font-normal text-[#1a1a1a] dark:text-[#f0f0f0]"
     />
   );
 }
@@ -320,11 +303,11 @@ function DiscountChargeRow({ line }: { line: InvoiceSnapshotLine }) {
   return (
     <div className={PUBLIC_INVOICE_LINE_ROW_CLASS}>
       <div className={`flex-1 ${PUBLIC_INVOICE_TEXT_WRAP_CLASS}`}>
-        <p className="leading-snug text-[15px] font-medium text-[#15803d] dark:text-[#86efac]">
+        <p className="leading-snug text-[14px] text-[#15803d] dark:text-[#86efac]">
           {line.label}
         </p>
       </div>
-      <ChargeAmount amountCents={line.amountCents} tone="discount" />
+      <ChargeAmount amountCents={line.amountCents} size="sm" tone="discount" />
     </div>
   );
 }
@@ -342,7 +325,7 @@ function ChargeGroupSection({
 
   if (isService) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-2">
         {group.lines.map((line, index) => (
           <ServiceChargeRow
             key={`service-${line.label}-${line.detailLabel ?? ''}-${index}`}
@@ -356,7 +339,7 @@ function ChargeGroupSection({
 
   if (isDiscount) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-2">
         {group.lines.map((line, index) => (
           <DiscountChargeRow
             key={`discount-${line.label}-${index}`}
@@ -559,7 +542,7 @@ export function PublicInvoicePageShell({
               <p className={`py-3 ${PUBLIC_INVOICE_SECTION_LABEL_CLASS}`}>
                 {coveredByMembership ? 'Visit' : jobs ? 'Jobs' : 'Charges'}
               </p>
-              <div className="space-y-5 pb-1">
+              <div className="space-y-2 pb-1">
                 {jobs ? (
                   <JobsChargesSection
                     jobs={jobs}
@@ -573,6 +556,20 @@ export function PublicInvoicePageShell({
                     includedWhenZero={coveredByMembership}
                   />
                 ))}
+                {(snapshot.totals.taxCents ?? 0) > 0 ? (
+                  <div className={PUBLIC_INVOICE_LINE_ROW_CLASS}>
+                    <p className="flex-1 leading-snug text-[13px] text-[#888480] dark:text-[#aaa]">
+                      {snapshot.totals.taxRateBps
+                        ? `Tax (${formatSalesTaxRateLabel(snapshot.totals.taxRateBps)})`
+                        : 'Tax'}
+                    </p>
+                    <p
+                      className={`${PUBLIC_INVOICE_AMOUNT_COLUMN_CLASS} text-[13px] tabular-nums text-[#888480] dark:text-[#aaa]`}
+                    >
+                      {formatCents(snapshot.totals.taxCents ?? 0)}
+                    </p>
+                  </div>
+                ) : null}
               </div>
             </div>
           ) : null}

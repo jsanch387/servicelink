@@ -30,10 +30,14 @@ export interface BookingsPageSwitchProps {
   freeBookingsUsed?: number;
   /** When false (Pro), hide the free bookings tracker. */
   showFreeBookingsTracker?: boolean;
-  /** Owner time-off blocks (planner view). */
+  /** Owner time-off blocks for the calendar overlay. */
   timeOffBlocks?: BlockTimeEntry[];
   /** Weekly hours for V2 reschedule slot picker. */
   weeklySchedule: WeeklySchedule;
+  /** Gap between appointments for reschedule slot picker. */
+  bufferTime?: string;
+  /** Invoices are Pro-only. */
+  canCreateInvoice?: boolean;
 }
 
 /**
@@ -49,6 +53,8 @@ export function BookingsPageSwitch({
   showFreeBookingsTracker = true,
   timeOffBlocks = [],
   weeklySchedule,
+  bufferTime = 'none',
+  canCreateInvoice = true,
 }: BookingsPageSwitchProps) {
   const setAcceptBookings = useAvailabilityBookingStore(
     s => s.setAcceptBookings
@@ -67,6 +73,8 @@ export function BookingsPageSwitch({
         showFreeBookingsTracker={showFreeBookingsTracker}
         timeOffBlocks={timeOffBlocks}
         weeklySchedule={weeklySchedule}
+        bufferTime={bufferTime}
+        canCreateInvoice={canCreateInvoice}
       />
     );
   }

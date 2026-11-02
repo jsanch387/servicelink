@@ -6,6 +6,7 @@ import { OwnerSubscriptionsPage } from '@/features/subscriptions';
 import { listOwnerCustomerMemberships } from '@/features/subscriptions/server/listOwnerCustomerMemberships';
 import { loadMembershipsAccess } from '@/features/subscriptions/server/loadMembershipsAccess';
 import { loadOwnerMembershipsState } from '@/features/subscriptions/server/loadOwnerMembershipsState';
+import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { redirect } from 'next/navigation';
@@ -29,6 +30,8 @@ export default async function SubscriptionsDashboardPage({
   if (userError || !user) {
     redirect(ROUTES.AUTH.LOGIN);
   }
+
+  await requireDashboardPageAccess('billing.manage');
 
   const stateResult = await getOnboardingState(user.id, supabase);
   if (!stateResult.success || stateResult.data?.status !== 'completed') {

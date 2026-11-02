@@ -1,13 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { canBusinessSendCustomerSms } from '../server/canBusinessSendCustomerSms';
-
-const { isProAccessMock } = vi.hoisted(() => ({
-  isProAccessMock: vi.fn(),
-}));
-
-vi.mock('@/features/pricing/utils/isProAccess', () => ({
-  isProAccess: isProAccessMock,
-}));
 
 function makeAdmin(opts: {
   profileId?: string | null;
@@ -69,14 +61,16 @@ function makeAdmin(opts: {
 }
 
 describe('canBusinessSendCustomerSms', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    isProAccessMock.mockReturnValue(true);
-  });
-
-  it('allows any Pro owner when the rollout allowlist is empty', async () => {
+  it('allows free and Pro owners when the rollout allowlist is empty', async () => {
     const { admin, getUserById } = makeAdmin({
       email: 'anyone@example.com',
+      profileRow: {
+        subscription_tier: 'free',
+        subscription_current_period_end: null,
+        subscription_status: null,
+        stripe_subscription_id: null,
+        stripe_customer_id: null,
+      },
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -86,25 +80,21 @@ describe('canBusinessSendCustomerSms', () => {
     expect(getUserById).not.toHaveBeenCalled();
   });
 
-  it('rejects non-Pro owners', async () => {
-    isProAccessMock.mockReturnValue(false);
-    const { admin, getUserById } = makeAdmin({
-      email: 'anyone@example.com',
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await canBusinessSendCustomerSms(admin as any, 'biz-1');
-
-    expect(res).toEqual({ ok: false, reason: 'not_pro' });
-    expect(getUserById).not.toHaveBeenCalled();
-  });
-
   it('rejects when business has no profile_id', async () => {
     const { admin } = makeAdmin({ profileId: null });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = await canBusinessSendCustomerSms(admin as any, 'biz-1');
 
-    expect(res).toEqual({ ok: false, reason: 'not_pro' });
+    expect(res).toEqual({ ok: false, reason: 'no_owner' });
+  });
+
+  it('rejects an empty business id', async () => {
+    const { admin } = makeAdmin({});
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = await canBusinessSendCustomerSms(admin as any, '  ');
+
+    expect(res).toEqual({ ok: false, reason: 'no_owner' });
   });
 });

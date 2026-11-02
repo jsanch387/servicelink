@@ -1,6 +1,8 @@
 'use client';
 
-import { ROUTES } from '@/constants/routes';
+import { ROUTES, isTeamInvitePath } from '@/constants/routes';
+import { appendAttributionToAuthRedirect } from '@/features/marketing-attribution/utils/authRedirectAttribution';
+import { getStoredMarketingUtms } from '@/features/marketing-attribution/utils/utmCapture';
 import { ProfileService } from '@/features/profiles';
 import { createClient } from '@/libs/supabase';
 import { create } from 'zustand';
@@ -14,9 +16,12 @@ const initialState = {
   isInitialized: false,
 };
 
-async function startGoogleOAuthSignIn(
-  setLoading: (loading: boolean) => void
+async function startOAuthSignIn(
+  provider: 'google' | 'apple',
+  setLoading: (loading: boolean) => void,
+  next?: string
 ): Promise<{ error?: string }> {
+  const label = provider === 'apple' ? 'Apple' : 'Google';
   const supabase = createClient();
   setLoading(true);
 
@@ -25,9 +30,14 @@ async function startGoogleOAuthSignIn(
       process.env.NEXT_PUBLIC_SITE_URL ||
       (typeof window !== 'undefined' ? window.location.origin : '')
     ).replace(/\/$/, '');
-    const redirectTo = `${baseUrl}${ROUTES.AUTH.CALLBACK}`;
+    const nextPath =
+      next && isTeamInvitePath(next) ? next : ROUTES.DASHBOARD.MAIN;
+    const redirectTo = appendAttributionToAuthRedirect(
+      `${baseUrl}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(nextPath)}`,
+      getStoredMarketingUtms()
+    );
     const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider,
       options: { redirectTo },
     });
 
@@ -42,7 +52,7 @@ async function startGoogleOAuthSignIn(
     }
 
     setLoading(false);
-    return { error: 'Could not start Google sign-in' };
+    return { error: `Could not start ${label} sign-in` };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     setLoading(false);
@@ -169,7 +179,11 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       // Sign up
-      signUp: async (email: string, password: string) => {
+      signUp: async (
+        email: string,
+        password: string,
+        options?: { next?: string }
+      ) => {
         const supabase = createClient();
         set({ isLoading: true });
 
@@ -178,9 +192,16 @@ export const useAuthStore = create<AuthStore>()(
             process.env.NEXT_PUBLIC_SITE_URL ||
             (typeof window !== 'undefined' ? window.location.origin : '')
           ).replace(/\/$/, '');
-          const emailRedirectTo = `${baseUrl}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(
-            ROUTES.AUTH.EMAIL_CONFIRMED
-          )}`;
+          const nextPath =
+            options?.next && isTeamInvitePath(options.next)
+              ? options.next
+              : ROUTES.AUTH.EMAIL_CONFIRMED;
+          const emailRedirectTo = appendAttributionToAuthRedirect(
+            `${baseUrl}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(
+              nextPath
+            )}`,
+            getStoredMarketingUtms()
+          );
 
           const { data, error } = await supabase.auth.signUp({
             email,
@@ -252,8 +273,19 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      signInWithGoogle: async () =>
-        startGoogleOAuthSignIn(loading => set({ isLoading: loading })),
+      signInWithGoogle: async (options?: { next?: string }) =>
+        startOAuthSignIn(
+          'google',
+          loading => set({ isLoading: loading }),
+          options?.next
+        ),
+
+      signInWithApple: async (options?: { next?: string }) =>
+        startOAuthSignIn(
+          'apple',
+          loading => set({ isLoading: loading }),
+          options?.next
+        ),
 
       // Request password reset email (must use prod URL in prod so email link goes to app, not localhost)
       requestPasswordReset: async (email: string) => {

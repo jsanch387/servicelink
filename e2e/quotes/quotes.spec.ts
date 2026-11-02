@@ -123,7 +123,7 @@ test.describe('Quotes core flows', () => {
       expect(requested).toMatchObject({
         status: 'requested',
         source: 'customer_requested',
-        serviceName: fixture.requestServiceName,
+        serviceName: fixture.details,
         totalCents: 0,
       });
 
@@ -131,7 +131,7 @@ test.describe('Quotes core flows', () => {
       const requestRow = page
         .getByRole('link')
         .filter({ hasText: fixture.customerName });
-      await expect(requestRow).toContainText(fixture.requestServiceName);
+      await expect(requestRow).toContainText(fixture.details);
       await requestRow.click();
       await expect(page.getByText(fixture.details)).toBeVisible();
       await page.getByRole('link', { name: 'Create quote' }).click();

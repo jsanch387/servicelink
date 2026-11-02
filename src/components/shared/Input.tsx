@@ -2,6 +2,7 @@
 
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
+import { fieldBoxClassName, fieldLabelClassName } from './fieldStyles';
 
 interface InputProps {
   id?: string;
@@ -28,12 +29,16 @@ interface InputProps {
     | 'url';
   /** Optional icon on the left (e.g. phone); adds left padding when set. */
   leftIcon?: React.ReactNode;
+  /** Quiet mark on the right, such as %. */
+  suffix?: React.ReactNode;
   /** Max length for the input value (native maxLength). */
   maxLength?: number;
   'aria-label'?: string;
   onBlur?: () => void;
   /** Soft helper under the field (hidden when `error` is set). */
   hint?: React.ReactNode;
+  /** Kept so existing callers compile. Every input uses the standard field. */
+  size?: 'default' | 'compact';
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -52,6 +57,7 @@ export const Input: React.FC<InputProps> = ({
   autoComplete,
   inputMode,
   leftIcon,
+  suffix,
   maxLength,
   'aria-label': ariaLabel,
   onBlur,
@@ -65,21 +71,19 @@ export const Input: React.FC<InputProps> = ({
       : 'password'
     : type;
   const hasLeftIcon = Boolean(leftIcon);
+  const hasSuffix = Boolean(suffix);
 
   return (
     <div className={`w-full ${className}`}>
       {label && (
-        <label
-          htmlFor={id}
-          className="block text-left text-sm font-medium text-gray-200 mb-1.5"
-        >
+        <label htmlFor={id} className={fieldLabelClassName}>
           {label}
-          {required && <span className="text-red-400 ml-1">*</span>}
+          {required && <span className="ml-1 text-red-400">*</span>}
         </label>
       )}
       <div className="relative">
         {hasLeftIcon && (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-white/40">
             {leftIcon}
           </div>
         )}
@@ -98,22 +102,31 @@ export const Input: React.FC<InputProps> = ({
           maxLength={maxLength}
           aria-label={ariaLabel}
           className={`
-            w-full py-2.5 px-3.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-base sm:text-sm font-normal
-            focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 focus:bg-white/8
-            transition-all duration-200 touch-manipulation
-            ${hasLeftIcon ? 'pl-9' : ''}
-            ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/10'}
-            ${disabled ? 'opacity-60 cursor-not-allowed bg-white/3' : 'hover:border-white/20 active:bg-white/8'}
-            ${isPasswordType ? 'pr-10' : ''}
+            w-full text-base text-white placeholder:text-white/40 sm:text-sm touch-manipulation
+            ${fieldBoxClassName}
+            ${hasLeftIcon ? '!pl-9' : ''}
+            ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/15'}
+            ${
+              disabled
+                ? 'cursor-not-allowed opacity-60'
+                : 'hover:border-white/25'
+            }
+            ${isPasswordType || hasSuffix ? '!pr-8' : ''}
             ${inputClassName}
           `}
         />
+        {hasSuffix && !isPasswordType ? (
+          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-sm tabular-nums text-white/40">
+            {suffix}
+          </span>
+        ) : null}
         {isPasswordType && (
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-300 transition-colors"
+            className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-white/40 hover:text-white"
             tabIndex={-1}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? (
               <EyeSlashIcon className="h-4 w-4" />
@@ -124,9 +137,9 @@ export const Input: React.FC<InputProps> = ({
         )}
       </div>
       {error ? (
-        <p className="mt-1 text-sm text-red-400">{error}</p>
+        <p className="mt-1.5 text-sm text-red-400">{error}</p>
       ) : hint ? (
-        <p className="mt-1.5 text-xs text-zinc-500">{hint}</p>
+        <p className="mt-1.5 text-sm text-white/60">{hint}</p>
       ) : null}
     </div>
   );

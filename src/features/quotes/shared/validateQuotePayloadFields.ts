@@ -12,6 +12,9 @@ import {
   type QuoteAddonDetail,
 } from './quoteServiceSnapshot';
 
+/** Owner note on send / patch. Matches the create-quote textarea. */
+export const OWNER_QUOTE_NOTE_MAX_LENGTH = 2000;
+
 export interface QuotePayloadInput {
   customerName?: string;
   customerEmail?: string;
@@ -206,6 +209,15 @@ export function validateQuotePayloadFields(
     }
   }
 
+  const note = body.note?.trim() || null;
+  if (note && note.length > OWNER_QUOTE_NOTE_MAX_LENGTH) {
+    return {
+      ok: false,
+      error: `Note must be at most ${OWNER_QUOTE_NOTE_MAX_LENGTH} characters`,
+      status: 400,
+    };
+  }
+
   return {
     ok: true,
     data: {
@@ -218,7 +230,7 @@ export function validateQuotePayloadFields(
       serviceName: body.serviceName.trim(),
       priceCents: body.priceCents as number,
       durationMinutes: body.durationMinutes as number,
-      note: body.note?.trim() || null,
+      note,
       scheduledDate,
       scheduledStartTimeForDb,
       serviceId,

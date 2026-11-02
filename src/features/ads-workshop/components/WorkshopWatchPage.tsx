@@ -30,7 +30,7 @@ export function WorkshopWatchPage() {
   return (
     <div className="min-h-[100dvh] bg-[var(--dashboard-bg)] flex flex-col">
       <MarketingNavigation />
-      <div className="h-14 sm:h-20 shrink-0" aria-hidden />
+      <div className="h-14 sm:h-20 lg:h-24 shrink-0" aria-hidden />
 
       <main
         id="workshop-access"

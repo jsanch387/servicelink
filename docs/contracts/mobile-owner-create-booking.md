@@ -330,20 +330,20 @@ Body shape is generally:
 }
 ```
 
-| HTTP  | Typical `error` / cause                                                                                                          |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `400` | Missing/invalid fields (date, time, duration, customer validation, `businessId` / slug mismatch, invalid `serviceLocationType`). |
-| `401` | Missing/invalid Bearer token or no session (owner mode).                                                                         |
-| `403` | Authenticated user is not the owner of `businessId`, or free-tier booking cap reached (`enforceFreeTierBookingCapBeforeCreate`). |
-| `404` | Unknown slug or business not publicly visible.                                                                                   |
-| `409` | Slot overlaps owner **time off** for that business.                                                                              |
-| `500` | Unexpected failure (e.g. `booking_payments` insert failed — booking may be rolled back).                                         |
+| HTTP  | Typical `error` / cause                                                                                                                                                              |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `400` | Missing/invalid fields (date, time, duration, customer validation, `businessId` / slug mismatch, invalid `serviceLocationType`).                                                     |
+| `401` | Missing/invalid Bearer token or no session (owner mode).                                                                                                                             |
+| `403` | Authenticated user is not the owner of `businessId`, or free-tier booking cap reached (`enforceFreeTierBookingCapBeforeCreate`).                                                     |
+| `404` | Unknown slug or business not publicly visible.                                                                                                                                       |
+| `409` | **Customer** create only: slot already taken, buffer, time off, or lead time. **Owner** create (`ownerManualBooking: true`) may stack jobs — other bookings + buffer do **not** 409. |
+| `500` | Unexpected failure (e.g. `booking_payments` insert failed — booking may be rolled back).                                                                                             |
 
 ### Scheduling and retry behavior
 
-- The POST rejects overlap with configured owner **time off**.
-- The mobile availability UI should use the existing blocked-slots/availability data before submit.
-- The POST currently does **not** re-check overlap against other bookings. Mobile must refresh availability before final confirmation, but this is not a transactional guarantee against simultaneous submissions.
+- Owner create does **not** 409 because another job (or buffer) is already on that slot. Public book still does. Heads-up only in the app; do not block save.
+- **Owner** create skips **time off** and **lead time**; **customers** are still rejected for those (409).
+- The mobile availability UI should use the existing blocked-slots/availability data before submit. Concurrent submits can still race.
 - There is currently no idempotency key. Disable the submit button while the request is running and do not automatically retry a request after an ambiguous timeout; first refresh bookings to avoid duplicates.
 - Date/time validation currently checks request shape (`YYYY-MM-DD`, `H:mm`/`HH:mm`) and the database performs final date/time validation.
 - Free-tier owners are subject to the current lifetime booking cap. An owner-created mobile appointment counts toward that cap.

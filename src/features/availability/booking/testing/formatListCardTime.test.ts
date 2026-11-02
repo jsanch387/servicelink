@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { formatListCardTimeForBooking } from '@/features/availability/booking/dashboard/utils/formatListCardTime';
+import {
+  formatListCardTimeForBooking,
+  listCardTimeParts,
+} from '@/features/availability/booking/dashboard/utils/formatListCardTime';
 
 describe('formatListCardTimeForBooking', () => {
   it('formats morning and noon from startTimeHHmm', () => {
@@ -30,6 +33,15 @@ describe('formatListCardTimeForBooking', () => {
         time: 'ignored',
       })
     ).toBe('12:00 AM');
+  });
+
+  it('splits clock and period for the stacked list card', () => {
+    expect(
+      listCardTimeParts({ startTimeHHmm: '09:00', time: 'ignored' })
+    ).toEqual({ clock: '9:00', period: 'AM' });
+    expect(
+      listCardTimeParts({ startTimeHHmm: '14:30', time: 'ignored' })
+    ).toEqual({ clock: '2:30', period: 'PM' });
   });
 
   it('falls back to display time when HH:mm is missing or invalid', () => {

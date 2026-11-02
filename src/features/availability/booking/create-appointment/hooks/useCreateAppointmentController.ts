@@ -42,21 +42,24 @@ import {
 } from '../utils/createFlowNavigation';
 import { buildOwnerFlexibleWeeklySchedule } from '../utils/ownerFlexibleSchedule';
 import { CREATE_APPOINTMENT_SUBMIT_MIN_MS } from '../constants/submitStatus';
-import { normalizeUsPhoneDigits } from '@/lib/formatUsPhone';
+import type { CustomerBookingPrefill } from '../types/customerBookingPrefill';
 import type { MembershipVisitPrefill } from '../types/membershipVisitPrefill';
+import { seedVisitFromSavedCustomer } from '../utils/seedVisitFromSavedCustomer';
 
 export type ServiceStepPhase = 'path' | 'list';
 
 function shopAddressFromLocation(
   loc: PublicBookingServiceLocation
 ): CreateAppointmentAddress {
-  return {
-    street: loc.shopStreet,
-    unit: loc.shopUnit,
-    city: loc.city,
-    state: loc.state,
-    zip: loc.zip,
-  };
+  return seedVisitFromSavedCustomer({
+    base: createEmptyVisit(),
+    serviceLocation: { ...loc, mode: 'shop_only' },
+    details: {
+      customerName: '',
+      email: '',
+      phone: '',
+    },
+  }).visit.address;
 }
 
 function newLocalId(prefix: string): string {
@@ -113,6 +116,8 @@ export interface UseCreateAppointmentControllerOptions {
   stubAfterVehicle?: boolean;
   /** Prefill from membership Book visit. */
   membershipVisit?: MembershipVisitPrefill | null;
+  /** Prefill from a customer profile's New booking. */
+  customerPrefill?: CustomerBookingPrefill | null;
 }
 
 export function useCreateAppointmentController(
@@ -126,6 +131,7 @@ export function useCreateAppointmentController(
     serviceLocation,
     stubAfterVehicle = false,
     membershipVisit = null,
+    customerPrefill = null,
   } = options;
 
   const reactId = useId();
@@ -144,7 +150,24 @@ export function useCreateAppointmentController(
   >([]);
   const [draft, setDraft] = useState<CreateAppointmentJobDraft>(() => {
     const base = createEmptyJobDraft(`job_${reactId}_0`);
-    if (!membershipVisit) return base;
+    if (!membershipVisit) {
+      const vehicle = customerPrefill?.vehicles?.[0];
+      if (
+        !vehicle?.year.trim() ||
+        !vehicle.make.trim() ||
+        !vehicle.model.trim()
+      ) {
+        return base;
+      }
+      return {
+        ...base,
+        vehicle: {
+          year: vehicle.year.trim(),
+          make: vehicle.make.trim(),
+          model: vehicle.model.trim(),
+        },
+      };
+    }
     const vehicle = membershipVisit.vehicle;
     const rawMinutes = Math.round(membershipVisit.visitDurationMinutes);
     const durationMinutes =
@@ -185,93 +208,54 @@ export function useCreateAppointmentController(
       };
     });
   }, [membershipId]);
+  const savedCustomer = membershipVisit ?? customerPrefill;
   const [visit, setVisit] = useState<CreateAppointmentVisitState>(() => {
     const base = createEmptyVisit();
-    if (!membershipVisit) return base;
-    let locationType = base.locationType;
-    let address = base.address;
-    const saved = membershipVisit.address;
-    const hasSavedAddress = Boolean(
-      saved?.street?.trim() &&
-        saved.city?.trim() &&
-        saved.state?.trim() &&
-        saved.zip?.trim()
-    );
-    if (serviceLocation.mode === 'mobile_only') {
-      locationType = 'mobile';
-      if (hasSavedAddress && saved) {
-        address = {
-          street: saved.street.trim(),
-          unit: saved.unit?.trim() || '',
-          city: saved.city.trim(),
-          state: saved.state.trim(),
-          zip: saved.zip.trim(),
-        };
-      }
-    } else if (serviceLocation.mode === 'shop_only') {
-      locationType = 'shop';
-      address = shopAddressFromLocation(serviceLocation);
-    } else if (hasSavedAddress && saved) {
-      // both: prefer mobile + CRM address so owner doesn't retype
-      locationType = 'mobile';
-      address = {
-        street: saved.street.trim(),
-        unit: saved.unit?.trim() || '',
-        city: saved.city.trim(),
-        state: saved.state.trim(),
-        zip: saved.zip.trim(),
-      };
-    }
-    return {
-      ...base,
-      customer: {
-        fullName: membershipVisit.customerName.trim(),
-        email:
-          membershipVisit.email.trim() === '—'
-            ? ''
-            : membershipVisit.email.trim(),
-        phone: normalizeUsPhoneDigits(membershipVisit.phone.trim()),
+    if (!savedCustomer) return base;
+    return seedVisitFromSavedCustomer({
+      base,
+      serviceLocation,
+      details: {
+        customerName: savedCustomer.customerName,
+        email: savedCustomer.email,
+        phone: savedCustomer.phone,
+        notes: savedCustomer.notes,
+        address: savedCustomer.address,
       },
-      notes: membershipVisit.notes?.trim() || '',
-      locationType,
-      address,
-    };
+    }).visit;
   });
   const [appointmentConfirmed, setAppointmentConfirmed] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [locationSeeded, setLocationSeeded] = useState(() => {
-    if (!membershipVisit) return false;
-    if (
-      serviceLocation.mode === 'mobile_only' ||
-      serviceLocation.mode === 'shop_only'
-    ) {
-      return true;
-    }
-    // both + CRM address → location already set to mobile
-    const saved = membershipVisit.address;
-    return Boolean(
-      saved?.street?.trim() &&
-        saved.city?.trim() &&
-        saved.state?.trim() &&
-        saved.zip?.trim()
-    );
+    if (!savedCustomer) return false;
+    return seedVisitFromSavedCustomer({
+      base: createEmptyVisit(),
+      serviceLocation,
+      details: {
+        customerName: savedCustomer.customerName,
+        email: savedCustomer.email,
+        phone: savedCustomer.phone,
+        notes: savedCustomer.notes,
+        address: savedCustomer.address,
+      },
+    }).locationSeeded;
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedBookingId, setConfirmedBookingId] = useState<string | null>(
     null
   );
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [scheduleExactConflict, setScheduleExactConflict] = useState(false);
-  const [showScheduleConflictModal, setShowScheduleConflictModal] =
-    useState(false);
 
   const jobIndex = committedJobs.length;
   const hasScheduleSlot = Boolean(visit.scheduledDate && visit.startTime);
 
   // Prefetch once for the whole create session — ScheduleStep remounts on
   // back/continue must not re-hit availability / blocked-slots APIs.
-  const { weeklySchedule, loading: scheduleLoading } =
-    useOwnerQuoteScheduling();
+  const {
+    weeklySchedule,
+    bufferTime,
+    loading: scheduleLoading,
+  } = useOwnerQuoteScheduling();
   const { blockedSlots, loading: blockedSlotsLoading } = usePublicBlockedSlots(
     businessSlug.trim() || undefined
   );
@@ -651,11 +635,6 @@ export function useCreateAppointmentController(
       return;
     }
 
-    if (step === CREATE_APPOINTMENT_STEP.SCHEDULE && scheduleExactConflict) {
-      setShowScheduleConflictModal(true);
-      return;
-    }
-
     const next = getNextStepOnContinue({
       step,
       ...navOpts,
@@ -675,27 +654,7 @@ export function useCreateAppointmentController(
     vehicleSkipped,
     jobIndex,
     submitAppointment,
-    scheduleExactConflict,
   ]);
-
-  const confirmScheduleDespiteConflict = useCallback(() => {
-    setShowScheduleConflictModal(false);
-    const next = getNextStepOnContinue({
-      step: CREATE_APPOINTMENT_STEP.SCHEDULE,
-      ...navOpts,
-      hasScheduleSlot,
-    });
-    setStep(next);
-  }, [navOpts, hasScheduleSlot]);
-
-  const dismissScheduleConflictModal = useCallback(() => {
-    setShowScheduleConflictModal(false);
-  }, []);
-
-  const setExactStartConflict = useCallback((hasConflict: boolean) => {
-    setScheduleExactConflict(hasConflict);
-    if (!hasConflict) setShowScheduleConflictModal(false);
-  }, []);
 
   const cancelInProgressExtraJob = useCallback(() => {
     if (committedJobs.length === 0) return;
@@ -812,7 +771,6 @@ export function useCreateAppointmentController(
 
   const setSchedule = useCallback(
     (next: { scheduledDate: string; startTime: string | null }) => {
-      setShowScheduleConflictModal(false);
       setVisit(v => ({
         ...v,
         scheduledDate: next.scheduledDate,
@@ -875,11 +833,6 @@ export function useCreateAppointmentController(
     setDraft,
     setVisit,
     goContinue,
-    confirmScheduleDespiteConflict,
-    dismissScheduleConflictModal,
-    setExactStartConflict,
-    showScheduleConflictModal,
-    scheduleExactConflict,
     goBack,
     servicePhase,
     servicePath,
@@ -904,6 +857,7 @@ export function useCreateAppointmentController(
     visitDuration,
     reviewJobs,
     flexibleWeeklySchedule,
+    bufferTime,
     blockedSlots,
     scheduleDataLoading,
     newLocalId,

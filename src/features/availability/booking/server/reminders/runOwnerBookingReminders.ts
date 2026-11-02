@@ -6,10 +6,12 @@
 import { logAvailabilityOwnerNotify } from '@/features/availability/server/availabilityOwnerNotifyLog';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { BOOKING_REMINDER_SEND_CONCURRENCY } from './constants';
 import {
   loadConfirmedReminderBookings,
   loadReminderBusinesses,
 } from './loadConfirmedReminderBookings';
+import { mapWithConcurrency } from './mapWithConcurrency';
 import { notifyOwnerForBookingReminder } from './notifyOwnerForBookingReminder';
 import {
   BOOKING_REMINDER_TIMEZONE,
@@ -94,12 +96,17 @@ export async function runOwnerBookingReminders(
     return result;
   }
 
-  for (const profileId of ownerIds) {
-    const outcome = await notifyOwnerForBookingReminder(supabase, {
-      profileId,
-      targetDate,
-      correlationId,
-    });
+  const outcomes = await mapWithConcurrency(
+    ownerIds,
+    BOOKING_REMINDER_SEND_CONCURRENCY,
+    profileId =>
+      notifyOwnerForBookingReminder(supabase, {
+        profileId,
+        targetDate,
+        correlationId,
+      })
+  );
+  for (const outcome of outcomes) {
     result[outcome] += 1;
   }
 

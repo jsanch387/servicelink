@@ -24,6 +24,36 @@ export type SignupAttributionRow = {
   referrer: string | null;
   channel: string | null;
   signed_up_at: string;
+  first_paid_at: string | null;
+};
+
+export type PaidConversionPeriod = '30d' | '90d' | 'all';
+
+export type PaidConversionCounts = {
+  signups: number;
+  everPaid: number;
+  currentlyPaying: number;
+  conversionRate: number;
+};
+
+export type PaidConversionChannelRow = PaidConversionCounts & {
+  channel: string;
+};
+
+export type PaidConversionCampaignRow = PaidConversionCounts & {
+  channel: string;
+  campaign: string;
+  source: string;
+  medium: string;
+};
+
+export type PaidConversionReport = {
+  generatedAt: string;
+  period: PaidConversionPeriod;
+  totals: PaidConversionCounts;
+  paidAds: PaidConversionCounts;
+  byChannel: PaidConversionChannelRow[];
+  byCampaign: PaidConversionCampaignRow[];
 };
 
 export type SaveSignupAttributionResult =

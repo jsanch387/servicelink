@@ -95,12 +95,12 @@ There is **no** separate `email: { sent }` block today — email is fire-and-for
 
 Do **not** use this endpoint for:
 
-| Goal                                 | Use instead                                                                        |
-| ------------------------------------ | ---------------------------------------------------------------------------------- |
-| Mark job complete                    | `POST …/actions` `{ "action": "job_completed" }` (or web complete sheet)           |
-| Reschedule                           | Same `PATCH` with `{ "scheduledDate", "startTime" }` only — see availability FLOWS |
-| Hard-delete row                      | `DELETE /api/availability/bookings/{id}` (no cancel email; rare)                   |
-| Cancel **membership** (stop billing) | Memberships subscriber cancel APIs — not this                                      |
+| Goal                                 | Use instead                                                                                                                  |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| Mark job complete                    | `POST …/actions` `{ "action": "job_completed" }` (or web complete sheet)                                                     |
+| Reschedule                           | Same `PATCH` with `{ "scheduledDate", "startTime" }` only — [`mobile-booking-reschedule.md`](./mobile-booking-reschedule.md) |
+| Hard-delete row                      | `DELETE /api/availability/bookings/{id}` (no cancel email; rare)                                                             |
+| Cancel **membership** (stop billing) | Memberships subscriber cancel APIs — not this                                                                                |
 
 ---
 

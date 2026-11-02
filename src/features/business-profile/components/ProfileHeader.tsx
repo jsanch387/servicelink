@@ -12,13 +12,17 @@ import { ProfileRatingSummary } from '../reviews';
 import type { PublicProfileReviewsSummary } from '@/features/reviews';
 import { PublicBookingLanguageToggle } from './PublicBookingLanguageToggle';
 import React from 'react';
-import { ImageWithFallback } from '../../../components';
 import {
   CoverPhotoPlaceholder,
   LogoPlaceholder,
 } from '../../../components/shared';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
+import {
+  getProfileCoverDisplaySrc,
+  getProfileLogoDisplaySrc,
+} from '../utils/workPhotoSrc';
 import { socialLinksForDisplay } from '../utils/socialMedia';
+import { ProfileMediaImage } from './ProfileMediaImage';
 
 interface ProfileHeaderProps {
   businessProfile: CompleteBusinessProfile;
@@ -32,6 +36,8 @@ interface ProfileHeaderProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
   /** When null/undefined or empty count, header star rating is hidden. */
   publicReviewSummary?: PublicProfileReviewsSummary | null;
+  /** City/state + radius for the booking link, e.g. "Austin, TX · 25 mi". */
+  coverageLabel?: string | null;
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
@@ -41,6 +47,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   showRequestQuoteCta = false,
   bookingFlowLocale = 'en',
   publicReviewSummary = null,
+  coverageLabel = null,
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
   const slugTrimmed = businessProfile.business_slug?.trim();
@@ -49,22 +56,29 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     !!slugTrimmed &&
     (isPublic || showRequestQuoteCta) &&
     (showRequestQuoteCta || !!phoneTrimmed);
-  const serviceArea = businessProfile.service_area?.trim() || null;
+  const serviceArea =
+    coverageLabel?.trim() || businessProfile.service_area?.trim() || null;
   const socialLinks = socialLinksForDisplay(businessProfile.social_media);
+  const coverSrc = businessProfile.cover_image_url?.trim() || '';
+  const logoSrc = businessProfile.logo_url?.trim() || '';
+  const coverIsLcp = Boolean(coverSrc);
+  const logoIsLcp = !coverIsLcp && Boolean(logoSrc);
 
   return (
     <>
       <div className="relative h-44 sm:h-56 md:h-60 w-full overflow-hidden bg-[#0f0f0f]">
-        {businessProfile.cover_image_url ? (
-          <ImageWithFallback
-            src={businessProfile.cover_image_url}
+        {coverSrc ? (
+          <ProfileMediaImage
+            src={coverSrc}
+            displaySrc={getProfileCoverDisplaySrc(coverSrc)}
             alt="Business Cover Photo"
-            width={1200}
+            width={1080}
             height={400}
-            className="w-full h-full object-cover object-center"
+            wrapperClassName="h-full w-full"
+            className="h-full w-full object-cover object-center"
             fallbackLabel="Cover photo"
-            fallbackSize={{ w: 1200, h: 400 }}
-            priority
+            fallbackSize={{ w: 1080, h: 400 }}
+            priority={coverIsLcp}
             sizes="(max-width: 640px) 100vw, 896px"
           />
         ) : (
@@ -90,16 +104,19 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       <div className="relative z-10 flex flex-col items-center px-4 sm:px-8 -mt-14 text-center">
         <div className="relative mb-5">
           <div className="rounded-[2rem] bg-zinc-800/80 p-1 shadow-xl ring-1 ring-white/10">
-            {businessProfile.logo_url ? (
-              <ImageWithFallback
+            {logoSrc ? (
+              <ProfileMediaImage
+                wrapperClassName="h-28 w-28 rounded-[1.75rem] bg-zinc-900 sm:h-32 sm:w-32"
+                skeletonClassName="rounded-[1.75rem]"
                 className="h-28 w-28 rounded-[1.75rem] border-2 border-[#0f0f0f] object-cover bg-zinc-900 sm:h-32 sm:w-32"
-                src={businessProfile.logo_url}
+                src={logoSrc}
+                displaySrc={getProfileLogoDisplaySrc(logoSrc)}
                 alt={`${businessProfile.business_name} logo`}
                 width={256}
                 height={256}
                 fallbackLabel="Logo"
                 fallbackSize={{ w: 256, h: 256 }}
-                priority
+                priority={logoIsLcp}
                 sizes="128px"
               />
             ) : (
@@ -111,7 +128,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </div>
           {showVerifiedBadge ? (
             <span
-              className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-[#0f0f0f] ring-2 ring-zinc-700"
+              className="absolute -bottom-0.5 -right-0.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-[#0f0f0f] ring-2 ring-zinc-700"
               aria-label="Verified business"
             >
               <CheckBadgeIcon className="h-4 w-4 text-blue-400" />

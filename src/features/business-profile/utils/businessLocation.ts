@@ -1,6 +1,6 @@
 /**
- * Business profile location (city, state, ZIP).
- * Shop street/unit live on `business_profiles` separately — see docs/serviceLocation.md.
+ * Business profile location (city, state, ZIP) for the mobile serving area.
+ * Shop street/city/state/ZIP live on `shop_*` columns — see docs/serviceLocation.md.
  */
 
 export interface BusinessLocationFields {
@@ -112,9 +112,7 @@ export function validateBusinessLocation(
     }
   }
 
-  if (!zip) {
-    errors.push('ZIP is required');
-  } else if (!isValidUsZip(zip)) {
+  if (zip && !isValidUsZip(zip)) {
     errors.push('ZIP must be 5 digits');
   }
 

@@ -4,8 +4,9 @@ import { Button, GlassCard } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { CrownIcon } from '@/icons';
 import React, { useState } from 'react';
-import type { BillingInterval, PlanId } from '../types';
+import type { BillingInterval, PlanId, PlatformBillingAction } from '../types';
 import { PLANS } from '../types';
+import { planSectionBillingCtas } from '../utils/canOpenPlatformBillingPortal';
 
 function formatRenewalDate(iso: string | null | undefined): string | null {
   if (!iso?.trim()) return null;
@@ -33,6 +34,15 @@ interface PlanSectionProps {
   billingInterval?: BillingInterval;
   /** Hide the section heading when a parent group label is shown (e.g. Settings billing). */
   hideHeading?: boolean;
+  /**
+   * Live Stripe action. Free accounts with an open subscription manage or
+   * update payment here instead of jumping into a new checkout.
+   */
+  billingAction?: PlatformBillingAction;
+  /** From `profiles.stripe_customer_id`. Portal stays available after Pro is revoked. */
+  stripeCustomerId?: string | null;
+  /** Paying Team subscription. Still uses Pro access for features. */
+  isTeamPlan?: boolean;
 }
 
 export const PlanSection: React.FC<PlanSectionProps> = ({
@@ -43,16 +53,35 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
   monthlyPriceOverride = null,
   billingInterval = 'month',
   hideHeading = false,
+  billingAction = 'checkout',
+  stripeCustomerId = null,
+  isTeamPlan = false,
 }) => {
   const plan = PLANS[planId];
   const isPro = planId === 'pro';
+  const billingCtas = planSectionBillingCtas({
+    planId,
+    stripeCustomerId,
+    subscriptionStatus,
+    billingAction,
+  });
+  const showManage = billingCtas.includes('manage');
+  const showUpgrade = billingCtas.includes('upgrade');
+  const portalLabel =
+    billingAction === 'update_payment'
+      ? 'Manage billing'
+      : 'Manage subscription';
   const displayPrice =
     isPro && monthlyPriceOverride?.trim()
       ? monthlyPriceOverride.trim()
       : plan.price;
   const renewalDateLabel = formatRenewalDate(subscriptionCurrentPeriodEnd);
   const isTrialing = subscriptionStatus === 'trialing';
-  const displayPlanName = isPro && isTrialing ? 'Pro trial' : plan.name;
+  const displayPlanName = isTeamPlan
+    ? 'Team'
+    : isPro && isTrialing
+      ? 'Pro trial'
+      : plan.name;
   const pricePeriodSuffix = billingInterval === 'year' ? '/year' : '/month';
   const [portalLoading, setPortalLoading] = useState(false);
 
@@ -144,30 +173,40 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
           </p>
         ) : null}
 
-        {isPro ? (
-          <div className="mt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full sm:w-auto"
-              onClick={handleManageSubscription}
-              disabled={portalLoading}
-              loading={portalLoading}
-            >
-              Manage subscription
-            </Button>
+        {showManage || showUpgrade ? (
+          <div className="mt-4 flex w-full min-w-0 flex-col gap-2">
+            {showManage && isPro ? (
+              <Button
+                href={ROUTES.DASHBOARD.UPGRADE}
+                variant="secondary"
+                className="w-full sm:w-auto"
+              >
+                Manage subscription
+              </Button>
+            ) : showManage ? (
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full sm:w-auto"
+                onClick={handleManageSubscription}
+                disabled={portalLoading}
+                loading={portalLoading}
+              >
+                {portalLabel}
+              </Button>
+            ) : null}
+            {showUpgrade ? (
+              <Button
+                href={ROUTES.DASHBOARD.UPGRADE}
+                variant="inverse"
+                fullWidth
+                icon={<CrownIcon className="h-4 w-4" />}
+              >
+                Upgrade
+              </Button>
+            ) : null}
           </div>
-        ) : (
-          <div className="mt-4">
-            <Button
-              href={ROUTES.DASHBOARD.UPGRADE}
-              variant="secondary"
-              className="w-full sm:w-auto"
-            >
-              View plans & upgrade
-            </Button>
-          </div>
-        )}
+        ) : null}
       </GlassCard>
     </section>
   );

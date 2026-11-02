@@ -23,6 +23,7 @@ import {
 } from '@/features/services/utils/serviceEditForm';
 import { ListBulletIcon } from '@heroicons/react/24/outline';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ServiceSpanishCopyFields } from './ServiceSpanishCopyFields';
 
 export interface EditServiceModalProps {
   service: ServiceRow | null;
@@ -44,6 +45,8 @@ export interface EditServiceModalProps {
 export interface EditServiceFormData {
   name: string;
   description: string;
+  name_es: string;
+  description_es: string;
   price_cents: number | null;
   duration_minutes: number | null;
   category_id: string | null;
@@ -80,6 +83,8 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [spanishName, setSpanishName] = useState('');
+  const [spanishDescription, setSpanishDescription] = useState('');
   const [price, setPrice] = useState('');
   const [durationHHmm, setDurationHHmm] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -93,6 +98,8 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       const form = serviceToForm(service);
       setName(form.name);
       setDescription(form.description);
+      setSpanishName(service.name_es ?? '');
+      setSpanishDescription(service.description_es ?? '');
       setPrice(form.price);
       setDurationHHmm(form.durationHHmm);
       setCategoryId(initialCategoryId ?? '');
@@ -100,6 +107,8 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
     } else if (showAddForm) {
       setName('');
       setDescription('');
+      setSpanishName('');
+      setSpanishDescription('');
       setPrice('');
       setDurationHHmm('');
       setCategoryId(initialCategoryId ?? '');
@@ -162,6 +171,8 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       const data: EditServiceFormData = {
         name: nameTrim,
         description: descriptionTrim,
+        name_es: spanishName.trim(),
+        description_es: spanishDescription.trim(),
         price_cents: Math.round(priceNum * 100),
         duration_minutes: durationResult.durationMinutes,
         category_id: categoryId || null,
@@ -172,7 +183,17 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         onSave(undefined, data);
       }
     },
-    [service, name, description, price, durationHHmm, categoryId, onSave]
+    [
+      service,
+      name,
+      description,
+      spanishName,
+      spanishDescription,
+      price,
+      durationHHmm,
+      categoryId,
+      onSave,
+    ]
   );
 
   if (!isOpen) return null;
@@ -236,7 +257,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
           onChange={setDescription}
           rows={5}
           maxLength={SERVICE_DESCRIPTION_MAX_LENGTH}
-          inputClassName="resize-y min-h-[7.5rem]"
+          inputClassName="resize-y min-h-[4.5rem]"
           required
         />
 
@@ -261,12 +282,19 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
           </div>
         </div>
 
-        <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+        <ServiceSpanishCopyFields
+          name={spanishName}
+          description={spanishDescription}
+          onNameChange={setSpanishName}
+          onDescriptionChange={setSpanishDescription}
+        />
+
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row">
           <Button
             type="button"
             onClick={onClose}
             variant="secondary"
-            className="w-full sm:w-auto"
+            className="flex-1"
           >
             Cancel
           </Button>
@@ -275,7 +303,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
             variant="inverse"
             loading={isSaving}
             disabled={!isValid || isSaving}
-            className="w-full sm:flex-1"
+            className="flex-1"
           >
             {isSaving
               ? isAddMode

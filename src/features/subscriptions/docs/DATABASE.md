@@ -81,7 +81,9 @@ business_profiles
 | `business_id`     | `uuid`        | no       | —                   | FK → `business_profiles(id)` ON DELETE CASCADE (denormalized for RLS) |
 | `interval_unit`   | `text`        | no       | —                   | CHECK IN (`week`, `month`, `year`)                                    |
 | `interval_count`  | `integer`     | no       | —                   | CHECK `>= 1` (e.g. `2` + `week` = every 2 weeks)                      |
-| `price_cents`     | `integer`     | no       | —                   | Amount per period in cents; DB `>= 0`, API requires `> 0`             |
+| `price_cents`     | `integer`     | no       | —                   | Pre-tax amount per period in cents; DB `>= 0`, API requires `> 0`     |
+| `tax_rate_bps`    | `integer`     | no       | `0`                 | Shop rate when this price was last saved. 825 = 8.25%. Cap 2500       |
+| `tax_cents`       | `integer`     | no       | `0`                 | Tax on top of `price_cents`. Stripe charges `price_cents + tax_cents` |
 | `currency`        | `text`        | no       | `'usd'`             | Lowercase ISO currency                                                |
 | `is_default`      | `boolean`     | no       | `false`             | Pre-selected cadence on public card; first option on create           |
 | `stripe_price_id` | `text`        | yes      | null                | Stripe Price on Connect (`price_…`). Set on create/edit sync          |

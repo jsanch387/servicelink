@@ -30,6 +30,13 @@ describe('ReviewExpandableText', () => {
     expect(container.firstChild).toBeNull();
   });
 
+  it('returns null for the star-only placeholder', () => {
+    const { container } = render(
+      <ReviewExpandableText text="—" variant="reviewBody" />
+    );
+    expect(container.firstChild).toBeNull();
+  });
+
   it('does not show toggle for short text', () => {
     render(<ReviewExpandableText text="Short review." variant="reviewBody" />);
     expect(screen.queryByRole('button')).toBeNull();

@@ -1,66 +1,12 @@
 'use client';
 
-import { Button, GlassCard } from '@/components/shared';
-import { IOS_APP_STORE_URL } from '@/constants/appStore';
+import { GlassCard } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { ChangeAccountEmailModal } from '@/features/account';
 import { useAuth } from '@/features/auth';
-import {
-  ArrowRightStartOnRectangleIcon,
-  ChevronRightIcon,
-  DevicePhoneMobileIcon,
-  EnvelopeIcon,
-  InformationCircleIcon,
-} from '@heroicons/react/24/outline';
-import Link from 'next/link';
+import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
-
-const compactLinkClass =
-  'flex min-h-[40px] items-center gap-2.5 py-2 text-sm text-gray-400 transition-colors hover:text-white group cursor-pointer';
-
-interface SettingsCompactLinkProps {
-  href: string;
-  external?: boolean;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}
-
-const SettingsCompactLink: React.FC<SettingsCompactLinkProps> = ({
-  href,
-  external = false,
-  icon,
-  children,
-}) => {
-  const content = (
-    <>
-      <span className="shrink-0 opacity-70 group-hover:opacity-100">
-        {icon}
-      </span>
-      <span className="min-w-0 flex-1">{children}</span>
-      <ChevronRightIcon className="h-3.5 w-3.5 shrink-0 opacity-40 group-hover:opacity-70" />
-    </>
-  );
-
-  if (external) {
-    return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={compactLinkClass}
-      >
-        {content}
-      </a>
-    );
-  }
-
-  return (
-    <Link href={href} className={compactLinkClass}>
-      {content}
-    </Link>
-  );
-};
 
 export type EmailChangeNotice = 'updated' | 'error' | null;
 
@@ -80,8 +26,7 @@ export const SettingsAccountSection: React.FC<SettingsAccountSectionProps> = ({
   emailNotice = null,
 }) => {
   const router = useRouter();
-  const { signOut, updateUser } = useAuth();
-  const [logoutLoading, setLogoutLoading] = useState(false);
+  const { updateUser } = useAuth();
   const [changeOpen, setChangeOpen] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(
     pendingEmailProp
@@ -108,18 +53,6 @@ export const SettingsAccountSection: React.FC<SettingsAccountSectionProps> = ({
     }
   }, [emailNotice, accountEmail, updateUser, router]);
 
-  const handleLogout = useCallback(async () => {
-    setLogoutLoading(true);
-    try {
-      const result = await signOut();
-      if (result.success) router.push('/');
-    } catch {
-      // ignore
-    } finally {
-      setLogoutLoading(false);
-    }
-  }, [signOut, router]);
-
   const handleEmailRequested = useCallback((nextPending: string) => {
     setPendingEmail(nextPending);
     setNotice(null);
@@ -128,7 +61,7 @@ export const SettingsAccountSection: React.FC<SettingsAccountSectionProps> = ({
   if (!accountEmail) return null;
 
   return (
-    <section id="settings-account" className="w-full min-w-0 space-y-3">
+    <section id="settings-account" className="w-full min-w-0 space-y-4">
       <ChangeAccountEmailModal
         isOpen={changeOpen}
         onClose={() => setChangeOpen(false)}
@@ -144,14 +77,8 @@ export const SettingsAccountSection: React.FC<SettingsAccountSectionProps> = ({
         rounded="rounded-2xl"
         blurColor="bg-zinc-500"
         showBlur
-        className="w-full min-w-0 p-4 text-left"
+        className="!h-auto w-full min-w-0 p-4 text-left"
       >
-        <p className="text-sm text-gray-400 mb-4 leading-relaxed">
-          {signedInWithGoogle
-            ? 'You signed in with Google. You can still update the email used for account notices.'
-            : 'The email you use to sign in and receive account updates.'}
-        </p>
-
         {notice === 'updated' ? (
           <div
             className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-3 text-sm text-emerald-200"
@@ -196,49 +123,14 @@ export const SettingsAccountSection: React.FC<SettingsAccountSectionProps> = ({
           </div>
         ) : null}
 
-        <Button
+        <button
           type="button"
-          variant="secondary"
-          size="sm"
           onClick={() => setChangeOpen(true)}
-          className="mt-3 w-full sm:w-auto"
+          className="mt-3 ml-auto block text-right cursor-pointer text-xs text-zinc-500 underline underline-offset-2 hover:text-zinc-300"
         >
           Update email
-        </Button>
-
-        <div className="mt-4 border-t border-white/10 pt-3 space-y-0.5">
-          <SettingsCompactLink
-            href={ROUTES.DASHBOARD.CONTACT}
-            icon={<EnvelopeIcon className="h-4 w-4" aria-hidden />}
-          >
-            Contact support
-          </SettingsCompactLink>
-          {IOS_APP_STORE_URL ? (
-            <SettingsCompactLink
-              href={IOS_APP_STORE_URL}
-              external
-              icon={<DevicePhoneMobileIcon className="h-4 w-4" aria-hidden />}
-            >
-              iPhone app
-            </SettingsCompactLink>
-          ) : null}
-        </div>
+        </button>
       </GlassCard>
-
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        onClick={handleLogout}
-        loading={logoutLoading}
-        disabled={logoutLoading}
-        icon={
-          <ArrowRightStartOnRectangleIcon className="h-4 w-4" aria-hidden />
-        }
-        className="w-full sm:w-auto"
-      >
-        Log out
-      </Button>
     </section>
   );
 };

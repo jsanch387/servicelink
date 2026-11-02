@@ -74,6 +74,48 @@ describe('notifyCustomerForBookingReminder', () => {
     );
   });
 
+  it('sends email and SMS in parallel', async () => {
+    let emailResolved = false;
+    vi.mocked(sendAvailabilityBookingReminderEmail).mockImplementation(
+      async () => {
+        await new Promise(resolve => setTimeout(resolve, 20));
+        emailResolved = true;
+        return { sent: true };
+      }
+    );
+    vi.mocked(sendAndRecordSms).mockImplementation(async () => {
+      expect(emailResolved).toBe(false);
+      return { sent: true, messageId: 'sms-1' };
+    });
+
+    const result = await notifyCustomerForBookingReminder({} as never, {
+      ...base,
+      customerEmail: 'jose@example.com',
+      customerPhone: '+15555550100',
+    });
+
+    expect(result).toEqual({ email: 'sent', sms: 'sent' });
+    expect(emailResolved).toBe(true);
+  });
+
+  it('skips SMS when Telnyx blocked a STOP opt-out', async () => {
+    vi.mocked(sendAvailabilityBookingReminderEmail).mockResolvedValue({
+      sent: true,
+    });
+    vi.mocked(sendAndRecordSms).mockResolvedValue({
+      sent: false,
+      reason: 'carrier_opt_out',
+    });
+
+    const result = await notifyCustomerForBookingReminder({} as never, {
+      ...base,
+      customerEmail: 'jose@example.com',
+      customerPhone: '+15555557496',
+    });
+
+    expect(result).toEqual({ email: 'sent', sms: 'skipped' });
+  });
+
   it('sends email only when there is no phone', async () => {
     vi.mocked(sendAvailabilityBookingReminderEmail).mockResolvedValue({
       sent: true,

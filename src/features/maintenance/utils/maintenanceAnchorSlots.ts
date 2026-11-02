@@ -46,7 +46,8 @@ export function getMaintenanceSlotsForIsoDate(
   weeklySchedule: WeeklySchedule,
   durationMinutes: number,
   existingBookings: ExistingBooking[],
-  timeOffBlocks: TimeOffInterval[]
+  timeOffBlocks: TimeOffInterval[],
+  bufferTime: string = 'none'
 ): string[] {
   const date = maintenanceAnchorDateFromIso(isoDate);
   if (!date) return [];
@@ -56,7 +57,9 @@ export function getMaintenanceSlotsForIsoDate(
     Math.max(1, Math.round(durationMinutes)),
     existingBookings,
     30,
-    timeOffBlocks
+    timeOffBlocks,
+    'none',
+    { bufferTime }
   );
 }
 
@@ -66,9 +69,15 @@ export function createMaintenanceAnchorDateDisabled(params: {
   durationMinutes: number;
   existingBookings: ExistingBooking[];
   timeOffBlocks: TimeOffInterval[];
+  bufferTime?: string;
 }): (date: Date) => boolean {
-  const { weeklySchedule, durationMinutes, existingBookings, timeOffBlocks } =
-    params;
+  const {
+    weeklySchedule,
+    durationMinutes,
+    existingBookings,
+    timeOffBlocks,
+    bufferTime = 'none',
+  } = params;
   const duration = Math.max(1, Math.round(durationMinutes));
 
   return (date: Date) => {
@@ -80,7 +89,9 @@ export function createMaintenanceAnchorDateDisabled(params: {
       duration,
       existingBookings,
       30,
-      timeOffBlocks
+      timeOffBlocks,
+      'none',
+      { bufferTime }
     );
     return slots.length === 0;
   };

@@ -35,6 +35,7 @@ type PublicVisitBookingClientProps = {
   weeklySchedule?: WeeklySchedule | null;
   timeOffBlocks?: TimeOffInterval[];
   minimumNotice?: string;
+  bufferTime?: string;
   paymentSettings?: PublicBookingPaymentSettings | null;
   bookingFlowLocale?: PublicBookingFlowLocale;
   serviceLocation: PublicBookingServiceLocation;
@@ -43,6 +44,7 @@ type PublicVisitBookingClientProps = {
   stripeCheckoutSessionId?: string | null;
   exitCalendarFlowHref: string;
   exitCalendarFlowLabel: string;
+  bookingPolicy?: { text: string } | null;
 };
 
 /**
@@ -58,6 +60,7 @@ export function PublicVisitBookingClient({
   weeklySchedule,
   timeOffBlocks,
   minimumNotice,
+  bufferTime,
   paymentSettings,
   bookingFlowLocale = 'en',
   serviceLocation,
@@ -66,6 +69,7 @@ export function PublicVisitBookingClient({
   stripeCheckoutSessionId,
   exitCalendarFlowHref,
   exitCalendarFlowLabel,
+  bookingPolicy = null,
 }: PublicVisitBookingClientProps) {
   const router = useRouter();
   const ui = publicBookingUi(bookingFlowLocale);
@@ -77,6 +81,13 @@ export function PublicVisitBookingClient({
   useEffect(() => {
     const cart = loadPublicBookingJobsCart(businessSlug);
     if (!cart || cart.jobs.length < 1) {
+      // Paid return can render confirmation from the Stripe session alone.
+      // Bouncing to the service list here is what drops the customer on
+      // `/book/details` when the business has a single service.
+      if (stripeCheckoutSessionId) {
+        setJobs([]);
+        return;
+      }
       router.replace(
         getBusinessBookPath(businessSlug, { lang: bookingFlowLocale })
       );
@@ -88,7 +99,13 @@ export function PublicVisitBookingClient({
     } else if (initialCustomerServiceChoice) {
       setLocationChoice(initialCustomerServiceChoice);
     }
-  }, [businessSlug, bookingFlowLocale, initialCustomerServiceChoice, router]);
+  }, [
+    businessSlug,
+    bookingFlowLocale,
+    initialCustomerServiceChoice,
+    router,
+    stripeCheckoutSessionId,
+  ]);
 
   const addAnotherHref = useMemo(() => {
     if (!jobs || jobs.length >= PUBLIC_BOOKING_MAX_JOBS) return undefined;
@@ -173,6 +190,7 @@ export function PublicVisitBookingClient({
       weeklySchedule={weeklySchedule ?? DEFAULT_SCHEDULE}
       timeOffBlocks={timeOffBlocks}
       minimumNotice={minimumNotice}
+      bufferTime={bufferTime}
       paymentSettings={paymentSettings}
       bookingFlowLocale={bookingFlowLocale}
       exitCalendarFlowHref={resolvedExit.href}
@@ -186,6 +204,7 @@ export function PublicVisitBookingClient({
       onRemoveBookingJob={handleRemoveJob}
       onBookingJobsChange={setJobs}
       onPublicMultiJobBookingCreated={handleBookingCreated}
+      bookingPolicy={bookingPolicy}
     />
   );
 }

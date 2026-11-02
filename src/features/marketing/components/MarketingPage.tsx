@@ -137,12 +137,34 @@ export const MarketingPage: React.FC = () => {
     <div className="flex h-full flex-col">
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white">Marketing</h1>
-            <p className="mt-2 text-gray-400">
-              Create promo codes and sales to attract and retain customers
-            </p>
-          </div>
+          <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-3xl font-bold text-white">Marketing</h1>
+              <p className="mt-2 text-gray-400">
+                Create promo codes and sales to attract and retain customers
+              </p>
+            </div>
+            <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
+              <Button
+                href={ROUTES.DASHBOARD.MARKETING_PROMO_CODES_NEW}
+                variant="primary"
+                size="sm"
+                icon={<TicketIcon className="h-4 w-4" />}
+                className="w-full sm:w-auto"
+              >
+                New Promo Code
+              </Button>
+              <Button
+                href={ROUTES.DASHBOARD.MARKETING_SALES_NEW}
+                variant="secondary"
+                size="sm"
+                icon={<MegaphoneIcon className="h-4 w-4" />}
+                className="w-full sm:w-auto"
+              >
+                New Sale
+              </Button>
+            </div>
+          </header>
 
           {loadError ? (
             <div className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
@@ -160,29 +182,6 @@ export const MarketingPage: React.FC = () => {
               </Button>
             </div>
           ) : null}
-
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-            <Button
-              href={ROUTES.DASHBOARD.MARKETING_PROMO_CODES_NEW}
-              variant="primary"
-              size="md"
-              icon={<TicketIcon className="h-5 w-5" />}
-              fullWidth
-              className="sm:w-auto"
-            >
-              New Promo Code
-            </Button>
-            <Button
-              href={ROUTES.DASHBOARD.MARKETING_SALES_NEW}
-              variant="secondary"
-              size="md"
-              icon={<MegaphoneIcon className="h-5 w-5" />}
-              fullWidth
-              className="sm:w-auto"
-            >
-              New Sale
-            </Button>
-          </div>
 
           <div className="mb-6 border-b border-white/10">
             <nav className="-mb-px flex space-x-8" aria-label="Tabs">

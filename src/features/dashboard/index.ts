@@ -3,6 +3,7 @@ export { DashboardGlassCard } from './components/DashboardGlassCard';
 export { DashboardMetricCard } from './components/DashboardMetricCard';
 export { CreateLinkCard } from './components/CreateLinkCard';
 export { DashboardContent } from './components/DashboardContent';
+export { DashboardRevenueCard } from './components/DashboardRevenueCard';
 export { DashboardLoadingState } from './components/DashboardLoadingState';
 export { DashboardHeader } from './components/DashboardHeader';
 export { DashboardSidebar } from './components/DashboardSidebar';

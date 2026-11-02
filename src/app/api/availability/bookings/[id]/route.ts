@@ -1,12 +1,14 @@
 /**
  * PATCH /api/availability/bookings/[id]
  *
- * Owner-only (RLS): update status (completed / cancelled) or reschedule
- * (scheduledDate + startTime for confirmed bookings).
+ * Requires bookings.write. Status and reschedule writes use the service-role
+ * client, scoped to the caller's shop. A real slot change emails and texts
+ * the customer. Web and mobile share this handler.
  *
  * DELETE /api/availability/bookings/[id]
  *
- * Owner-only (RLS): permanently remove the booking.
+ * Requires bookings.delete. The delete uses the service-role client, scoped
+ * to the caller's shop.
  *
  * Auth: `getAuthenticatedUser` (mobile Bearer or web cookie) — same as `/actions`.
  */
@@ -19,8 +21,10 @@ import {
   updateBookingStatus,
   type BookingStatusUpdate,
 } from '@/features/availability/services/bookingService';
+import { syncBookingPaymentTaxAfterDiscount } from '@/features/availability/booking/server/syncBookingPaymentTaxAfterDiscount';
 import { completeBookingWithSideEffects } from '@/features/availability/services/completeBookingWithSideEffects';
 import { getReviewInviteRequestId } from '@/features/reviews/server/reviewInviteRouteLog';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { Database } from '@/libs/supabase/client';
@@ -37,7 +41,7 @@ async function loadPaymentRowForBooking(
   const { data } = await (supabase as any)
     .from('booking_payments')
     .select(
-      'payment_status, payment_method_selected, currency, total_amount_cents, paid_online_amount_cents, remaining_amount_cents'
+      'payment_status, payment_method_selected, currency, total_amount_cents, paid_online_amount_cents, remaining_amount_cents, tax_cents, tax_rate_bps'
     )
     .eq('booking_id', bookingId)
     .maybeSingle();
@@ -49,24 +53,17 @@ async function loadPaymentRowForBooking(
     total_amount_cents: number | null;
     paid_online_amount_cents: number | null;
     remaining_amount_cents: number | null;
+    tax_cents?: number | null;
+    tax_rate_bps?: number | null;
   } | null;
 }
 
-async function getBusinessIdForOwner(
-  supabase: SupabaseClient,
-  profileId: string
-) {
-  const { data: businessProfile, error: businessError } = await supabase
-    .from('business_profiles')
-    .select('id')
-    .eq('profile_id', profileId)
-    .single();
-
-  if (businessError || !businessProfile) {
-    return { error: 'Business profile not found', status: 404 as const };
+async function getWritableBusinessId(supabase: SupabaseClient<Database>) {
+  const resolved = await requireBusinessPermission(supabase, 'bookings.write');
+  if (!resolved.ok) {
+    return { error: resolved.error, status: resolved.status };
   }
-
-  return { businessId: businessProfile.id as string };
+  return { businessId: resolved.businessId };
 }
 
 export async function PATCH(
@@ -126,8 +123,8 @@ export async function PATCH(
       );
     }
 
-    const { supabase, user } = auth;
-    const authResult = await getBusinessIdForOwner(supabase, user.id);
+    const { supabase } = auth;
+    const authResult = await getWritableBusinessId(supabase);
     if ('status' in authResult) {
       return NextResponse.json(
         { success: false, error: authResult.error },
@@ -136,6 +133,7 @@ export async function PATCH(
     }
 
     const { businessId } = authResult;
+    const admin = createSupabaseAdminClient();
 
     if (hasReschedule) {
       const d = scheduledDate!.trim();
@@ -153,7 +151,7 @@ export async function PATCH(
         );
       }
 
-      const result = await rescheduleBookingForOwner(supabase, {
+      const result = await rescheduleBookingForOwner(admin, {
         businessId,
         bookingId: bookingId.trim(),
         scheduledDate: d,
@@ -167,10 +165,8 @@ export async function PATCH(
         );
       }
 
-      const payment = await loadPaymentRowForBooking(
-        supabase,
-        bookingId.trim()
-      );
+      await syncBookingPaymentTaxAfterDiscount(result.row, admin);
+      const payment = await loadPaymentRowForBooking(admin, bookingId.trim());
       const display = attachPaymentSummaryToDisplay(
         mapBookingRowToDisplay(result.row),
         result.row,
@@ -197,19 +193,21 @@ export async function PATCH(
       status === 'completed'
         ? ((
             await completeBookingWithSideEffects(
-              supabase as SupabaseClient<Database>,
-              createSupabaseAdminClient(),
+              admin,
+              admin,
               bookingId,
               {
                 requestId: getReviewInviteRequestId(request),
                 source: 'web_patch',
-              }
+              },
+              businessId
             )
           )?.booking ?? null)
         : await updateBookingStatus(
-            supabase as SupabaseClient<Database>,
+            admin,
             bookingId,
-            status as BookingStatusUpdate
+            status as BookingStatusUpdate,
+            businessId
           );
 
     if (!updated) {
@@ -253,16 +251,18 @@ export async function DELETE(
       );
     }
 
-    const authResult = await getBusinessIdForOwner(auth.supabase, auth.user.id);
-    if ('status' in authResult) {
+    const resolved = await requireBusinessPermission(
+      auth.supabase,
+      'bookings.delete'
+    );
+    if (!resolved.ok) {
       return NextResponse.json(
-        { success: false, error: authResult.error },
-        { status: authResult.status }
+        { success: false, error: resolved.error },
+        { status: resolved.status }
       );
     }
-
-    const result = await deleteBookingForOwner(auth.supabase, {
-      businessId: authResult.businessId,
+    const result = await deleteBookingForOwner(createSupabaseAdminClient(), {
+      businessId: resolved.businessId,
       bookingId: bookingId.trim(),
     });
 

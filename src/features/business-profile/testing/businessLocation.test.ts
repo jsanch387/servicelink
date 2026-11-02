@@ -7,16 +7,16 @@ import {
 } from '../utils/businessLocation';
 
 describe('validateBusinessLocation', () => {
-  it('requires city, state, and zip', () => {
+  it('requires city and state', () => {
     expect(validateBusinessLocation({ city: '', state: '', zip: '' })).toEqual(
-      expect.arrayContaining(['City and state are required', 'ZIP is required'])
+      expect.arrayContaining(['City and state are required'])
     );
   });
 
-  it('requires zip when city and state are set', () => {
+  it('allows city and state without ZIP', () => {
     expect(
       validateBusinessLocation({ city: 'Austin', state: 'TX', zip: '' })
-    ).toContain('ZIP is required');
+    ).toEqual([]);
   });
 
   it('accepts complete location', () => {

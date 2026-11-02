@@ -27,6 +27,10 @@ export function notificationMinimalDisplayTitle(
 
   const blob = `${type} ${referenceType}`.toLowerCase();
 
+  if (blob.includes('customer_invoice_paid')) {
+    return 'Invoice paid';
+  }
+
   if (blob.includes('payment') && blob.includes('fail')) {
     return 'Payment failed';
   }
@@ -40,6 +44,11 @@ export function notificationMinimalDisplayTitle(
   ] as const;
   if (paymentTokens.some(t => blob.includes(t))) {
     return 'New payment';
+  }
+
+  // Follow-up must run before `quote_request` (substring).
+  if (blob.includes('quote_request_followup')) {
+    return 'Quote request waiting';
   }
 
   // Public “request a quote” flow (`notifications.type`); must run before
@@ -76,6 +85,9 @@ export function notificationMinimalDisplayTitle(
     return 'Appointment updated';
   }
   if (blob.includes('reminder')) return 'Upcoming appointment';
+  if (blob.includes('job_assigned')) {
+    return 'Job assigned';
+  }
   if (blob.includes('booking') || blob.includes('appointment')) {
     return 'New appointment';
   }

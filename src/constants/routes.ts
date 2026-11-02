@@ -4,6 +4,8 @@ export const ROUTES = {
   // Public routes (smooth scroll sections)
   HOME: '#home',
   FEATURES: '#features',
+  HOW_IT_WORKS: '#how-it-works',
+  TESTIMONIALS: '#testimonials',
   PRICING: '#pricing',
   ABOUT: '#about',
   CONTACT: '#contact',
@@ -12,10 +14,15 @@ export const ROUTES = {
   TERMS: '/terms',
   PRIVACY: '/privacy',
   CONTACT_PAGE: '/contact',
+  /** Public return page after a create-payment Checkout. */
+  PAY_COMPLETE: '/pay/complete',
+  /** Short branded pay link the owner shares (`/p/{shortCode}`). */
+  PAY_LINK: (shortCode: string) => `/p/${encodeURIComponent(shortCode.trim())}`,
 
   // Marketing pages
   FEATURES_PAGE: '/features',
   PRICING_PAGE: '/pricing',
+  AFFILIATES: '/affiliates',
   FIND_DETAILERS: '/find-detailers',
   /** City SEO page; use getFindDetailersCityPath(slug). */
   FIND_DETAILERS_CITY: (citySlug: string) =>
@@ -62,7 +69,12 @@ export const ROUTES = {
   // Dashboard routes
   DASHBOARD: {
     MAIN: '/dashboard',
+    /** Former teammate starts owner onboarding. */
+    CREATE_OWN_SHOP: '/dashboard?createShop=1',
     BUSINESS_PROFILE: '/dashboard/business-profile',
+    /** Edit booking tab and focus the shop address field. */
+    BUSINESS_PROFILE_EDIT_SHOP_ADDRESS:
+      '/dashboard/business-profile?mode=edit&tab=booking&focus=shop-address',
     SERVICES: '/dashboard/services',
     SERVICE_EDIT: '/dashboard/services/:serviceId',
     /** Owner: customer subscription plans offered on the booking link. */
@@ -97,10 +109,25 @@ export const ROUTES = {
       `/dashboard/quotes/${encodeURIComponent(quoteId.trim())}`,
     QUOTE_EDIT: (quoteId: string) =>
       `/dashboard/quotes/${encodeURIComponent(quoteId.trim())}/edit`,
+    INVOICES: '/dashboard/invoices',
+    INVOICES_NEW: '/dashboard/invoices/new',
+    /** New invoice already filled from an appointment. */
+    INVOICES_NEW_FROM_BOOKING: (bookingId: string) =>
+      `/dashboard/invoices/new?booking=${encodeURIComponent(bookingId.trim())}`,
+    INVOICE: (invoiceId: string) =>
+      `/dashboard/invoices/${encodeURIComponent(invoiceId.trim())}`,
+    /** Owner: record and review shop expenses. */
+    EXPENSES: '/dashboard/expenses',
     AVAILABILITY: '/dashboard/availability',
     CUSTOMERS: '/dashboard/customers',
+    CUSTOMER: (customerId: string) =>
+      `/dashboard/customers/${encodeURIComponent(customerId.trim())}`,
+    /** Owner: add and manage teammates. */
+    TEAM: '/dashboard/team',
     PAYMENTS: '/dashboard/payments',
     PAYMENTS_TRANSACTIONS: '/dashboard/payments/transactions',
+    PAYMENTS_SETTINGS: '/dashboard/payments/settings',
+    PAYMENTS_FEES: '/dashboard/payments/settings/fees',
     MARKETING: '/dashboard/marketing',
     MARKETING_PROMO_CODES_NEW: '/dashboard/marketing/promo-codes/new',
     MARKETING_PROMO_CODE_EDIT: (promoCodeId: string) =>
@@ -111,6 +138,8 @@ export const ROUTES = {
     SETTINGS: '/dashboard/settings',
     CONTACT: '/dashboard/contact',
     UPGRADE: '/dashboard/upgrade',
+    /** Founder-only ad → paid conversion report. Not in dashboard nav. */
+    INTERNAL_ACQUISITION: '/dashboard/internal/acquisition',
   },
 } as const;
 
@@ -139,11 +168,62 @@ export const API_ROUTES = {
   STRIPE_CREATE_CHECKOUT_SESSION: '/api/stripe/create-checkout-session',
   /** Authenticated: Stripe Customer Portal session URL (manage subscription / payment method). */
   STRIPE_CREATE_PORTAL_SESSION: '/api/stripe/create-portal-session',
+  /** Authenticated: charge the card on file for an open past-due bill. */
+  STRIPE_REACTIVATE_SUBSCRIPTION: '/api/stripe/reactivate-subscription',
   /** Pro + Stripe connected: create/update `payment_settings` and turn on ServiceLink payments. */
   PAYMENTS_SERVICELINK_ENABLE: '/api/payments/servicelink/enable',
   /** Pro: PATCH checkout/deposits / turn ServiceLink payments off. */
   PAYMENTS_SERVICELINK_SETTINGS: '/api/payments/servicelink/settings',
+  /**
+   * Owner: create a one-time walk-up Stripe Checkout URL (amount + note).
+   * Mobile: Home → Create payment → Payment link.
+   */
+  PAYMENTS_LINK: '/api/payments/link',
+  /**
+   * Owner: walk-up Tap to Pay PaymentIntent (amount + note, no booking).
+   * Mobile: Home → Create payment → Tap to pay.
+   */
+  PAYMENTS_TAP_TO_PAY_INTENT: '/api/payments/tap-to-pay/intent',
+  /**
+   * Owner: merchant-scoped Stripe Terminal connection token (app warm-up).
+   * Walk-up collection uses this, not the booking token.
+   */
+  PAYMENTS_TAP_TO_PAY_CONNECTION_TOKEN:
+    '/api/payments/tap-to-pay/connection-token',
+  /**
+   * Owner: connected-account activity (balance + payments, refunds, payouts).
+   * Mobile: Payments → Transactions.
+   */
+  PAYMENTS_TRANSACTIONS: '/api/payments/transactions',
+  /**
+   * Owner: completed-job earnings (same model as mobile Payments → Revenue).
+   */
+  PAYMENTS_REVENUE: '/api/payments/revenue',
   CUSTOMERS: '/api/customers',
+  CUSTOMERS_IMPORT: '/api/customers/import',
+  /** Completed visits for one customer, newest first. */
+  customerVisits: (customerId: string) =>
+    `/api/customers/${encodeURIComponent(customerId.trim())}/visits`,
+  /** Saved vehicles for one customer. Vehicle shops only. */
+  customerVehicles: (customerId: string) =>
+    `/api/customers/${encodeURIComponent(customerId.trim())}/vehicles`,
+  customerVehicle: (customerId: string, vehicleId: string) =>
+    `/api/customers/${encodeURIComponent(customerId.trim())}/vehicles/${encodeURIComponent(vehicleId.trim())}`,
+  /** Shop bookings list (owner or active member). */
+  AVAILABILITY_BOOKINGS: '/api/availability/bookings',
+  /** Owner + active teammates who can be assigned to a booking. */
+  AVAILABILITY_BOOKING_ASSIGNEES: '/api/availability/bookings/assignees',
+  /** Set or clear the worker on a booking. */
+  availabilityBookingAssignee: (bookingId: string) =>
+    `/api/availability/bookings/${encodeURIComponent(bookingId.trim())}/assignee`,
+  /** Owner: list teammates + pending invites. PATCH updates the invite name. */
+  TEAM_MEMBERS: '/api/team/members',
+  /** Owner: send or resend a team invite email. */
+  TEAM_INVITES: '/api/team/invites',
+  /** Signed-in invitee: accept a team invite token. */
+  TEAM_INVITE_ACCEPT: '/api/team/invites/accept',
+  /** Owner: revoke a pending invite or remove an active member. */
+  TEAM_REMOVE: '/api/team/remove',
   /** Owner: memberships state (plans). */
   MEMBERSHIPS: '/api/memberships',
   /** Owner: create a membership plan. */
@@ -169,6 +249,29 @@ export const API_ROUTES = {
   PUBLIC_QUOTE_REQUEST: '/api/public/quote-request',
   /** Owner: list quotes or create and send a new quote. */
   QUOTES: '/api/quotes',
+  /** Owner: list invoices or save a new draft. */
+  INVOICES: '/api/invoices',
+  /** Owner: list shop expenses or record one. */
+  EXPENSES: '/api/expenses',
+  /** Owner: update or remove one expense. */
+  EXPENSE: (expenseId: string) =>
+    `/api/expenses/${encodeURIComponent(expenseId.trim())}`,
+  /** Owner: email an invoice and publish its short link. */
+  INVOICES_SEND: '/api/invoices/send',
+  /** Public: start Stripe Checkout for a sent invoice. */
+  PUBLIC_INVOICE_CHECKOUT: '/api/public/invoices/checkout',
+  /** Owner: update one draft, or delete the invoice in any status. */
+  INVOICE: (invoiceId: string) =>
+    `/api/invoices/${encodeURIComponent(invoiceId.trim())}`,
+  /** Owner: mark a sent invoice paid after cash or another off-app payment. */
+  INVOICE_MARK_PAID: (invoiceId: string) =>
+    `/api/invoices/${encodeURIComponent(invoiceId.trim())}/paid`,
+  /** Owner: void a sent invoice. The number and public link stay. */
+  INVOICE_VOID: (invoiceId: string) =>
+    `/api/invoices/${encodeURIComponent(invoiceId.trim())}/void`,
+  /** Owner: download the sent, paid, or void bill as a PDF. */
+  INVOICE_PDF: (invoiceId: string) =>
+    `/api/invoices/${encodeURIComponent(invoiceId.trim())}/pdf`,
   QUOTE_SEND: '/api/quotes/send',
   /** Owner: read, edit, or delete one quote. */
   QUOTE_DETAIL: (quoteId: string) =>
@@ -211,6 +314,9 @@ export const API_ROUTES = {
   WORKSHOP_CONVERTED: '/api/workshop/converted',
   /** Authenticated: write-once signup source attribution. */
   MARKETING_ATTRIBUTION_SIGNUP: '/api/attribution/signup',
+  /** Internal: first-touch signup → paid Pro conversion report. */
+  INTERNAL_ATTRIBUTION_PAID_CONVERSIONS:
+    '/api/internal/attribution/paid-conversions',
   /** Vercel Cron: day-before owner appointment reminder. */
   INTERNAL_CRON_BOOKING_REMINDERS: '/api/internal/cron/booking-reminders',
   /** Owner: start Google Business Profile OAuth (reviews connect). */
@@ -223,6 +329,12 @@ export const API_ROUTES = {
   REVIEWS_GOOGLE_SYNC: '/api/reviews/google/sync',
   /** Owner: import Google reviews for the connected listing. */
   REVIEWS_GOOGLE_PULL: '/api/reviews/google/pull',
+  /** Vercel Cron: unanswered quote requests in the 3-day follow-up window. */
+  INTERNAL_CRON_QUOTE_REQUEST_FOLLOW_UPS:
+    '/api/internal/cron/quote-request-follow-ups',
+  /** Vercel Cron: unanswered sent quotes — one customer email + SMS after 2–3 days. */
+  INTERNAL_CRON_QUOTE_CUSTOMER_REMINDERS:
+    '/api/internal/cron/quote-customer-reminders',
 } as const;
 
 export const PUBLIC_ROUTES = [
@@ -650,6 +762,18 @@ export function getPublicReviewPath(token: string): string {
   return `/review/${encodeURIComponent(t)}`;
 }
 
+/** Team invite accept page (raw URL-safe token in path). */
+export function getTeamInvitePath(token: string): string {
+  const t = token.trim();
+  if (!t) return '/team/invite';
+  return `/team/invite/${encodeURIComponent(t)}`;
+}
+
+export function isTeamInvitePath(path: string): boolean {
+  const pathname = path.split('?')[0] ?? '';
+  return /^\/team\/invite\/[A-Za-z0-9_-]+$/.test(pathname);
+}
+
 /** Customer-facing booking invoice / receipt page (opaque public_token in path). */
 export function getPublicInvoicePath(publicToken: string): string {
   const t = publicToken.trim();
@@ -657,11 +781,25 @@ export function getPublicInvoicePath(publicToken: string): string {
   return `/i/${encodeURIComponent(t)}`;
 }
 
+/** Short customer bill link (`/b/{shortCode}`). Separate from receipt `/r/`. */
+export function getPublicBillPath(shortCode: string): string {
+  const c = shortCode.trim();
+  if (!c) return '/b';
+  return `/b/${encodeURIComponent(c)}`;
+}
+
 /** Short branded receipt link for SMS/email (`/r/{shortCode}`). */
 export function getPublicInvoiceShortPath(shortCode: string): string {
   const c = shortCode.trim();
   if (!c) return '/r';
   return `/r/${encodeURIComponent(c)}`;
+}
+
+/** Short branded create-payment link (`/p/{shortCode}`). */
+export function getPublicPaymentLinkPath(shortCode: string): string {
+  const c = shortCode.trim();
+  if (!c) return '/p';
+  return ROUTES.PAY_LINK(c);
 }
 
 /** Owner New appointment wizard with membership visit prefill query params. */
@@ -691,5 +829,16 @@ export function getOwnerCreateAppointmentPath(args: {
     'durationMinutes',
     String(Math.max(30, Math.round(args.visitDurationMinutes)))
   );
+  return `${ROUTES.DASHBOARD.BOOKINGS_NEW}?${q.toString()}`;
+}
+
+/** Owner New booking wizard with a customer profile prefilled. */
+export function getOwnerCreateAppointmentForCustomerPath(
+  customerId: string
+): string {
+  const id = customerId.trim();
+  if (!id) return ROUTES.DASHBOARD.BOOKINGS_NEW;
+  const q = new URLSearchParams();
+  q.set('customerId', id);
   return `${ROUTES.DASHBOARD.BOOKINGS_NEW}?${q.toString()}`;
 }

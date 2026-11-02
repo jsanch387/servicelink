@@ -4,7 +4,8 @@ import { Button, GlassCard, Input } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { getTeamInvitePath, isTeamInvitePath } from '@/constants/routes';
+import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { validateSignInForm } from '../utils/validation';
@@ -15,7 +16,7 @@ import {
   AuthOrDivider,
   AuthScreenLayout,
 } from './AuthScreenLayout';
-import { AuthGoogleButton } from './AuthSocialButtons';
+import { AuthSocialButtons } from './AuthSocialButtons';
 
 const REDIRECT_ERROR_MESSAGES: Record<string, string> = {
   email_exists_use_password:
@@ -31,7 +32,10 @@ export const LoginForm: React.FC<{
   loginNotice?: string;
 }> = ({ redirectError, resetSuccess, loginNotice }) => {
   const router = useRouter();
-  const { signIn, signInWithGoogle, isLoading } = useAuth();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite')?.trim() ?? '';
+  const inviteNext = inviteToken ? getTeamInvitePath(inviteToken) : '';
+  const { signIn, signInWithGoogle, signInWithApple, isLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -39,6 +43,7 @@ export const LoginForm: React.FC<{
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [authError, setAuthError] = useState<string>('');
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
 
   useEffect(() => {
     if (redirectError && REDIRECT_ERROR_MESSAGES[redirectError]) {
@@ -57,10 +62,25 @@ export const LoginForm: React.FC<{
     setAuthError('');
     setGoogleLoading(true);
     try {
-      const result = await signInWithGoogle();
+      const result = await signInWithGoogle(
+        inviteNext ? { next: inviteNext } : undefined
+      );
       if (result?.error) setAuthError(result.error);
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setAuthError('');
+    setAppleLoading(true);
+    try {
+      const result = await signInWithApple(
+        inviteNext ? { next: inviteNext } : undefined
+      );
+      if (result?.error) setAuthError(result.error);
+    } finally {
+      setAppleLoading(false);
     }
   };
 
@@ -83,7 +103,11 @@ export const LoginForm: React.FC<{
       }
       router.refresh();
       await new Promise(resolve => setTimeout(resolve, 100));
-      router.push(ROUTES.DASHBOARD.MAIN);
+      router.push(
+        inviteNext && isTeamInvitePath(inviteNext)
+          ? inviteNext
+          : ROUTES.DASHBOARD.MAIN
+      );
     } catch {
       setAuthError('An unexpected error occurred. Please try again.');
     }
@@ -184,7 +208,7 @@ export const LoginForm: React.FC<{
             fullWidth
             size="lg"
             loading={isLoading}
-            disabled={isLoading || googleLoading}
+            disabled={isLoading || googleLoading || appleLoading}
             className="sm:min-h-[56px] sm:text-base"
           >
             {isLoading ? 'Signing in' : 'Login'}
@@ -194,9 +218,11 @@ export const LoginForm: React.FC<{
 
       <AuthOrDivider />
 
-      <AuthGoogleButton
+      <AuthSocialButtons
         onGoogle={handleGoogleSignIn}
+        onApple={handleAppleSignIn}
         googleLoading={googleLoading}
+        appleLoading={appleLoading}
         disabled={isLoading}
       />
     </AuthScreenLayout>

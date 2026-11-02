@@ -5,8 +5,11 @@ import { TimeSlotGrid } from '@/features/availability/booking/components/TimeSlo
 import type { ExistingBooking } from '@/features/availability/booking/types';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
 import { toLocalYYYYMMDD } from '@/features/availability/utils/minimumNotice';
-import React, { useCallback, useEffect, useMemo } from 'react';
-import { hasExactStartTimeConflict } from '../utils/hasExactStartTimeConflict';
+import React, { useCallback, useMemo } from 'react';
+import {
+  countBookingsOnDate,
+  sameDayAppointmentHeadsUp,
+} from '../utils/hasExactStartTimeConflict';
 
 function parseYmdLocal(ymd: string): Date {
   return new Date(`${ymd}T12:00:00`);
@@ -17,26 +20,15 @@ function getTodayAtMidnight(): Date {
   return new Date(today.getFullYear(), today.getMonth(), today.getDate());
 }
 
-function formatTimeLabel(hhmm: string): string {
-  const [hStr, mStr] = hhmm.split(':');
-  const h = parseInt(hStr ?? '0', 10);
-  const m = parseInt(mStr ?? '0', 10);
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  const ampm = h < 12 ? 'AM' : 'PM';
-  const min = m === 0 ? '' : `:${String(m).padStart(2, '0')}`;
-  return `${h12}${min} ${ampm}`;
-}
-
 export interface ScheduleStepProps {
   visitDurationMinutes: number;
   scheduledDate: string | null;
   startTime: string | null;
   weeklySchedule: WeeklySchedule;
   existingBookings: ExistingBooking[];
+  bufferTime?: string;
   scheduleLoading?: boolean;
   onChange: (next: { scheduledDate: string; startTime: string | null }) => void;
-  /** Reports whether the selected start matches an existing booking. */
-  onExactStartConflictChange?: (hasConflict: boolean) => void;
 }
 
 export function ScheduleStep({
@@ -45,9 +37,9 @@ export function ScheduleStep({
   startTime,
   weeklySchedule,
   existingBookings,
+  bufferTime = 'none',
   scheduleLoading = false,
   onChange,
-  onExactStartConflictChange,
 }: ScheduleStepProps) {
   const duration = Math.max(30, visitDurationMinutes || 60);
 
@@ -66,19 +58,13 @@ export function ScheduleStep({
     });
   }, [selectedDate]);
 
-  const exactStartConflict = useMemo(
+  const sameDayHeadsUp = useMemo(
     () =>
-      hasExactStartTimeConflict({
-        scheduledDate,
-        startTime,
-        existingBookings,
-      }),
-    [existingBookings, scheduledDate, startTime]
+      sameDayAppointmentHeadsUp(
+        countBookingsOnDate(scheduledDate, existingBookings)
+      ),
+    [existingBookings, scheduledDate]
   );
-
-  useEffect(() => {
-    onExactStartConflictChange?.(exactStartConflict);
-  }, [exactStartConflict, onExactStartConflictChange]);
 
   const handleSelectDate = useCallback(
     (date: Date) => {
@@ -105,12 +91,14 @@ export function ScheduleStep({
       ) : null}
 
       <div className="space-y-2">
+        {/* Occupied times stay pickable; same-day count is a heads-up only. */}
         <DateSelector
           weeklySchedule={weeklySchedule}
           serviceDurationMinutes={duration}
-          existingBookings={existingBookings}
+          existingBookings={[]}
           timeOffBlocks={[]}
           minimumNotice="none"
+          bufferTime={bufferTime}
           requireAvailableSlots
           requireDurationWithinHours={false}
           selectedDate={selectedDate}
@@ -124,13 +112,23 @@ export function ScheduleStep({
         ) : null}
       </div>
 
+      {sameDayHeadsUp ? (
+        <div
+          className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3"
+          role="status"
+        >
+          <p className="text-sm leading-snug text-zinc-300">{sameDayHeadsUp}</p>
+        </div>
+      ) : null}
+
       <TimeSlotGrid
         selectedDate={selectedDate}
         serviceDurationMinutes={duration}
         weeklySchedule={weeklySchedule}
-        existingBookings={existingBookings}
+        existingBookings={[]}
         timeOffBlocks={[]}
         minimumNotice="none"
+        bufferTime={bufferTime}
         requireDurationWithinHours={false}
         selectedTime={startTime}
         onSelectTime={handleSelectTime}
@@ -138,20 +136,6 @@ export function ScheduleStep({
         selectDateHint="Select a date to see times."
         noSlotsHint="No available times — try another day."
       />
-
-      {exactStartConflict && startTime ? (
-        <div
-          className="rounded-xl border border-amber-500/30 bg-amber-500/[0.08] px-4 py-3"
-          role="status"
-        >
-          <p className="text-sm font-medium text-amber-200">
-            You already have an appointment at {formatTimeLabel(startTime)}.
-          </p>
-          <p className="mt-1 text-sm leading-snug text-amber-100/75">
-            Pick another time, or continue if you really want to double-book.
-          </p>
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -17,13 +17,8 @@ export const UpcomingBookingsCard: React.FC<UpcomingBookingsCardProps> = ({
 }) => {
   return (
     <DashboardMetricCard
-      label="Upcoming"
+      label="Upcoming appointments"
       value={upcomingCount}
-      caption={
-        upcomingCount === 0
-          ? 'No appointments scheduled'
-          : `Confirmed on your calendar`
-      }
       action={{ label: 'View bookings', href: ROUTES.DASHBOARD.BOOKINGS }}
     />
   );

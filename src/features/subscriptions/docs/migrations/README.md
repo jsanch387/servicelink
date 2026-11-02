@@ -12,6 +12,7 @@ Phase 1–2 table SQL (001–011, 013) is **already applied** in production. Thi
 | --------------------------------------------------- | ---------------------------------------------------------------- |
 | `012_booking_payments_membership_method.sql`        | Allow `booking_payments.payment_method_selected = 'membership'`  |
 | `013_membership_events_initial_booking_created.sql` | Allow `membership_events.event_type = 'initial_booking_created'` |
+| `014_membership_plan_prices_sales_tax.sql`          | `tax_rate_bps` and `tax_cents` on `membership_plan_prices`       |
 
 ## RLS model (live)
 

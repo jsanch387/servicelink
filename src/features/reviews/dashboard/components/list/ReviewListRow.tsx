@@ -3,6 +3,7 @@
 import { Button, GlassCard } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import {
+  hasVisibleReviewBody,
   reviewBodyTextClass,
   ReviewCardHeader,
   ReviewExpandableText,
@@ -18,8 +19,8 @@ interface ReviewListRowProps {
   locale: string;
   bookingFlowLocale?: PublicBookingFlowLocale;
   isReplyOpen: boolean;
-  onToggleReply: () => void;
-  onSendReply: (reviewId: string, body: string) => void;
+  onToggleReply?: () => void;
+  onSendReply?: (reviewId: string, body: string) => void;
 }
 
 export const ReviewListRow: React.FC<ReviewListRowProps> = ({
@@ -54,7 +55,7 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
           source={review.source}
         />
 
-        {review.body.trim() ? (
+        {hasVisibleReviewBody(review.body) ? (
           <div className="mt-3 sm:mt-4">
             <ReviewExpandableText
               text={review.body}
@@ -75,7 +76,10 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
           />
         ) : null}
 
-        {review.source !== 'google' && !hasReply && !isReplyOpen ? (
+        {review.source !== 'google' &&
+        !hasReply &&
+        !isReplyOpen &&
+        onToggleReply ? (
           <Button
             type="button"
             variant="secondary"
@@ -87,7 +91,11 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
           </Button>
         ) : null}
 
-        {review.source !== 'google' && !hasReply && isReplyOpen ? (
+        {review.source !== 'google' &&
+        !hasReply &&
+        isReplyOpen &&
+        onSendReply &&
+        onToggleReply ? (
           <ReviewReplyForm
             onSend={body => onSendReply(review.id, body)}
             onCancel={onToggleReply}

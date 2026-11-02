@@ -1,59 +1,71 @@
 'use client';
 
-import { Button, Modal } from '@/components/shared';
+import {
+  Button,
+  ListPagination,
+  Modal,
+  listPageCount,
+  listPageItems,
+} from '@/components/shared';
+import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
+import { ROUTES } from '@/constants/routes';
 import { DEMO_NEEDS_ATTENTION_CUSTOMER } from '@/features/customer-management/constants/demoNeedsAttentionCustomer';
 import { useCustomerManagement } from '@/features/customer-management/hooks/useCustomerManagement';
 import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
-import { formatCustomerCurrency } from '@/features/customer-management/utils/customerFormatting';
-import { PlusIcon } from '@heroicons/react/24/outline';
-import React from 'react';
-import { AddCustomerModalBody } from './AddCustomerModalBody';
+import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { CustomerDesktopTable } from './CustomerDesktopTable';
-import { CustomerDetailPanel } from './CustomerDetailPanel';
+import { AddCustomerModalBody } from './AddCustomerModalBody';
 import { CustomerListEmptyState } from './CustomerListEmptyState';
 import { CustomerManagementPageSkeleton } from './CustomerManagementPageSkeleton';
 import { CustomerMobileList } from './CustomerMobileList';
-import { CustomerPageHeader } from './CustomerPageHeader';
 import { CustomerSearchAndFilters } from './CustomerSearchAndFilters';
-import { CustomerStatsRow } from './CustomerStatsRow';
+import { ImportCustomersModal } from './ImportCustomersModal';
 import { CustomersInitialEmptyState } from './CustomersInitialEmptyState';
-import { DeleteCustomerModalBody } from './DeleteCustomerModalBody';
 
-interface CustomerManagementPageProps {
-  hasProCheckInAccess: boolean;
+/** Phone cards stay short. The desktop table has room for a longer page. */
+const CUSTOMER_PAGE_SIZE_MOBILE = 10;
+const CUSTOMER_PAGE_SIZE_DESKTOP = 20;
+const DESKTOP_TABLE_QUERY = '(min-width: 768px)';
+
+function subscribeDesktopTable(onStoreChange: () => void): () => void {
+  const mq = window.matchMedia(DESKTOP_TABLE_QUERY);
+  mq.addEventListener('change', onStoreChange);
+  return () => mq.removeEventListener('change', onStoreChange);
 }
 
-export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
-  hasProCheckInAccess,
-}) => {
+function desktopTableSnapshot(): boolean {
+  return window.matchMedia(DESKTOP_TABLE_QUERY).matches;
+}
+
+function useDesktopCustomerTable(): boolean {
+  return useSyncExternalStore(
+    subscribeDesktopTable,
+    desktopTableSnapshot,
+    () => false
+  );
+}
+
+export const CustomerManagementPage: React.FC = () => {
+  const router = useRouter();
+  const canWriteCustomers = useDashboardAccess().can('customers.write');
   const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] =
     React.useState(false);
+  const [isImportOpen, setIsImportOpen] = React.useState(false);
   const [addCustomerModalBusy, setAddCustomerModalBusy] = React.useState(false);
   const {
     loadStatus,
     loadError,
     reloadCustomers,
     customers,
+    businessType,
     query,
     setQuery,
     statusFilter,
     setStatusFilter,
     filteredCustomers,
-    stats,
-    selectedCustomer,
-    setSelectedCustomer,
-    activeDeleteCustomer,
-    setActiveDeleteCustomer,
-    isDeletingCustomer,
-    deleteCustomerError,
-    isSavingNote,
-    saveNoteError,
-    setSaveNoteError,
-    openDeleteCustomerModal,
-    confirmDeleteCustomer,
-    saveCustomerNote,
     createCustomer,
-    openCustomerSms,
   } = useCustomerManagement();
   const hasAnyRealDueCustomers = customers.some(isCustomerNeedsAttention);
   const shouldShowNeedsAttentionDemo =
@@ -63,17 +75,31 @@ export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
   const customersForDisplay = shouldShowNeedsAttentionDemo
     ? [DEMO_NEEDS_ATTENTION_CUSTOMER]
     : filteredCustomers;
-  const shownCount = customersForDisplay.length;
+  const isDesktopTable = useDesktopCustomerTable();
+  const pageSize = isDesktopTable
+    ? CUSTOMER_PAGE_SIZE_DESKTOP
+    : CUSTOMER_PAGE_SIZE_MOBILE;
+  const [page, setPage] = useState(0);
+  const pageCount = listPageCount(customersForDisplay.length, pageSize);
+  const currentPage = Math.min(page, pageCount - 1);
+  const pageCustomers = listPageItems(
+    customersForDisplay,
+    currentPage,
+    pageSize
+  );
+
+  useEffect(() => {
+    setPage(0);
+  }, [query, statusFilter]);
 
   return (
-    <main className="flex-1 pt-8 pb-28 sm:pt-10 sm:pb-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
-      <div className="max-w-6xl mx-auto w-full min-w-0">
-        {loadStatus === 'loading' && <CustomerManagementPageSkeleton />}
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex-1 overflow-y-auto">
+        <div className="w-full min-w-0 px-4 pb-8 pt-6 sm:px-6 lg:px-8">
+          {loadStatus === 'loading' && <CustomerManagementPageSkeleton />}
 
-        {loadStatus === 'error' && (
-          <>
-            <CustomerPageHeader />
-            <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.03] p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {loadStatus === 'error' && (
+            <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-gray-300">{loadError}</p>
               <Button
                 variant="secondary"
@@ -84,137 +110,108 @@ export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
                 Try again
               </Button>
             </div>
-          </>
-        )}
+          )}
 
-        {loadStatus === 'ready' && (
-          <>
-            <CustomerPageHeader
-              onAddCustomer={() => setIsAddCustomerModalOpen(true)}
-            />
+          {loadStatus === 'ready' && (
+            <>
+              <CustomerSearchAndFilters
+                query={query}
+                onQueryChange={setQuery}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                onAddCustomer={
+                  canWriteCustomers
+                    ? () => setIsAddCustomerModalOpen(true)
+                    : undefined
+                }
+                onImport={
+                  canWriteCustomers ? () => setIsImportOpen(true) : undefined
+                }
+              />
 
-            <CustomerStatsRow stats={stats} />
+              {shouldShowNeedsAttentionDemo ? (
+                <p className="text-xs text-amber-300/90 mb-3">
+                  No customers are currently due. Customers who haven&apos;t
+                  booked in 90+ days will show here.
+                </p>
+              ) : null}
 
-            <CustomerSearchAndFilters
-              query={query}
-              onQueryChange={setQuery}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-            />
+              {customersForDisplay.length > 0 && (
+                <>
+                  <CustomerDesktopTable
+                    customers={pageCustomers}
+                    onRowClick={customer =>
+                      router.push(ROUTES.DASHBOARD.CUSTOMER(customer.id))
+                    }
+                  />
 
-            <p className="text-xs text-gray-400 mb-3">
-              Showing {shownCount} of {customers.length} customers
-            </p>
-            {shouldShowNeedsAttentionDemo ? (
-              <p className="text-xs text-amber-300/90 mb-3">
-                No customers are currently due. Customers who haven&apos;t
-                booked in 90+ days will show here.
-              </p>
-            ) : null}
+                  <CustomerMobileList
+                    customers={pageCustomers}
+                    onOpenDetail={customer =>
+                      router.push(ROUTES.DASHBOARD.CUSTOMER(customer.id))
+                    }
+                  />
 
-            {customersForDisplay.length > 0 && (
-              <>
-                <CustomerDesktopTable
-                  customers={customersForDisplay}
-                  onRowClick={setSelectedCustomer}
-                />
-
-                <CustomerMobileList
-                  customers={customersForDisplay}
-                  onOpenDetail={setSelectedCustomer}
-                />
-              </>
-            )}
-
-            {customers.length === 0 &&
-              !shouldShowNeedsAttentionDemo &&
-              (statusFilter === 'needs_attention' ? (
-                <CustomerListEmptyState statusFilter={statusFilter} />
-              ) : (
-                <CustomersInitialEmptyState />
-              ))}
-
-            {customers.length > 0 &&
-              filteredCustomers.length === 0 &&
-              !shouldShowNeedsAttentionDemo && (
-                <CustomerListEmptyState statusFilter={statusFilter} />
+                  <ListPagination
+                    page={currentPage}
+                    pageCount={pageCount}
+                    onPageChange={setPage}
+                  />
+                </>
               )}
 
-            {selectedCustomer && (
-              <CustomerDetailPanel
-                customer={selectedCustomer}
-                hasProCheckInAccess={hasProCheckInAccess}
-                onClose={() => setSelectedCustomer(null)}
-                onMessageCustomer={mode => {
-                  openCustomerSms(selectedCustomer, mode);
-                }}
-                onDeleteCustomer={() =>
-                  openDeleteCustomerModal(selectedCustomer)
-                }
-                onSaveNote={note => saveCustomerNote(selectedCustomer.id, note)}
-                isSavingNote={isSavingNote}
-                saveNoteError={saveNoteError}
-                onDismissSaveNoteError={() => setSaveNoteError(null)}
-                formatCurrency={formatCustomerCurrency}
-              />
-            )}
+              {customers.length === 0 &&
+                !shouldShowNeedsAttentionDemo &&
+                (statusFilter === 'needs_attention' ? (
+                  <CustomerListEmptyState statusFilter={statusFilter} />
+                ) : (
+                  <CustomersInitialEmptyState
+                    onAddCustomer={
+                      canWriteCustomers
+                        ? () => setIsAddCustomerModalOpen(true)
+                        : undefined
+                    }
+                  />
+                ))}
 
-            <div
-              className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 p-4 backdrop-blur-sm sm:hidden safe-area-pb"
-              style={{
-                paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
-              }}
-            >
-              <div className="mx-auto w-full max-w-6xl">
-                <Button
-                  variant="inverse"
-                  fullWidth
-                  onClick={() => setIsAddCustomerModalOpen(true)}
-                  icon={<PlusIcon className="h-4 w-4" aria-hidden />}
-                  aria-label="Add a customer"
+              {customers.length > 0 &&
+                filteredCustomers.length === 0 &&
+                !shouldShowNeedsAttentionDemo && (
+                  <CustomerListEmptyState statusFilter={statusFilter} />
+                )}
+
+              {canWriteCustomers ? (
+                <ImportCustomersModal
+                  isOpen={isImportOpen}
+                  onClose={() => setIsImportOpen(false)}
+                  includeVehicles={isVehicleRelatedBusinessType(businessType)}
+                  existingCustomers={customers.map(customer => ({
+                    phone: customer.phone,
+                    email: customer.email,
+                  }))}
+                  onImported={() => void reloadCustomers({ silent: true })}
+                />
+              ) : null}
+
+              {canWriteCustomers ? (
+                <Modal
+                  isOpen={isAddCustomerModalOpen}
+                  onClose={() => setIsAddCustomerModalOpen(false)}
+                  title="Add customer"
+                  maxWidth="sm"
+                  preventClose={addCustomerModalBusy}
                 >
-                  Add a customer
-                </Button>
-              </div>
-            </div>
-
-            <Modal
-              isOpen={isAddCustomerModalOpen}
-              onClose={() => setIsAddCustomerModalOpen(false)}
-              title="Add customer"
-              maxWidth="sm"
-              preventClose={addCustomerModalBusy}
-            >
-              <AddCustomerModalBody
-                onClose={() => setIsAddCustomerModalOpen(false)}
-                onBusyChange={setAddCustomerModalBusy}
-                createCustomer={createCustomer}
-              />
-            </Modal>
-
-            <Modal
-              isOpen={Boolean(activeDeleteCustomer)}
-              onClose={() => {
-                if (!isDeletingCustomer) {
-                  setActiveDeleteCustomer(null);
-                }
-              }}
-              title="Delete customer"
-              maxWidth="sm"
-            >
-              {activeDeleteCustomer && (
-                <DeleteCustomerModalBody
-                  customer={activeDeleteCustomer}
-                  isDeleting={isDeletingCustomer}
-                  error={deleteCustomerError}
-                  onConfirm={() => void confirmDeleteCustomer()}
-                  onClose={() => setActiveDeleteCustomer(null)}
-                />
-              )}
-            </Modal>
-          </>
-        )}
+                  <AddCustomerModalBody
+                    onClose={() => setIsAddCustomerModalOpen(false)}
+                    onBusyChange={setAddCustomerModalBusy}
+                    createCustomer={createCustomer}
+                  />
+                </Modal>
+              ) : null}
+            </>
+          )}
+        </div>
       </div>
-    </main>
+    </div>
   );
 };

@@ -11,6 +11,7 @@ export const SettingsDangerZone: React.FC<SettingsDangerZoneProps> = ({
   accountEmail,
 }) => (
   <section className="w-full min-w-0 border-t border-white/10 pt-7">
-    <DeleteAccountSection accountEmail={accountEmail} />
+    <h2 className="mb-3 text-base font-semibold text-white">Danger zone</h2>
+    <DeleteAccountSection accountEmail={accountEmail} embedded />
   </section>
 );

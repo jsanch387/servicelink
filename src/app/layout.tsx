@@ -4,6 +4,10 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { MarketingAttributionRoot } from '@/features/marketing-attribution';
 import {
+  AFFONSO_COOKIE_DURATION_DAYS,
+  AFFONSO_PUBLIC_PROGRAM_ID,
+} from '@/features/marketing-attribution/constants';
+import {
   HOME_SEO_DESCRIPTION,
   HOME_SEO_TITLE,
 } from '@/features/landing-page/data/homeSeoContent';
@@ -26,41 +30,48 @@ import './globals.css';
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
+  preload: false,
 });
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
+  preload: false,
 });
 
 const spaceGrotesk = Space_Grotesk({
   variable: '--font-space-grotesk',
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
+  preload: false,
 });
 
 const inter = Inter({
   variable: '--font-inter',
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],
+  preload: false,
 });
 
 const outfit = Outfit({
   variable: '--font-outfit',
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800', '900'],
+  preload: false,
 });
 
 const manrope = Manrope({
   variable: '--font-manrope',
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],
+  preload: false,
 });
 
 const poppins = Poppins({
   variable: '--font-poppins',
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800', '900'],
+  preload: false,
 });
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -216,6 +227,13 @@ export default function RootLayout({
             `}
           </Script>
         ) : null}
+        <Script
+          id="affonso-pixel"
+          src="https://cdn.affonso.io/js/pixel.min.js"
+          strategy="beforeInteractive"
+          data-affonso={AFFONSO_PUBLIC_PROGRAM_ID}
+          data-cookie_duration={String(AFFONSO_COOKIE_DURATION_DAYS)}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} ${inter.variable} ${outfit.variable} ${manrope.variable} ${poppins.variable} ${plusJakartaSans.variable} antialiased`}

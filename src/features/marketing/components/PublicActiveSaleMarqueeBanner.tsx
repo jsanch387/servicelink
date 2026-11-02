@@ -66,7 +66,7 @@ export const PublicActiveSaleMarqueeBanner: React.FC<
 
   return (
     <div
-      className="sticky top-0 z-30 overflow-hidden border-b border-zinc-300/40 bg-zinc-50 py-3 shadow-[0_1px_0_rgba(0,0,0,0.06)] sm:zoom-[0.85] sm:py-2.5"
+      className="sticky top-0 z-30 overflow-hidden border-b border-zinc-300/40 bg-zinc-50 py-3 shadow-[0_1px_0_rgba(0,0,0,0.06)] [overflow-anchor:none] sm:zoom-[0.85] sm:py-2.5"
       role="status"
       aria-label={ui.profile.saleBannerAriaLabel(sale.name, ariaDiscount)}
     >

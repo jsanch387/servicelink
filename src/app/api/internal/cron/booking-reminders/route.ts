@@ -10,7 +10,8 @@ import { handleCronGet } from '@/features/cron';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+/** Vercel Pro allows 300s — sequential email+SMS was dying at 60s. */
+export const maxDuration = 300;
 
 export const GET = handleCronGet(async ({ request }) => {
   const admin = createSupabaseAdminClient();

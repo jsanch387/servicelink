@@ -2,6 +2,7 @@
 
 import {
   Button,
+  FormStepSection,
   toast,
   useScrollWindowToTopOnChange,
 } from '@/components/shared';
@@ -24,6 +25,9 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { usePublicBlockedSlots } from '../hooks/usePublicBlockedSlots';
+import { usePublicBookingPolicyAgreement } from '../hooks/usePublicBookingPolicyAgreement';
+import { hasAgreedToPublicBookingPolicy } from '../utils/bookingPolicyAgreementMemory';
+import { PublicBookingPolicyAgreeDialog } from './BookingPolicyAgreeModal';
 import type {
   AddOnDisplay,
   AvailabilityBookingPageProps,
@@ -39,6 +43,13 @@ import {
   buildPublicMultiJobBookingBody,
   publicMultiJobCheckoutTotals,
 } from '../utils/buildPublicMultiJobBookingBody';
+import { clientBookingTimeZone } from '../utils/clientBookingTimeZone';
+import {
+  depositDueNowCents,
+  onlineAmountDueNowCents,
+  quotePublicBookingSalesTax,
+} from '../utils/publicBookingSalesTax';
+import { formatSalesTaxRateLabel } from '@/features/payments/utils/salesTaxRate';
 import {
   loadPublicBookingJobsCart,
   persistPublicBookingJobsCartJobs,
@@ -63,11 +74,15 @@ import {
   type AppliedBookingPromo,
 } from './BookingPromoCodeField';
 import { BookingSuccess } from './BookingSuccess';
+import { BookingPolicyConsent } from './BookingPolicyConsent';
 import { BookingSummary } from './BookingSummary';
 import { PublicMultiJobReviewSummary } from './PublicMultiJobReviewSummary';
 import { CustomerForm } from './CustomerForm';
 import { BookingVehicleFields } from './BookingVehicleFields';
-import { BookingServiceLocationChoice } from './BookingServiceLocationSteps';
+import {
+  BookingServiceLocationChoice,
+  BookingShopVisitAddress,
+} from './BookingServiceLocationSteps';
 import { AddAnotherJobCard } from '../create-appointment/components/AddAnotherJobCard';
 import {
   type BookingDetailsSubStep,
@@ -141,12 +156,12 @@ function getDepositDueNowCents(
   paymentSettings: PublicBookingPaymentSettings,
   totalPriceCents: number
 ): number {
-  if (!paymentSettings.depositsEnabled) return totalPriceCents;
-  if (paymentSettings.depositType === 'fixed') {
-    return Math.min(totalPriceCents, Math.max(0, paymentSettings.depositValue));
-  }
-  const percent = Math.min(100, Math.max(0, paymentSettings.depositValue));
-  return Math.round((totalPriceCents * percent) / 100);
+  return depositDueNowCents({
+    depositsEnabled: paymentSettings.depositsEnabled,
+    depositType: paymentSettings.depositType,
+    depositValue: paymentSettings.depositValue,
+    totalCents: totalPriceCents,
+  });
 }
 
 /** Card amount due now (full pay path vs deposit path). Single source for CTA + checkout. */
@@ -156,20 +171,16 @@ function computeOnlineAmountDueNowCents(
   customerPaymentChoice: PaymentChoice | null,
   totalPriceCents: number
 ): number {
-  if (!paymentSettingsEnabled || !paymentSettings) return 0;
-  const safeTotal = Number.isFinite(totalPriceCents)
-    ? Math.max(0, totalPriceCents)
-    : 0;
-  const configuredDeposit = getDepositDueNowCents(paymentSettings, safeTotal);
-  const requiresDepositNow =
-    paymentSettings.depositsEnabled === true && configuredDeposit > 0;
-  const requiresPayNow =
-    paymentSettings.checkoutMode === 'in_app' ||
-    (paymentSettings.checkoutMode === 'customer_choice' &&
-      customerPaymentChoice === 'pay_now');
-  if (requiresPayNow) return safeTotal;
-  if (requiresDepositNow) return configuredDeposit;
-  return 0;
+  if (!paymentSettings) return 0;
+  return onlineAmountDueNowCents({
+    paymentsEnabled: paymentSettingsEnabled,
+    checkoutMode: paymentSettings.checkoutMode,
+    depositsEnabled: paymentSettings.depositsEnabled,
+    depositType: paymentSettings.depositType,
+    depositValue: paymentSettings.depositValue,
+    customerPaymentChoice,
+    totalCents: totalPriceCents,
+  });
 }
 
 /** Frontend checkout debug logs disabled in production/local builds (server logs only). */
@@ -252,6 +263,7 @@ export function AvailabilityBookingPage({
   weeklySchedule,
   timeOffBlocks: timeOffBlocksProp = [],
   minimumNotice = 'none',
+  bufferTime = 'none',
   existingBookings: existingBookingsProp,
   isOwnerManualBooking = false,
   paymentSettings = null,
@@ -262,6 +274,7 @@ export function AvailabilityBookingPage({
   serviceLocation = DEFAULT_PUBLIC_BOOKING_SERVICE_LOCATION,
   initialCustomerServiceChoice = null,
   activeSale = null,
+  bookingPolicy = null,
   bookingJobs: bookingJobsProp,
   addAnotherJobHref,
   onRemoveBookingJob,
@@ -409,7 +422,28 @@ export function AvailabilityBookingPage({
   /** Public customers: transactional SMS opt-in (default on; user may uncheck). */
   const [agreedToPublicNotifications, setAgreedToPublicNotifications] =
     useState(() => multiJobBoot?.agreedToNotifications ?? true);
+  const [agreedToBookingPolicy, setAgreedToBookingPolicy] = useState(() =>
+    hasAgreedToPublicBookingPolicy(businessSlug)
+  );
+  const requiresBookingPolicy =
+    !isOwnerManualBooking && Boolean(bookingPolicy?.text.trim());
+  const policyAgreement = usePublicBookingPolicyAgreement({
+    businessSlug,
+    policyText: bookingPolicy?.text,
+    skip: isOwnerManualBooking,
+    gateOnMount: !isOwnerManualBooking,
+  });
   const router = useRouter();
+
+  useEffect(() => {
+    if (policyAgreement.hasAgreed) {
+      setAgreedToBookingPolicy(true);
+    }
+  }, [policyAgreement.hasAgreed]);
+
+  const handleAgreedToBookingPolicyChange = (agreed: boolean) => {
+    setAgreedToBookingPolicy(agreed);
+  };
 
   // Restore contact/address/schedule after Cancel or finishing “add another”
   // when boot hydration was skipped (e.g. rare SSR path).
@@ -468,6 +502,7 @@ export function AvailabilityBookingPage({
         detailsSubStep: overrides?.detailsSubStep ?? detailsSubStep,
         customerServiceChoice,
         agreedToNotifications: agreedToPublicNotifications,
+        agreedToPolicy: agreedToBookingPolicy,
       })
     );
   };
@@ -532,7 +567,7 @@ export function AvailabilityBookingPage({
       30,
       isOwnerManualBooking ? [] : timeOffBlocksProp,
       effectiveMinimumNotice,
-      { requireDurationWithinHours: true }
+      { requireDurationWithinHours: true, bufferTime }
     );
     if (!slots.includes(selectedTime)) {
       setSelectedTime(null);
@@ -550,6 +585,7 @@ export function AvailabilityBookingPage({
     isOwnerManualBooking,
     timeOffBlocksProp,
     effectiveMinimumNotice,
+    bufferTime,
     step,
   ]);
 
@@ -562,6 +598,7 @@ export function AvailabilityBookingPage({
         existingBookings,
         timeOffBlocks: isOwnerManualBooking ? [] : timeOffBlocksProp,
         minimumNotice: effectiveMinimumNotice,
+        bufferTime,
       }),
     [
       weeklySchedule,
@@ -570,6 +607,7 @@ export function AvailabilityBookingPage({
       isOwnerManualBooking,
       timeOffBlocksProp,
       effectiveMinimumNotice,
+      bufferTime,
     ]
   );
 
@@ -783,6 +821,8 @@ export function AvailabilityBookingPage({
     paidOnlineAmountCents: number;
     remainingAmountCents: number;
     totalAmountCents: number;
+    taxCents: number;
+    taxRateBps: number;
     serviceName: string;
     scheduledDate: string;
     startTime: string;
@@ -829,8 +869,34 @@ export function AvailabilityBookingPage({
    */
   const shouldShowPaymentStep =
     paymentSettingsEnabled && hasCheckoutModeConfigured;
+  const requiresPayNow =
+    paymentSettings?.checkoutMode === 'in_app' ||
+    (paymentSettings?.checkoutMode === 'customer_choice' &&
+      customerPaymentChoice === 'pay_now');
+  /** Discount-adjusted total for display + pay-in-full; deposits stay on pre-discount. */
+  const bookingDisplayTotalCents = bookingDiscountPricing.applies
+    ? bookingDiscountPricing.estimatedTotalCents
+    : totalPriceCents;
+  const salesTaxQuote = quotePublicBookingSalesTax({
+    priceAfterDiscountCents: bookingDisplayTotalCents,
+    taxEnabled: paymentSettings?.taxEnabled === true,
+    taxRateBps: paymentSettings?.taxRateBps ?? 0,
+  });
+  const salesTaxApplies = (salesTaxQuote?.taxCents ?? 0) > 0;
+  const salesTaxLabel =
+    salesTaxApplies && salesTaxQuote
+      ? ui.common.salesTax(formatSalesTaxRateLabel(salesTaxQuote.rateBps))
+      : null;
+  /** Job total the customer owes. Tax on means this includes tax. */
+  const bookingChargeTotalCents =
+    salesTaxApplies && salesTaxQuote
+      ? salesTaxQuote.totalCents
+      : bookingDisplayTotalCents;
   const configuredDepositCents = paymentSettings
-    ? getDepositDueNowCents(paymentSettings, totalPriceCents)
+    ? getDepositDueNowCents(
+        paymentSettings,
+        salesTaxApplies ? bookingChargeTotalCents : totalPriceCents
+      )
     : 0;
   const requiresDepositNow =
     paymentSettingsEnabled &&
@@ -842,15 +908,15 @@ export function AvailabilityBookingPage({
     depositIsPercent && paymentSettings
       ? Math.min(100, Math.max(0, Math.round(paymentSettings.depositValue)))
       : null;
-  const requiresPayNow =
-    paymentSettings?.checkoutMode === 'in_app' ||
-    (paymentSettings?.checkoutMode === 'customer_choice' &&
-      customerPaymentChoice === 'pay_now');
-  /** Discount-adjusted total for display + pay-in-full; deposits stay on pre-discount. */
-  const bookingDisplayTotalCents = bookingDiscountPricing.applies
-    ? bookingDiscountPricing.estimatedTotalCents
-    : totalPriceCents;
   const amountDueNowCents = (() => {
+    if (salesTaxApplies) {
+      return computeOnlineAmountDueNowCents(
+        paymentSettings,
+        paymentSettingsEnabled,
+        customerPaymentChoice,
+        bookingChargeTotalCents
+      );
+    }
     const base = computeOnlineAmountDueNowCents(
       paymentSettings,
       paymentSettingsEnabled,
@@ -864,7 +930,7 @@ export function AvailabilityBookingPage({
   })();
   const amountDueLaterCents = Math.max(
     0,
-    bookingDisplayTotalCents - amountDueNowCents
+    bookingChargeTotalCents - amountDueNowCents
   );
 
   const paymentCurrency = paymentSettings?.currency ?? 'usd';
@@ -976,6 +1042,7 @@ export function AvailabilityBookingPage({
       : ui.common.continue;
   const canContinueFromPayment =
     !isSubmitting &&
+    (!requiresBookingPolicy || agreedToBookingPolicy) &&
     (paymentSettings?.checkoutMode !== 'customer_choice' ||
       customerPaymentChoice !== null);
 
@@ -1041,6 +1108,8 @@ export function AvailabilityBookingPage({
                 paidOnlineAmountCents: number;
                 remainingAmountCents: number;
                 totalAmountCents: number;
+                taxCents?: number;
+                taxRateBps?: number;
                 booking: {
                   serviceName: string;
                   scheduledDate: string;
@@ -1062,6 +1131,14 @@ export function AvailabilityBookingPage({
                 paidOnlineAmountCents: json.data.paidOnlineAmountCents,
                 remainingAmountCents: json.data.remainingAmountCents,
                 totalAmountCents: json.data.totalAmountCents,
+                taxCents:
+                  typeof json.data.taxCents === 'number'
+                    ? json.data.taxCents
+                    : 0,
+                taxRateBps:
+                  typeof json.data.taxRateBps === 'number'
+                    ? json.data.taxRateBps
+                    : 0,
                 serviceName: json.data.booking.serviceName,
                 scheduledDate: json.data.booking.scheduledDate,
                 startTime: json.data.booking.startTime,
@@ -1073,10 +1150,25 @@ export function AvailabilityBookingPage({
                 customerVehicleModel: json.data.booking.customerVehicleModel,
               });
               clearBookingCheckoutResumeDraft(businessSlug, serviceId);
-              if (isMultiJobVisit) {
+              if (isMultiJobVisit || !serviceId?.trim()) {
                 onPublicMultiJobBookingCreated?.();
+                // Keep checkout=success and session_id so a refresh still
+                // shows confirmation. Ensure visit=1 or the server treats
+                // this as a new booking and redirects to /book/details.
+                const params = new URLSearchParams(searchParams.toString());
+                if (
+                  params.get('visit') !== '1' &&
+                  params.get('visit') !== 'true'
+                ) {
+                  params.set('visit', '1');
+                  const qs = params.toString();
+                  router.replace(qs ? `${pathname}?${qs}` : pathname, {
+                    scroll: false,
+                  });
+                }
+              } else {
+                stripCheckoutParamsFromUrl();
               }
-              stripCheckoutParamsFromUrl();
               return;
             }
 
@@ -1218,6 +1310,10 @@ export function AvailabilityBookingPage({
       customerPaymentChoice,
       totalPriceCents,
     });
+    if (requiresBookingPolicy && !agreedToBookingPolicy) {
+      setSubmitError(ui.calendar.policyConsentRequired);
+      return;
+    }
     if (!paymentSettingsEnabled) {
       logBookingCheckoutDev(
         'checkout aborted: payments not enabled for this session'
@@ -1254,13 +1350,17 @@ export function AvailabilityBookingPage({
               jobs: visitJobs,
               scheduledDate: scheduledDateStr,
               startTime: selectedTime ?? '',
+              timeZone: clientBookingTimeZone(),
               customer: customerForSubmit,
               customerServiceLocation:
                 customerServiceLocationPayload ?? undefined,
               paymentMethodSelected: customerPaymentChoice ?? 'none',
               promoCode: appliedPromo?.code,
               ...(!isOwnerManualBooking
-                ? { agreedToNotifications: agreedToPublicNotifications }
+                ? {
+                    agreedToNotifications: agreedToPublicNotifications,
+                    agreedToPolicy: agreedToBookingPolicy,
+                  }
                 : {}),
             }),
             ...publicMultiJobCheckoutTotals(visitJobs),
@@ -1304,6 +1404,7 @@ export function AvailabilityBookingPage({
               durationMinutes: totalBookingDurationMinutes,
               scheduledDate: scheduledDateStr,
               startTime: selectedTime ?? '',
+              timeZone: clientBookingTimeZone(),
               customer: {
                 ...customerForSubmit,
               },
@@ -1324,7 +1425,10 @@ export function AvailabilityBookingPage({
                 : null,
               ...(appliedPromo?.code ? { promoCode: appliedPromo.code } : {}),
               ...(!isOwnerManualBooking
-                ? { agreedToNotifications: agreedToPublicNotifications }
+                ? {
+                    agreedToNotifications: agreedToPublicNotifications,
+                    agreedToPolicy: agreedToBookingPolicy,
+                  }
                 : {}),
             }
           : null,
@@ -1397,6 +1501,10 @@ export function AvailabilityBookingPage({
 
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedTime) return;
+    if (requiresBookingPolicy && !agreedToBookingPolicy) {
+      setSubmitError(ui.calendar.policyConsentRequired);
+      return;
+    }
     setSubmitError(null);
     setIsSubmitting(true);
     const scheduledDate = formatServiceDateYmd(selectedDate);
@@ -1413,13 +1521,17 @@ export function AvailabilityBookingPage({
             jobs: visitJobs,
             scheduledDate,
             startTime: selectedTime,
+            timeZone: clientBookingTimeZone(),
             customer: customerForSubmit,
             customerServiceLocation:
               customerServiceLocationPayload ?? undefined,
             paymentMethodSelected: paymentMethodForPublicCreate,
             promoCode: appliedPromo?.code,
             ...(!isOwnerManualBooking
-              ? { agreedToNotifications: agreedToPublicNotifications }
+              ? {
+                  agreedToNotifications: agreedToPublicNotifications,
+                  agreedToPolicy: agreedToBookingPolicy,
+                }
               : {}),
           })
         : {
@@ -1442,6 +1554,7 @@ export function AvailabilityBookingPage({
             durationMinutes: totalBookingDurationMinutes,
             scheduledDate,
             startTime: selectedTime,
+            timeZone: clientBookingTimeZone(),
             customer: customerForSubmit,
             ...(customerServiceLocationPayload
               ? {
@@ -1455,7 +1568,10 @@ export function AvailabilityBookingPage({
               ? { promoCode: appliedPromo.code }
               : {}),
             ...(!isOwnerManualBooking
-              ? { agreedToNotifications: agreedToPublicNotifications }
+              ? {
+                  agreedToNotifications: agreedToPublicNotifications,
+                  agreedToPolicy: agreedToBookingPolicy,
+                }
               : {}),
           };
 
@@ -1517,6 +1633,8 @@ export function AvailabilityBookingPage({
             : undefined
         }
         saleAppliesLine={saleAppliesLine}
+        salesTaxCents={salesTaxApplies ? salesTaxQuote?.taxCents : undefined}
+        salesTaxLabel={salesTaxLabel}
         customer={submittedData.customer}
         date={submittedData.date}
         time={submittedData.time}
@@ -1560,6 +1678,8 @@ export function AvailabilityBookingPage({
         remainingAmountCents={paymentSuccessData.remainingAmountCents}
         paymentStatus={paymentSuccessData.paymentStatus}
         totalAmountCents={paymentSuccessData.totalAmountCents}
+        taxCents={paymentSuccessData.taxCents}
+        taxRateBps={paymentSuccessData.taxRateBps}
         durationMinutes={paymentSuccessData.durationMinutes}
         servicePriceCents={paymentSuccessData.servicePriceCents}
         selectedAddOns={paymentSuccessData.selectedAddOns}
@@ -1696,6 +1816,8 @@ export function AvailabilityBookingPage({
                 }}
                 bookingFlowLocale={bookingFlowLocale}
                 isOwnerManualBooking={isOwnerManualBooking}
+                coverageLabel={serviceLocation.coverageLabel}
+                shopAddressLabel={serviceLocation.shopAddressLabel}
               />
               {customerServiceChoice === 'shop' &&
               !serviceLocation.hasCompleteShopAddress ? (
@@ -1782,6 +1904,7 @@ export function AvailabilityBookingPage({
                       isOwnerManualBooking ? [] : timeOffBlocksProp
                     }
                     minimumNotice={effectiveMinimumNotice}
+                    bufferTime={bufferTime}
                     selectedDate={selectedDate}
                     onSelectDate={date => {
                       setSelectedDate(date);
@@ -1807,6 +1930,7 @@ export function AvailabilityBookingPage({
                         isOwnerManualBooking ? [] : timeOffBlocksProp
                       }
                       minimumNotice={effectiveMinimumNotice}
+                      bufferTime={bufferTime}
                       selectedTime={selectedTime}
                       onSelectTime={time => {
                         setSelectedTime(time);
@@ -1827,34 +1951,105 @@ export function AvailabilityBookingPage({
           {step === 'details' && (
             <div className="space-y-6">
               {detailsSubStep === 'contact' ? (
-                <CustomerForm
-                  id={CUSTOMER_FORM_ID}
-                  step="contact"
-                  showAddressFields={customerAddressEntryRequired(
+                <>
+                  {!isOwnerManualBooking &&
+                  customerBookingUsesShop(
                     serviceLocation,
                     customerServiceChoice
-                  )}
-                  value={customerData}
-                  onChange={setCustomerData}
-                  onSubmit={handleDetailsSubStepSubmit}
-                  showVehicleFields={effectiveShowVehicleFields}
-                  requireVehicleFields={requireVehicleFields}
-                  showPetFields={effectiveShowPetFields}
-                  requirePetFields={requirePetFields}
-                  hideSubmitButton
-                  submitLabel={detailsPrimaryCtaLabel}
-                  bookingFlowLocale={bookingFlowLocale}
-                  emailOptional
-                  isOwnerManualBooking={isOwnerManualBooking}
-                  showNotificationsConsent={!isOwnerManualBooking}
-                  businessName={businessName}
-                  agreedToNotifications={agreedToPublicNotifications}
-                  onAgreedToNotificationsChange={setAgreedToPublicNotifications}
-                />
+                  ) &&
+                  serviceLocation.shopAddressLabel ? (
+                    <BookingShopVisitAddress
+                      label={ui.serviceLocation.shopVisitAddressLabel}
+                      address={serviceLocation.shopAddressLabel}
+                    />
+                  ) : null}
+                  <CustomerForm
+                    id={CUSTOMER_FORM_ID}
+                    step="contact"
+                    showAddressFields={customerAddressEntryRequired(
+                      serviceLocation,
+                      customerServiceChoice
+                    )}
+                    value={customerData}
+                    onChange={setCustomerData}
+                    onSubmit={handleDetailsSubStepSubmit}
+                    showVehicleFields={effectiveShowVehicleFields}
+                    requireVehicleFields={requireVehicleFields}
+                    showPetFields={effectiveShowPetFields}
+                    requirePetFields={requirePetFields}
+                    hideSubmitButton
+                    submitLabel={detailsPrimaryCtaLabel}
+                    bookingFlowLocale={bookingFlowLocale}
+                    emailOptional
+                    isOwnerManualBooking={isOwnerManualBooking}
+                    showNotificationsConsent={!isOwnerManualBooking}
+                    businessName={businessName}
+                    agreedToNotifications={agreedToPublicNotifications}
+                    onAgreedToNotificationsChange={
+                      setAgreedToPublicNotifications
+                    }
+                  />
+                </>
               ) : null}
               {detailsSubStep === 'vehicleNotes' ? (
                 <>
-                  {isMultiJobVisit && showVehicleFields ? (
+                  {isMultiJobVisit &&
+                  showVehicleFields &&
+                  visitJobs.length === 1 &&
+                  visitJobs[0] ? (
+                    <div className="space-y-4">
+                      <FormStepSection
+                        title={ui.customerForm.vehicle}
+                        description={
+                          requireVehicleFields
+                            ? undefined
+                            : ui.customerForm.optionalVehicleDetails
+                        }
+                      >
+                        <BookingVehicleFields
+                          value={{
+                            vehicleYear: visitJobs[0].vehicle.year,
+                            vehicleMake: visitJobs[0].vehicle.make,
+                            vehicleModel: visitJobs[0].vehicle.model,
+                          }}
+                          onChange={updates => {
+                            const onlyJob = visitJobs[0];
+                            if (!onlyJob) return;
+                            updateVisitJobs(
+                              visitJobs.map(j =>
+                                j.localId === onlyJob.localId
+                                  ? {
+                                      ...j,
+                                      vehicle: {
+                                        year:
+                                          updates.vehicleYear ?? j.vehicle.year,
+                                        make:
+                                          updates.vehicleMake ?? j.vehicle.make,
+                                        model:
+                                          updates.vehicleModel ??
+                                          j.vehicle.model,
+                                      },
+                                    }
+                                  : j
+                              )
+                            );
+                          }}
+                          bookingFlowLocale={bookingFlowLocale}
+                          required={requireVehicleFields}
+                        />
+                      </FormStepSection>
+                      {addAnotherJobHref &&
+                      visitJobs.length < PUBLIC_BOOKING_MAX_JOBS ? (
+                        <AddAnotherJobCard
+                          label={ui.multiJob.addAnotherService}
+                          onPress={persistVisitDraftAndAddAnother}
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {isMultiJobVisit &&
+                  showVehicleFields &&
+                  visitJobs.length > 1 ? (
                     <div className="space-y-4">
                       <h2 className="text-base font-semibold text-white">
                         {ui.multiJob.vehiclePerService}
@@ -1931,7 +2126,67 @@ export function AvailabilityBookingPage({
                       ) : null}
                     </div>
                   ) : null}
-                  {isMultiJobVisit && showPetFields ? (
+                  {isMultiJobVisit &&
+                  showPetFields &&
+                  visitJobs.length === 1 &&
+                  visitJobs[0] ? (
+                    <div className="space-y-4">
+                      <FormStepSection
+                        title={ui.customerForm.pet}
+                        description={
+                          requirePetFields
+                            ? undefined
+                            : ui.customerForm.optionalPetDetails
+                        }
+                      >
+                        <BookingPetFields
+                          value={{
+                            petName: jobPetDraft(visitJobs[0]).name,
+                            petSpecies: jobPetDraft(visitJobs[0]).species,
+                            petBreed: jobPetDraft(visitJobs[0]).breed,
+                            petSize: jobPetDraft(visitJobs[0]).size,
+                          }}
+                          onChange={updates => {
+                            const onlyJob = visitJobs[0];
+                            if (!onlyJob) return;
+                            updateVisitJobs(
+                              visitJobs.map(j =>
+                                j.localId === onlyJob.localId
+                                  ? {
+                                      ...j,
+                                      pet: {
+                                        name:
+                                          updates.petName ??
+                                          jobPetDraft(j).name,
+                                        species:
+                                          updates.petSpecies ??
+                                          jobPetDraft(j).species,
+                                        breed:
+                                          updates.petBreed ??
+                                          jobPetDraft(j).breed,
+                                        size:
+                                          updates.petSize ??
+                                          jobPetDraft(j).size,
+                                      },
+                                    }
+                                  : j
+                              )
+                            );
+                          }}
+                          bookingFlowLocale={bookingFlowLocale}
+                          required={requirePetFields}
+                        />
+                      </FormStepSection>
+                      {addAnotherJobHref &&
+                      visitJobs.length < PUBLIC_BOOKING_MAX_JOBS ? (
+                        <AddAnotherJobCard
+                          label={ui.multiJob.addAnotherService}
+                          onPress={persistVisitDraftAndAddAnother}
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {isMultiJobVisit && showPetFields && visitJobs.length > 1 ? (
                     <div className="space-y-4">
                       <h2 className="text-base font-semibold text-white">
                         {ui.multiJob.petPerService}
@@ -2144,6 +2399,10 @@ export function AvailabilityBookingPage({
                         : undefined
                     }
                     saleAppliesLine={saleAppliesLine}
+                    salesTaxCents={
+                      salesTaxApplies ? salesTaxQuote?.taxCents : undefined
+                    }
+                    salesTaxLabel={salesTaxLabel}
                     canAddAnotherJob={
                       Boolean(addAnotherJobHref) &&
                       visitJobs.length < PUBLIC_BOOKING_MAX_JOBS
@@ -2161,6 +2420,14 @@ export function AvailabilityBookingPage({
                   {!shouldShowPaymentStep && !isOwnerManualBooking
                     ? promoCodeField
                     : null}
+                  {requiresBookingPolicy && bookingPolicy ? (
+                    <BookingPolicyConsent
+                      policyText={bookingPolicy.text}
+                      agreed={agreedToBookingPolicy}
+                      onAgreedChange={handleAgreedToBookingPolicyChange}
+                      bookingFlowLocale={bookingFlowLocale}
+                    />
+                  ) : null}
                 </>
               ) : (
                 <>
@@ -2188,6 +2455,10 @@ export function AvailabilityBookingPage({
                         : undefined
                     }
                     saleAppliesLine={saleAppliesLine}
+                    salesTaxCents={
+                      salesTaxApplies ? salesTaxQuote?.taxCents : undefined
+                    }
+                    salesTaxLabel={salesTaxLabel}
                     date={serviceDateYmd ?? ''}
                     startTimeHhmm={selectedTime}
                     customer={customerForSubmit}
@@ -2208,6 +2479,14 @@ export function AvailabilityBookingPage({
                   {!shouldShowPaymentStep && !isOwnerManualBooking
                     ? promoCodeField
                     : null}
+                  {requiresBookingPolicy && bookingPolicy ? (
+                    <BookingPolicyConsent
+                      policyText={bookingPolicy.text}
+                      agreed={agreedToBookingPolicy}
+                      onAgreedChange={handleAgreedToBookingPolicyChange}
+                      bookingFlowLocale={bookingFlowLocale}
+                    />
+                  ) : null}
                 </>
               )}
             </div>
@@ -2338,104 +2617,114 @@ export function AvailabilityBookingPage({
                   )}
 
                   <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
-                    <p className="text-sm font-semibold text-white tracking-tight pb-3 border-b border-white/10">
+                    <p className="text-sm font-semibold text-white tracking-tight">
                       {ui.common.summary}
                     </p>
-                    <div className="flex flex-col gap-3.5 pt-4">
+                    <div className="mt-4 flex flex-col gap-2">
                       <div className="flex items-center justify-between gap-4 text-sm">
-                        <span className="text-gray-300 shrink-0">
+                        <span
+                          className={
+                            salesTaxApplies
+                              ? 'text-white/60'
+                              : 'font-semibold text-white'
+                          }
+                        >
                           {ui.common.bookingTotal}
                         </span>
-                        {bookingDiscountPricing.applies ? (
-                          <div className="flex items-baseline justify-end gap-2">
-                            <span className="text-zinc-500 line-through decoration-zinc-500/70 tabular-nums">
+                        <span
+                          className={`flex items-baseline gap-2 tabular-nums text-white ${
+                            salesTaxApplies ? '' : 'font-semibold'
+                          }`}
+                        >
+                          {bookingDiscountPricing.applies ? (
+                            <span className="text-xs text-zinc-500 line-through decoration-zinc-500/70">
                               {formatPrice(
                                 bookingDiscountPricing.subtotalCents,
                                 paymentCurrency,
                                 bookingFlowLocale
                               )}
                             </span>
-                            <span className="text-white font-semibold text-right tabular-nums">
-                              {formatPrice(
-                                bookingDisplayTotalCents,
-                                paymentCurrency,
-                                bookingFlowLocale
-                              )}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-white font-semibold text-right tabular-nums">
-                            {formatPrice(
-                              totalPriceCents,
-                              paymentCurrency,
-                              bookingFlowLocale
-                            )}
-                          </span>
-                        )}
-                      </div>
-                      {saleAppliesLine ? (
-                        <div className="space-y-1.5">
-                          <BookingSaleAppliesNotice line={saleAppliesLine} />
-                          {bookingDiscountPricing.discountCents > 0 ? (
-                            <p className="text-sm font-medium text-emerald-300/90">
-                              {ui.common.youSave(
-                                formatPrice(
-                                  bookingDiscountPricing.discountCents,
-                                  paymentCurrency,
-                                  bookingFlowLocale
-                                )
-                              )}
-                            </p>
                           ) : null}
-                        </div>
-                      ) : null}
-                      {requiresDepositNow && (
-                        <div className="flex items-center justify-between gap-4 text-sm">
-                          <span className="text-gray-300 shrink-0">
-                            {depositIsPercent && depositPercentWhole != null
-                              ? ui.common.depositPercentOfTotal(
-                                  depositPercentWhole
-                                )
-                              : ui.common.deposit}
-                          </span>
-                          <span className="text-white font-semibold text-right tabular-nums">
-                            {formatPrice(
-                              configuredDepositCents,
-                              paymentCurrency,
-                              bookingFlowLocale
-                            )}
-                          </span>
-                        </div>
-                      )}
-                      {(requiresPayNow || requiresDepositNow) && (
+                          {formatPrice(
+                            bookingDisplayTotalCents,
+                            paymentCurrency,
+                            bookingFlowLocale
+                          )}
+                        </span>
+                      </div>
+                      {salesTaxApplies && salesTaxLabel && salesTaxQuote ? (
                         <>
                           <div className="flex items-center justify-between gap-4 text-sm">
-                            <span className="text-gray-300 shrink-0">
-                              {ui.common.dueNow}
+                            <span className="text-white/60">
+                              {salesTaxLabel}
                             </span>
-                            <span className="text-white font-semibold text-right tabular-nums">
+                            <span className="tabular-nums text-white">
                               {formatPrice(
-                                amountDueNowCents,
+                                salesTaxQuote.taxCents,
                                 paymentCurrency,
                                 bookingFlowLocale
                               )}
                             </span>
                           </div>
                           <div className="flex items-center justify-between gap-4 text-sm">
-                            <span className="text-gray-300 shrink-0">
-                              {ui.common.remaining}
+                            <span className="font-semibold text-white">
+                              {ui.common.total}
                             </span>
-                            <span className="text-white font-semibold text-right tabular-nums">
+                            <span className="font-semibold tabular-nums text-white">
                               {formatPrice(
-                                amountDueLaterCents,
+                                bookingChargeTotalCents,
                                 paymentCurrency,
                                 bookingFlowLocale
                               )}
                             </span>
                           </div>
                         </>
-                      )}
+                      ) : null}
                     </div>
+                    {saleAppliesLine ? (
+                      <div className="mt-3 space-y-1.5">
+                        <BookingSaleAppliesNotice line={saleAppliesLine} />
+                        {bookingDiscountPricing.discountCents > 0 ? (
+                          <p className="text-sm font-medium text-emerald-300/90">
+                            {ui.common.youSave(
+                              formatPrice(
+                                bookingDiscountPricing.discountCents,
+                                paymentCurrency,
+                                bookingFlowLocale
+                              )
+                            )}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {amountDueNowCents > 0 && amountDueLaterCents > 0 ? (
+                      <div className="mt-4 flex flex-col gap-2 border-t border-white/[0.08] pt-4">
+                        <div className="flex items-center justify-between gap-4 text-sm">
+                          <span className="text-white/60">
+                            {ui.common.dueNow}
+                          </span>
+                          <span className="tabular-nums text-white">
+                            {formatPrice(
+                              amountDueNowCents,
+                              paymentCurrency,
+                              bookingFlowLocale
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-4 text-sm">
+                          <span className="text-white/60">
+                            {ui.common.remaining}
+                          </span>
+                          <span className="tabular-nums text-white">
+                            {formatPrice(
+                              amountDueLaterCents,
+                              paymentCurrency,
+                              bookingFlowLocale
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
 
                   {amountDueNowCents > 0 && (
@@ -2574,8 +2863,12 @@ export function AvailabilityBookingPage({
                 variant="inverse"
                 fullWidth
                 className="font-semibold"
-                disabled={isSubmitting}
+                disabled={
+                  isSubmitting ||
+                  (requiresBookingPolicy && !agreedToBookingPolicy)
+                }
                 onClick={() => {
+                  if (requiresBookingPolicy && !agreedToBookingPolicy) return;
                   if (shouldShowPaymentStep) setStep('payment');
                   else void handleConfirmBooking();
                 }}
@@ -2617,6 +2910,14 @@ export function AvailabilityBookingPage({
           </div>
         </div>
       </div>
+      <PublicBookingPolicyAgreeDialog
+        isOpen={policyAgreement.modalOpen}
+        required={policyAgreement.required}
+        policyText={policyAgreement.policyText}
+        onClose={policyAgreement.dismiss}
+        onAgreed={policyAgreement.agree}
+        bookingFlowLocale={bookingFlowLocale}
+      />
     </>
   );
 }

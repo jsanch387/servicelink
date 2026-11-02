@@ -16,6 +16,7 @@ import {
   parseBookServiceLocationTypeQuery,
   type BookDetailsStepQuery,
   type BookServiceLocationTypeQuery,
+  type PublicBookingFlowLocale,
 } from '@/constants/routes';
 import {
   BookServicePicker,
@@ -33,12 +34,14 @@ import {
 } from '@/features/availability/types/blockTime';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
-import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
+import { resolvePublicBookingPolicy } from '@/features/business-profile/utils/bookingPolicy';
+import { loadPublicBookingServiceLocation } from '@/features/business-profile/server/loadPrimaryServiceArea';
 import { loadPublicActiveSale } from '@/features/marketing/server/loadPublicActiveSale';
 import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { resolvePublicBookingService } from '@/features/services/api/resolvePublicBookingService';
 import { sortServicesForDisplay } from '@/features/services/categories/utils/sortServicesForDisplay';
+import { localizedServiceCopy } from '@/features/services/utils/localizedServiceCopy';
 import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
 import type { ServiceRow } from '@/features/services/types/services';
 import {
@@ -110,12 +113,19 @@ type PublicBusinessProfileForBooking = {
   business_zip: string | null;
   shop_street_address: string | null;
   shop_unit: string | null;
+  shop_city: string | null;
+  shop_state: string | null;
+  shop_zip: string | null;
+  booking_policy_enabled?: boolean | null;
+  booking_policy_text?: string | null;
 };
 
 type ServiceRowForPicker = {
   id: string;
   name: string;
   description: string | null;
+  name_es?: string | null;
+  description_es?: string | null;
   price_cents: number | null;
   price_options_enabled: boolean | null;
   hours_to_complete: number | null;
@@ -132,6 +142,8 @@ type PaymentSettingsRowForBooking = {
   deposit_type: string;
   deposit_value: number;
   currency: string;
+  tax_enabled?: boolean | null;
+  tax_rate_bps?: number | null;
 };
 
 function mapPaymentSettingsForBooking(
@@ -149,17 +161,24 @@ function mapPaymentSettingsForBooking(
     depositType,
     depositValue: Number.isFinite(row.deposit_value) ? row.deposit_value : 0,
     currency: row.currency?.trim() || 'usd',
+    taxEnabled: row.tax_enabled === true,
+    taxRateBps:
+      typeof row.tax_rate_bps === 'number' && Number.isFinite(row.tax_rate_bps)
+        ? row.tax_rate_bps
+        : 0,
   };
 }
 
 function mapRowToPickerItem(
   row: ServiceRowForPicker,
-  ownerPro: boolean
+  ownerPro: boolean,
+  locale: PublicBookingFlowLocale
 ): BookServicePickerItem {
+  const copy = localizedServiceCopy(locale, row);
   return {
     id: row.id,
-    name: row.name,
-    description: row.description,
+    name: copy.name,
+    description: copy.description,
     priceCents: row.price_cents ?? 0,
     priceOptionsEnabled: row.price_options_enabled === true && ownerPro,
     hours_to_complete: row.hours_to_complete ?? null,
@@ -175,7 +194,7 @@ async function fetchBusinessProfileBySlug(slug: string) {
     const { data: profileData, error } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_count, public_booking_locales, public_booking_default_locale, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_count, public_booking_locales, public_booking_default_locale, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, shop_city, shop_state, shop_zip, booking_policy_enabled, booking_policy_text'
       )
       .eq('business_slug', slug)
       .single();
@@ -239,7 +258,6 @@ export default async function BookingRequestPage({
     addJob: addJobParam,
   } = sp;
 
-  const isPublicMultiJobVisit = visitParam === '1' || visitParam === 'true';
   const isAddingAnotherJob = isPublicBookingAddJobQuery(addJobParam);
 
   const langFromQuery =
@@ -254,6 +272,15 @@ export default async function BookingRequestPage({
     checkoutParam === 'success' && sessionIdParam?.trim()
       ? sessionIdParam.trim()
       : null;
+  /**
+   * Visit checkout is `/book?visit=1` (no serviceId). A paid return that lost
+   * `visit` must stay on that flow — otherwise the one-service shortcut
+   * redirects to `/book/details` and the confirmation screen never mounts.
+   */
+  const isPublicMultiJobVisit =
+    visitParam === '1' ||
+    visitParam === 'true' ||
+    (Boolean(stripeCheckoutSessionId) && !serviceId?.trim());
 
   const detailsStepForBack: BookDetailsStepQuery | undefined =
     detailsStepRaw === 'addons' ||
@@ -305,6 +332,7 @@ export default async function BookingRequestPage({
   }
 
   const slugForRoutes = businessProfile.business_slug || slug;
+  const bookingPolicy = resolvePublicBookingPolicy(businessProfile);
 
   // Fetch availability with admin client so RLS doesn't block (public page needs to read accept_bookings)
   const availabilityRow = await getAvailabilityForBusiness(
@@ -317,6 +345,7 @@ export default async function BookingRequestPage({
     availabilityRow?.time_off_blocks
   ).map(toTimeOffIntervalFields);
   const minimumNotice = availabilityRow?.minimum_notice ?? 'none';
+  const bufferTime = availabilityRow?.buffer_time ?? 'none';
   const legacyRequestBookingEnabled =
     businessProfile.legacy_request_booking_enabled === true;
   const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
@@ -354,7 +383,7 @@ export default async function BookingRequestPage({
       adminClient
         .from('business_services')
         .select(
-          'id, name, description, price_cents, price_options_enabled, hours_to_complete, duration_minutes, category_id, sort_order, created_at'
+          'id, name, description, name_es, description_es, price_cents, price_options_enabled, hours_to_complete, duration_minutes, category_id, sort_order, created_at'
         )
         .eq('business_id', businessProfile.id)
         .eq('is_active', true)
@@ -383,7 +412,7 @@ export default async function BookingRequestPage({
       []) as ServiceCategoryRow[];
 
     availabilityPickerServices = sortedPickerRows
-      .map(row => mapRowToPickerItem(row, ownerHasPro))
+      .map(row => mapRowToPickerItem(row, ownerHasPro, bookingFlowLocale))
       .filter(s => s.id && s.name);
 
     if (availabilityPickerServices.length === 1 && !isOwnerManualBooking) {
@@ -427,7 +456,8 @@ export default async function BookingRequestPage({
       adminClient,
       businessProfile.id,
       trimmedServiceId,
-      priceOptionId
+      priceOptionId,
+      bookingFlowLocale
     );
 
     if (!resolved.ok) {
@@ -470,7 +500,7 @@ export default async function BookingRequestPage({
     await adminClient
       .from('payment_settings')
       .select(
-        'payments_enabled, checkout_mode, deposits_enabled, deposit_type, deposit_value, currency'
+        'payments_enabled, checkout_mode, deposits_enabled, deposit_type, deposit_value, currency, tax_enabled, tax_rate_bps'
       )
       .eq('business_id', businessProfile.id)
       .maybeSingle();
@@ -490,7 +520,11 @@ export default async function BookingRequestPage({
       )
     : null;
 
-  const serviceLocation = buildPublicBookingServiceLocation(businessProfile);
+  const serviceLocation = await loadPublicBookingServiceLocation(
+    adminClient,
+    businessProfile.id,
+    businessProfile
+  );
 
   const activeSale = await loadPublicActiveSale(
     adminClient,
@@ -605,11 +639,13 @@ export default async function BookingRequestPage({
             weeklySchedule={weeklySchedule}
             timeOffBlocks={timeOffBlocks}
             minimumNotice={minimumNotice}
+            bufferTime={bufferTime}
             paymentSettings={paymentSettings}
             bookingFlowLocale={bookingFlowLocale}
             serviceLocation={serviceLocation}
             initialCustomerServiceChoice={serviceLocationTypeForBack ?? null}
             activeSale={activeSale}
+            bookingPolicy={bookingPolicy}
             stripeCheckoutSessionId={stripeCheckoutSessionId}
             exitCalendarFlowHref={bookPageBackHref}
             exitCalendarFlowLabel={bookPageBackLabel}
@@ -641,6 +677,7 @@ export default async function BookingRequestPage({
             weeklySchedule={weeklySchedule}
             timeOffBlocks={timeOffBlocks}
             minimumNotice={minimumNotice}
+            bufferTime={bufferTime}
             paymentSettings={paymentSettings}
             isOwnerManualBooking={isOwnerManualBooking}
             exitCalendarFlowHref={bookPageBackHref}
@@ -650,6 +687,7 @@ export default async function BookingRequestPage({
             serviceLocation={serviceLocation}
             initialCustomerServiceChoice={serviceLocationTypeForBack ?? null}
             activeSale={activeSale}
+            bookingPolicy={bookingPolicy}
           />
         </div>
       ) : showAvailabilityServicePicker ? (
@@ -662,6 +700,7 @@ export default async function BookingRequestPage({
           initialEntryMode={ownerEntryMode}
           bookingFlowLocale={bookingFlowLocale}
           addingAnotherJob={isAddingAnotherJob}
+          bookingPolicy={bookingPolicy}
         />
       ) : (
         <div className="max-w-2xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24 pt-6 sm:pt-8">
@@ -689,6 +728,7 @@ export default async function BookingRequestPage({
             weeklySchedule={weeklySchedule}
             timeOffBlocks={timeOffBlocks}
             minimumNotice={minimumNotice}
+            bufferTime={bufferTime}
             paymentSettings={paymentSettings}
             isOwnerManualBooking={isOwnerManualBooking}
             exitCalendarFlowHref={bookPageBackHref}
@@ -698,6 +738,7 @@ export default async function BookingRequestPage({
             serviceLocation={serviceLocation}
             initialCustomerServiceChoice={serviceLocationTypeForBack ?? null}
             activeSale={activeSale}
+            bookingPolicy={bookingPolicy}
           />
         </div>
       )}

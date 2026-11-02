@@ -26,6 +26,7 @@ import {
 } from '@/features/services/utils/serviceEditForm';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { QuoteCatalogService } from '../server/loadQuoteServiceCatalog';
+import { OWNER_QUOTE_NOTE_MAX_LENGTH } from '../shared/validateQuotePayloadFields';
 
 export type QuoteServiceMode = 'catalog' | 'custom' | null;
 
@@ -578,8 +579,8 @@ export const QuoteServiceStep: React.FC<QuoteServiceStepProps> = ({
               placeholder="Add any notes here for your customer."
               value={note}
               onChange={onNoteChange}
-              rows={3}
-              maxLength={500}
+              rows={5}
+              maxLength={OWNER_QUOTE_NOTE_MAX_LENGTH}
               required={false}
             />
           </div>
@@ -636,8 +637,8 @@ export const QuoteServiceStep: React.FC<QuoteServiceStepProps> = ({
               placeholder="Add any notes here for your customer."
               value={note}
               onChange={onNoteChange}
-              rows={3}
-              maxLength={500}
+              rows={5}
+              maxLength={OWNER_QUOTE_NOTE_MAX_LENGTH}
               required={false}
             />
           </div>

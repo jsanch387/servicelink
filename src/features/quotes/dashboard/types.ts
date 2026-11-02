@@ -1,5 +1,9 @@
 /** Mirrors `public.quote_status` — used for dashboard UI until wired to API. */
+import type { QuoteCommunication } from '@/features/quotes/shared/quoteOutboundEvents';
 import type { QuoteAddonDetail } from '@/features/quotes/shared/quoteServiceSnapshot';
+import type { QuoteAsset } from '@/features/quotes/shared/quoteAssets';
+
+export type { QuoteCommunication, QuoteAsset };
 
 export type DashboardQuoteStatus =
   | 'requested'
@@ -13,7 +17,11 @@ export type DashboardQuoteStatus =
 
 export type DashboardQuoteSource = 'owner_created' | 'customer_requested';
 
-export type QuotesDashboardFilterId = 'all' | 'open' | 'closed';
+export type QuotesDashboardFilterId =
+  | 'all'
+  | 'requested'
+  | 'awaiting_reply'
+  | 'approved';
 
 export interface DashboardQuote {
   id: string;
@@ -23,7 +31,10 @@ export interface DashboardQuote {
   customerEmail: string;
   customerPhone: string | null;
   serviceName: string;
+  /** Quoted price before tax. */
   totalCents: number;
+  taxCents?: number;
+  taxRateBps?: number;
   /** Service duration from `quotes.duration_minutes` (for edit + display). */
   durationMinutes: number;
   /** Best “activity” timestamp for list sorting (ISO). */
@@ -39,6 +50,8 @@ export interface DashboardQuote {
   vehicleYear: string | null;
   vehicleMake: string | null;
   vehicleModel: string | null;
+  /** What the quote is about: vehicles, pets, etc. */
+  assets: QuoteAsset[] | null;
   /** Where the service happens (optional at send; customer may add on approve). */
   serviceStreet: string | null;
   serviceUnit: string | null;
@@ -57,4 +70,15 @@ export interface DashboardQuote {
   addonDetails: QuoteAddonDetail[] | null;
   /** Raw token for public URL `/q/[token]` (mock only). */
   publicToken: string;
+  /** Active public link expiry, when one exists. */
+  publicLinkExpiresAt?: string | null;
+  /** First time the customer opened `/q/`. Null if not viewed yet. */
+  viewedAt: string | null;
+  /** When we sent the one-shot customer reminder. Null if not sent. */
+  customerReminderSentAt: string | null;
+  /**
+   * Customer email/SMS we actually sent (ordered by time).
+   * Use for an owner timeline: “Email sent”, “Text sent”.
+   */
+  communications: QuoteCommunication[];
 }

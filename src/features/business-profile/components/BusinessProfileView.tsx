@@ -6,41 +6,42 @@ import {
   Modal,
   RequiredLabel,
   WarningCallout,
-  toast,
 } from '@/components/shared';
-import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { ROUTES } from '@/constants/routes';
-import { TryProPostOnboardingModal } from '@/features/pricing';
 import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import type { PublicProfileReviewsSummary } from '@/features/reviews';
-import { deriveReviewsSummary } from '@/features/reviews/utils/deriveReviewsSummary';
 import { PublicActiveSaleMarqueeBanner } from '@/features/marketing/components/PublicActiveSaleMarqueeBanner';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
-import {
-  PublicSubscriptionsSection,
-  type CustomerSubscriptionPlan,
-} from '@/features/subscriptions';
-import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
+import type { CustomerSubscriptionPlan } from '@/features/subscriptions/types/customerSubscriptionPlan';
 import {
   ArrowRightIcon,
   CheckCircleIcon,
-  InformationCircleIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline';
-import Image from 'next/image';
-import Link from 'next/link';
-import React, { useEffect, useRef, useState } from 'react';
-import { LazyPublicReviewsSection } from '../reviews/components/LazyPublicReviewsSection';
+import dynamic from 'next/dynamic';
+import React, { useEffect, useState } from 'react';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
+import type {
+  PrimaryServiceArea,
+  PublicServiceCoverage,
+} from '../types/primaryServiceArea';
+import { formatServiceCoverageLabel } from '../utils/primaryServiceArea';
 import { ProfileCompletionTracker } from './ProfileCompletionTracker';
-import { ProfileBioSection } from './ProfileBioSection';
-import { ProfileHeader } from './ProfileHeader';
-import { ServicesList } from './ServicesList';
-import { WorkShowcase } from './WorkShowcase';
-import { EditBusinessProfile } from './edit/EditBusinessProfile';
-import { ProfileWelcomeModal } from './ProfileWelcomeModal';
-// import { BusinessProfileApi } from '../services/businessProfileApi'; // Will be used later
+import { BusinessProfileReadView } from './BusinessProfileReadView';
+import type { EditProfileTabId } from '../utils/editProfileTab';
+
+const EditBusinessProfile = dynamic(() =>
+  import('./edit/EditBusinessProfile').then(mod => mod.EditBusinessProfile)
+);
+const ProfileWelcomeModal = dynamic(() =>
+  import('./ProfileWelcomeModal').then(mod => mod.ProfileWelcomeModal)
+);
+const TryProPostOnboardingModal = dynamic(() =>
+  import('@/features/pricing/components/TryProPostOnboardingModal').then(
+    mod => mod.TryProPostOnboardingModal
+  )
+);
 
 type TabType = 'services' | 'subscriptions' | 'gallery' | 'bio' | 'reviews';
 
@@ -95,14 +96,22 @@ interface BusinessProfileViewProps {
   /** Live sale to announce on the public booking link (Pro owners only). */
   publicActiveSale?: PublicActiveSale | null;
   /**
-   * Customer subscription plans for the public booking link.
-   * Tab only renders when this list is non-empty.
+   * Customer subscription plans (dashboard / preview already has them in memory).
+   * Public landing uses `hasPublicSubscriptionPlans` and fetches on tab click.
    */
   publicSubscriptionPlans?: CustomerSubscriptionPlan[];
   /** Open this tab on first paint (e.g. after membership Checkout Done). */
   initialTab?: TabType;
   /** Stripe membership Checkout returned with cancel — show toast once. */
   membershipCheckoutCanceled?: boolean;
+  /** Owner editor: full primary `business_service_areas` row (includes coords). */
+  primaryServiceArea?: PrimaryServiceArea | null;
+  /** Public booking link: city/state/radius only — no lat/lng. */
+  publicServiceCoverage?: PublicServiceCoverage | null;
+  /** Owner edit tabs: Photos / Details / Booking / Contact. */
+  initialEditTab?: EditProfileTabId;
+  /** Scroll and focus the shop address field after opening Booking. */
+  focusShopAddress?: boolean;
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -124,82 +133,31 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   publicActiveSale = null,
   publicSubscriptionPlans = [],
   initialTab,
+  initialEditTab,
+  focusShopAddress = false,
   membershipCheckoutCanceled = false,
+  primaryServiceArea: initialPrimaryServiceArea = null,
+  publicServiceCoverage = null,
 }) => {
-  const showReviewsTab = Boolean(
-    publicProfileSlug &&
-      ((publicReviewSummary && publicReviewSummary.reviewCount > 0) ||
-        publicGoogleReviewCount > 0)
-  );
-  const showSubscriptionsTab = publicSubscriptionPlans.length > 0;
   const [editMode, setEditMode] = useState<EditMode>(initialMode);
   const [businessProfile, setBusinessProfile] =
     useState<CompleteBusinessProfile>(initialBusinessProfile);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>(() => {
-    if (initialTab === 'subscriptions' && publicSubscriptionPlans.length > 0) {
-      return 'subscriptions';
-    }
-    if (
-      initialTab === 'reviews' &&
-      (publicReviewSummary?.reviewCount || publicGoogleReviewCount)
-    ) {
-      return 'reviews';
-    }
-    if (
-      initialTab === 'gallery' ||
-      initialTab === 'bio' ||
-      initialTab === 'services'
-    ) {
-      return initialTab;
-    }
-    return 'services';
-  });
   const [showOnboardingProModal, setShowOnboardingProModal] = useState(false);
   const [showProfileWelcomeModal, setShowProfileWelcomeModal] = useState(false);
   const [showProfileChecklistModal, setShowProfileChecklistModal] =
     useState(false);
-  const handledMembershipCheckoutCancel = useRef(false);
+  const [primaryServiceArea, setPrimaryServiceArea] =
+    useState<PrimaryServiceArea | null>(initialPrimaryServiceArea);
   const { city, state } = parseCityState(businessProfile.service_area);
-  const bookingUi = publicBookingUi(bookingFlowLocale);
-
-  const clearMembershipCheckoutParams = () => {
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    params.delete('membershipCheckout');
-    params.delete('session_id');
-    params.delete('planId');
-    params.delete('priceId');
-    const next = params.toString();
-    const path = `${window.location.pathname}${next ? `?${next}` : ''}${window.location.hash}`;
-    window.history.replaceState({}, '', path);
-  };
-
-  useEffect(() => {
-    if (activeTab === 'reviews' && !showReviewsTab) {
-      setActiveTab('services');
-    }
-    if (activeTab === 'subscriptions' && !showSubscriptionsTab) {
-      setActiveTab('services');
-    }
-  }, [activeTab, showReviewsTab, showSubscriptionsTab]);
-
-  useEffect(() => {
-    if (
-      !membershipCheckoutCanceled ||
-      handledMembershipCheckoutCancel.current
-    ) {
-      return;
-    }
-    handledMembershipCheckoutCancel.current = true;
-    if (showSubscriptionsTab) setActiveTab('subscriptions');
-    toast.warning(bookingUi.subscriptions.checkoutReturnCancel);
-    clearMembershipCheckoutParams();
-  }, [
-    membershipCheckoutCanceled,
-    bookingUi.subscriptions,
-    showSubscriptionsTab,
-  ]);
+  const coverageLabel =
+    formatServiceCoverageLabel(
+      publicServiceCoverage?.city ?? primaryServiceArea?.city ?? city,
+      publicServiceCoverage?.stateCode ??
+        primaryServiceArea?.stateCode ??
+        state,
+      publicServiceCoverage?.radiusMiles ?? primaryServiceArea?.radiusMiles
+    ) ?? null;
 
   const completionChecks = [
     {
@@ -216,8 +174,12 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
       done: Boolean(businessProfile.business_type?.trim()),
     },
     {
-      label: 'City, state + ZIP',
-      done: Boolean(city && state && businessProfile.business_zip?.trim()),
+      label: 'Service area',
+      done: Boolean(
+        (primaryServiceArea?.city && primaryServiceArea?.stateCode) ||
+          (publicServiceCoverage?.city && publicServiceCoverage?.stateCode) ||
+          (city && state)
+      ),
     },
     { label: 'Bio', done: Boolean(businessProfile.bio?.trim()) },
     {
@@ -377,53 +339,57 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
-      <ProfileWelcomeModal
-        isOpen={!isPublic && editMode === 'view' && showProfileWelcomeModal}
-        bookingLink={slugData?.fullLink}
-        onEditProfile={handleEditFromWelcomeModal}
-        onDismiss={handleDismissWelcomeModal}
-      />
-      <TryProPostOnboardingModal
-        isOpen={showOnboardingProModal}
-        onClose={opts => {
-          setShowOnboardingProModal(false);
-          if (opts?.continueToWelcome && showProfileWelcomeModalOnLoad) {
-            queueMicrotask(() => setShowProfileWelcomeModal(true));
-          }
-        }}
-      />
-      <Modal
-        isOpen={showProfileChecklistModal}
-        onClose={() => setShowProfileChecklistModal(false)}
-        title="Profile checklist"
-        maxWidth="sm"
-      >
-        <div className="space-y-3">
-          <p className="text-sm text-gray-300">
-            Complete everything for better booking results.
-          </p>
-          {completionChecks.map(item => (
-            <div
-              key={item.label}
-              className={`flex items-center gap-2.5 rounded-lg border px-2.5 py-2 text-xs sm:text-sm ${
-                item.done
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
-                  : 'border-white/10 bg-white/[0.02] text-gray-400'
-              }`}
-            >
-              <CheckCircleIcon
-                className={`h-4 w-4 shrink-0 ${
-                  item.done ? 'text-emerald-300' : 'text-gray-600'
-                }`}
-              />
-              <span>{item.label}</span>
+      {!isPublic ? (
+        <>
+          <ProfileWelcomeModal
+            isOpen={editMode === 'view' && showProfileWelcomeModal}
+            bookingLink={slugData?.fullLink}
+            onEditProfile={handleEditFromWelcomeModal}
+            onDismiss={handleDismissWelcomeModal}
+          />
+          <TryProPostOnboardingModal
+            isOpen={showOnboardingProModal}
+            onClose={opts => {
+              setShowOnboardingProModal(false);
+              if (opts?.continueToWelcome && showProfileWelcomeModalOnLoad) {
+                queueMicrotask(() => setShowProfileWelcomeModal(true));
+              }
+            }}
+          />
+          <Modal
+            isOpen={showProfileChecklistModal}
+            onClose={() => setShowProfileChecklistModal(false)}
+            title="Profile checklist"
+            maxWidth="sm"
+          >
+            <div className="space-y-3">
+              <p className="text-sm text-gray-300">
+                Complete everything for better booking results.
+              </p>
+              {completionChecks.map(item => (
+                <div
+                  key={item.label}
+                  className={`flex items-center gap-2.5 rounded-lg border px-2.5 py-2 text-xs sm:text-sm ${
+                    item.done
+                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
+                      : 'border-white/10 bg-white/[0.02] text-gray-400'
+                  }`}
+                >
+                  <CheckCircleIcon
+                    className={`h-4 w-4 shrink-0 ${
+                      item.done ? 'text-emerald-300' : 'text-gray-600'
+                    }`}
+                  />
+                  <span>{item.label}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </Modal>
+          </Modal>
+        </>
+      ) : null}
       {/* Main Content */}
       <div
-        className={`bg-[#0f0f0f] min-h-screen ${!isPublic && editMode === 'view' ? 'pb-24 sm:pb-24' : ''}`}
+        className={`flex min-h-screen flex-col bg-[#0f0f0f] ${!isPublic && editMode === 'view' ? 'pb-24 sm:pb-24' : ''}`}
       >
         {editMode === 'view' && publicActiveSale ? (
           <PublicActiveSaleMarqueeBanner
@@ -431,8 +397,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
             bookingFlowLocale={bookingFlowLocale}
           />
         ) : null}
-
-        <div className="max-w-4xl mx-auto">
+        <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col [&>*]:shrink-0">
           {/* Create Link CTA - Only show for authenticated users without a slug */}
           {!isPublic && slugData && !slugData.hasSlug && (
             <div className="px-4 pt-4 pb-3 sm:pt-6 sm:pb-4 w-full min-w-0">
@@ -469,165 +434,31 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
           )}
 
           {editMode === 'view' ? (
-            // Preview Mode - Show customer view
             <>
               {profileCompletionTracker}
-              <ProfileHeader
+              <BusinessProfileReadView
                 businessProfile={businessProfile}
-                editMode={editMode}
-                onSave={handleSave}
-                onCancel={handleCancel}
                 isPublic={isPublic}
                 showVerifiedBadge={showVerifiedBadge}
                 showRequestQuoteCta={showRequestQuoteCta}
+                publicOwnerHasProForPriceOptions={
+                  publicOwnerHasProForPriceOptions
+                }
+                publicFreeBookingsCapReached={publicFreeBookingsCapReached}
                 bookingFlowLocale={bookingFlowLocale}
                 publicReviewSummary={publicReviewSummary}
+                publicGoogleReviewCount={publicGoogleReviewCount}
+                publicProfileSlug={publicProfileSlug}
+                publicActiveSale={publicActiveSale}
+                publicSubscriptionPlans={publicSubscriptionPlans}
+                initialTab={initialTab}
+                coverageLabel={coverageLabel}
+                showPublicFooter={isPublic}
+                membershipCheckoutCanceled={membershipCheckoutCanceled}
               />
-
-              {/* Tabs Navigation */}
-              <div className="mt-8 px-4 sm:px-8 border-b border-white/[0.06]">
-                <div className="flex gap-6 overflow-x-auto scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <button
-                    onClick={() => setActiveTab('services')}
-                    className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer ${
-                      activeTab === 'services'
-                        ? 'text-white'
-                        : 'text-zinc-500 hover:text-zinc-400'
-                    }`}
-                  >
-                    {bookingUi.profile.servicesTab}
-                    {activeTab === 'services' && (
-                      <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
-                    )}
-                  </button>
-                  {showSubscriptionsTab ? (
-                    <button
-                      onClick={() => setActiveTab('subscriptions')}
-                      className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer whitespace-nowrap ${
-                        activeTab === 'subscriptions'
-                          ? 'text-white'
-                          : 'text-zinc-500 hover:text-zinc-400'
-                      }`}
-                    >
-                      {bookingUi.subscriptions.subscriptionsTab}
-                      {activeTab === 'subscriptions' && (
-                        <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
-                      )}
-                    </button>
-                  ) : null}
-                  <button
-                    onClick={() => setActiveTab('gallery')}
-                    className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer ${
-                      activeTab === 'gallery'
-                        ? 'text-white'
-                        : 'text-zinc-500 hover:text-zinc-400'
-                    }`}
-                  >
-                    {bookingUi.profile.galleryTab}
-                    {activeTab === 'gallery' && (
-                      <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('bio')}
-                    className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer ${
-                      activeTab === 'bio'
-                        ? 'text-white'
-                        : 'text-zinc-500 hover:text-zinc-400'
-                    }`}
-                  >
-                    {bookingUi.profile.bioTab}
-                    {activeTab === 'bio' && (
-                      <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
-                    )}
-                  </button>
-                  {showReviewsTab ? (
-                    <button
-                      onClick={() => setActiveTab('reviews')}
-                      className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer ${
-                        activeTab === 'reviews'
-                          ? 'text-white'
-                          : 'text-zinc-500 hover:text-zinc-400'
-                      }`}
-                    >
-                      {bookingUi.profile.reviewsTab}
-                      {activeTab === 'reviews' && (
-                        <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
-                      )}
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Tab Content */}
-              {activeTab === 'services' ? (
-                <>
-                  {isPublic && publicFreeBookingsCapReached ? (
-                    <div
-                      className="px-4 sm:px-8 mt-5 mb-1 flex items-center gap-2 text-sm text-zinc-500"
-                      role="status"
-                    >
-                      <InformationCircleIcon
-                        className="h-4 w-4 shrink-0 text-zinc-500/80"
-                        aria-hidden
-                      />
-                      <span className="leading-snug">
-                        {bookingUi.profile.notTakingBookingsRightNow}
-                      </span>
-                    </div>
-                  ) : null}
-                  <ServicesList
-                    businessProfile={businessProfile}
-                    editMode={editMode}
-                    onSave={handleSave}
-                    onCancel={handleCancel}
-                    isPublic={isPublic}
-                    publicOwnerHasProForPriceOptions={
-                      publicOwnerHasProForPriceOptions
-                    }
-                    publicHideBookLinks={
-                      isPublic && publicFreeBookingsCapReached
-                    }
-                    compactTopPadding={isPublic && publicFreeBookingsCapReached}
-                    bookingFlowLocale={bookingFlowLocale}
-                    publicActiveSale={publicActiveSale}
-                  />
-                </>
-              ) : activeTab === 'subscriptions' && showSubscriptionsTab ? (
-                <PublicSubscriptionsSection
-                  plans={publicSubscriptionPlans}
-                  bookingFlowLocale={bookingFlowLocale}
-                  businessSlug={publicProfileSlug}
-                />
-              ) : activeTab === 'gallery' ? (
-                <WorkShowcase
-                  businessProfile={businessProfile}
-                  editMode={editMode}
-                  onSave={handleSave}
-                  onCancel={handleCancel}
-                  isPublic={isPublic}
-                  bookingFlowLocale={bookingFlowLocale}
-                />
-              ) : activeTab === 'bio' ? (
-                <section className="px-4 py-6 sm:px-8 sm:py-8">
-                  <ProfileBioSection
-                    businessProfile={businessProfile}
-                    bookingFlowLocale={bookingFlowLocale}
-                  />
-                </section>
-              ) : showReviewsTab && publicProfileSlug ? (
-                <LazyPublicReviewsSection
-                  businessSlug={publicProfileSlug}
-                  summary={publicReviewSummary ?? deriveReviewsSummary([])}
-                  bookingFlowLocale={bookingFlowLocale}
-                  isActive={activeTab === 'reviews'}
-                />
-              ) : null}
-
-              {/* Sticky Edit Profile button - view mode, authenticated users only */}
-              {!isPublic && editMode === 'view' && (
+              {!isPublic ? (
                 <div
-                  className="fixed bottom-0 left-0 right-0 lg:left-64 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm px-4 sm:px-8 py-4"
+                  className="fixed bottom-0 left-0 right-0 dashboard-sidebar-offset z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm px-4 sm:px-8 py-4"
                   style={{
                     paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
                   }}
@@ -645,41 +476,9 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                     </Button>
                   </div>
                 </div>
-              )}
-
-              {/* Footer - Only show on public profiles */}
-              {isPublic && (
-                <div className="px-4 sm:px-8 py-8 sm:py-10 mt-8">
-                  <div className="w-full border-t border-white/[0.06] pt-6">
-                    <div className="flex flex-col items-center gap-2 text-center">
-                      <Link
-                        href="/"
-                        className="group inline-flex items-center gap-2 text-gray-500 hover:text-gray-300 transition-colors"
-                      >
-                        <span className="text-xs text-gray-500">
-                          Powered by
-                        </span>
-                        <Image
-                          src={MARKETING_IMAGES.brand.favicon}
-                          alt=""
-                          width={14}
-                          height={14}
-                          className="opacity-70 group-hover:opacity-100 transition-opacity"
-                        />
-                        <span className="text-gray-400 text-sm font-medium group-hover:text-white transition-colors">
-                          ServiceLink
-                        </span>
-                      </Link>
-                      <p className="text-gray-500 text-[11px] max-w-xs leading-relaxed">
-                        Get your own profile and start booking clients.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              ) : null}
             </>
           ) : (
-            // Edit Mode - Show unified edit form
             <div>
               {profileCompletionTracker}
               <EditBusinessProfile
@@ -688,6 +487,10 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                 onCancel={handleCancel}
                 isLoading={isLoading}
                 isFreeTier={isFreeTier}
+                primaryServiceArea={primaryServiceArea}
+                onPrimaryServiceAreaChange={setPrimaryServiceArea}
+                initialTab={initialEditTab}
+                focusShopAddress={focusShopAddress}
               />
             </div>
           )}

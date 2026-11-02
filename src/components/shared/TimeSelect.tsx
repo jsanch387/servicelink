@@ -9,6 +9,7 @@ import React, {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { fieldBoxClassName } from './fieldStyles';
 import {
   SERVICE_DURATION_MAX_MINUTES,
   SERVICE_DURATION_MIN_MINUTES,
@@ -381,25 +382,22 @@ export const TimeSelect: React.FC<TimeSelectProps> = ({
           aria-expanded={open}
           aria-haspopup="dialog"
           className={`
-            w-full min-w-0 flex items-center justify-between gap-2
-            h-12 px-4 rounded-xl
-            border border-white/10 bg-white/5
-            text-left text-base font-medium ${
+            flex w-full min-w-0 items-center justify-between gap-2 text-left text-sm
+            ${fieldBoxClassName}
+            ${
               variant === 'duration' && value.trim() === ''
                 ? 'text-gray-500'
                 : 'text-white'
             }
-            transition-all duration-150
-            focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30
-            disabled:opacity-50 disabled:cursor-not-allowed
+            disabled:cursor-not-allowed disabled:opacity-50
             ${open ? 'border-white/30 ring-2 ring-white/20' : ''}
-            ${!disabled && !open ? 'hover:border-white/15' : ''}
+            ${!disabled && !open ? 'hover:border-white/25' : ''}
             ${!disabled ? 'cursor-pointer' : ''}
           `}
         >
           <span className="min-w-0 flex-1 truncate">{displayLabel}</span>
           <ChevronDownIcon
-            className={`w-5 h-5 text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+            className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
             aria-hidden
           />
         </button>

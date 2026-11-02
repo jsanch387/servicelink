@@ -8,6 +8,7 @@
  * submit booking requests without being logged in.
  */
 
+import { checkFreeTierBookingCapAllowsCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
 import { bookingReferralSourceForBusiness } from '@/features/booking-attribution/server/bookingReferralCookie';
 import { BookingRequestService } from '@/features/booking-request/services/bookingRequestService';
 import { BookingRequestFormData } from '@/features/booking-request/types/bookingRequest';
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
     const admin = createSupabaseAdminClient();
     const { data: businessProfile, error: businessError } = await admin
       .from('business_profiles')
-      .select('id, business_slug, profile_id')
+      .select('id, business_slug, profile_id, free_bookings_count')
       .eq('id', body.businessId)
       .single();
 
@@ -111,6 +112,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Business profile not found' },
         { status: 404 }
+      );
+    }
+
+    const capProfile = businessProfile as {
+      id: string;
+      profile_id: string | null;
+      free_bookings_count: number | null;
+    };
+    const cap = await checkFreeTierBookingCapAllowsCreate(admin, {
+      id: capProfile.id,
+      profile_id: capProfile.profile_id,
+      free_bookings_count: capProfile.free_bookings_count,
+    });
+    if (!cap.ok) {
+      return NextResponse.json(
+        { success: false, error: cap.message },
+        { status: 403 }
       );
     }
 

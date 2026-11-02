@@ -47,6 +47,8 @@ interface BookFlowSwitchProps {
   timeOffBlocks?: TimeOffInterval[];
   /** Lead time from `minimum_notice`; skipped for owner manual bookings. */
   minimumNotice?: string;
+  /** Gap between appointments; applied for customers and owners. */
+  bufferTime?: string;
   isOwnerManualBooking?: boolean;
   paymentSettings?: PublicBookingPaymentSettings | null;
   /** Leave calendar flow (step: schedule) — service details, profile, or dashboard. */
@@ -59,6 +61,7 @@ interface BookFlowSwitchProps {
   /** Pre-selected mobile/shop from `/book/details` when business offers both. */
   initialCustomerServiceChoice?: 'mobile' | 'shop' | null;
   activeSale?: PublicActiveSale | null;
+  bookingPolicy?: { text: string } | null;
 }
 
 /**
@@ -86,6 +89,7 @@ export function BookFlowSwitch({
   weeklySchedule,
   timeOffBlocks = [],
   minimumNotice = 'none',
+  bufferTime = 'none',
   isOwnerManualBooking = false,
   paymentSettings = null,
   exitCalendarFlowHref,
@@ -95,6 +99,7 @@ export function BookFlowSwitch({
   serviceLocation,
   initialCustomerServiceChoice = null,
   activeSale = null,
+  bookingPolicy = null,
 }: BookFlowSwitchProps) {
   const ui = publicBookingUi(bookingFlowLocale);
 
@@ -164,6 +169,7 @@ export function BookFlowSwitch({
           weeklySchedule={schedule}
           timeOffBlocks={timeOffBlocks}
           minimumNotice={isOwnerManualBooking ? 'none' : minimumNotice}
+          bufferTime={bufferTime}
           isOwnerManualBooking={isOwnerManualBooking}
           paymentSettings={paymentSettings}
           exitCalendarFlowHref={exitCalendarFlowHref}
@@ -173,6 +179,7 @@ export function BookFlowSwitch({
           serviceLocation={serviceLocation}
           initialCustomerServiceChoice={initialCustomerServiceChoice}
           activeSale={activeSale}
+          bookingPolicy={bookingPolicy}
         />
       </Suspense>
     );

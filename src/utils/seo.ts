@@ -5,6 +5,11 @@
  * Centralized SEO logic for consistent optimization across the app.
  */
 
+import {
+  generatePublicProfileShareDescription,
+  generatePublicProfileShareTitle,
+} from '@/features/business-profile/utils/publicProfileShareCopy';
+
 export interface SEOData {
   title: string;
   description: string;
@@ -21,24 +26,10 @@ export interface SEOData {
  */
 export function generateSEOTitle(data: {
   businessName: string;
-  businessType?: string;
+  tradeLine?: string;
   serviceArea?: string;
-  suffix?: string;
 }): string {
-  const {
-    businessName,
-    businessType,
-    serviceArea,
-    suffix = 'ServiceLink',
-  } = data;
-
-  if (serviceArea && businessType) {
-    return `${businessName} - ${businessType} in ${serviceArea} | ${suffix}`;
-  } else if (businessType) {
-    return `${businessName} - ${businessType} | ${suffix}`;
-  } else {
-    return `${businessName} | ${suffix}`;
-  }
+  return generatePublicProfileShareTitle(data);
 }
 
 /**
@@ -47,31 +38,11 @@ export function generateSEOTitle(data: {
 export function generateSEODescription(data: {
   bio?: string;
   businessName: string;
-  businessType?: string;
+  tradeLine?: string;
   serviceArea?: string;
   maxLength?: number;
 }): string {
-  const {
-    bio,
-    businessName,
-    businessType,
-    serviceArea,
-    maxLength = 160,
-  } = data;
-
-  let description =
-    bio ||
-    `Professional ${businessType?.toLowerCase() || 'services'} by ${businessName}`;
-
-  if (serviceArea) {
-    description += ` serving ${serviceArea}`;
-  }
-
-  if (description.length > maxLength) {
-    description = `${description.substring(0, maxLength - 3)}...`;
-  }
-
-  return description;
+  return generatePublicProfileShareDescription(data);
 }
 
 /**
@@ -97,7 +68,6 @@ export function generateSEOKeywords(data: {
     'professional services',
     'business profile',
     'contact directly',
-    'ServiceLink',
     ...additionalKeywords,
   ].filter((k): k is string => Boolean(k));
 

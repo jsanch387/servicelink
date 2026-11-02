@@ -4,6 +4,7 @@ import { Button, GlassCard } from '@/components/shared';
 import { API_ROUTES } from '@/constants/routes';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import React, { useCallback, useState } from 'react';
+import { PaymentsStripeFeeNote } from '../components/PaymentsStripeFeeNote';
 import { FreePaymentPreviewLockedDashboard } from '../free-payment-preview';
 import {
   PAYMENTS_SETUP_BENEFITS,
@@ -34,6 +35,11 @@ export type ProPaymentsSetupExperienceProps = {
    * “how customers pay” preview). Used on Subscriptions; Payments keeps default.
    */
   showLockedPreview?: boolean;
+  showSalesTaxCard?: boolean;
+  /** Replaces the default setup sentence. Restricted accounts keep the Stripe notice. */
+  lead?: string;
+  /** When false, hide the checklist under the button. */
+  showBenefits?: boolean;
 };
 
 /**
@@ -46,6 +52,9 @@ export const ProPaymentsSetupExperience: React.FC<
   stripeRestricted = false,
   webReturnPath,
   showLockedPreview = true,
+  lead: leadOverride,
+  showBenefits = true,
+  showSalesTaxCard = false,
 }) => {
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
@@ -53,11 +62,10 @@ export const ProPaymentsSetupExperience: React.FC<
   const heroTitle = resumeConnect
     ? PAYMENTS_SETUP_FINISH_HERO_TITLE
     : PAYMENTS_SETUP_HERO_TITLE;
-  const lead = resumeConnect
-    ? stripeRestricted
-      ? PAYMENTS_SETUP_RESTRICTED_LEAD
-      : PAYMENTS_SETUP_FINISH_LEAD
-    : PAYMENTS_SETUP_LEAD;
+  const lead = stripeRestricted
+    ? PAYMENTS_SETUP_RESTRICTED_LEAD
+    : (leadOverride ??
+      (resumeConnect ? PAYMENTS_SETUP_FINISH_LEAD : PAYMENTS_SETUP_LEAD));
   const benefits = resumeConnect
     ? PAYMENTS_SETUP_FINISH_BENEFITS
     : PAYMENTS_SETUP_BENEFITS;
@@ -115,16 +123,18 @@ export const ProPaymentsSetupExperience: React.FC<
       <GlassCard
         padding="lg"
         rounded="rounded-2xl"
-        className="w-full max-w-2xl shrink-0"
+        className={`w-full shrink-0 ${showLockedPreview ? '' : 'max-w-2xl'}`}
       >
-        <h2 className="text-xl font-black tracking-tight text-white sm:text-2xl">
-          {heroTitle}
-        </h2>
-        <p className="mt-3 max-w-xl text-sm leading-relaxed text-gray-400">
-          {lead}
-        </p>
+        <header>
+          <h2 className="text-xl font-black tracking-tight text-white sm:text-2xl">
+            {heroTitle}
+          </h2>
+          <p className="mt-1 max-w-md text-sm leading-snug text-gray-400">
+            {lead}
+          </p>
+        </header>
 
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <Button
             type="button"
             variant="inverse"
@@ -145,22 +155,27 @@ export const ProPaymentsSetupExperience: React.FC<
           </p>
         ) : null}
 
-        <ul className="mt-6 max-w-xl space-y-3 border-t border-white/[0.08] pt-6 text-left">
-          {benefits.map(({ id, text }) => (
-            <li
-              key={id}
-              className="flex gap-3 text-sm leading-relaxed text-gray-300"
-            >
-              <span
-                className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/12 text-emerald-400 ring-1 ring-emerald-400/20"
-                aria-hidden
+        {showBenefits ? (
+          <ul className="mt-6 max-w-xl space-y-3 border-t border-white/[0.08] pt-6 text-left">
+            {benefits.map(({ id, text }) => (
+              <li
+                key={id}
+                className="flex gap-3 text-sm leading-relaxed text-gray-300"
               >
-                <CheckIcon className="h-3 w-3" />
-              </span>
-              <span>{text}</span>
-            </li>
-          ))}
-        </ul>
+                <span
+                  className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/12 text-emerald-400 ring-1 ring-emerald-400/20"
+                  aria-hidden
+                >
+                  <CheckIcon className="h-3 w-3" />
+                </span>
+                <span>{text}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <div className="mt-6 border-t border-white/[0.08] pt-4">
+          <PaymentsStripeFeeNote collapsible title="Payment fees" />
+        </div>
       </GlassCard>
 
       {showLockedPreview ? (
@@ -168,7 +183,10 @@ export const ProPaymentsSetupExperience: React.FC<
           <p className="mt-8 max-w-md text-left text-sm text-gray-500">
             {teaseOverline}
           </p>
-          <FreePaymentPreviewLockedDashboard className="mt-8 w-full sm:mt-10" />
+          <FreePaymentPreviewLockedDashboard
+            className="mt-8 w-full sm:mt-10"
+            showSalesTaxCard={showSalesTaxCard}
+          />
         </>
       ) : null}
     </div>

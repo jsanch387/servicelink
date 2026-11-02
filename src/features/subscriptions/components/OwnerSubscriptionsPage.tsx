@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import { PlusIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 import type { LoadOwnerMembershipsResult } from '../server/loadOwnerMembershipsState';
@@ -51,78 +52,83 @@ export const OwnerSubscriptionsPage: React.FC<OwnerSubscriptionsPageProps> = ({
   };
 
   return (
-    <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] px-4 pt-8 pb-28 sm:px-6 sm:pt-10 sm:pb-10 lg:px-8">
-      <div
-        className={`flex w-full min-w-0 flex-1 flex-col ${
-          showCatalog && phase === 'list'
-            ? 'mx-auto max-w-5xl'
-            : 'mx-auto max-w-6xl'
-        }`}
-      >
-        <div className="shrink-0">
-          <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-            Subscriptions
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Create plans customers can subscribe to from your booking link.
-          </p>
-        </div>
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full min-w-0 max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-3xl font-bold leading-none text-white">
+                Subscriptions
+              </h1>
+              <p className="mt-1 text-gray-400">
+                Create plans customers can subscribe to from your booking link.
+              </p>
+            </div>
+            {catalogWritable ? (
+              <Button
+                type="button"
+                variant="inverse"
+                size="sm"
+                icon={<PlusIcon className="h-4 w-4" />}
+                className="w-full shrink-0 sm:w-auto"
+                onClick={goCreatePlan}
+              >
+                Create a plan
+              </Button>
+            ) : null}
+          </header>
 
-        {gate === 'not_pro' && !showPausedCatalog ? (
-          <SubscriptionsNotProGate />
-        ) : null}
+          {gate === 'not_pro' && !showPausedCatalog ? (
+            <SubscriptionsNotProGate />
+          ) : null}
 
-        {showPausedCatalog ? (
-          <div className="mt-6 sm:mt-8">
-            <SubscriptionsProPausedBanner
-              activeMemberCount={activeMemberCount}
+          {showPausedCatalog ? (
+            <div className="mb-6">
+              <SubscriptionsProPausedBanner
+                activeMemberCount={activeMemberCount}
+              />
+            </div>
+          ) : null}
+
+          {gate === 'needs_connect' ? (
+            <SubscriptionsConnectGate
+              resumeConnect={access.stripeConnectResume}
+              stripeRestricted={access.stripeConnectRestricted}
             />
-          </div>
-        ) : null}
+          ) : null}
 
-        {gate === 'needs_connect' ? (
-          <SubscriptionsConnectGate
-            resumeConnect={access.stripeConnectResume}
-            stripeRestricted={access.stripeConnectRestricted}
-          />
-        ) : null}
+          {gate === 'needs_payments' ? <SubscriptionsPaymentsGate /> : null}
 
-        {gate === 'needs_payments' ? <SubscriptionsPaymentsGate /> : null}
+          {(gate === 'ready' || gate === 'not_pro') && !loadResult.ok ? (
+            <div className="mt-6 rounded-2xl border border-red-400/20 bg-red-400/10 p-4 sm:mt-8 sm:p-5">
+              <p className="text-sm text-red-200">{loadResult.error}</p>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="mt-3"
+                onClick={() => router.refresh()}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : null}
 
-        {(gate === 'ready' || gate === 'not_pro') && !loadResult.ok ? (
-          <div className="mt-6 rounded-2xl border border-red-400/20 bg-red-400/10 p-4 sm:mt-8 sm:p-5">
-            <p className="text-sm text-red-200">{loadResult.error}</p>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="mt-3"
-              onClick={() => router.refresh()}
-            >
-              Try again
-            </Button>
-          </div>
-        ) : null}
-
-        {showReadyContent && phase === 'create_first' ? (
-          <div className="flex flex-1 flex-col items-center justify-start pt-10 sm:pt-14">
+          {showReadyContent && phase === 'create_first' ? (
             <div className="w-full max-w-2xl">
               <OwnerSubscriptionsCreateFirst onCreatePlan={goCreatePlan} />
             </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        {showCatalog && phase === 'list' ? (
-          <div className={showPausedCatalog ? 'mt-5 sm:mt-6' : 'mt-6 sm:mt-8'}>
+          {showCatalog && phase === 'list' ? (
             <OwnerSubscriptionsPlanList
               plans={plans}
-              onCreatePlan={goCreatePlan}
               catalogWritable={catalogWritable}
               initialSubscribers={subscribers}
             />
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
-    </main>
+    </div>
   );
 };

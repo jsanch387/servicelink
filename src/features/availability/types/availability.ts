@@ -64,6 +64,36 @@ export function isMinimumNoticeValue(
   return (MINIMUM_NOTICE_VALUES as readonly string[]).includes(value);
 }
 
+/** Gap required between appointments (stored as `buffer_time`). */
+export const BUFFER_TIME_VALUES = [
+  'none',
+  '15m',
+  '30m',
+  '45m',
+  '1h',
+  '90m',
+  '2h',
+] as const;
+
+export type BufferTimeValue = (typeof BUFFER_TIME_VALUES)[number];
+
+export const BUFFER_TIME_OPTIONS: {
+  value: BufferTimeValue;
+  label: string;
+}[] = [
+  { value: 'none', label: 'No buffer' },
+  { value: '15m', label: '15 minutes' },
+  { value: '30m', label: '30 minutes' },
+  { value: '45m', label: '45 minutes' },
+  { value: '1h', label: '1 hour' },
+  { value: '90m', label: '1 hour 30 minutes' },
+  { value: '2h', label: '2 hours' },
+];
+
+export function isBufferTimeValue(value: string): value is BufferTimeValue {
+  return (BUFFER_TIME_VALUES as readonly string[]).includes(value);
+}
+
 export const DEFAULT_SCHEDULE: WeeklySchedule = {
   monday: { enabled: true, start: '09:00', end: '17:00' },
   tuesday: { enabled: true, start: '09:00', end: '17:00' },
@@ -94,6 +124,8 @@ export interface BusinessAvailabilityRow {
   business_id: string;
   accept_bookings: boolean;
   minimum_notice: string;
+  /** Gap between appointments; missing/legacy rows normalize to `'none'`. */
+  buffer_time?: string | null;
   weekly_schedule: WeeklySchedule;
   selected_preset: string;
   /** ISO dates + local HH:mm; see `TimeOffBlockStored` */

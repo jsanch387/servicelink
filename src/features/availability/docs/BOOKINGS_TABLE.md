@@ -75,8 +75,8 @@ All customer fields except name/email can be nullable if we later make address o
 | Column                | Type                  | Why                                                                                     |
 | --------------------- | --------------------- | --------------------------------------------------------------------------------------- |
 | `business_slug`       | text, nullable        | Denormalized slug for display/emails (e.g. “Booked at johns-plumbing”) without joining. |
-| `booking_source`      | text, nullable        | Direct creation origin: `public` booking link or authenticated `owner` flow.            |
-| `referral_source`     | text, nullable        | Acquisition channel that sent the customer here, e.g. `marketplace`. Null = direct.     |
+| `booking_source`      | text, nullable        | Creation flow: `owner`, `public`, `quote`, `subscription`. Null = legacy.               |
+| `referral_source`     | text, nullable        | How the customer found the business, e.g. `marketplace`. Works with any booking_source. |
 | `cancelled_at`        | timestamptz, nullable | When it was cancelled, if we track that.                                                |
 | `cancellation_reason` | text, nullable        | Optional; for analytics or support.                                                     |
 
@@ -113,8 +113,8 @@ All customer fields except name/email can be nullable if we later make address o
 | id                      | uuid        | no       | gen_random_uuid()                                                                                                                                                    |
 | business_id             | uuid        | no       | –                                                                                                                                                                    |
 | business_slug           | text        | yes      | –                                                                                                                                                                    |
-| booking_source          | text        | yes      | `public` or `owner`; null for legacy and unrelated system-created bookings.                                                                                          |
-| referral_source         | text        | yes      | `marketplace`; null for direct visits. Indexed (partial, non-null).                                                                                                  |
+| booking_source          | text        | yes      | `owner`, `public`, `quote`, `subscription`; null for legacy rows.                                                                                                    |
+| referral_source         | text        | yes      | `marketplace`; null for direct visits or non-public origins. Indexed (partial, non-null).                                                                            |
 | service_id              | uuid        | yes      | –                                                                                                                                                                    |
 | service_name            | text        | no       | –                                                                                                                                                                    |
 | service_price_cents     | integer     | yes      | –                                                                                                                                                                    |
@@ -139,8 +139,8 @@ All customer fields except name/email can be nullable if we later make address o
 
 - **`addon_details`:** JSON array of objects shaped like **`AddOnAtBooking`** (`features/availability/booking/types.ts`): `id`, `name`, `priceCents`, optional **`durationMinutes`** (extra minutes that were included in `duration_minutes` for that add-on, or omitted/null for price-only add-ons). Used for receipts, emails, and customer metrics (e.g. last add-on names). Persisted by **`createBooking`** from **`POST /api/public/bookings`** `selectedAddOns` (single-job) or rolled up from jobs when applicable.
 - **`job_details`:** JSON array of per-job snapshots (service, price, duration, add-ons, optional vehicle) for multi-job visits. Public flow: [public-multi-job-booking.md](../../../../docs/contracts/public-multi-job-booking.md). Owner flow: [mobile-owner-create-booking-multi-job.md](../../../../docs/contracts/mobile-owner-create-booking-multi-job.md).
-- **`booking_source`:** Set by the server, not trusted from arbitrary client input. `POST /api/public/bookings` stores `owner` only after owner authentication succeeds; otherwise it stores `public`. Stripe checkout completion also stores `public`.
-- **`referral_source`:** Also server-set, read from the `sl_booking_ref` cookie that middleware writes when a visitor lands on `/{slug}?ref=marketplace`. Owner-created bookings are always null. See `features/booking-attribution/README.md`.
+- **`booking_source`:** Set by the server, not trusted from a request body. Required on every new insert via `createBooking` / `createBookingForExistingCustomer`. See `features/booking-attribution/README.md`.
+- **`referral_source`:** Also server-set, read from the `sl_booking_ref` cookie. Public bookings store it immediately. Quote requests store it on `quotes.referral_source` and copy it when the quote becomes a booking. See `features/booking-attribution/README.md`.
 - **Status:** `confirmed` (default when submitted), `completed`, `cancelled`. Owner can change to completed or cancelled.
 - **Cascade:** `business_id` → business_profiles(id) ON DELETE CASCADE (when a business/user data is deleted, their bookings are removed). `service_id` → business_services(id) ON DELETE SET NULL (if service is deleted, booking remains with service_id null).
 - Trigger to keep `updated_at` in sync on update.
@@ -156,7 +156,7 @@ All customer fields except name/email can be nullable if we later make address o
 ### Slot blocking (avoiding double-booking)
 
 - **Source of blocked slots:** **GET /api/public/bookings/blocked/[slug]** returns, for that business, all rows in `bookings` with `status` in `('confirmed', 'completed')`, with fields `scheduled_date`, `start_time`, `duration_minutes`.
-- **Overlap rule:** Each existing booking blocks the range **`[start_time, start_time + duration_minutes]`**. When generating available slots for a date, we treat any candidate slot as **blocked** if it overlaps that range (i.e. candidate start &lt; booking end and candidate end &gt; booking start). Implemented in `booking/utils/slotGeneration.ts`. So we block for the **full stored appointment length** (service + add-ons at time of booking), not just the base service length.
+- **Overlap rule:** Each existing booking blocks the range **`[start_time, start_time + duration_minutes]`**. When generating available slots for a date, we treat any candidate slot as **blocked** if it overlaps that range (i.e. candidate start &lt; booking end and candidate end &gt; booking start). If the business set **`buffer_time`** on `business_availability` (text token such as `'30m'` / `'1h'`, not raw minutes), that gap is required on **both sides** of every existing booking after converting the token with `bufferTimeToMinutes`. Implemented in `booking/utils/slotGeneration.ts`. So we block for the **full stored appointment length** (service + add-ons at time of booking), not just the base service length. Same buffer rule is re-checked on **POST /api/public/bookings** and owner reschedule.
 
 ### APIs and who writes/reads
 

@@ -18,6 +18,10 @@ import {
   membershipPlanPricesOf,
   membershipPlansOf,
 } from './membershipTablesQuery';
+import {
+  loadMembershipShopTax,
+  membershipTaxColumns,
+} from './membershipSalesTax';
 import { syncMembershipPlanStripeCatalog } from './syncMembershipPlanStripeCatalog';
 
 type PlanRow = Database['public']['Tables']['membership_plans']['Row'];
@@ -91,12 +95,14 @@ export async function createMembershipPlanForBusiness(
     };
   }
 
+  const shopTax = await loadMembershipShopTax(supabase, businessId);
   const priceInserts = input.cadenceOptions.map((option, index) => ({
     plan_id: planRow.id,
     business_id: businessId,
     interval_unit: option.intervalUnit,
     interval_count: option.intervalCount,
     price_cents: option.priceCents,
+    ...membershipTaxColumns(option.priceCents, shopTax),
     currency: 'usd',
     is_default: index === 0,
   }));

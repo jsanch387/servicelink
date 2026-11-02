@@ -4,6 +4,7 @@
  * Do not import from client code.
  */
 
+import type { PlatformSubscriptionPlan } from '@/features/pricing/utils/hasTeamAccess';
 import type { BillingInterval } from '@/features/pricing/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -20,6 +21,8 @@ export interface UpdateProfileFromCheckoutParams {
   subscriptionStatus?: string | null;
   /** Recurring cadence from Stripe price (`month` or `year`). */
   subscriptionBillingInterval?: BillingInterval | null;
+  /** `team` when Checkout was for the Team price. Defaults to Pro. */
+  subscriptionPlan?: PlatformSubscriptionPlan | null;
 }
 
 /**
@@ -37,6 +40,7 @@ export async function updateProfileFromCheckout(
     currentPeriodEnd,
     subscriptionStatus,
     subscriptionBillingInterval,
+    subscriptionPlan,
   } = params;
 
   if (!userId?.trim()) {
@@ -44,6 +48,7 @@ export async function updateProfileFromCheckout(
   }
 
   const updates: Record<string, unknown> = {
+    // Pro and Team both land here. Feature gates read this tier, not the plan name.
     subscription_tier: 'pro',
     subscription_status: subscriptionStatus?.trim() || 'active',
     subscription_cancel_at_period_end: false,
@@ -53,6 +58,7 @@ export async function updateProfileFromCheckout(
     // Keep last_payment_failed_at for historical "ever failed" analytics.
     subscription_canceled_at: null,
     subscription_ended_at: null,
+    subscription_plan: subscriptionPlan === 'team' ? 'team' : 'pro',
     updated_at: new Date().toISOString(),
   };
 

@@ -117,6 +117,7 @@ describe('sendAndRecordSms', () => {
     expect(inserts[0]).toMatchObject({
       business_id: 'biz-1',
       booking_id: 'booking-1',
+      quote_id: null,
       customer_id: 'cust-1',
       type: 'booking_confirmation',
       to_phone: '+15807545207',
@@ -170,10 +171,10 @@ describe('sendAndRecordSms', () => {
     expect(sendSmsMock).not.toHaveBeenCalled();
   });
 
-  it('not eligible (not Pro): skips send and log with not_eligible', async () => {
+  it('not eligible: skips send and log with not_eligible', async () => {
     canBusinessSendCustomerSmsMock.mockResolvedValue({
       ok: false,
-      reason: 'not_pro',
+      reason: 'no_owner',
     });
     const { admin, inserts } = makeAdmin();
 
@@ -298,5 +299,18 @@ describe('sendAndRecordSms', () => {
     await sendAndRecordSms(baseParams(admin, { dedupeKey: null }));
 
     expect(inserts[0].dedupe_key).toBeNull();
+  });
+
+  it('stores quote_id when the SMS belongs to a quote', async () => {
+    const { admin, inserts } = makeAdmin();
+
+    await sendAndRecordSms(
+      baseParams(admin, { bookingId: null, quoteId: 'quote-1' })
+    );
+
+    expect(inserts[0]).toMatchObject({
+      booking_id: null,
+      quote_id: 'quote-1',
+    });
   });
 });

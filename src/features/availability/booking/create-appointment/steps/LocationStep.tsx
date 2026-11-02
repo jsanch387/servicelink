@@ -8,29 +8,45 @@ export interface LocationStepProps {
   value: CreateAppointmentLocationType | null;
   onChange: (value: CreateAppointmentLocationType) => void;
   shopAddressMissing?: boolean;
+  shopAddressLabel?: string | null;
+  coverageLabel?: string | null;
 }
 
-const OPTIONS: Array<{
+function locationOptions(
+  coverageLabel: string | null,
+  shopAddressLabel: string | null
+): Array<{
   id: CreateAppointmentLocationType;
   title: string;
   description: string;
-}> = [
-  {
-    id: 'mobile',
-    title: 'Mobile',
-    description: 'You go to the customer. You’ll enter their address next.',
-  },
-  {
-    id: 'shop',
-    title: 'Shop',
-    description: 'They come to your shop. No address entry needed.',
-  },
-];
+  address?: string | null;
+}> {
+  return [
+    {
+      id: 'mobile',
+      title: 'Mobile',
+      description: [
+        'You go to the customer. You’ll enter their address next.',
+        coverageLabel?.trim() || null,
+      ]
+        .filter(Boolean)
+        .join(' '),
+    },
+    {
+      id: 'shop',
+      title: 'Shop',
+      description: 'They come to your shop. No address entry needed.',
+      address: shopAddressLabel?.trim() || null,
+    },
+  ];
+}
 
 export function LocationStep({
   value,
   onChange,
   shopAddressMissing = false,
+  shopAddressLabel = null,
+  coverageLabel = null,
 }: LocationStepProps) {
   return (
     <div className="space-y-3">
@@ -39,7 +55,7 @@ export function LocationStep({
         role="radiogroup"
         aria-label="Service location"
       >
-        {OPTIONS.map(option => {
+        {locationOptions(coverageLabel, shopAddressLabel).map(option => {
           const selected = value === option.id;
           return (
             <button
@@ -61,6 +77,11 @@ export function LocationStep({
                 <span className="mt-1 block text-xs leading-relaxed text-zinc-500">
                   {option.description}
                 </span>
+                {option.address ? (
+                  <span className="mt-1.5 block text-xs leading-relaxed text-zinc-400">
+                    {option.address}
+                  </span>
+                ) : null}
               </span>
               <span
                 className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${

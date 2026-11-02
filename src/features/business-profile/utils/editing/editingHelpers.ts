@@ -5,9 +5,15 @@
  * Handles validation, data transformation, and API calls.
  */
 
+import { sanitizeBusinessSpecialties } from '@/constants/businessSpecialties';
 import { BusinessProfileApi } from '../../services/businessProfileApi';
 import type { BookingLinkLocalesUiState } from '../bookingLinkLocales';
 import { bookingLinkLocalesPersistFromUi } from '../bookingLinkLocales';
+import type { BookingPolicyUiState } from '../bookingPolicy';
+import {
+  bookingPolicyPersistFromUi,
+  validateBookingPolicyUi,
+} from '../bookingPolicy';
 import type { ServiceLocationUiState } from '../serviceLocationMode';
 import { serviceLocationPersistFromUi } from '../serviceLocationMode';
 import { socialMediaForPersist } from '../socialMedia';
@@ -49,6 +55,7 @@ export function transformFormDataForAPI(
     businessProfile: {
       business_name: formData.business_name,
       business_type: formData.business_type,
+      specialties: sanitizeBusinessSpecialties(formData.specialties),
       service_area: formData.service_area.trim(),
       business_zip: formData.business_zip.trim(),
       ...serviceLocationPersistFromUi(serviceLocation),
@@ -73,7 +80,8 @@ export async function saveBusinessProfile(
   businessProfileId: string,
   formData: EditingFormData,
   bookingLinkLocales: BookingLinkLocalesUiState,
-  serviceLocation: ServiceLocationUiState
+  serviceLocation: ServiceLocationUiState,
+  bookingPolicy: BookingPolicyUiState
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Validate form data
@@ -85,6 +93,11 @@ export async function saveBusinessProfile(
       };
     }
 
+    const policyError = validateBookingPolicyUi(bookingPolicy);
+    if (policyError) {
+      return { success: false, error: policyError };
+    }
+
     // Transform data for API
     const apiData = transformFormDataForAPI(
       formData,
@@ -92,6 +105,7 @@ export async function saveBusinessProfile(
       serviceLocation
     );
     const bookingPersist = bookingLinkLocalesPersistFromUi(bookingLinkLocales);
+    const policyPersist = bookingPolicyPersistFromUi(bookingPolicy);
 
     // Save business profile (basic info + booking link locale settings)
     const profileResult = await BusinessProfileApi.updateBusinessProfile(
@@ -99,6 +113,7 @@ export async function saveBusinessProfile(
       {
         ...apiData.businessProfile,
         ...bookingPersist,
+        ...policyPersist,
       }
     );
     if (!profileResult.success) {

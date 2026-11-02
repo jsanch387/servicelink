@@ -9,8 +9,9 @@ export type PublicBookingFreeTierGate = {
   /** Free tier + lifetime booking count at cap (blocks new public bookings). */
   reachedFreeCap: boolean;
   /**
-   * Pro-style public booking (no free cap, price options): {@link isExemptFromFreeTierLifetimeBookingCap}.
-   * Broader than dashboard `isProAccess` so billing hiccups do not lock the book flow.
+   * Pro-style public booking (no free cap, price options). Same gate as
+   * the dashboard: {@link isExemptFromFreeTierLifetimeBookingCap} (= `isProAccess`).
+   * Customer SMS is not plan-gated.
    */
   ownerHasPro: boolean;
 };

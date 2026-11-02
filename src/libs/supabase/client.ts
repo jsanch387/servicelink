@@ -52,6 +52,8 @@ export type Database = {
           payment_failed_email_sent_at: string | null;
           pro_welcome_email_sent_at: string | null;
           profile_welcome_modal_seen: boolean;
+          /** Live Stripe plan while access is granted: `pro` or `team`. */
+          subscription_plan: string | null;
         };
         Insert: {
           user_id: string;
@@ -73,6 +75,7 @@ export type Database = {
           payment_failed_email_sent_at?: string | null;
           pro_welcome_email_sent_at?: string | null;
           profile_welcome_modal_seen?: boolean;
+          subscription_plan?: string | null;
         };
         Update: {
           user_id?: string;
@@ -94,6 +97,7 @@ export type Database = {
           payment_failed_email_sent_at?: string | null;
           pro_welcome_email_sent_at?: string | null;
           profile_welcome_modal_seen?: boolean;
+          subscription_plan?: string | null;
         };
       };
       business_service_areas: {
@@ -172,6 +176,9 @@ export type Database = {
           service_location_mode: string;
           shop_street_address: string | null;
           shop_unit: string | null;
+          shop_city: string | null;
+          shop_state: string | null;
+          shop_zip: string | null;
           bio: string | null;
           phone_number_call: string | null;
           phone_number_text: string | null;
@@ -202,6 +209,11 @@ export type Database = {
           public_booking_locales: string[];
           /** Visitor default when opening the booking link (must be in `public_booking_locales`). */
           public_booking_default_locale: string;
+          /** When true and text is set, customers must agree before booking. */
+          booking_policy_enabled: boolean;
+          booking_policy_text: string | null;
+          /** True when this shop used Team before the Team price existed. */
+          team_included: boolean;
         };
         Insert: {
           id?: string;
@@ -217,6 +229,9 @@ export type Database = {
           service_location_mode?: string;
           shop_street_address?: string | null;
           shop_unit?: string | null;
+          shop_city?: string | null;
+          shop_state?: string | null;
+          shop_zip?: string | null;
           bio?: string | null;
           phone_number_call?: string | null;
           phone_number_text?: string | null;
@@ -241,6 +256,9 @@ export type Database = {
           accept_quote_req?: boolean;
           public_booking_locales?: string[];
           public_booking_default_locale?: string;
+          booking_policy_enabled?: boolean;
+          booking_policy_text?: string | null;
+          team_included?: boolean;
         };
         Update: {
           id?: string;
@@ -254,6 +272,9 @@ export type Database = {
           service_location_mode?: string;
           shop_street_address?: string | null;
           shop_unit?: string | null;
+          shop_city?: string | null;
+          shop_state?: string | null;
+          shop_zip?: string | null;
           bio?: string | null;
           phone_number_call?: string | null;
           phone_number_text?: string | null;
@@ -280,6 +301,82 @@ export type Database = {
           accept_quote_req?: boolean;
           public_booking_locales?: string[];
           public_booking_default_locale?: string;
+          booking_policy_enabled?: boolean;
+          booking_policy_text?: string | null;
+          team_included?: boolean;
+        };
+      };
+      business_members: {
+        Row: {
+          id: string;
+          business_id: string;
+          user_id: string;
+          role: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          user_id: string;
+          role: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          user_id?: string;
+          role?: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      team_invites: {
+        Row: {
+          id: string;
+          business_id: string;
+          email: string;
+          name: string | null;
+          role: string;
+          link_token_hash: string;
+          status: string;
+          invited_by: string;
+          accepted_user_id: string | null;
+          expires_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          email: string;
+          name?: string | null;
+          role?: string;
+          link_token_hash: string;
+          status?: string;
+          invited_by: string;
+          accepted_user_id?: string | null;
+          expires_at: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          email?: string;
+          name?: string | null;
+          role?: string;
+          link_token_hash?: string;
+          status?: string;
+          invited_by?: string;
+          accepted_user_id?: string | null;
+          expires_at?: string;
+          created_at?: string;
+          updated_at?: string;
         };
       };
       service_addons: {
@@ -402,6 +499,8 @@ export type Database = {
           business_id: string;
           name: string;
           description: string | null;
+          name_es: string | null;
+          description_es: string | null;
           price_cents: number | null;
           hours_to_complete: number | null;
           duration_minutes: number | null;
@@ -417,6 +516,8 @@ export type Database = {
           business_id: string;
           name: string;
           description?: string | null;
+          name_es?: string | null;
+          description_es?: string | null;
           price_cents?: number | null;
           hours_to_complete?: number | null;
           duration_minutes?: number | null;
@@ -432,6 +533,8 @@ export type Database = {
           business_id?: string;
           name?: string;
           description?: string | null;
+          name_es?: string | null;
+          description_es?: string | null;
           price_cents?: number | null;
           hours_to_complete?: number | null;
           duration_minutes?: number | null;
@@ -597,6 +700,11 @@ export type Database = {
           email: string | null;
           phone_normalized: string | null;
           email_normalized: string | null;
+          street_address: string | null;
+          unit: string | null;
+          city: string | null;
+          state: string | null;
+          zip: string | null;
           notes: string | null;
           /** Transactional SMS opt-in (appointments / membership updates). */
           sms_opt_in: boolean;
@@ -612,6 +720,11 @@ export type Database = {
           email?: string | null;
           phone_normalized?: string | null;
           email_normalized?: string | null;
+          street_address?: string | null;
+          unit?: string | null;
+          city?: string | null;
+          state?: string | null;
+          zip?: string | null;
           notes?: string | null;
           sms_opt_in?: boolean;
           maintenance_visits_completed?: number;
@@ -626,6 +739,11 @@ export type Database = {
           email?: string | null;
           phone_normalized?: string | null;
           email_normalized?: string | null;
+          street_address?: string | null;
+          unit?: string | null;
+          city?: string | null;
+          state?: string | null;
+          zip?: string | null;
           notes?: string | null;
           sms_opt_in?: boolean;
           maintenance_visits_completed?: number;
@@ -725,6 +843,8 @@ export type Database = {
           interval_unit: string;
           interval_count: number;
           price_cents: number;
+          tax_rate_bps: number;
+          tax_cents: number;
           currency: string;
           is_default: boolean;
           stripe_price_id: string | null;
@@ -738,6 +858,8 @@ export type Database = {
           interval_unit: string;
           interval_count: number;
           price_cents: number;
+          tax_rate_bps?: number;
+          tax_cents?: number;
           currency?: string;
           is_default?: boolean;
           stripe_price_id?: string | null;
@@ -751,6 +873,8 @@ export type Database = {
           interval_unit?: string;
           interval_count?: number;
           price_cents?: number;
+          tax_rate_bps?: number;
+          tax_cents?: number;
           currency?: string;
           is_default?: boolean;
           stripe_price_id?: string | null;
@@ -1244,6 +1368,9 @@ export type Database = {
           updated_at: string;
           /** When false, ServiceLink checkout is off; Stripe may still be connected. */
           payments_enabled: boolean;
+          tax_enabled: boolean;
+          /** Hundredths of a percent. `825` is 8.25%. */
+          tax_rate_bps: number;
         };
         Insert: {
           id?: string;
@@ -1259,6 +1386,8 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           payments_enabled?: boolean;
+          tax_enabled?: boolean;
+          tax_rate_bps?: number;
         };
         Update: {
           id?: string;
@@ -1274,7 +1403,149 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           payments_enabled?: boolean;
+          tax_enabled?: boolean;
+          tax_rate_bps?: number;
         };
+      };
+      payment_requests: {
+        Row: {
+          id: string;
+          business_id: string;
+          created_by: string | null;
+          collection_method: 'checkout_link' | 'tap_to_pay';
+          status: 'open' | 'paid' | 'expired' | 'canceled' | 'failed';
+          amount_cents: number;
+          currency: string;
+          note: string;
+          short_code: string | null;
+          stripe_checkout_session_id: string | null;
+          stripe_checkout_url: string | null;
+          stripe_payment_intent_id: string | null;
+          paid_amount_cents: number | null;
+          paid_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          created_by?: string | null;
+          collection_method: 'checkout_link' | 'tap_to_pay';
+          status?: 'open' | 'paid' | 'expired' | 'canceled' | 'failed';
+          amount_cents: number;
+          currency?: string;
+          note: string;
+          short_code?: string | null;
+          stripe_checkout_session_id?: string | null;
+          stripe_checkout_url?: string | null;
+          stripe_payment_intent_id?: string | null;
+          paid_amount_cents?: number | null;
+          paid_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          created_by?: string | null;
+          collection_method?: 'checkout_link' | 'tap_to_pay';
+          status?: 'open' | 'paid' | 'expired' | 'canceled' | 'failed';
+          amount_cents?: number;
+          currency?: string;
+          note?: string;
+          short_code?: string | null;
+          stripe_checkout_session_id?: string | null;
+          stripe_checkout_url?: string | null;
+          stripe_payment_intent_id?: string | null;
+          paid_amount_cents?: number | null;
+          paid_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      business_expenses: {
+        Row: {
+          id: string;
+          business_id: string;
+          name: string;
+          amount_cents: number;
+          charged_on: string;
+          category: string;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          name: string;
+          amount_cents: number;
+          charged_on: string;
+          category?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          name?: string;
+          amount_cents?: number;
+          charged_on?: string;
+          category?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      signup_attribution: {
+        Row: {
+          user_id: string;
+          utm_source: string | null;
+          utm_medium: string | null;
+          utm_campaign: string | null;
+          utm_content: string | null;
+          utm_term: string | null;
+          fbclid: string | null;
+          gclid: string | null;
+          landing_path: string | null;
+          referrer: string | null;
+          channel: string | null;
+          signed_up_at: string;
+          first_paid_at: string | null;
+        };
+        Insert: {
+          user_id: string;
+          utm_source?: string | null;
+          utm_medium?: string | null;
+          utm_campaign?: string | null;
+          utm_content?: string | null;
+          utm_term?: string | null;
+          fbclid?: string | null;
+          gclid?: string | null;
+          landing_path?: string | null;
+          referrer?: string | null;
+          channel?: string | null;
+          signed_up_at?: string;
+          first_paid_at?: string | null;
+        };
+        Update: {
+          user_id?: string;
+          utm_source?: string | null;
+          utm_medium?: string | null;
+          utm_campaign?: string | null;
+          utm_content?: string | null;
+          utm_term?: string | null;
+          fbclid?: string | null;
+          gclid?: string | null;
+          landing_path?: string | null;
+          referrer?: string | null;
+          channel?: string | null;
+          signed_up_at?: string;
+          first_paid_at?: string | null;
+        };
+        Relationships: [];
       };
     };
   };

@@ -14,7 +14,7 @@ export interface PublicServiceCategoryFiltersProps {
 }
 
 /**
- * Rectangular category selectors for the public profile services tab.
+ * Rounded category filter pills on the public booking link and profile.
  */
 export function PublicServiceCategoryFilters({
   options,
@@ -45,10 +45,10 @@ export function PublicServiceCategoryFilters({
             role="tab"
             aria-selected={active}
             onClick={() => onChange(option.id)}
-            className={`shrink-0 cursor-pointer touch-manipulation rounded-[10px] border px-4 py-2.5 text-sm font-medium transition-colors ${
+            className={`shrink-0 cursor-pointer touch-manipulation rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
               active
-                ? 'border-white/30 bg-white/10 text-white'
-                : 'border-white/10 bg-white/[0.03] text-zinc-400 hover:border-white/20 hover:text-zinc-200'
+                ? 'bg-white text-neutral-950'
+                : 'bg-white/[0.08] text-zinc-400 hover:bg-white/[0.14] hover:text-white'
             }`}
           >
             {option.label}

@@ -2,6 +2,7 @@ import type {
   LocationAutocompleteMode,
   StructuredLocation,
 } from '../types/location';
+import { isAbortError } from '../utils/isAbortError';
 
 const MAPTILER_GEOCODING_URL = 'https://api.maptiler.com/geocoding';
 const SEARCH_CACHE_TTL_MS = 15 * 60 * 1000;
@@ -65,6 +66,7 @@ const US_STATE_ABBREVIATIONS: Record<string, string> = {
   'West Virginia': 'WV',
   Wisconsin: 'WI',
   Wyoming: 'WY',
+  'Puerto Rico': 'PR',
 };
 
 interface MapTilerHierarchyItem {
@@ -83,6 +85,8 @@ interface MapTilerFeature extends MapTilerHierarchyItem {
   place_type: string[];
   center: [number, number];
   context?: MapTilerHierarchyItem[];
+  /** House number when the feature is an address. */
+  address?: string;
 }
 
 interface MapTilerFeatureCollection {
@@ -122,6 +126,28 @@ function formatLocationDisplayLabel(
   return zip ? `${cityState} ${zip}` : cityState;
 }
 
+export function geocodingTypesForMode(mode: LocationAutocompleteMode): string {
+  if (mode === 'street-address') return 'address';
+  // Prefer city / ZIP centers for service areas (not street addresses).
+  return 'place,municipality,locality,postal_code';
+}
+
+export function streetLineFromGeocodingFeature(feature: {
+  address?: string;
+  text?: string;
+  place_type?: string[];
+}): string {
+  const type = feature.place_type?.[0] ?? '';
+  if (type !== 'address' && type !== 'poi') return '';
+  const house = feature.address?.trim() ?? '';
+  const name = feature.text?.trim() ?? '';
+  if (house && name) {
+    const nameHasHouse = name === house || name.startsWith(`${house} `);
+    return nameHasHouse ? name : `${house} ${name}`.trim();
+  }
+  return name || house;
+}
+
 /** User-facing suggestion hint — never show MapTiler jargon like "municipality". */
 export function formatLocationSuggestionKind(placeType: string): string {
   switch (placeType) {
@@ -141,7 +167,9 @@ export function formatLocationSuggestionKind(placeType: string): string {
   }
 }
 
-function mapFeature(feature: MapTilerFeature): StructuredLocation | null {
+export function mapGeocodingFeature(
+  feature: MapTilerFeature
+): StructuredLocation | null {
   // Prefer locality/municipality over broader "place" (e.g. Pflugerville vs Austin metro).
   const cityItem = findHierarchyItem(feature, [
     'locality',
@@ -167,15 +195,18 @@ function mapFeature(feature: MapTilerFeature): StructuredLocation | null {
   }
 
   const displayLabel = formatLocationDisplayLabel(city, state, zip);
+  const street = streetLineFromGeocodingFeature(feature);
+  const label = street ? `${street}, ${displayLabel}` : displayLabel;
 
   return {
     providerId: feature.id,
     // What the user clicked / what the input should show (not MapTiler place_name).
-    label: displayLabel,
-    searchValue: displayLabel,
+    label,
+    searchValue: label,
     city,
     state,
     zip,
+    street,
     latitude,
     longitude,
     placeType: feature.place_type?.[0] ?? itemType(feature),
@@ -227,20 +258,31 @@ async function fetchMapTilerLocations(
   params: URLSearchParams,
   signal?: AbortSignal
 ): Promise<StructuredLocation[]> {
-  const response = await fetch(
-    `${MAPTILER_GEOCODING_URL}/${path}.json?${params.toString()}`,
-    { signal }
-  );
-
-  if (!response.ok) {
-    throw new Error('Location suggestions are unavailable.');
+  if (signal?.aborted) {
+    throw new DOMException('The operation was aborted.', 'AbortError');
   }
 
-  const result = (await response.json()) as MapTilerFeatureCollection;
-  return (result.features ?? []).flatMap(feature => {
-    const location = mapFeature(feature);
-    return location ? [location] : [];
-  });
+  try {
+    const response = await fetch(
+      `${MAPTILER_GEOCODING_URL}/${path}.json?${params.toString()}`,
+      { signal }
+    );
+
+    if (!response.ok) {
+      throw new Error('Location suggestions are unavailable.');
+    }
+
+    const result = (await response.json()) as MapTilerFeatureCollection;
+    return (result.features ?? []).flatMap(feature => {
+      const location = mapGeocodingFeature(feature);
+      return location ? [location] : [];
+    });
+  } catch (error) {
+    if (isAbortError(error) || signal?.aborted) {
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    }
+    throw error;
+  }
 }
 
 export async function searchMapTilerLocations(
@@ -261,8 +303,7 @@ export async function searchMapTilerLocations(
     language: 'en',
     autocomplete: 'true',
     limit: '5',
-    // Prefer city / ZIP centers for service areas (not street addresses).
-    types: 'place,municipality,locality,postal_code',
+    types: geocodingTypesForMode(mode),
   });
   const locations = await fetchMapTilerLocations(
     encodeURIComponent(query.trim()),

@@ -54,7 +54,7 @@ export const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
     <div className={isDisabled ? 'pointer-events-none opacity-50' : ''}>
       {/* Desktop: table with headers */}
       <div className="hidden md:block">
-        <div className="grid grid-cols-[140px_80px_1fr_1fr] gap-4 items-center px-5 py-4 border-b border-white/10">
+        <div className="grid grid-cols-[140px_80px_1fr_1fr] gap-4 items-center px-5 py-4">
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
             Day
           </span>

@@ -1,10 +1,13 @@
 'use client';
 
-import { Button } from '@/components/shared';
 import { PlanSection } from '@/features/pricing';
+import { ReactivateSubscriptionButton } from '@/features/pricing/components/ReactivateSubscriptionButton';
 import type { PlanId } from '@/features/pricing';
-import type { BillingInterval } from '@/features/pricing/types';
-import React, { useCallback, useState } from 'react';
+import type {
+  BillingInterval,
+  PlatformBillingAction,
+} from '@/features/pricing/types';
+import React from 'react';
 
 export interface SettingsBillingSectionProps {
   planId: PlanId;
@@ -13,6 +16,9 @@ export interface SettingsBillingSectionProps {
   subscriptionCancelAtPeriodEnd?: boolean;
   subscriptionMonthlyPrice?: string | null;
   subscriptionBillingInterval?: BillingInterval | null;
+  billingAction?: PlatformBillingAction;
+  stripeCustomerId?: string | null;
+  isTeamPlan?: boolean;
 }
 
 export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
@@ -22,31 +28,16 @@ export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
   subscriptionCancelAtPeriodEnd = false,
   subscriptionMonthlyPrice = null,
   subscriptionBillingInterval = null,
+  billingAction = 'checkout',
+  stripeCustomerId = null,
+  isTeamPlan = false,
 }) => {
-  const [portalLoading, setPortalLoading] = useState(false);
-  const showPaymentFailedBanner =
-    subscriptionStatus === 'past_due' || subscriptionStatus === 'unpaid';
-
-  const handleOpenPortal = useCallback(async () => {
-    setPortalLoading(true);
-    try {
-      const res = await fetch('/api/stripe/create-portal-session', {
-        method: 'POST',
-      });
-      const data = await res.json();
-      if (data.success && data.url) {
-        window.location.href = data.url;
-        return;
-      }
-      setPortalLoading(false);
-    } catch {
-      setPortalLoading(false);
-    }
-  }, []);
+  const showPaymentFailedBanner = billingAction === 'update_payment';
+  const showActiveBillingNote = planId !== 'pro' && billingAction === 'manage';
 
   return (
     <section className="w-full min-w-0 space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 min-w-0">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <h2 className="text-base font-semibold text-white">Subscription</h2>
         {planId === 'pro' && subscriptionCancelAtPeriodEnd ? (
           <span className="inline-flex shrink-0 items-center rounded-md border border-zinc-600/40 bg-zinc-800/40 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
@@ -55,22 +46,20 @@ export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
         ) : null}
       </div>
 
+      {showActiveBillingNote ? (
+        <p className="text-sm leading-relaxed text-zinc-400">
+          A subscription is already active on this account.
+        </p>
+      ) : null}
+
       {showPaymentFailedBanner ? (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-          <p className="text-amber-200 text-sm font-medium mb-3">
-            We couldn&apos;t charge your card. Please update your payment method
-            to restore Pro access.
+          <p className="text-amber-200 text-sm font-medium">
+            We couldn&apos;t charge your card.
           </p>
-          <Button
-            type="button"
-            variant="inverse"
-            onClick={handleOpenPortal}
-            loading={portalLoading}
-            disabled={portalLoading}
-            className="w-full sm:w-auto"
-          >
-            Update payment method
-          </Button>
+          <div className="mt-3">
+            <ReactivateSubscriptionButton className="w-full sm:w-auto" />
+          </div>
         </div>
       ) : null}
 
@@ -81,6 +70,9 @@ export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
         subscriptionStatus={subscriptionStatus}
         monthlyPriceOverride={subscriptionMonthlyPrice}
         billingInterval={subscriptionBillingInterval ?? undefined}
+        billingAction={billingAction}
+        stripeCustomerId={stripeCustomerId}
+        isTeamPlan={isTeamPlan}
         hideHeading
       />
     </section>

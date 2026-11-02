@@ -6,7 +6,7 @@ import {
 } from '@/features/availability/types/blockTime';
 import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
-import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
+import { loadPublicBookingServiceLocation } from '@/features/business-profile/server/loadPrimaryServiceArea';
 import { isProAccess } from '@/features/pricing';
 import { PublicMembershipSubscribePage } from '@/features/subscriptions/components/PublicMembershipSubscribePage';
 import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '@/features/subscriptions/constants/membershipVisitDuration';
@@ -54,7 +54,7 @@ export default async function PublicMembershipSubscribeRoute({
   const { data: profile } = await supabase
     .from('business_profiles')
     .select(
-      'id, business_name, profile_id, public_booking_locales, public_booking_default_locale, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+      'id, business_name, profile_id, public_booking_locales, public_booking_default_locale, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, shop_city, shop_state, shop_zip'
     )
     .eq('business_slug', slug)
     .maybeSingle();
@@ -102,6 +102,7 @@ export default async function PublicMembershipSubscribeRoute({
     availabilityRow?.time_off_blocks
   ).map(toTimeOffIntervalFields);
   const minimumNotice = availabilityRow?.minimum_notice ?? 'none';
+  const bufferTime = availabilityRow?.buffer_time ?? 'none';
   const schedulingReady = availabilityRow?.accept_bookings === true;
 
   const cookieStore = await cookies();
@@ -117,13 +118,18 @@ export default async function PublicMembershipSubscribeRoute({
     cookieValue: cookieStore.get(BOOKING_FLOW_LOCALE_COOKIE_NAME)?.value,
   });
 
-  const serviceLocation = buildPublicBookingServiceLocation(
+  const serviceLocation = await loadPublicBookingServiceLocation(
+    admin,
+    businessId,
     profile as {
       service_location_mode?: string | null;
       service_area?: string | null;
       business_zip?: string | null;
       shop_street_address?: string | null;
       shop_unit?: string | null;
+      shop_city?: string | null;
+      shop_state?: string | null;
+      shop_zip?: string | null;
     }
   );
 
@@ -140,6 +146,7 @@ export default async function PublicMembershipSubscribeRoute({
       weeklySchedule={weeklySchedule}
       timeOffBlocks={timeOffBlocks}
       minimumNotice={minimumNotice}
+      bufferTime={bufferTime}
       schedulingReady={schedulingReady}
       visitDurationMinutes={
         plan.visitDurationMinutes ?? MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT

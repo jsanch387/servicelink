@@ -11,7 +11,9 @@ import {
   type BookDetailsStepQuery,
   type BookServiceLocationTypeQuery,
 } from '@/constants/routes';
+import { PublicBookingPolicyAgreeDialog } from '@/features/availability/booking/components/BookingPolicyAgreeModal';
 import { BookingServiceLocationChoice } from '@/features/availability/booking/components/BookingServiceLocationSteps';
+import { usePublicBookingPolicyAgreement } from '@/features/availability/booking/hooks/usePublicBookingPolicyAgreement';
 import { PublicBookingStepTracker } from '@/features/availability/booking/components/PublicBookingStepTracker';
 import {
   isCustomerServiceLocationChoiceValid,
@@ -40,7 +42,7 @@ import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
-import { BookCalendarLoadingSkeleton } from '@/features/availability/booking/components/BookCalendarLoadingSkeleton';
+import { BookFlowAdvancingOverlay } from '@/features/availability/booking/components/BookFlowLoadingState';
 import { AddOnSelector } from './AddOnSelector';
 import { PriceOptionSelector } from './PriceOptionSelector';
 import { ServiceDetailsBookingSummary } from './ServiceDetailsBookingSummary';
@@ -86,20 +88,32 @@ interface ServiceDetailsScreenProps {
    * (back from calendar → edit this service).
    */
   editingVisitJob?: boolean;
+  bookingPolicy?: { text: string } | null;
 }
 
 function resolveInitialPhase(params: {
   needsPriceStep: boolean;
+  needsAddOnStep: boolean;
   needsLocationStep: boolean;
   initialDetailsStep?: BookDetailsStepQuery;
   hasValidPriceOption: boolean;
 }): ServiceDetailsPhase {
   const {
     needsPriceStep,
+    needsAddOnStep,
     needsLocationStep,
     initialDetailsStep,
     hasValidPriceOption,
   } = params;
+
+  const needsOptionsStep = needsPriceStep || needsAddOnStep;
+
+  // A price-and-total recap is only useful after the customer picked
+  // something. With nothing to configure, open location (or leave this
+  // screen entirely — the server already sends them to the calendar).
+  if (needsLocationStep && !needsOptionsStep) {
+    return 'location';
+  }
 
   if (
     initialDetailsStep === 'location' &&
@@ -127,12 +141,19 @@ export function ServiceDetailsScreen({
   bookingFlowLocale = 'en',
   addingAnotherJob = false,
   editingVisitJob = false,
+  bookingPolicy = null,
 }: ServiceDetailsScreenProps) {
   const router = useRouter();
   const ui = useMemo(
     () => publicBookingUi(bookingFlowLocale),
     [bookingFlowLocale]
   );
+  const policyAgreement = usePublicBookingPolicyAgreement({
+    businessSlug,
+    policyText: bookingPolicy?.text,
+    skip: isOwnerManualBooking,
+    gateOnMount: !isOwnerManualBooking,
+  });
   const needsPriceStep = service.priceOptionsEnabled && priceOptions.length > 0;
   const showAddOnSection = addOns.length > 0;
   const needsLocationStep = serviceLocation.mode === 'both';
@@ -146,6 +167,7 @@ export function ServiceDetailsScreen({
   const [phase, setPhase] = useState<ServiceDetailsPhase>(() =>
     resolveInitialPhase({
       needsPriceStep,
+      needsAddOnStep: showAddOnSection,
       needsLocationStep,
       initialDetailsStep,
       hasValidPriceOption: Boolean(validInitialOptionId),
@@ -331,12 +353,14 @@ export function ServiceDetailsScreen({
   ]);
 
   const handleContinueToSchedule = () => {
-    if (isOwnerManualBooking) {
+    policyAgreement.runAfterAgreement(() => {
       setIsNavigatingToCalendar(true);
-      router.push(calendarUrl);
-      return;
-    }
-    commitPublicJobAndGoToVisit();
+      if (isOwnerManualBooking) {
+        router.push(calendarUrl);
+        return;
+      }
+      commitPublicJobAndGoToVisit();
+    });
   };
 
   const canContinueFromDetails =
@@ -387,13 +411,14 @@ export function ServiceDetailsScreen({
     handleContinueToSchedule();
   };
 
-  const canGoBackWithinDetails = phase === 'location';
+  const canGoBackWithinDetails =
+    phase === 'location' && (needsPriceStep || showAddOnSection);
 
   const stickyBackLabel =
     phase === 'location' ? ui.serviceDetails.backToOptions : exitDetailsLabel;
 
-  if (isNavigatingToCalendar) {
-    return <BookCalendarLoadingSkeleton />;
+  if (policyAgreement.isAdvancing || isNavigatingToCalendar) {
+    return <BookFlowAdvancingOverlay />;
   }
 
   return (
@@ -469,6 +494,8 @@ export function ServiceDetailsScreen({
                 onChange={setCustomerServiceChoice}
                 bookingFlowLocale={bookingFlowLocale}
                 isOwnerManualBooking={isOwnerManualBooking}
+                coverageLabel={serviceLocation.coverageLabel}
+                shopAddressLabel={serviceLocation.shopAddressLabel}
               />
               {showShopIncompleteError ? (
                 <p className="mt-3 text-sm text-red-400" role="alert">
@@ -563,6 +590,14 @@ export function ServiceDetailsScreen({
           </div>
         </div>
       </div>
+      <PublicBookingPolicyAgreeDialog
+        isOpen={policyAgreement.modalOpen}
+        required={policyAgreement.required}
+        policyText={policyAgreement.policyText}
+        onClose={policyAgreement.dismiss}
+        onAgreed={policyAgreement.agree}
+        bookingFlowLocale={bookingFlowLocale}
+      />
     </>
   );
 }

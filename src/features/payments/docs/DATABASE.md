@@ -15,6 +15,7 @@ Broader schema context snapshot: **`SUPABASE_SCHEMA_CONTEXT.md`**.
 | ------------------ | -------------------- | --------------------------------------------------------------------------------------------------------- |
 | `payment_accounts` | One row per business | Stripe Connect account id (`acct_…`) and capability / onboarding flags.                                   |
 | `payment_settings` | One row per business | ServiceLink checkout: **payments on/off**, **checkout mode** (how customers pay), **deposits**, currency. |
+| `payment_requests` | Many per business    | Walk-up charges (payment link + Tap to Pay). **Not** bookings. See **`PAYMENT_REQUESTS_TABLE.md`**.       |
 
 Both tables reference **`business_profiles(id)`** (tenant root). The owner is `business_profiles.profile_id` → `auth.users`.
 
@@ -67,21 +68,23 @@ Both tables reference **`business_profiles(id)`** (tenant root). The owner is `b
 
 ### Columns (Supabase order)
 
-| Column                      | Type          | Nullable | Description                                                                                                                 |
-| --------------------------- | ------------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `id`                        | `uuid`        | no       | Primary key.                                                                                                                |
-| `business_id`               | `uuid`        | no       | FK → `business_profiles(id)`. **Unique** per business.                                                                      |
-| `payment_account_id`        | `uuid`        | yes      | Optional FK → `payment_accounts(id)` (link row to the Connect account used when payments were enabled).                     |
-| `checkout_mode`             | `text`        | yes      | **Checkout mode** — how the customer pays; see next section. `NULL` until the owner saves a choice.                         |
-| `deposits_enabled`          | `bool`        | no       | Whether deposits are used for bookings.                                                                                     |
-| `deposit_type`              | `text`        | no       | `fixed` (amount in cents) or `percent` (0–100).                                                                             |
-| `deposit_value`             | `int4`        | no       | Interpretation depends on `deposit_type`.                                                                                   |
-| `collect_remaining_balance` | `bool`        | no       | Whether remaining balance is collected later in the flow.                                                                   |
-| `currency`                  | `text`        | no       | Lowercase ISO currency (e.g. `usd`).                                                                                        |
-| `updated_by`                | `uuid`        | yes      | Optional `auth.users` id for audit.                                                                                         |
-| `created_at`                | `timestamptz` | no       | Created at.                                                                                                                 |
-| `updated_at`                | `timestamptz` | no       | Updated at.                                                                                                                 |
-| `payments_enabled`          | `bool`        | no       | When **true**, ServiceLink checkout is active on the booking experience; Stripe can stay connected while this is **false**. |
+| Column                      | Type          | Nullable | Description                                                                                                                         |
+| --------------------------- | ------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                        | `uuid`        | no       | Primary key.                                                                                                                        |
+| `business_id`               | `uuid`        | no       | FK → `business_profiles(id)`. **Unique** per business.                                                                              |
+| `payment_account_id`        | `uuid`        | yes      | Optional FK → `payment_accounts(id)` (link row to the Connect account used when payments were enabled).                             |
+| `checkout_mode`             | `text`        | yes      | **Checkout mode** — how the customer pays; see next section. `NULL` until the owner saves a choice.                                 |
+| `deposits_enabled`          | `bool`        | no       | Whether deposits are used for bookings.                                                                                             |
+| `deposit_type`              | `text`        | no       | `fixed` (amount in cents) or `percent` (0–100).                                                                                     |
+| `deposit_value`             | `int4`        | no       | Interpretation depends on `deposit_type`.                                                                                           |
+| `collect_remaining_balance` | `bool`        | no       | Whether remaining balance is collected later in the flow.                                                                           |
+| `currency`                  | `text`        | no       | Lowercase ISO currency (e.g. `usd`).                                                                                                |
+| `updated_by`                | `uuid`        | yes      | Optional `auth.users` id for audit.                                                                                                 |
+| `created_at`                | `timestamptz` | no       | Created at.                                                                                                                         |
+| `updated_at`                | `timestamptz` | no       | Updated at.                                                                                                                         |
+| `payments_enabled`          | `bool`        | no       | When **true**, ServiceLink checkout is active on the booking experience; Stripe can stay connected while this is **false**.         |
+| `tax_enabled`               | `bool`        | no       | When **true**, the business adds sales tax on top of the price. Default **false**. The stored rate is kept when this is turned off. |
+| `tax_rate_bps`              | `int4`        | no       | Rate in hundredths of a percent. `825` = 8.25%. `0`–`2500` (0–25%). Must be at least `1` while `tax_enabled` is true.               |
 
 ### Deposits: `deposit_type` + `deposit_value` (one amount, two shapes)
 
@@ -138,6 +141,9 @@ auth.users
       (Stripe Connect)                 (checkout + deposits + payments_enabled)
               ▲                               │
               └──── payment_account_id (optional FK) ────┘
+
+      payment_requests (many)
+      walk-up payment links + Tap to Pay
 ```
 
 ---
@@ -152,4 +158,4 @@ auth.users
 
 ## v1 scope note
 
-**In-app transaction history** is deferred for v1; owners use **Stripe Dashboard** (Express) for charges/refunds/payouts until a transactions table exists.
+**In-app transaction history** is `GET /api/payments/transactions` (live Stripe Balance Transactions on the connected account, merged with offline `booking_payments` session collections). There is no local `payment_transactions` table in v1. See **`PAYMENTS_TRANSACTIONS.md`**.

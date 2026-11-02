@@ -17,6 +17,8 @@ interface QuoteFlowHeaderProps {
   fullWidthDividerAfterBack?: boolean;
   /** Hide the default rule below the title/subtitle block. */
   hideDividerAfterTitle?: boolean;
+  /** Render the back link outside this header (for example, page-left). */
+  hideBackLink?: boolean;
 }
 
 export const QuoteFlowHeader: React.FC<QuoteFlowHeaderProps> = ({
@@ -27,6 +29,7 @@ export const QuoteFlowHeader: React.FC<QuoteFlowHeaderProps> = ({
   className = '',
   fullWidthDividerAfterBack = false,
   hideDividerAfterTitle = false,
+  hideBackLink = false,
 }) => {
   const backLinkMb = fullWidthDividerAfterBack
     ? 'mb-4'
@@ -36,13 +39,15 @@ export const QuoteFlowHeader: React.FC<QuoteFlowHeaderProps> = ({
 
   return (
     <header className={`mb-6 sm:mb-8 ${className}`}>
-      <Link
-        href={backHref}
-        className={`group -ml-1 inline-flex items-center gap-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white ${backLinkMb}`}
-      >
-        <ArrowLeftIcon className="h-4 w-4 shrink-0" aria-hidden />
-        {backLabel}
-      </Link>
+      {hideBackLink ? null : (
+        <Link
+          href={backHref}
+          className={`group -ml-1 inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white ${backLinkMb}`}
+        >
+          <ArrowLeftIcon className="h-4 w-4 shrink-0" aria-hidden />
+          {backLabel}
+        </Link>
+      )}
       {fullWidthDividerAfterBack ? (
         <div
           className="relative left-1/2 mb-6 h-px w-screen -translate-x-1/2 bg-white/10"

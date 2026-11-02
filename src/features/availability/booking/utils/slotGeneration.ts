@@ -1,9 +1,11 @@
 /**
  * Generate available time slots in 30-minute increments.
- * Respects weekly schedule, existing bookings, owner time-off, and lead time.
+ * Respects weekly schedule, existing bookings, owner time-off, lead time,
+ * and buffer time between appointments.
  */
 
 import type { DayKey, WeeklySchedule } from '../../types/availability';
+import { bufferTimeToMinutes } from '../../utils/bufferTime';
 import {
   isSlotAllowedByLeadTime,
   toLocalYYYYMMDD,
@@ -13,13 +15,19 @@ import type { ExistingBooking, TimeOffInterval } from '../types';
 /**
  * True if a booking [startTime, startTime + duration) overlaps any existing
  * booking on the same calendar day (same half-open convention as time-off).
+ *
+ * `bufferMinutes` is a required gap on both sides: a new job may not start
+ * until `buffer` after an existing job ends, and may not end within `buffer`
+ * of the next job's start.
  */
 export function bookingOverlapsExistingBookings(
   scheduledDate: string,
   startTime: string,
   durationMinutes: number,
-  existingBookings: ReadonlyArray<ExistingBooking>
+  existingBookings: ReadonlyArray<ExistingBooking>,
+  bufferMinutes: number = 0
 ): boolean {
+  const buffer = Math.max(0, Math.round(bufferMinutes));
   const sStart = parseTimeHHmm(startTime.trim().slice(0, 5));
   const sEnd = sStart + Math.max(1, durationMinutes);
   return existingBookings.some(b => {
@@ -30,7 +38,7 @@ export function bookingOverlapsExistingBookings(
         .slice(0, 5)
     );
     const bEnd = bStart + Math.max(1, b.durationMinutes);
-    return sStart < bEnd && sEnd > bStart;
+    return sStart < bEnd + buffer && sEnd + buffer > bStart;
   });
 }
 
@@ -121,6 +129,8 @@ export type GenerateTimeSlotsOptions = {
    * runs past close — conflicts still use the full duration.
    */
   requireDurationWithinHours?: boolean;
+  /** `buffer_time` from availability; gap between appointments. */
+  bufferTime?: string;
 };
 
 /** Slots are in 30-minute increments; returns array of "HH:mm" for the given date. */
@@ -140,6 +150,7 @@ export function generateTimeSlots(
   const now = options.now ?? new Date();
   const requireDurationWithinHours =
     options.requireDurationWithinHours !== false;
+  const bufferMinutes = bufferTimeToMinutes(options.bufferTime);
 
   const dayKey = getDayKey(selectedDate);
   const daySchedule = weeklySchedule[dayKey];
@@ -161,15 +172,17 @@ export function generateTimeSlots(
       continue;
     }
 
-    const overlapsBooking = existingBookings.some(b => {
-      if (b.date !== dayStr) return false;
-      const bStart = parseTimeHHmm(b.startTime);
-      const bEnd = bStart + b.durationMinutes;
-      const sStart = t;
-      const sEnd = t + serviceDurationMinutes;
-      return sStart < bEnd && sEnd > bStart;
-    });
-    if (overlapsBooking) continue;
+    if (
+      bookingOverlapsExistingBookings(
+        dayStr,
+        slotStart,
+        serviceDurationMinutes,
+        existingBookings,
+        bufferMinutes
+      )
+    ) {
+      continue;
+    }
 
     const overlapsTimeOff = bookingOverlapsTimeOff(
       dayStr,
@@ -199,6 +212,7 @@ export function findEarliestAvailableSlot(args: {
   existingBookings: ExistingBooking[];
   timeOffBlocks?: ReadonlyArray<TimeOffInterval>;
   minimumNotice?: string;
+  bufferTime?: string;
   minDate?: Date;
   now?: Date;
   maxDaysAhead?: number;
@@ -209,6 +223,7 @@ export function findEarliestAvailableSlot(args: {
     existingBookings,
     timeOffBlocks = [],
     minimumNotice = 'none',
+    bufferTime = 'none',
     minDate = new Date(),
     now = new Date(),
     maxDaysAhead = 366,
@@ -231,7 +246,7 @@ export function findEarliestAvailableSlot(args: {
       30,
       timeOffBlocks,
       minimumNotice,
-      { now, requireDurationWithinHours: true }
+      { now, requireDurationWithinHours: true, bufferTime }
     );
     if (slots.length > 0) {
       return { date: candidate, time: slots[0] };

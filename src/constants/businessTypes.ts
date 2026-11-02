@@ -112,7 +112,7 @@ const VEHICLE_ONBOARDING: IndustryOnboardingCopy = {
   ...GENERIC_ONBOARDING,
   businessNamePlaceholder: 'e.g. your shop name',
   typeHelper:
-    'Detailing, tint, glass, repairs — customers add their vehicle when they book.',
+    'Detailing, tint, PPF, glass, repairs — customers add their vehicle when they book.',
   serviceNamePlaceholder: 'e.g. Standard service',
   slugExample: 'my-shop',
   firstService: {

@@ -5,6 +5,23 @@ export interface CustomerBookingAddOn {
   price: number;
 }
 
+/** One completed visit on the customer profile. `price` is service plus add-ons. */
+export interface CustomerVisit {
+  id: string;
+  scheduledDate: string;
+  serviceName: string;
+  price: number | null;
+}
+
+/** Primary address stored on the customer. */
+export interface CustomerAddress {
+  street: string;
+  unit: string;
+  city: string;
+  state: string;
+  zip: string;
+}
+
 /** Latest maintenance enrollment for CRM (from `maintenance_enrollments`). */
 export interface CustomerMaintenanceEnrollmentSummary {
   enrollmentId: string;
@@ -49,6 +66,8 @@ export interface CustomerRecord {
   maintenanceVisitsCompleted: number;
   status: CustomerLifecycle;
   note: string;
+  /** Primary service address. Null until one is saved. */
+  address?: CustomerAddress | null;
   /** Present when this customer has at least one enrollment row (latest by `created_at`). */
   maintenanceEnrollment?: CustomerMaintenanceEnrollmentSummary | null;
 }
@@ -59,11 +78,4 @@ export interface AddCustomerDraft {
   email: string;
   phone: string;
   notes: string;
-}
-
-/** Aggregates for the customer list header (from bookings + customer rows when wired to API). */
-export interface CustomerListStats {
-  totalCustomers: number;
-  returningCustomers: number;
-  totalRevenue: number;
 }

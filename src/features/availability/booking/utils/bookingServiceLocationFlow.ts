@@ -49,17 +49,30 @@ export function clearCustomerServiceAddress(
   };
 }
 
+export function shopAddressFieldsFromLocation(
+  serviceLocation: PublicBookingServiceLocation
+): Pick<
+  CustomerFormData,
+  'streetAddress' | 'unitApt' | 'city' | 'state' | 'zip'
+> {
+  return {
+    streetAddress: serviceLocation.shopStreet,
+    unitApt: serviceLocation.shopUnit,
+    city: serviceLocation.shopCity || serviceLocation.city,
+    state: serviceLocation.shopState || serviceLocation.state,
+    zip:
+      serviceLocation.shopZip ||
+      (serviceLocation.shopCity ? '' : serviceLocation.zip),
+  };
+}
+
 export function prefillCustomerWithShopAddress(
   customer: CustomerFormData,
   serviceLocation: PublicBookingServiceLocation
 ): CustomerFormData {
   return {
     ...customer,
-    streetAddress: serviceLocation.shopStreet,
-    unitApt: serviceLocation.shopUnit,
-    city: serviceLocation.city,
-    state: serviceLocation.state,
-    zip: serviceLocation.zip,
+    ...shopAddressFieldsFromLocation(serviceLocation),
   };
 }
 

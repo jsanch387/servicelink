@@ -39,14 +39,15 @@ export interface PricingComparisonTableProps {
 }
 
 /**
- * Free vs Pro feature matrix for public `/pricing`.
- * Mobile-style comparison table with plan prices in the header.
+ * Free vs Pro vs Team feature matrix for public `/pricing`.
+ * Prices in the header are the monthly list prices.
  */
 export const PricingComparisonTable: React.FC<PricingComparisonTableProps> = ({
   className = '',
 }) => {
   const free = PLANS.free;
   const pro = PLANS.pro;
+  const team = PLANS.team;
 
   return (
     <div
@@ -62,18 +63,18 @@ export const PricingComparisonTable: React.FC<PricingComparisonTableProps> = ({
       />
 
       <div className="relative z-[1] overflow-x-auto">
-        <table className="w-full min-w-[320px] border-collapse text-left">
+        <table className="w-full min-w-[720px] border-collapse text-left">
           <thead>
             <tr className="border-b border-white/[0.08]">
               <th
                 scope="col"
-                className="w-[40%] py-5 pl-5 pr-3 text-left text-sm font-medium text-zinc-500 sm:pl-6 sm:text-[0.9375rem]"
+                className="w-[28%] py-5 pl-5 pr-3 text-left text-sm font-medium text-zinc-500 sm:pl-6 sm:text-[0.9375rem]"
               >
                 Feature
               </th>
               <th
                 scope="col"
-                className="w-[30%] px-3 py-5 text-center align-bottom"
+                className="w-[24%] px-3 py-5 text-center align-bottom"
               >
                 <div className="flex flex-col items-center gap-0.5">
                   <span className="logo-text text-lg font-semibold text-white sm:text-xl">
@@ -89,7 +90,7 @@ export const PricingComparisonTable: React.FC<PricingComparisonTableProps> = ({
               </th>
               <th
                 scope="col"
-                className="w-[30%] bg-white/[0.03] px-3 py-5 text-center align-bottom sm:pr-6"
+                className="w-[24%] bg-white/[0.03] px-3 py-5 text-center align-bottom"
               >
                 <div className="flex flex-col items-center gap-1">
                   <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-900">
@@ -100,6 +101,22 @@ export const PricingComparisonTable: React.FC<PricingComparisonTableProps> = ({
                   </span>
                   <span className="logo-text text-2xl font-semibold tabular-nums text-white sm:text-[1.65rem]">
                     {pro.price}
+                  </span>
+                  <span className="text-xs font-medium text-zinc-500">
+                    / month
+                  </span>
+                </div>
+              </th>
+              <th
+                scope="col"
+                className="w-[24%] px-3 py-5 text-center align-bottom sm:pr-6"
+              >
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="logo-text text-lg font-semibold text-white sm:text-xl">
+                    {team.name}
+                  </span>
+                  <span className="logo-text text-2xl font-semibold tabular-nums text-white sm:text-[1.65rem]">
+                    {team.price}
                   </span>
                   <span className="text-xs font-medium text-zinc-500">
                     / month
@@ -127,8 +144,11 @@ export const PricingComparisonTable: React.FC<PricingComparisonTableProps> = ({
                 <td className="px-3 py-4 text-center">
                   <ComparisonCellContent cell={row.free} />
                 </td>
-                <td className="bg-white/[0.02] px-3 py-4 text-center sm:pr-6">
+                <td className="bg-white/[0.02] px-3 py-4 text-center">
                   <ComparisonCellContent cell={row.pro} />
+                </td>
+                <td className="px-3 py-4 text-center sm:pr-6">
+                  <ComparisonCellContent cell={row.team} />
                 </td>
               </tr>
             ))}

@@ -210,7 +210,7 @@ export default async function ResourceGuidePage({
         />
       ))}
       <MarketingNavigation />
-      <div className="h-16 sm:h-20 shrink-0" aria-hidden />
+      <div className="h-16 sm:h-20 lg:h-24 shrink-0" aria-hidden />
       <div className="h-4 sm:h-6 shrink-0" aria-hidden />
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 md:py-14 pb-14 sm:pb-20">
         <nav aria-label="Breadcrumb" className="mb-6 text-sm text-gray-500">

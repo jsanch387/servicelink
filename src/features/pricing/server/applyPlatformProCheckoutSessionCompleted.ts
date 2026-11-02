@@ -9,6 +9,9 @@ import {
   resolveBillingIntervalFromStripeSubscription,
 } from '@/features/pricing/server/resolveSubscriptionBillingInterval';
 import { updateProfileFromCheckout } from '@/features/pricing/server/updateProfileFromCheckout';
+import { platformPlanFromStripeMetadata } from '@/features/pricing/utils/hasTeamAccess';
+import type { PlatformSubscriptionPlan } from '@/features/pricing/utils/hasTeamAccess';
+import { reconcileExtraPlatformProSubscriptions } from '@/features/pricing/server/openPlatformSubscriptions';
 import { onboardingStripeDebug } from '@/libs/stripe/onboardingStripeDebugLog';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
@@ -114,6 +117,8 @@ export async function applyPlatformProCheckoutSessionCompleted(
   let subscriptionStatus: string | null = null;
   let subscriptionBillingInterval =
     parseBillingIntervalFromCheckoutMetadata(session.metadata) ?? null;
+  let subscriptionPlan: PlatformSubscriptionPlan =
+    platformPlanFromStripeMetadata(session.metadata);
   if (stripeSubscriptionId) {
     try {
       const subscription =
@@ -121,6 +126,11 @@ export async function applyPlatformProCheckoutSessionCompleted(
       subscriptionStatus = subscription.status ?? null;
       subscriptionBillingInterval =
         resolveBillingIntervalFromStripeSubscription(subscription);
+      if (subscription.metadata?.platform_plan) {
+        subscriptionPlan = platformPlanFromStripeMetadata(
+          subscription.metadata
+        );
+      }
     } catch (retrieveErr) {
       console.warn(
         '[applyPlatformProCheckoutSessionCompleted] subscriptions.retrieve status failed',
@@ -143,6 +153,7 @@ export async function applyPlatformProCheckoutSessionCompleted(
     currentPeriodEnd,
     subscriptionStatus,
     subscriptionBillingInterval,
+    subscriptionPlan,
   });
 
   if (!result.success) {
@@ -155,6 +166,31 @@ export async function applyPlatformProCheckoutSessionCompleted(
       }
     );
     return { success: false, error: result.error };
+  }
+
+  if (stripeCustomerId && stripeSubscriptionId) {
+    try {
+      const reconciled = await reconcileExtraPlatformProSubscriptions(
+        stripe,
+        stripeCustomerId,
+        stripeSubscriptionId
+      );
+      if (reconciled.canceledIds.length) {
+        console.warn(
+          '[applyPlatformProCheckoutSessionCompleted] canceled extra platform Pro subscriptions',
+          {
+            userId: userId.trim(),
+            keeperIdSuffix: stripeSubscriptionId.slice(-8),
+            canceledSuffixes: reconciled.canceledIds.map(id => id.slice(-8)),
+          }
+        );
+      }
+    } catch (reconcileErr) {
+      console.warn(
+        '[applyPlatformProCheckoutSessionCompleted] extra-subscription reconcile failed',
+        reconcileErr
+      );
+    }
   }
 
   onboardingStripeDebug('apply-checkout', 'done', {

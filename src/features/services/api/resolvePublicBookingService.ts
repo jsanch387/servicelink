@@ -4,6 +4,8 @@
  */
 
 import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
+import { localizedServiceCopy } from '@/features/services/utils/localizedServiceCopy';
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -45,7 +47,8 @@ export async function resolvePublicBookingService(
   supabase: SupabaseClient<Database>,
   businessId: string,
   serviceId: string,
-  priceOptionId?: string | null
+  priceOptionId?: string | null,
+  locale: PublicBookingFlowLocale = 'en'
 ): Promise<
   | { ok: true; data: ResolvedPublicBookingService }
   | { ok: false; reason: ResolvePublicBookingServiceFailure }
@@ -54,7 +57,7 @@ export async function resolvePublicBookingService(
   const { data: serviceRow, error: serviceError } = await supabase
     .from('business_services')
     .select(
-      'name, price_cents, duration_minutes, hours_to_complete, price_options_enabled'
+      'name, name_es, description, description_es, price_cents, duration_minutes, hours_to_complete, price_options_enabled'
     )
     .eq('id', serviceId)
     .eq('business_id', businessId)
@@ -69,6 +72,9 @@ export async function resolvePublicBookingService(
 
   const row = serviceRow as {
     name: string;
+    name_es?: string | null;
+    description?: string | null;
+    description_es?: string | null;
     price_cents: number | null;
     duration_minutes?: number | null;
     hours_to_complete?: number | null;
@@ -77,7 +83,7 @@ export async function resolvePublicBookingService(
 
   const baseDuration = durationFromServiceRow(row);
   const basePrice = row.price_cents ?? 0;
-  const name = row.name;
+  const name = localizedServiceCopy(locale, row).name;
   const enabled = row.price_options_enabled === true && ownerPro;
 
   const { count, error: countError } = await supabase

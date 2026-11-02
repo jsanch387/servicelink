@@ -1,10 +1,19 @@
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { ROUTES } from '@/constants/routes';
 
 export type ResourcesNavItem = {
   label: string;
   href: string;
   description: string;
-  icon: 'book' | 'calendar' | 'deposit' | 'instagram' | 'start' | 'workshop';
+  icon:
+    | 'book'
+    | 'briefcase'
+    | 'calendar'
+    | 'compare'
+    | 'deposit'
+    | 'instagram'
+    | 'start'
+    | 'workshop';
 };
 
 export type ResourcesNavColumn = {
@@ -12,59 +21,118 @@ export type ResourcesNavColumn = {
   items: readonly ResourcesNavItem[];
 };
 
-/** Column-based Resources menu — keep items short and scannable. */
-export const RESOURCES_NAV_COLUMNS: readonly ResourcesNavColumn[] = [
+export type ResourcesMegaFeatured = {
+  eyebrow: string;
+  title: string;
+  description: string;
+  href: string;
+  image: string;
+  imageAlt: string;
+  cta: string;
+};
+
+export type ResourcesMegaSection = {
+  id: 'guides' | 'learn';
+  label: string;
+  href: string;
+  icon: 'book' | 'workshop';
+  links: readonly ResourcesNavItem[];
+  featured: ResourcesMegaFeatured;
+};
+
+export const RESOURCES_NAV_VIEW_ALL: ResourcesNavItem = {
+  label: 'View all guides',
+  href: ROUTES.RESOURCES,
+  description: 'Free tips to grow your business',
+  icon: 'book',
+};
+
+const GUIDE_LINKS = [
   {
-    heading: 'Guides',
-    items: [
-      {
-        label: 'All guides',
-        href: ROUTES.RESOURCES,
-        description: 'Free tips to grow your business',
-        icon: 'book',
-      },
-      {
-        label: 'Start a business',
-        href: ROUTES.RESOURCE_GUIDE(
-          'how-to-start-a-mobile-detailing-business-2026'
-        ),
-        description: 'Costs, gear, and first clients',
-        icon: 'start',
-      },
-      {
-        label: 'Best booking app',
-        href: ROUTES.RESOURCE_GUIDE('best-booking-app-for-mobile-detailers'),
-        description: 'What to look for as a detailer',
-        icon: 'calendar',
-      },
-      {
-        label: 'Stop no-shows',
-        href: ROUTES.RESOURCE_GUIDE('stop-no-shows-deposits-mobile-detailing'),
-        description: 'Deposits and cancellation policy',
-        icon: 'deposit',
-      },
-      {
-        label: 'Instagram clients',
-        href: ROUTES.RESOURCE_GUIDE(
-          'how-mobile-detailers-get-clients-from-instagram-2026'
-        ),
-        description: 'Turn views into bookings',
-        icon: 'instagram',
-      },
-    ],
+    label: 'Best Booking App for Mobile Detailers',
+    href: ROUTES.RESOURCE_GUIDE('best-booking-app-for-mobile-detailers'),
+    description: 'What to look for and how options stack up',
+    icon: 'book',
   },
   {
-    heading: 'Learn',
-    items: [
-      {
-        label: 'Free ads workshop',
-        href: ROUTES.WORKSHOP,
-        description: 'Local Meta ads that book jobs',
-        icon: 'workshop',
-      },
-    ],
+    label: 'How to Stop No-Shows and Take Deposits',
+    href: ROUTES.RESOURCE_GUIDE('stop-no-shows-deposits-mobile-detailing'),
+    description: 'Protect your day with deposits',
+    icon: 'calendar',
+  },
+  {
+    label: 'Jobber Alternative for Mobile Detailers',
+    href: ROUTES.RESOURCE_GUIDE('jobber-alternative-mobile-detailers'),
+    description: 'When a bio link beats a field-service suite',
+    icon: 'compare',
+  },
+  {
+    label: 'DetailDeck Alternative for Mobile Detailers',
+    href: ROUTES.RESOURCE_GUIDE('servicelink-vs-detaildeck'),
+    description: 'Which bio-link booking app fits a one-truck shop',
+    icon: 'compare',
+  },
+  {
+    label: 'ServiceLink vs Urable',
+    href: ROUTES.RESOURCE_GUIDE('servicelink-vs-urable'),
+    description: 'Lean booking vs a heavier ops suite',
+    icon: 'briefcase',
+  },
+] as const satisfies readonly ResourcesNavItem[];
+
+const LEARN_LINKS = [
+  {
+    label: 'Free ads workshop',
+    href: ROUTES.WORKSHOP,
+    description: 'Local Meta ads that book jobs',
+    icon: 'workshop',
+  },
+  RESOURCES_NAV_VIEW_ALL,
+] as const satisfies readonly ResourcesNavItem[];
+
+export const RESOURCES_MEGA_SECTIONS: readonly ResourcesMegaSection[] = [
+  {
+    id: 'guides',
+    label: 'Guides',
+    href: ROUTES.RESOURCES,
+    icon: 'book',
+    links: GUIDE_LINKS,
+    featured: {
+      eyebrow: 'Featured guide',
+      title: 'Best Booking App for Mobile Detailers',
+      description: 'What to look for and how to turn your link into more jobs.',
+      href: ROUTES.RESOURCE_GUIDE('best-booking-app-for-mobile-detailers'),
+      image: MARKETING_IMAGES.resources.bookingApp,
+      imageAlt:
+        'Detailer checking a booking app on their phone next to a freshly detailed car',
+      cta: 'Read guide',
+    },
+  },
+  {
+    id: 'learn',
+    label: 'Learn',
+    href: ROUTES.WORKSHOP,
+    icon: 'workshop',
+    links: LEARN_LINKS,
+    featured: {
+      eyebrow: 'Free workshop',
+      title: 'Local Meta ads that book jobs',
+      description: 'The $10/day framework detailers use to fill the calendar.',
+      href: ROUTES.WORKSHOP,
+      image: MARKETING_IMAGES.resources.instagram,
+      imageAlt:
+        'Phone filming a foam-covered car during a mobile detailing job for social content',
+      cta: 'Watch free',
+    },
   },
 ];
+
+/** Featured Resources only — full catalog lives on /resources. */
+export const RESOURCES_NAV_COLUMNS: readonly ResourcesNavColumn[] =
+  RESOURCES_MEGA_SECTIONS.map(section => ({
+    heading: section.label,
+    items: section.links,
+  }));
 
 /** Flat list for mobile / shared consumers. */
 export const RESOURCES_NAV_LINKS: ResourcesNavItem[] =

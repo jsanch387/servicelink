@@ -1,0 +1,219 @@
+'use client';
+
+import { DropdownSelect, GlassCard } from '@/components/shared';
+import React, { useMemo, useState } from 'react';
+import { usePaymentsRevenue } from '../hooks/usePaymentsRevenue';
+import {
+  PAYMENTS_REVENUE_PERIOD_LABELS,
+  PAYMENTS_REVENUE_PERIODS,
+  type PaymentsRevenuePeriod,
+} from '../revenue/constants';
+import { shiftYmd } from '../revenue/zonedDateTime';
+import {
+  formatRevenueChangeLabel,
+  revenueChangeTone,
+  revenueVersusLabel,
+} from '../utils/formatRevenueChange';
+import { formatRevenueDateRange } from '../utils/formatRevenueDateRange';
+import { PaymentsRevenueAreaChart } from './PaymentsRevenueAreaChart';
+import { PaymentsRevenueCustomRange } from './PaymentsRevenueCustomRange';
+
+const PERIOD_OPTIONS = PAYMENTS_REVENUE_PERIODS.map(id => ({
+  value: id,
+  label: PAYMENTS_REVENUE_PERIOD_LABELS[id],
+}));
+
+export function PaymentsRevenueChartSkeleton({
+  period = 'month',
+  onPeriodChange,
+}: {
+  period?: PaymentsRevenuePeriod;
+  onPeriodChange?: (period: PaymentsRevenuePeriod) => void;
+}) {
+  return (
+    <GlassCard
+      padding="none"
+      rounded="rounded-2xl"
+      className="px-3 pt-4 pb-4 sm:px-4 sm:pt-5 sm:pb-5"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="h-10 w-40 animate-pulse rounded-lg bg-white/10" />
+        <div className="w-[7.25rem] sm:w-[8.75rem] shrink-0">
+          <DropdownSelect
+            value={period}
+            onChange={next => {
+              if (onPeriodChange && isRevenuePeriod(next)) onPeriodChange(next);
+            }}
+            options={PERIOD_OPTIONS}
+            placeholder="Range"
+            panelMaxHeightClassName="max-h-72"
+          />
+        </div>
+      </div>
+      <div className="mt-2 flex justify-end">
+        <span className="inline-block h-4 w-40 animate-pulse rounded bg-white/10" />
+      </div>
+      <div
+        className="mt-6 h-52 animate-pulse rounded-xl bg-white/[0.04]"
+        aria-label="Loading earnings chart"
+      />
+    </GlassCard>
+  );
+}
+
+export function PaymentsRevenueChart() {
+  const defaultCustom = useMemo(() => defaultCustomRange(), []);
+  const [period, setPeriod] = useState<PaymentsRevenuePeriod>('month');
+  const [customRange, setCustomRange] = useState(defaultCustom);
+  const { data, loading, error, reload } = usePaymentsRevenue({
+    period,
+    customFrom: customRange.from,
+    customTo: customRange.to,
+  });
+
+  const dateRange =
+    period === 'all'
+      ? 'All time'
+      : data
+        ? formatRevenueDateRange(data.from, data.to)
+        : '';
+  const hasSeries = (data?.buckets.length ?? 0) > 0;
+  const showTax = (data?.taxCollectedCents ?? 0) > 0;
+  const showChange = period !== 'all';
+
+  if (loading && period !== 'custom') {
+    return (
+      <PaymentsRevenueChartSkeleton
+        period={period}
+        onPeriodChange={next => setPeriod(next)}
+      />
+    );
+  }
+
+  return (
+    <GlassCard
+      padding="none"
+      rounded="rounded-2xl"
+      className="px-3 pt-4 pb-4 sm:px-4 sm:pt-5 sm:pb-5"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          {loading ? (
+            <div className="h-10 w-40 animate-pulse rounded-lg bg-white/10" />
+          ) : (
+            <p className="text-3xl font-semibold tracking-tight text-white tabular-nums sm:text-4xl">
+              {data?.totalLabel ?? '$0'}
+            </p>
+          )}
+        </div>
+        <div className="w-[7.25rem] sm:w-[8.75rem] shrink-0">
+          <DropdownSelect
+            value={period}
+            onChange={next => {
+              if (isRevenuePeriod(next)) setPeriod(next);
+            }}
+            options={PERIOD_OPTIONS}
+            placeholder="Range"
+            panelMaxHeightClassName="max-h-72"
+          />
+        </div>
+      </div>
+      <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        {loading ? (
+          <span className="inline-block h-4 w-48 animate-pulse rounded bg-white/10" />
+        ) : showChange || showTax ? (
+          <p className="min-w-0 text-sm leading-5 text-zinc-500">
+            {showChange ? (
+              <ChangeBadge
+                changePercent={data?.changePercent}
+                period={period}
+              />
+            ) : null}
+            {showChange && showTax ? (
+              <span className="text-zinc-600"> · </span>
+            ) : null}
+            {showTax ? <>Tax collected {data?.taxCollectedLabel}</> : null}
+          </p>
+        ) : (
+          <span />
+        )}
+        {loading ? null : dateRange ? (
+          <span className="text-sm text-zinc-500">{dateRange}</span>
+        ) : null}
+      </div>
+
+      {period === 'custom' ? (
+        <div className="mt-4">
+          <PaymentsRevenueCustomRange
+            from={customRange.from}
+            to={customRange.to}
+            onChange={setCustomRange}
+          />
+        </div>
+      ) : null}
+
+      <div className="-mx-1 mt-8">
+        {error ? (
+          <div className="flex h-52 flex-col items-center justify-center gap-2 text-center">
+            <p className="text-sm text-zinc-400">{error}</p>
+            <button
+              type="button"
+              onClick={reload}
+              className="cursor-pointer text-sm font-medium text-white underline-offset-2 hover:underline"
+            >
+              Try again
+            </button>
+          </div>
+        ) : loading ? (
+          <div
+            className="h-52 animate-pulse rounded-xl bg-white/[0.04]"
+            aria-label="Loading earnings chart"
+          />
+        ) : hasSeries ? (
+          <PaymentsRevenueAreaChart buckets={data?.buckets ?? []} />
+        ) : (
+          <div className="flex h-52 items-center justify-center text-sm text-zinc-500">
+            Finish a job and it shows up here.
+          </div>
+        )}
+      </div>
+    </GlassCard>
+  );
+}
+
+function isRevenuePeriod(value: string): value is PaymentsRevenuePeriod {
+  return PAYMENTS_REVENUE_PERIODS.includes(value as PaymentsRevenuePeriod);
+}
+
+function ChangeBadge({
+  changePercent,
+  period,
+}: {
+  changePercent: number | null | undefined;
+  period: PaymentsRevenuePeriod;
+}) {
+  const tone = revenueChangeTone(changePercent);
+  return (
+    <span
+      className={`font-medium tabular-nums ${
+        tone === 'up'
+          ? 'text-emerald-400'
+          : tone === 'down'
+            ? 'text-red-400'
+            : 'text-zinc-400'
+      }`}
+    >
+      {formatRevenueChangeLabel(changePercent, revenueVersusLabel(period))}
+    </span>
+  );
+}
+
+function defaultCustomRange(): { from: string; to: string } {
+  const now = new Date();
+  const to = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('-');
+  return { from: shiftYmd(to, -13), to };
+}

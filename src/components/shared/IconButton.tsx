@@ -2,7 +2,8 @@ import React from 'react';
 
 interface IconButtonProps {
   icon: React.ReactNode;
-  onClick?: () => void;
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onMouseDown?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -10,11 +11,15 @@ interface IconButtonProps {
   loading?: boolean;
   title?: string;
   'aria-label'?: string;
+  'aria-expanded'?: boolean;
+  'aria-haspopup'?: React.AriaAttributes['aria-haspopup'];
+  'aria-controls'?: string;
 }
 
 export const IconButton: React.FC<IconButtonProps> = ({
   icon,
   onClick,
+  onMouseDown,
   variant = 'ghost',
   size = 'md',
   className = '',
@@ -22,20 +27,24 @@ export const IconButton: React.FC<IconButtonProps> = ({
   loading = false,
   title,
   'aria-label': ariaLabel,
+  'aria-expanded': ariaExpanded,
+  'aria-haspopup': ariaHasPopup,
+  'aria-controls': ariaControls,
 }) => {
   const baseClasses =
-    'inline-flex items-center justify-center rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
+    'inline-flex items-center justify-center rounded-md transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
 
   const variantClasses = {
     primary:
-      'bg-orange-500 hover:bg-orange-600 text-white focus:ring-orange-500',
+      'bg-orange-500 hover:bg-orange-600 text-white focus-visible:ring-orange-500',
     secondary:
-      'bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 text-white focus:ring-blue-500',
+      'bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 text-white focus-visible:ring-blue-500',
     ghost:
-      'text-gray-400 hover:text-white hover:bg-neutral-700/50 focus:ring-neutral-500',
-    danger: 'text-red-400 hover:text-white hover:bg-red-600 focus:ring-red-500',
+      'text-gray-400 hover:text-white hover:bg-neutral-700/50 focus-visible:ring-neutral-500',
+    danger:
+      'text-red-400 hover:text-white hover:bg-red-600 focus-visible:ring-red-500',
     success:
-      'text-green-400 hover:text-white hover:bg-green-600 focus:ring-green-500',
+      'text-green-400 hover:text-white hover:bg-green-600 focus-visible:ring-green-500',
   };
 
   const sizeClasses = {
@@ -59,9 +68,13 @@ export const IconButton: React.FC<IconButtonProps> = ({
       type="button"
       className={classes}
       onClick={onClick}
+      onMouseDown={onMouseDown}
       disabled={isDisabled}
       title={title}
       aria-label={ariaLabel}
+      aria-expanded={ariaExpanded}
+      aria-haspopup={ariaHasPopup}
+      aria-controls={ariaControls}
     >
       {loading ? (
         <div

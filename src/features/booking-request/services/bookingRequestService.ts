@@ -7,6 +7,7 @@
 
 import type { BookingReferralSource } from '@/features/booking-attribution/constants';
 import { createClient } from '@/libs/supabase';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 
 /**
  * Response type for booking request operations
@@ -232,10 +233,11 @@ export class BookingRequestService {
   static async updateBookingRequestStatus(
     requestId: string,
     status: 'pending' | 'approved' | 'declined' | 'cancelled',
-    statusNotes?: string
+    statusNotes?: string,
+    businessId?: string
   ): Promise<BookingRequestResponse> {
     try {
-      const supabase = createClient();
+      const supabase = createSupabaseAdminClient();
 
       // Validate status
       const validStatuses = ['pending', 'approved', 'declined', 'cancelled'];
@@ -254,13 +256,16 @@ export class BookingRequestService {
         }),
       };
 
-      const { data: bookingRequest, error } =
-        await // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let update = // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from('booking_requests') as any)
           .update(updateData)
-          .eq('id', requestId)
-          .select()
-          .single();
+          .eq('id', requestId);
+      if (businessId) {
+        update = update.eq('business_id', businessId);
+      }
+      const { data: bookingRequest, error } = await update
+        .select()
+        .maybeSingle();
 
       if (error) {
         console.error('Error updating booking request status:', error);

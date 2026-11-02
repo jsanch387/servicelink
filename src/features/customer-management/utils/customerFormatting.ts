@@ -12,12 +12,6 @@ export function formatCustomerCurrency(amount: number): string {
   }).format(amount);
 }
 
-export function formatCustomerCount(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
 function digitsOnlyPhone(phone: string): string {
   return phone.replace(/\D/g, '');
 }

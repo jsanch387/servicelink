@@ -10,9 +10,13 @@ import {
   toTimeOffIntervalFields,
 } from '@/features/availability/types/blockTime';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
+import { quotePublicLinkValidUntilCopy } from '@/features/quotes/dashboard/utils/formatQuotePublicLinkExpiry';
 import { parsePublicQuoteRequestNote } from '@/features/quotes/dashboard/utils/parsePublicQuoteRequestNote';
 import { PublicQuoteRespondActions } from '@/features/quotes/public-view/components/PublicQuoteRespondActions';
+import { QuoteNotesConversation } from '@/features/quotes/shared/components/QuoteNotesConversation';
 import { QuoteServiceSummaryCard } from '@/features/quotes/shared/components/QuoteServiceSummaryCard';
+import { QuoteTaxTotal } from '@/features/quotes/shared/components/QuoteTaxTotal';
+import { loadQuoteCustomerPayment } from '@/features/quotes/server/quotePaymentSnapshot';
 import { normalizeQuoteAddonDetails } from '@/features/quotes/shared/quoteServiceSnapshot';
 import { resolveQuoteTokenHash } from '@/features/quotes/shared/utils/resolveQuoteTokenHash';
 import { formatUsPhoneDigits } from '@/lib/formatUsPhone';
@@ -22,14 +26,7 @@ import { notFound } from 'next/navigation';
 
 interface PublicQuoteViewPageProps {
   params: Promise<{ token: string }>;
-}
-
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
+  searchParams: Promise<{ checkout?: string; session_id?: string }>;
 }
 
 function formatDateLong(dateStr: string): string {
@@ -62,8 +59,10 @@ function formatTime12(hhmm: string): string {
 
 export default async function PublicQuoteViewPage({
   params,
+  searchParams,
 }: PublicQuoteViewPageProps) {
   const { token } = await params;
+  const query = await searchParams;
   if (!token?.trim()) notFound();
 
   const tokenHash = resolveQuoteTokenHash(token);
@@ -100,7 +99,7 @@ export default async function PublicQuoteViewPage({
   const { data: quoteRow } = await db
     .from('quotes')
     .select(
-      'id, business_id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status, addon_details, service_id, service_price_option_id, service_price_cents'
+      'id, business_id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, tax_cents, tax_rate_bps, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status, addon_details, service_id, service_price_option_id, service_price_cents, payment_collection, deposit_type, deposit_value'
     )
     .eq('id', link.quote_id)
     .maybeSingle();
@@ -119,6 +118,8 @@ export default async function PublicQuoteViewPage({
     vehicle_model: string | null;
     service_name: string;
     price_cents: number;
+    tax_cents: number | null;
+    tax_rate_bps: number | null;
     duration_minutes: number;
     note: string | null;
     request_message: string | null;
@@ -129,6 +130,9 @@ export default async function PublicQuoteViewPage({
     service_id: string | null;
     service_price_option_id: string | null;
     service_price_cents: number | null;
+    payment_collection: string | null;
+    deposit_type: string | null;
+    deposit_value: number | null;
   };
 
   await db
@@ -150,10 +154,17 @@ export default async function PublicQuoteViewPage({
     .eq('id', quote.id)
     .eq('status', 'sent');
 
+  // Write-once first-view timestamp if the quote was already past `sent`.
+  await db
+    .from('quotes')
+    .update({ viewed_at: nowIso })
+    .eq('id', quote.id)
+    .is('viewed_at', null);
+
   const { data: quoteFresh } = await db
     .from('quotes')
     .select(
-      'id, business_id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status, addon_details, service_id, service_price_option_id, service_price_cents'
+      'id, business_id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, tax_cents, tax_rate_bps, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status, addon_details, service_id, service_price_option_id, service_price_cents, payment_collection, deposit_type, deposit_value'
     )
     .eq('id', quote.id)
     .maybeSingle();
@@ -161,6 +172,14 @@ export default async function PublicQuoteViewPage({
   if (!quoteFresh) notFound();
 
   const displayQuote = quoteFresh as typeof quote;
+  const customerPayment = await loadQuoteCustomerPayment(supabase, {
+    business_id: displayQuote.business_id,
+    price_cents: displayQuote.price_cents,
+    tax_cents: displayQuote.tax_cents,
+    payment_collection: displayQuote.payment_collection,
+    deposit_type: displayQuote.deposit_type,
+    deposit_value: displayQuote.deposit_value,
+  });
   const quoteAddOns = normalizeQuoteAddonDetails(displayQuote.addon_details);
   const isAccepted = displayQuote.status === 'approved';
   const isDeclined = displayQuote.status === 'declined';
@@ -177,13 +196,15 @@ export default async function PublicQuoteViewPage({
 
   const { data: profileRow } = await db
     .from('business_profiles')
-    .select('business_slug')
+    .select('business_slug, business_name')
     .eq('id', displayQuote.business_id)
     .maybeSingle();
-  const businessSlug =
-    (
-      profileRow as { business_slug?: string | null } | null
-    )?.business_slug?.trim() || null;
+  const profile = profileRow as {
+    business_slug?: string | null;
+    business_name?: string | null;
+  } | null;
+  const businessSlug = profile?.business_slug?.trim() || null;
+  const businessDisplayName = profile?.business_name?.trim() || 'Business';
 
   const availabilityRow = await getAvailabilityForBusiness(
     supabase,
@@ -196,6 +217,7 @@ export default async function PublicQuoteViewPage({
   const timeOffBlocks: TimeOffInterval[] = parseStoredTimeOffBlocks(
     availabilityRow?.time_off_blocks
   ).map(toTimeOffIntervalFields);
+  const bufferTime = availabilityRow?.buffer_time ?? 'none';
 
   const isCustomerRequested = displayQuote.source === 'customer_requested';
   const requestRaw = customerRequestRawFromRow(displayQuote);
@@ -207,6 +229,11 @@ export default async function PublicQuoteViewPage({
   const ownerNoteText = displayQuote.note?.trim() ?? '';
   const showYourRequestBlock = yourRequestText.length > 0;
   const showOwnerNoteBlock = ownerNoteText.length > 0;
+  const canRespond =
+    displayQuote.status === 'sent' || displayQuote.status === 'viewed';
+  const validUntilCopy = canRespond
+    ? quotePublicLinkValidUntilCopy(link.expires_at)
+    : '';
 
   return (
     <main className="min-h-screen bg-[var(--dashboard-bg)] px-4 py-8 sm:px-6 sm:py-10">
@@ -253,8 +280,13 @@ export default async function PublicQuoteViewPage({
             ? 'Summary of what you agreed to.'
             : isDeclined
               ? 'What was offered on this link.'
-              : 'Review the details below before choosing to accept or decline.'}
+              : customerPayment.choices.includes('accept')
+                ? 'Review the details below before choosing to accept or decline.'
+                : 'Review the details below, then pay or decline.'}
         </p>
+        {validUntilCopy ? (
+          <p className="mt-1.5 text-sm text-gray-400">{validUntilCopy}</p>
+        ) : null}
         <div className="mt-4 h-px w-full bg-white/10" aria-hidden />
 
         <GlassCard
@@ -331,42 +363,47 @@ export default async function PublicQuoteViewPage({
                       .filter(Boolean)
                       .join(' ')}
                   </p>
+                  {parsedRequest.secondVehicleLine ? (
+                    <>
+                      <p className="mt-3 mb-1 text-xs tracking-wider text-gray-500">
+                        Second vehicle
+                      </p>
+                      <p className="font-medium text-white">
+                        {parsedRequest.secondVehicleLine}
+                      </p>
+                    </>
+                  ) : null}
                 </div>
               </>
             ) : null}
-            {showYourRequestBlock ? (
+            {showYourRequestBlock || showOwnerNoteBlock ? (
               <>
                 <div className="h-px bg-white/10" />
-                <div>
-                  <p className="mb-1 text-xs tracking-wider text-gray-500">
-                    Customer note
-                  </p>
-                  <p className="whitespace-pre-wrap text-sm text-gray-400">
-                    {yourRequestText}
-                  </p>
-                </div>
-              </>
-            ) : null}
-            {showOwnerNoteBlock ? (
-              <>
-                <div className="h-px bg-white/10" />
-                <div>
-                  <p className="mb-1 text-xs tracking-wider text-gray-500">
-                    Notes from the business
-                  </p>
-                  <p className="whitespace-pre-wrap text-sm text-gray-400">
-                    {ownerNoteText}
-                  </p>
-                </div>
+                <QuoteNotesConversation
+                  customerNote={yourRequestText}
+                  businessNote={ownerNoteText}
+                  customerLabel={
+                    displayQuote.customer_name.trim() || 'Customer'
+                  }
+                  businessLabel={businessDisplayName}
+                  viewer="customer"
+                />
               </>
             ) : null}
             <div className="h-px bg-white/10" />
-            <div className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2">
-              <p className="text-sm font-medium text-gray-300">Total</p>
-              <p className="text-lg font-bold text-white">
-                {formatPrice(displayQuote.price_cents)}
-              </p>
-            </div>
+            <QuoteTaxTotal
+              priceCents={displayQuote.price_cents}
+              taxCents={
+                typeof displayQuote.tax_cents === 'number'
+                  ? displayQuote.tax_cents
+                  : 0
+              }
+              taxRateBps={
+                typeof displayQuote.tax_rate_bps === 'number'
+                  ? displayQuote.tax_rate_bps
+                  : 0
+              }
+            />
           </div>
         </GlassCard>
 
@@ -379,6 +416,16 @@ export default async function PublicQuoteViewPage({
           durationMinutes={Math.max(1, displayQuote.duration_minutes ?? 60)}
           weeklySchedule={weeklySchedule}
           timeOffBlocks={timeOffBlocks}
+          bufferTime={bufferTime}
+          payment={customerPayment}
+          checkoutReturn={
+            query.checkout === 'success'
+              ? 'success'
+              : query.checkout === 'cancel'
+                ? 'cancel'
+                : null
+          }
+          stripeSessionId={query.session_id?.trim() || null}
         />
       </div>
     </main>

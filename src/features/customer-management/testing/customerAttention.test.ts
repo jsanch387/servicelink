@@ -1,5 +1,8 @@
 import type { CustomerRecord } from '@/features/customer-management/types';
-import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
+import {
+  customerMatchesStatusFilter,
+  isCustomerNeedsAttention,
+} from '@/features/customer-management/utils/customerAttention';
 import { describe, expect, it } from 'vitest';
 
 function customerFixture(overrides?: Partial<CustomerRecord>): CustomerRecord {
@@ -42,5 +45,33 @@ describe('[Core] needs attention flag', () => {
     expect(
       isCustomerNeedsAttention(customerFixture({ lastVisitDaysAgo: null }))
     ).toBe(false);
+  });
+});
+
+describe('customer status filters', () => {
+  it('keeps a recent first visit under New', () => {
+    const customer = customerFixture({
+      status: 'new',
+      totalVisits: 1,
+      lastVisitDaysAgo: 10,
+    });
+
+    expect(customerMatchesStatusFilter(customer, 'new')).toBe(true);
+    expect(customerMatchesStatusFilter(customer, 'needs_attention')).toBe(
+      false
+    );
+  });
+
+  it('puts a first visit older than 90 days under Due only', () => {
+    const customer = customerFixture({
+      status: 'new',
+      totalVisits: 1,
+      lastVisitDaysAgo: 120,
+      nextAppointmentDate: null,
+    });
+
+    expect(customerMatchesStatusFilter(customer, 'new')).toBe(false);
+    expect(customerMatchesStatusFilter(customer, 'needs_attention')).toBe(true);
+    expect(customerMatchesStatusFilter(customer, 'all')).toBe(true);
   });
 });

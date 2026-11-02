@@ -69,11 +69,13 @@ export interface BuildPublicMultiJobBookingBodyArgs {
   jobs: PublicBookingJobDraft[];
   scheduledDate: string;
   startTime: string;
+  timeZone?: string;
   customer: CustomerFormData;
   customerServiceLocation?: 'mobile' | 'shop';
   paymentMethodSelected?: 'pay_now' | 'pay_in_person' | 'none';
   promoCode?: string;
   agreedToNotifications?: boolean;
+  agreedToPolicy?: boolean;
 }
 
 /**
@@ -89,6 +91,7 @@ export function buildPublicMultiJobBookingBody(
     businessSlug: args.businessSlug,
     scheduledDate: args.scheduledDate.trim(),
     startTime: args.startTime.trim(),
+    ...(args.timeZone ? { timeZone: args.timeZone } : {}),
     paymentMethodSelected: args.paymentMethodSelected ?? 'none',
     customer: {
       ...args.customer,
@@ -110,6 +113,9 @@ export function buildPublicMultiJobBookingBody(
     ...(args.promoCode?.trim() ? { promoCode: args.promoCode.trim() } : {}),
     ...(typeof args.agreedToNotifications === 'boolean'
       ? { agreedToNotifications: args.agreedToNotifications }
+      : {}),
+    ...(typeof args.agreedToPolicy === 'boolean'
+      ? { agreedToPolicy: args.agreedToPolicy }
       : {}),
   };
 }

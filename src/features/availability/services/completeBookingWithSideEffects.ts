@@ -57,12 +57,14 @@ export async function completeBookingWithSideEffects(
   sessionClient: SupabaseClient<Database>,
   admin: SupabaseClient<Database>,
   bookingId: string,
-  log: CompleteBookingLog
+  log: CompleteBookingLog,
+  businessId?: string
 ): Promise<CompleteBookingResult | null> {
   const updated = await updateBookingStatus(
     sessionClient,
     bookingId,
-    'completed'
+    'completed',
+    businessId
   );
   if (!updated) return null;
 
@@ -116,7 +118,7 @@ export async function completeBookingWithSideEffects(
     customerId: updated.customer_id,
     type: 'job_completed',
     to: updated.customer_phone,
-    message: buildJobCompletedSms(),
+    message: buildJobCompletedSms({ businessName }),
     dedupeKey: `${updated.id}:job_completed`,
     correlationId: updated.id,
   });

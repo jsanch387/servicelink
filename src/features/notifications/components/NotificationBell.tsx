@@ -2,36 +2,49 @@
 
 import { IconButton } from '@/components/shared';
 import { BellIcon } from '@heroicons/react/24/outline';
-import React, { useEffect, useRef } from 'react';
+import { useCallback, useState } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
-import { NotificationDropdown } from './NotificationDropdown';
+import { NotificationPanel } from './NotificationPanel';
 
 export function NotificationBell() {
-  const [open, setOpen] = React.useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { notifications, unreadCount, markAsRead, markAllAsRead, isLoading } =
-    useNotifications();
+  const [open, setOpen] = useState(false);
+  const {
+    filter,
+    setFilter,
+    notifications,
+    unreadCount,
+    hasMore,
+    isLoading,
+    isLoadingMore,
+    loadMore,
+    markAsRead,
+    markAllAsRead,
+    fetchNotifications,
+  } = useNotifications();
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setOpen(false);
+  const close = useCallback(() => setOpen(false), []);
+
+  const toggleOpen = useCallback(() => {
+    setOpen(prev => {
+      const next = !prev;
+      if (next) {
+        void fetchNotifications('new');
       }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+      return next;
+    });
+  }, [fetchNotifications]);
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative">
       <IconButton
         icon={<BellIcon className="h-5 w-5" />}
-        onClick={() => setOpen(prev => !prev)}
+        onClick={toggleOpen}
+        onMouseDown={event => event.preventDefault()}
         variant="ghost"
         size="md"
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-controls="notifications-panel"
         aria-label={
           open
             ? 'Close notifications'
@@ -46,15 +59,21 @@ export function NotificationBell() {
           {unreadCount > 99 ? '99+' : unreadCount}
         </span>
       )}
-      {open && (
-        <NotificationDropdown
+      {open ? (
+        <NotificationPanel
           notifications={notifications}
+          filter={filter}
+          unreadCount={unreadCount}
+          hasMore={hasMore}
+          isLoading={isLoading}
+          isLoadingMore={isLoadingMore}
+          onFilterChange={setFilter}
           onMarkAsRead={markAsRead}
           onMarkAllAsRead={markAllAsRead}
-          isLoading={isLoading}
-          onClose={() => setOpen(false)}
+          onLoadMore={() => void loadMore()}
+          onClose={close}
         />
-      )}
+      ) : null}
     </div>
   );
 }

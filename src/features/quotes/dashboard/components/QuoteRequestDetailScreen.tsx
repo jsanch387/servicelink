@@ -83,7 +83,7 @@ export const QuoteRequestDetailScreen: React.FC<
         return;
       }
       setDeleteOpen(false);
-      router.push(ROUTES.DASHBOARD.QUOTES_REQUESTS);
+      router.push(ROUTES.DASHBOARD.QUOTES);
       router.refresh();
     } catch {
       setDeleteError('Failed to delete. Please try again.');
@@ -100,8 +100,8 @@ export const QuoteRequestDetailScreen: React.FC<
   if (loadStatus === 'loading') {
     return (
       <QuoteDetailLoadingSkeleton
-        backHref={ROUTES.DASHBOARD.QUOTES_REQUESTS}
-        backLabel="Requests"
+        backHref={ROUTES.DASHBOARD.QUOTES}
+        backLabel="Quotes"
       />
     );
   }
@@ -111,14 +111,14 @@ export const QuoteRequestDetailScreen: React.FC<
       <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
         <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
           <QuoteFlowHeader
-            backHref={ROUTES.DASHBOARD.QUOTES_REQUESTS}
-            backLabel="Requests"
+            backHref={ROUTES.DASHBOARD.QUOTES}
+            backLabel="Quotes"
             title="Couldn’t load request"
             subtitle={loadError || 'Something went wrong.'}
           />
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button href={ROUTES.DASHBOARD.QUOTES_REQUESTS} variant="secondary">
-              Back to requests
+            <Button href={ROUTES.DASHBOARD.QUOTES} variant="secondary">
+              Back to quotes
             </Button>
             <Button variant="inverse" onClick={() => void reloadQuote()}>
               Try again
@@ -134,13 +134,13 @@ export const QuoteRequestDetailScreen: React.FC<
       <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
         <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
           <QuoteFlowHeader
-            backHref={ROUTES.DASHBOARD.QUOTES_REQUESTS}
-            backLabel="Requests"
+            backHref={ROUTES.DASHBOARD.QUOTES}
+            backLabel="Quotes"
             title="Request not found"
             subtitle="It may have been removed or the link is invalid."
           />
-          <Button href={ROUTES.DASHBOARD.QUOTES_REQUESTS} variant="secondary">
-            Back to requests
+          <Button href={ROUTES.DASHBOARD.QUOTES} variant="secondary">
+            Back to quotes
           </Button>
         </div>
       </main>
@@ -174,8 +174,8 @@ export const QuoteRequestDetailScreen: React.FC<
       deleting={deleting}
       deleteError={deleteError}
       onConfirmDelete={() => void handleDelete()}
-      backHref={ROUTES.DASHBOARD.QUOTES_REQUESTS}
-      backLabel="Requests"
+      backHref={ROUTES.DASHBOARD.QUOTES}
+      backLabel="Quotes"
       showDeleteButton
       showQuoteLinkCard={false}
       showActivityCard={false}

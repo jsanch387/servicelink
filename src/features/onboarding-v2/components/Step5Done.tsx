@@ -7,15 +7,7 @@ import { GOOGLE_PLAY_STORE_URL, IOS_APP_STORE_URL } from '@/constants/appStore';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import { BoltIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-
-declare global {
-  interface Window {
-    fbq?: (...args: unknown[]) => void;
-  }
-}
-
-const ACTIVATION_TRACKED_KEY = 'sl_activation_tracked';
+import React, { useCallback, useMemo, useState } from 'react';
 import { OnboardingIosAppStep } from './OnboardingIosAppStep';
 import { OnboardingStepNav } from './OnboardingStepNav';
 
@@ -46,20 +38,6 @@ export const Step5Done: React.FC<Step5DoneProps> = ({
   const [phase, setPhase] = useState<'activate' | 'app-promo'>('activate');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const activationTracked = useRef(false);
-
-  const trackCompleteRegistrationOnce = useCallback(() => {
-    if (activationTracked.current) return;
-    if (sessionStorage.getItem(ACTIVATION_TRACKED_KEY) === '1') {
-      activationTracked.current = true;
-      return;
-    }
-    if (typeof window.fbq === 'function') {
-      window.fbq('track', 'CompleteRegistration');
-    }
-    sessionStorage.setItem(ACTIVATION_TRACKED_KEY, '1');
-    activationTracked.current = true;
-  }, []);
 
   const slugDisplay = slug.trim() || 'your-link';
   const bookingHost = useMemo(() => publicBookingHost(), []);
@@ -85,7 +63,6 @@ export const Step5Done: React.FC<Step5DoneProps> = ({
       };
 
       if (res.ok && data.success) {
-        trackCompleteRegistrationOnce();
         if (IOS_APP_STORE_URL || GOOGLE_PLAY_STORE_URL) {
           setPhase('app-promo');
         } else {

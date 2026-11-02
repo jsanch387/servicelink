@@ -1,17 +1,24 @@
 import type { Json } from '@/libs/supabase/client';
+import { jobAssignedNotificationDisplay } from '../utils/jobAssignedNotificationDisplay';
 
 /**
  * Notification types aligned with public.notifications table.
  */
 
+/** Inbox tabs in the browser notifications drawer. */
+export type NotificationInboxFilter = 'new' | 'recent';
+
 export type NotificationType =
   | 'booking_request'
   | 'availability_booking'
   | 'booking_reminder'
+  | 'job_assigned'
   | 'quote_request'
+  | 'quote_request_followup'
   | 'review_submitted'
   | 'membership_subscriber'
-  | 'membership_visit_needed';
+  | 'membership_visit_needed'
+  | 'customer_invoice_paid';
 
 /** Row from notifications table (API/DB) */
 export interface Notification {
@@ -42,11 +49,19 @@ export interface NotificationDisplay {
 }
 
 export function notificationToDisplay(row: Notification): NotificationDisplay {
+  const jobAssigned =
+    row.type === 'job_assigned'
+      ? jobAssignedNotificationDisplay({
+          body: row.body,
+          metadata: row.metadata,
+        })
+      : null;
+
   return {
     id: row.id,
     type: row.type as NotificationType,
-    title: row.title,
-    body: row.body,
+    title: jobAssigned?.title ?? row.title,
+    body: jobAssigned ? jobAssigned.body : row.body,
     referenceId: row.reference_id,
     readAt: row.read_at,
     createdAt: row.created_at,

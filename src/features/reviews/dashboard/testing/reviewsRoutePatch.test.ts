@@ -3,12 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   createSupabaseServerClientMock,
-  resolveCurrentBusinessIdMock,
+  requireBusinessPermissionMock,
   validateUpdateReviewBodyMock,
   updateDashboardReviewMock,
 } = vi.hoisted(() => ({
   createSupabaseServerClientMock: vi.fn(),
-  resolveCurrentBusinessIdMock: vi.fn(),
+  requireBusinessPermissionMock: vi.fn(),
   validateUpdateReviewBodyMock: vi.fn(),
   updateDashboardReviewMock: vi.fn(),
 }));
@@ -17,8 +17,9 @@ vi.mock('@/libs/supabase/server', () => ({
   createSupabaseServerClient: createSupabaseServerClientMock,
 }));
 
-vi.mock('@/server/resolveCurrentBusinessId', () => ({
-  resolveCurrentBusinessId: resolveCurrentBusinessIdMock,
+vi.mock('@/features/team/server/requireBusinessPermission', () => ({
+  requireBusinessPermission: (...args: unknown[]) =>
+    requireBusinessPermissionMock(...args),
 }));
 
 vi.mock('@/features/reviews/dashboard/server/validateUpdateReviewBody', () => ({
@@ -41,7 +42,7 @@ describe('PATCH /api/reviews/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createSupabaseServerClientMock.mockResolvedValue({} as never);
-    resolveCurrentBusinessIdMock.mockResolvedValue({
+    requireBusinessPermissionMock.mockResolvedValue({
       ok: true,
       businessId: 'biz-1',
     });

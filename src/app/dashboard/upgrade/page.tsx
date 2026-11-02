@@ -4,6 +4,7 @@ import {
   UpgradeContent,
 } from '@/features/pricing';
 import { getSubscriptionPriceDisplay } from '@/features/pricing/server/getSubscriptionMonthlyPriceDisplay';
+import { resolvePlatformBillingAction } from '@/features/pricing/server/resolvePlatformBillingAction';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -26,7 +27,7 @@ export default async function DashboardUpgradePage() {
   const { data: profileRow } = await supabase
     .from('profiles')
     .select(
-      'onboarding_status, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, subscription_billing_interval'
+      'onboarding_status, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, subscription_billing_interval, subscription_plan'
     )
     .eq('user_id', user.id)
     .maybeSingle();
@@ -39,7 +40,17 @@ export default async function DashboardUpgradePage() {
     stripe_subscription_id?: string | null;
     stripe_customer_id?: string | null;
     subscription_billing_interval?: string | null;
+    subscription_plan?: string | null;
   } | null;
+
+  const { data: businessRow } = await supabase
+    .from('business_profiles')
+    .select('team_included')
+    .eq('profile_id', user.id)
+    .maybeSingle();
+  const teamIncluded = Boolean(
+    (businessRow as { team_included?: boolean | null } | null)?.team_included
+  );
 
   const isProSubscriber = isProAccess(
     row?.subscription_tier,
@@ -64,15 +75,24 @@ export default async function DashboardUpgradePage() {
       : row?.subscription_billing_interval === 'month'
         ? 'month'
         : null;
+  const subscriptionId = row?.stripe_subscription_id?.trim() ?? '';
+  const [billingAction, priceDisplay] = await Promise.all([
+    resolvePlatformBillingAction({
+      stripeCustomerId: row?.stripe_customer_id,
+      stripeSubscriptionId: row?.stripe_subscription_id,
+      subscriptionStatus: row?.subscription_status,
+    }),
+    subscriptionId
+      ? getSubscriptionPriceDisplay(subscriptionId)
+      : Promise.resolve(null),
+  ]);
   let subscriberPlanPrice: string | null = null;
   let subscriberBillingInterval: 'month' | 'year' | null =
     storedBillingInterval;
-  const subscriptionId = row?.stripe_subscription_id?.trim();
-  if (isProSubscriber && subscriptionId) {
-    const priceDisplay = await getSubscriptionPriceDisplay(subscriptionId);
-    subscriberPlanPrice = priceDisplay?.amount ?? null;
+  if ((isProSubscriber || billingAction === 'manage') && priceDisplay) {
+    subscriberPlanPrice = priceDisplay.amount ?? null;
     subscriberBillingInterval =
-      storedBillingInterval ?? priceDisplay?.interval ?? null;
+      storedBillingInterval ?? priceDisplay.interval ?? null;
   }
 
   // Free users (no resubscribe gate) must be able to open this page to start checkout.
@@ -84,6 +104,9 @@ export default async function DashboardUpgradePage() {
       isBillingLocked={isBillingLocked}
       subscriberPlanPrice={subscriberPlanPrice}
       subscriberBillingInterval={subscriberBillingInterval}
+      billingAction={billingAction}
+      teamIncluded={teamIncluded}
+      isTeamSubscriber={isProSubscriber && row?.subscription_plan === 'team'}
     />
   );
 }

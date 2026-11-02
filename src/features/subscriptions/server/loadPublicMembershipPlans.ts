@@ -3,6 +3,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CustomerSubscriptionPlan } from '../types/customerSubscriptionPlan';
 import { isBusinessInMembershipsRollout } from './isBusinessInMembershipsRollout';
 import { mapMembershipPlanToCustomer } from './mapMembershipPlanRow';
+import {
+  loadMembershipShopTax,
+  withMembershipCadenceTax,
+} from './membershipSalesTax';
 
 type PlanRow = Database['public']['Tables']['membership_plans']['Row'];
 type PriceRow = Database['public']['Tables']['membership_plan_prices']['Row'];
@@ -68,10 +72,21 @@ export async function loadPublicMembershipPlans(
       pricesByPlan.set(price.plan_id, list);
     }
 
+    const shopTax = await loadMembershipShopTax(admin, id);
     return planRows
-      .map(plan =>
-        mapMembershipPlanToCustomer(plan, pricesByPlan.get(plan.id) ?? [])
-      )
+      .map(plan => {
+        const mapped = mapMembershipPlanToCustomer(
+          plan,
+          pricesByPlan.get(plan.id) ?? []
+        );
+        return {
+          ...mapped,
+          cadenceOptions: withMembershipCadenceTax(
+            mapped.cadenceOptions,
+            shopTax
+          ),
+        };
+      })
       .filter(plan => plan.cadenceOptions.length > 0);
   } catch (err) {
     console.error('[memberships] loadPublicMembershipPlans failed', err);

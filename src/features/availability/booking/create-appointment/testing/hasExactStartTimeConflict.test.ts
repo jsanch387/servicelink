@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { hasExactStartTimeConflict } from '../utils/hasExactStartTimeConflict';
+import {
+  countBookingsOnDate,
+  hasExactStartTimeConflict,
+  ownerRescheduleOverlapHeadsUp,
+  sameDayAppointmentHeadsUp,
+  sameDayRescheduleHeadsUp,
+} from '../../utils/hasExactStartTimeConflict';
 
 describe('hasExactStartTimeConflict', () => {
   const existing = [
@@ -45,5 +51,79 @@ describe('hasExactStartTimeConflict', () => {
         existingBookings: existing,
       })
     ).toBe(false);
+  });
+});
+
+describe('countBookingsOnDate', () => {
+  const existing = [
+    { date: '2026-07-30', startTime: '09:00', durationMinutes: 120 },
+    { date: '2026-07-30', startTime: '14:00', durationMinutes: 60 },
+    { date: '2026-07-31', startTime: '09:00', durationMinutes: 60 },
+  ];
+
+  it('counts appointments on the selected day', () => {
+    expect(countBookingsOnDate('2026-07-30', existing)).toBe(2);
+  });
+
+  it('returns 0 when the day is empty or missing', () => {
+    expect(countBookingsOnDate('2026-08-01', existing)).toBe(0);
+    expect(countBookingsOnDate(null, existing)).toBe(0);
+  });
+});
+
+describe('sameDayAppointmentHeadsUp', () => {
+  it('returns null when there are none', () => {
+    expect(sameDayAppointmentHeadsUp(0)).toBeNull();
+  });
+
+  it('uses singular and plural copy', () => {
+    expect(sameDayAppointmentHeadsUp(1)).toBe(
+      'You already have 1 appointment on this day. Continue to add another.'
+    );
+    expect(sameDayAppointmentHeadsUp(2)).toBe(
+      'You already have 2 appointments on this day. Continue to add another.'
+    );
+  });
+});
+
+describe('ownerRescheduleOverlapHeadsUp', () => {
+  const existing = [
+    { date: '2026-07-30', startTime: '09:00', durationMinutes: 120 },
+    { date: '2026-07-30', startTime: '14:00', durationMinutes: 60 },
+  ];
+
+  it('mentions the time when the start already has a job', () => {
+    expect(
+      ownerRescheduleOverlapHeadsUp({
+        scheduledDate: '2026-07-30',
+        startTime: '09:00',
+        existingBookings: existing,
+      })
+    ).toBe('You already have an appointment at this time. You can still save.');
+  });
+
+  it('mentions the day when the date is busy but the time is free', () => {
+    expect(sameDayRescheduleHeadsUp(1)).toBe(
+      'You already have 1 appointment on this day. Continue to move this one here.'
+    );
+    expect(
+      ownerRescheduleOverlapHeadsUp({
+        scheduledDate: '2026-07-30',
+        startTime: '10:00',
+        existingBookings: existing,
+      })
+    ).toBe(
+      'You already have 2 appointments on this day. Continue to move this one here.'
+    );
+  });
+
+  it('returns null when the day is empty', () => {
+    expect(
+      ownerRescheduleOverlapHeadsUp({
+        scheduledDate: '2026-08-01',
+        startTime: '09:00',
+        existingBookings: existing,
+      })
+    ).toBeNull();
   });
 });

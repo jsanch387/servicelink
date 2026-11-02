@@ -2,6 +2,12 @@ import {
   sendQuoteSentToCustomerEmail,
   type QuoteSentToCustomerPayload,
 } from '@/features/email';
+import { quoteSentEmailPayment } from '@/features/email/quote-sent-to-customer/quoteSentToCustomerTemplate';
+import { quotePublicLinkExpiresAt } from '@/features/quotes/shared/quotePublicLinkTtl';
+import { buildQuoteAssets } from '@/features/quotes/shared/quoteAssets';
+import { loadQuoteSalesTax } from '@/features/quotes/server/loadQuoteSalesTax';
+import { resolveQuotePaymentSnapshot } from '@/features/quotes/server/quotePaymentSnapshot';
+import { quoteSalesTaxLabel } from '@/features/quotes/shared/quoteSalesTax';
 import { validateSendQuoteBody } from '@/features/quotes/send/validateSendQuoteBody';
 import {
   getQuoteSendRequestId,
@@ -11,6 +17,7 @@ import {
   supabaseErrorForLogs,
   truncateLogDetail,
 } from '@/features/quotes/server/quoteSendRouteLog';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { assertOwnerQuoteSendRateLimits } from '@/server/rateLimit/ownerQuoteSendRateLimit';
@@ -35,7 +42,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { user, authMethod } = auth;
+    const { user, supabase, authMethod } = auth;
+    const permitted = await requireBusinessPermission(supabase, 'quotes.write');
+    if (!permitted.ok) {
+      return quoteSendJsonResponse(
+        requestId,
+        { success: false, error: permitted.error },
+        permitted.status
+      );
+    }
 
     const rateLimit = await assertOwnerQuoteSendRateLimits(request, user.id);
     if (!rateLimit.ok) {
@@ -123,7 +138,7 @@ export async function POST(request: NextRequest) {
         .filter(Boolean)
         .join(' ') || null;
 
-    if (!businessRow.profile_id || businessRow.profile_id !== user.id) {
+    if (businessRow.id !== permitted.businessId) {
       logQuoteSend(
         requestId,
         ROUTE_LABEL,
@@ -142,6 +157,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const salesTax = await loadQuoteSalesTax(
+      admin,
+      businessRow.id,
+      body.priceCents
+    );
+    const payment = await resolveQuotePaymentSnapshot(admin, {
+      businessId: businessRow.id,
+      priceCents: salesTax.totalCents,
+      requested: body.paymentCollection,
+    });
+    if (!payment.ok) {
+      return quoteSendJsonResponse(
+        requestId,
+        { success: false, error: payment.error },
+        payment.status
+      );
+    }
+
     // `quotes` / `quote_public_links` may not yet be in generated DB types.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = admin as any;
@@ -156,9 +189,16 @@ export async function POST(request: NextRequest) {
         customer_phone: body.customerPhoneDigits,
         vehicle_year: body.vehicleYear,
         vehicle_make: body.vehicleMake,
+        assets: buildQuoteAssets({
+          year: body.vehicleYear,
+          make: body.vehicleMake,
+          model: body.vehicleModel,
+        }),
         vehicle_model: body.vehicleModel,
         service_name: body.serviceName,
         price_cents: body.priceCents,
+        tax_rate_bps: salesTax.rateBps,
+        tax_cents: salesTax.taxCents,
         duration_minutes: body.durationMinutes,
         note: body.note,
         scheduled_date: body.scheduledDate,
@@ -167,6 +207,9 @@ export async function POST(request: NextRequest) {
         service_price_option_id: body.servicePriceOptionId,
         service_price_cents: body.servicePriceCents,
         addon_details: body.addonDetails,
+        payment_collection: payment.snapshot.payment_collection,
+        deposit_type: payment.snapshot.deposit_type,
+        deposit_value: payment.snapshot.deposit_value,
         status: 'sent',
         sent_at: new Date().toISOString(),
       })
@@ -192,9 +235,7 @@ export async function POST(request: NextRequest) {
       .createHash('sha256')
       .update(rawToken)
       .digest('hex');
-    const expiresAt = new Date(
-      Date.now() + 1000 * 60 * 60 * 24 * 14
-    ).toISOString(); // 14 days
+    const expiresAt = quotePublicLinkExpiresAt();
 
     const { error: linkError } = await db.from('quote_public_links').insert({
       quote_id: quoteId,
@@ -233,6 +274,14 @@ export async function POST(request: NextRequest) {
         serviceName: body.serviceName,
         businessName: businessDisplayName,
         priceCents: body.priceCents,
+        ...(salesTax.taxCents > 0
+          ? {
+              salesTax: {
+                label: quoteSalesTaxLabel(salesTax.rateBps),
+                taxCents: salesTax.taxCents,
+              },
+            }
+          : {}),
         scheduledDate: body.scheduledDate,
         scheduledStartTime: body.scheduledStartTimeForDb,
         durationMinutes: body.durationMinutes,
@@ -240,7 +289,14 @@ export async function POST(request: NextRequest) {
         customerRequestMessage: null,
         vehicleLine,
         publicQuoteUrl: publicUrl,
+        expiresAt,
         addonDetails: body.addonDetails,
+        payment: quoteSentEmailPayment({
+          collection: payment.snapshot.payment_collection,
+          depositType: payment.snapshot.deposit_type,
+          depositValue: payment.snapshot.deposit_value,
+          totalCents: salesTax.totalCents,
+        }),
       };
       const emailResult = await sendQuoteSentToCustomerEmail(
         body.customerEmail,

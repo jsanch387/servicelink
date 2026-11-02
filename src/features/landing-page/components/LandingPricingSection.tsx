@@ -1,16 +1,17 @@
 'use client';
 
-import React from 'react';
+import { FREE_BOOKINGS_LIMIT, TEAM_SEAT_LIMIT } from '@/features/pricing';
 import { PublicPricingPlans } from '@/features/pricing/components/PublicPricingPlans';
+import React from 'react';
 
 /**
- * Landing page pricing section with monthly/yearly Pro toggle.
+ * Landing page pricing section with monthly/yearly toggle for Pro and Team.
  */
 export const LandingPricingSection: React.FC = () => {
   return (
     <section
       id="pricing"
-      className="py-16 sm:py-24 md:py-28 px-4 sm:px-6"
+      className="scroll-mt-24 py-16 sm:py-24 md:py-28 px-4 sm:px-6"
       aria-labelledby="landing-pricing-heading"
     >
       <div className="max-w-6xl mx-auto">
@@ -22,8 +23,9 @@ export const LandingPricingSection: React.FC = () => {
             Simple, transparent pricing
           </h2>
           <p className="mt-4 text-sm sm:text-base text-gray-400 leading-relaxed">
-            Start free, then upgrade when you are ready. Pay monthly or save two
-            months with yearly Pro.
+            Try it with {FREE_BOOKINGS_LIMIT} appointments. Pro is the full set
+            of tools. Team is for up to {TEAM_SEAT_LIMIT} people on the shop.
+            Pay monthly, or save two months with yearly.
           </p>
         </div>
 

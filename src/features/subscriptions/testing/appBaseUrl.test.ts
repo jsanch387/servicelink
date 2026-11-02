@@ -1,4 +1,4 @@
-import { getAppBaseUrl } from '@/libs/stripe/appBaseUrl';
+import { getAppBaseUrl, getEmailLinkBaseUrl } from '@/libs/stripe/appBaseUrl';
 import { afterEach, describe, expect, it } from 'vitest';
 
 describe('getAppBaseUrl', () => {
@@ -61,6 +61,16 @@ describe('getAppBaseUrl', () => {
         requestWithHost('servicelink-h11otc121-jsanch387s-projects.vercel.app')
       )
     ).toBe('https://myservicelink.app');
+  });
+
+  it('uses the ServiceLink domain for email links when the app URL is localhost', () => {
+    process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
+    expect(getEmailLinkBaseUrl()).toBe('https://myservicelink.app');
+  });
+
+  it('keeps a real site URL for email links', () => {
+    process.env.NEXT_PUBLIC_APP_URL = 'https://myservicelink.app';
+    expect(getEmailLinkBaseUrl()).toBe('https://myservicelink.app');
   });
 
   it('falls back to myservicelink.app when preview host has no canonical env', () => {

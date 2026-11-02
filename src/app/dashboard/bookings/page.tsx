@@ -13,38 +13,23 @@ import {
   type WeeklySchedule,
 } from '@/features/availability/types/availability';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
-import { isProAccess } from '@/features/pricing';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { isOwnerEmailAllowedForInvoicesRollout } from '@/features/invoices/config/invoicesRolloutAllowlist';
+import { businessCanUseInvoices } from '@/features/invoices/server/requireInvoicePro';
+import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function BookingsPage() {
-  const supabase = await createSupabaseServerClient();
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    redirect('/login');
-  }
-
-  const { data: profileRow } = await supabase
-    .from('profiles')
-    .select(
-      'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
-    )
-    .eq('user_id', user.id)
-    .maybeSingle();
+  const { supabase, user, context } =
+    await requireDashboardPageAccess('bookings.read');
 
   const { data: businessProfileRow, error: businessError } = await supabase
     .from('business_profiles')
     .select(
       'id, business_name, business_slug, legacy_request_booking_enabled, free_bookings_count'
     )
-    .eq('profile_id', user.id)
+    .eq('id', context.businessId)
     .single();
 
   const businessProfile = businessProfileRow as {
@@ -73,11 +58,10 @@ export default async function BookingsPage() {
   const weeklySchedule =
     (availabilityRow?.weekly_schedule as WeeklySchedule | null) ??
     DEFAULT_SCHEDULE;
-  // Legacy request booking only when legacy user has NOT set availability; once set, no fallback
+  const bufferTime = availabilityRow?.buffer_time ?? 'none';
   const showRequestBookingFallback =
     legacyRequestBookingEnabled && !availabilityConfigured;
 
-  // V1 only: fetch booking requests when legacy and V2 off. V2 list is fetched client-side.
   const { data: bookingRequests, error: requestsError } = await supabase
     .from('booking_requests')
     .select('*')
@@ -88,25 +72,9 @@ export default async function BookingsPage() {
     console.error('Error fetching booking requests:', requestsError);
   }
 
-  // Free tier: lifetime cap from business_profiles.free_bookings_count.
-  let freeBookingsUsed = 0;
-  const profile = profileRow as {
-    subscription_tier?: string | null;
-    subscription_current_period_end?: string | null;
-    subscription_status?: string | null;
-    stripe_subscription_id?: string | null;
-    stripe_customer_id?: string | null;
-  } | null;
-  const isFreeTier = !isProAccess(
-    profile?.subscription_tier ?? 'free',
-    profile?.subscription_current_period_end ?? null,
-    profile?.subscription_status,
-    profile?.stripe_subscription_id,
-    profile?.stripe_customer_id
-  );
-  if (isFreeTier) {
-    freeBookingsUsed = businessProfile.free_bookings_count ?? 0;
-  }
+  const canCreateInvoice =
+    isOwnerEmailAllowedForInvoicesRollout(user.email) &&
+    (await businessCanUseInvoices(businessProfile.id));
 
   return (
     <BookingsPageSwitch
@@ -116,9 +84,11 @@ export default async function BookingsPage() {
       showRequestBookingFallback={showRequestBookingFallback}
       useAvailabilityBooking={useAvailabilityBooking}
       weeklySchedule={weeklySchedule}
+      bufferTime={bufferTime}
       timeOffBlocks={timeOffBlocks}
-      freeBookingsUsed={freeBookingsUsed}
-      showFreeBookingsTracker={isFreeTier}
+      freeBookingsUsed={0}
+      showFreeBookingsTracker={false}
+      canCreateInvoice={canCreateInvoice}
     />
   );
 }

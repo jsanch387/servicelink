@@ -46,7 +46,7 @@ export function WorkshopGatePage() {
   return (
     <div className="min-h-[100dvh] bg-[var(--dashboard-bg)] flex flex-col">
       <MarketingNavigation />
-      <div className="h-14 sm:h-20 shrink-0" aria-hidden />
+      <div className="h-14 sm:h-20 lg:h-24 shrink-0" aria-hidden />
 
       <main className="flex-1 w-full max-w-lg sm:max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-10 md:py-14 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
         {!showGate ? (

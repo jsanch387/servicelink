@@ -1,6 +1,7 @@
 # Contract: Mobile — Owner creates and sends quote
 
-Use this when the **signed-in business owner** creates a new quote or **first-sends** an existing customer request from the native app. The server inserts/updates the `quotes` row, mints a public link, and **best-effort** emails the customer.
+Use this when the **signed-in business owner** creates a new quote or **first-sends** an existing customer request from the native app. The server inserts/updates the `quotes` row, writes `quotes.assets` from the
+vehicle fields, mints a public link, and **best-effort** emails the customer.
 
 **Do not** insert quote rows directly from the app — you would skip link hashing, expiry, rate limits, and the customer email.
 
@@ -62,18 +63,22 @@ Validated by `validateSendQuoteBody` → `validateQuotePayloadFields`.
 
 ### Customer + vehicle
 
-| Field           | Type   | Required | Notes                                                                                   |
-| --------------- | ------ | -------- | --------------------------------------------------------------------------------------- |
-| `businessSlug`  | string | Yes      | Must match a business owned by the caller (`business_profiles.profile_id = auth user`). |
-| `customerName`  | string | Yes      | Trimmed.                                                                                |
-| `customerEmail` | string | Yes      | Valid email format.                                                                     |
-| `customerPhone` | string | No       | If present, **10 digits** after stripping non-digits; otherwise validation fails.       |
-| `vehicleYear`   | string | No       | Optional snapshot fields.                                                               |
-| `vehicleMake`   | string | No       |                                                                                         |
-| `vehicleModel`  | string | No       |                                                                                         |
-| `note`          | string | No       | Owner note on the quote; omit or empty → `null`.                                        |
+| Field           | Type   | Required | Notes                                                                                    |
+| --------------- | ------ | -------- | ---------------------------------------------------------------------------------------- |
+| `businessSlug`  | string | Yes      | Must match a business owned by the caller (`business_profiles.profile_id = auth user`).  |
+| `customerName`  | string | Yes      | Trimmed.                                                                                 |
+| `customerEmail` | string | Yes      | Valid email format.                                                                      |
+| `customerPhone` | string | No       | If present, **10 digits** after stripping non-digits; otherwise validation fails.        |
+| `vehicleYear`   | string | No       | Optional car 1 snapshot. Server also writes `quotes.assets` as `{ type: "vehicle", … }`. |
+| `vehicleMake`   | string | No       |                                                                                          |
+| `vehicleModel`  | string | No       |                                                                                          |
+| `note`          | string | No       | Owner note on the quote; omit or empty → `null`. Max **2000** characters.                |
 
-**Not collected on send:** service street address. The customer provides address when accepting (`POST /api/quotes/respond`).
+**Do not send `assets`.** The server builds that array from these three fields
+(and keeps any extra assets already on a customer-requested row). Mobile still
+collects one vehicle on send, same as web.
+
+**Not collected on send:** service street address. The customer provides address when accepting (`POST /api/quotes/respond`). Extra cars on a public request are already on the quote as more `assets` items — first-send must not wipe them (server keeps `assets[1+]`).
 
 ### Service — always required (custom or catalog)
 
@@ -82,6 +87,16 @@ Validated by `validateSendQuoteBody` → `validateQuotePayloadFields`.
 | `serviceName`     | string | Yes      | Display label stored on the quote.                    |
 | `priceCents`      | number | Yes      | Integer ≥ 0. **Total** price (base + add-ons).        |
 | `durationMinutes` | number | Yes      | Integer > 0. **Total** duration (base + add-on time). |
+
+### Payment to accept (optional)
+
+Add this field on the same `POST /api/quotes/send` or `POST /api/quotes/[id]/send` body. Omit it to keep accept-or-decline.
+
+| Field               | Type   | Required | Notes                                                                                  |
+| ------------------- | ------ | -------- | -------------------------------------------------------------------------------------- |
+| `paymentCollection` | string | No       | `none` (default), `deposit`, `full`, or `customer_choice`. Invalid values are **400**. |
+
+The server snapshots the shop’s Payments deposit rule onto the quote. `deposit` and `customer_choice` need deposits on and a deposit of at least **$0.50**. `full` and `customer_choice` need a quote total of at least **$0.50**. If the shop is not Pro or cannot charge, those values return **400**.
 
 ### Service — catalog snapshot (optional)
 
@@ -207,7 +222,8 @@ X-Request-ID: mobile-quote-001
   "serviceName": "Full detail — SUV",
   "priceCents": 25000,
   "durationMinutes": 180,
-  "note": "Includes clay bar"
+  "note": "Includes clay bar",
+  "paymentCollection": "deposit"
 }
 ```
 
@@ -262,7 +278,17 @@ Content-Type: application/json
 }
 ```
 
-**Email:** After the quote and link exist, the API best-effort sends Resend email to `customerEmail`. If email fails, the HTTP response is still **201** / **200**; failures are logged server-side.
+**Email:** After the quote and link exist, the API best-effort emails
+`customerEmail` (“your quote is ready”) with `publicUrl`. If email fails, the
+HTTP response is still **201** / **200**; failures are logged server-side.
+
+**SMS:** Not sent on this call. A later cron (2–3 days, still `sent` /
+`viewed`) emails and texts the customer once. Those rows show up on
+`GET /api/quotes/[id]` as `communications`. See
+[`mobile-quote-read.md`](./mobile-quote-read.md).
+
+After send, fetch the quote if the inbox needs `assets` / `viewedAt`. The send
+response is only `{ quoteId, publicUrl, expiresAt }`.
 
 ---
 

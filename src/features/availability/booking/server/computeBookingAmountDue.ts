@@ -13,6 +13,7 @@
 
 import type { DiscountType } from '@/features/marketing/types';
 import { applyDiscountToSubtotalCents } from '@/features/marketing/utils/applyDiscountToSubtotalCents';
+import { salesTaxCents } from '@/features/payments/utils/salesTaxRate';
 import {
   resolveBookingLineSubtotalCents,
   sumTopLevelAddonDetailsCents,
@@ -58,6 +59,13 @@ export interface BookingAmountDueInput {
   sessionPayment: JobCompletedSessionPaymentInput | undefined;
   /** Optional booking discount snapshot (promo/sale). */
   discount?: BookingDiscountSnapshotInput | null;
+  /**
+   * Sales tax frozen on the booking. The rate is applied again to the current
+   * price after discounts, so a later sale does not keep tax from the
+   * pre-sale price. Session fees are not taxed.
+   */
+  taxCents?: number | null;
+  taxRateBps?: number | null;
 }
 
 export interface BookingAmountDueResult {
@@ -68,8 +76,11 @@ export interface BookingAmountDueResult {
   subtotalCents: number;
   /** Discount applied to service + add-ons only. */
   discountCents: number;
-  /** subtotal − discount (never below session fees floor). */
+  /** subtotal − discount (never below session fees floor), plus frozen sales tax. */
   adjustedTotalCents: number;
+  /** Sales tax included in `adjustedTotalCents`. */
+  taxCents: number;
+  taxRateBps: number;
   paidOnlineCents: number;
   sessionPayCents: number;
   amountDueCents: number;
@@ -129,10 +140,29 @@ export function computeBookingAmountDue(
     input.discount
   );
   const subtotalCents = lineSubtotalCents + sessionFeeCents;
-  const adjustedTotalCents = Math.max(
-    sessionFeeCents,
-    subtotalCents - discountCents
+  const priceAfterDiscountCents = Math.max(
+    0,
+    lineSubtotalCents - discountCents
   );
+  const storedTaxCents =
+    typeof input.taxCents === 'number' &&
+    Number.isFinite(input.taxCents) &&
+    input.taxCents > 0
+      ? Math.round(input.taxCents)
+      : 0;
+  const storedRateBps =
+    typeof input.taxRateBps === 'number' &&
+    Number.isFinite(input.taxRateBps) &&
+    input.taxRateBps > 0
+      ? Math.round(input.taxRateBps)
+      : 0;
+  const taxCents =
+    storedRateBps > 0
+      ? salesTaxCents(priceAfterDiscountCents, storedRateBps)
+      : storedTaxCents;
+  const taxRateBps = taxCents > 0 ? storedRateBps : 0;
+  const adjustedTotalCents =
+    Math.max(sessionFeeCents, subtotalCents - discountCents) + taxCents;
   const paidOnlineCents =
     typeof input.paidOnlineAmountCents === 'number' &&
     input.paidOnlineAmountCents >= 0
@@ -148,6 +178,8 @@ export function computeBookingAmountDue(
     subtotalCents,
     discountCents,
     adjustedTotalCents,
+    taxCents,
+    taxRateBps,
     paidOnlineCents,
     sessionPayCents,
     amountDueCents,

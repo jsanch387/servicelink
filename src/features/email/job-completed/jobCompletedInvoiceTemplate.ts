@@ -43,6 +43,11 @@ export interface JobCompletedInvoiceEmailPayload {
     label: string;
     discountCents: number;
   } | null;
+  /** Sales tax included in `totalCents`. */
+  salesTax?: {
+    label: string;
+    taxCents: number;
+  } | null;
   reviewUrl?: string | null;
   /** Multi-job appointment line items from `job_details`. */
   jobs?: JobCompletedInvoiceEmailJob[];
@@ -182,12 +187,28 @@ function buildPricingRowsHtml(
         `-${formatPriceCents(discount.discountCents)}`
       )
     );
+    if (payload.salesTax && payload.salesTax.taxCents > 0) {
+      rows.push(
+        serviceLinkEmailPriceLineRow(
+          payload.salesTax.label,
+          formatPriceCents(payload.salesTax.taxCents)
+        )
+      );
+    }
     if (totalCents != null) {
       rows.push(
         serviceLinkEmailPriceTotalRow('Total', formatPriceCents(totalCents))
       );
     }
   } else if (totalCents != null) {
+    if (payload.salesTax && payload.salesTax.taxCents > 0) {
+      rows.push(
+        serviceLinkEmailPriceLineRow(
+          payload.salesTax.label,
+          formatPriceCents(payload.salesTax.taxCents)
+        )
+      );
+    }
     rows.push(
       serviceLinkEmailPriceTotalRow('Total', formatPriceCents(totalCents))
     );
@@ -269,6 +290,11 @@ export function buildJobCompletedInvoiceEmailPlainText(
       lines.push(`Subtotal: ${formatPriceCents(pricing.subtotalCents)}`);
       lines.push(
         `${pricing.discount.label}: -${formatPriceCents(pricing.discount.discountCents)}`
+      );
+    }
+    if (payload.salesTax && payload.salesTax.taxCents > 0) {
+      lines.push(
+        `${payload.salesTax.label}: ${formatPriceCents(payload.salesTax.taxCents)}`
       );
     }
     if (pricing.totalCents != null) {

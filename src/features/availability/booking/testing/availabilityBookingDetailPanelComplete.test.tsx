@@ -122,4 +122,32 @@ describe('AvailabilityBookingDetailPanel complete confirmation', () => {
       screen.getByRole('button', { name: /mark as complete/i })
     ).toBeTruthy();
   });
+
+  it('lets a teammate complete without reschedule, cancel, or delete', () => {
+    render(
+      <AvailabilityBookingDetailPanel
+        booking={baseBooking()}
+        onClose={vi.fn()}
+        readOnly
+        canRunActions
+        onMarkCompleted={vi.fn()}
+        onCancel={vi.fn()}
+        onDelete={vi.fn()}
+        weeklySchedule={DEFAULT_SCHEDULE}
+        timeOffBlocks={[]}
+        existingBookingsForSlotGrid={[]}
+      />
+    );
+
+    expect(
+      screen.getByRole('button', { name: /mark booking as completed/i })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: /cancel booking/i })
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /delete booking/i })
+    ).toBeNull();
+    expect(screen.queryByText('Reschedule')).toBeNull();
+  });
 });

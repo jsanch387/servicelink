@@ -20,7 +20,8 @@
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next out dist",
     "script:update-user-email": "tsx --env-file=.env.local scripts/update-user-email.ts",
-    "script:booking-reminders": "tsx --env-file=.env.local scripts/run-booking-reminders.ts"
+    "script:booking-reminders": "tsx --env-file=.env.local scripts/run-booking-reminders.ts",
+    "script:backfill-signup-attribution": "tsx --env-file=.env.local scripts/backfill-signup-attribution-first-paid.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -33,9 +34,11 @@
     "@vercel/speed-insights": "^1.2.0",
     "heic-convert": "^2.1.0",
     "next": "15.5.7",
+    "pdf-lib": "^1.17.1",
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "react-icons": "^5.6.0",
+    "read-excel-file": "^9.3.14",
     "resend": "^6.9.2",
     "stripe": "^20.4.1",
     "telnyx": "^7.12.0",

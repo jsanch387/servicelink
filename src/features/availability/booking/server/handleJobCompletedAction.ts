@@ -4,6 +4,11 @@
  * docs/contracts/mobile-booking-job-completed.md.
  */
 
+import {
+  customerInvoiceCoversBooking,
+  loadBookingPaymentCoverage,
+  markSentInvoicePaidForBooking,
+} from '@/features/invoices/server/syncInvoiceWithBookingPayment';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { getReviewInviteRequestId } from '@/features/reviews/server/reviewInviteRouteLog';
 import { isSmsOutboundEnabled } from '@/features/sms/config/isSmsOutboundEnabled';
@@ -48,6 +53,8 @@ interface BookingForJobCompleted {
 
 interface BookingPaymentsRow {
   paid_online_amount_cents: number | null;
+  tax_cents?: number | null;
+  tax_rate_bps?: number | null;
   session_payment_stripe_payment_intent_id?: string | null;
 }
 
@@ -238,10 +245,11 @@ export async function handleJobCompletedAction(opts: {
 
   const workHandoffStatus = resolveWorkHandoffStatusForCompletion(handoff);
 
+  const adminForInvoice = createSupabaseAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: paymentsData } = await (auth.supabase as any)
+  const { data: paymentsData } = await (adminForInvoice as any)
     .from('booking_payments')
-    .select('paid_online_amount_cents')
+    .select('paid_online_amount_cents, tax_cents, tax_rate_bps')
     .eq('booking_id', bookingId)
     .maybeSingle();
 
@@ -249,7 +257,7 @@ export async function handleJobCompletedAction(opts: {
   const sessionFees = parsed.body.sessionFees ?? [];
   const sessionPayment = parsed.body.sessionPayment;
 
-  const amountDue = computeBookingAmountDue({
+  let amountDue = computeBookingAmountDue({
     servicePriceCents: booking.service_price_cents,
     addonDetails: booking.addon_details,
     jobDetails: booking.job_details,
@@ -267,7 +275,22 @@ export async function handleJobCompletedAction(opts: {
             : null,
       discountCents: booking.discount_cents,
     },
+    taxCents: payments?.tax_cents,
+    taxRateBps: payments?.tax_rate_bps,
   });
+
+  const invoiceAlreadyPaid = await customerInvoiceCoversBooking(
+    adminForInvoice,
+    business.id,
+    booking.id
+  );
+  if (invoiceAlreadyPaid && amountDue.amountDueCents > 0 && !sessionPayment) {
+    amountDue = {
+      ...amountDue,
+      sessionPayCents: amountDue.sessionPayCents + amountDue.amountDueCents,
+      amountDueCents: 0,
+    };
+  }
 
   if (amountDue.amountDueCents !== 0) {
     const stillDue = amountDue.amountDueCents > 0;
@@ -380,7 +403,7 @@ export async function handleJobCompletedAction(opts: {
     }
   }
 
-  const admin = createSupabaseAdminClient();
+  const admin = adminForInvoice;
   const persisted = await persistJobCompletedTransaction({
     sessionClient: auth.supabase,
     admin,
@@ -401,6 +424,19 @@ export async function handleJobCompletedAction(opts: {
       { success: false, error: persisted.error },
       { status: persisted.httpStatus }
     );
+  }
+
+  if (!invoiceAlreadyPaid) {
+    const coverage = await loadBookingPaymentCoverage(admin, booking.id);
+    const collected = sessionPayment?.method;
+    const method = coverage.settled
+      ? coverage.method
+      : collected === 'cash' ||
+          collected === 'payment_app' ||
+          collected === 'other'
+        ? collected
+        : 'card';
+    await markSentInvoicePaidForBooking(admin, business.id, booking.id, method);
   }
 
   const payload: JobCompletedSuccessResponse = {

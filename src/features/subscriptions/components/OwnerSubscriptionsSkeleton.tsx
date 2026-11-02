@@ -34,32 +34,34 @@ function PlanCardSkeleton() {
  */
 export const OwnerSubscriptionsSkeleton: React.FC = () => {
   return (
-    <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] px-4 pt-8 pb-28 sm:px-6 sm:pt-10 sm:pb-10 lg:px-8">
-      <div
-        className="mx-auto flex w-full min-w-0 max-w-5xl flex-1 flex-col"
-        aria-busy="true"
-        aria-label="Loading subscriptions"
-      >
-        <div className="animate-pulse shrink-0 space-y-2">
-          <Pulse className="h-8 w-44 max-w-[60%] rounded-lg sm:h-9 sm:w-52" />
-          <Pulse className="h-4 w-full max-w-md rounded" />
-        </div>
-
-        <div className="mt-6 animate-pulse space-y-5 sm:mt-8">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Pulse className="h-11 w-52 rounded-xl" />
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex-1 overflow-y-auto">
+        <div
+          className="mx-auto w-full min-w-0 max-w-7xl px-4 py-8 sm:px-6 lg:px-8"
+          aria-busy="true"
+          aria-label="Loading subscriptions"
+        >
+          <div className="mb-8 flex animate-pulse flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-2">
+              <Pulse className="h-8 w-44 max-w-[60%] rounded-lg sm:h-9 sm:w-52" />
+              <Pulse className="h-4 w-full max-w-md rounded" />
+            </div>
             <Pulse className="h-9 w-full rounded-xl sm:w-36" />
           </div>
 
-          <Pulse className="h-4 w-48 rounded" />
+          <div className="animate-pulse space-y-5">
+            <Pulse className="h-11 w-52 rounded-xl" />
 
-          <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
-            {[1, 2, 3, 4].map(i => (
-              <PlanCardSkeleton key={i} />
-            ))}
+            <Pulse className="h-4 w-48 rounded" />
+
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
+              {[1, 2, 3, 4].map(i => (
+                <PlanCardSkeleton key={i} />
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 };

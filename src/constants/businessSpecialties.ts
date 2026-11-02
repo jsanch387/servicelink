@@ -15,6 +15,7 @@ import {
 export const BUSINESS_SPECIALTY_SLUGS = [
   'detailing',
   'window_tinting',
+  'ppf',
   'auto_glass',
   'mobile_repair',
   'pet_grooming',
@@ -35,6 +36,7 @@ export interface BusinessSpecialtyOption {
 const SPECIALTY_LABELS: Record<BusinessSpecialtySlug, string> = {
   detailing: 'Auto detailing',
   window_tinting: 'Window tinting',
+  ppf: 'PPF',
   auto_glass: 'Auto glass',
   mobile_repair: 'Mobile mechanic',
   pet_grooming: 'Pet grooming',
@@ -52,6 +54,7 @@ const SPECIALTIES_BY_TEMPLATE: Record<
   vehicle: [
     'detailing',
     'window_tinting',
+    'ppf',
     'auto_glass',
     'mobile_repair',
     'other',
@@ -116,6 +119,57 @@ export function getSpecialtiesForBusinessType(
     slug,
     label: SPECIALTY_LABELS[slug],
   }));
+}
+
+export function getBusinessSpecialtyLabel(slug: BusinessSpecialtySlug): string {
+  return SPECIALTY_LABELS[slug];
+}
+
+/** Public bio chips. Skips catch-all `other`. */
+export function publicSpecialtyLabels(
+  businessType: string | null | undefined,
+  storedSpecialties?: readonly string[] | null
+): string[] {
+  return resolveBusinessSpecialties(businessType, storedSpecialties)
+    .filter(slug => slug !== 'other')
+    .map(slug => SPECIALTY_LABELS[slug]);
+}
+
+function lowerFirst(value: string): string {
+  if (!value) return value;
+  return value.charAt(0).toLowerCase() + value.slice(1);
+}
+
+/**
+ * Customer-facing trade line for share cards and the public profile.
+ * Industry buckets like "Vehicle Services" stay internal.
+ */
+export function publicTradeLine(
+  businessType: string | null | undefined,
+  storedSpecialties?: readonly string[] | null
+): string {
+  const labels = publicSpecialtyLabels(businessType, storedSpecialties);
+  if (labels.length === 0) return '';
+  if (labels.length === 1) return labels[0];
+  if (labels.length === 2) {
+    return `${labels[0]} and ${lowerFirst(labels[1])}`;
+  }
+  return `${labels[0]} and more`;
+}
+
+/** Keep only niches valid for the new industry; Other defaults to `other`. */
+export function specialtiesAllowedForBusinessType(
+  businessType: string,
+  current: readonly string[] | null | undefined
+): BusinessSpecialtySlug[] {
+  const allowed = new Set(
+    getSpecialtiesForBusinessType(businessType).map(option => option.slug)
+  );
+  const kept = sanitizeBusinessSpecialties(current).filter(slug =>
+    allowed.has(slug)
+  );
+  if (businessType === 'Other' && kept.length === 0) return ['other'];
+  return kept;
 }
 
 /** Implied tags when `specialties` was never saved (legacy rows). */

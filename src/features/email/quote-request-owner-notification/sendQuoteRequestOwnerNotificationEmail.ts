@@ -28,7 +28,7 @@ export async function sendQuoteRequestOwnerNotificationEmail(
   }
 
   const baseUrl = getAppBaseUrl();
-  const dashboardUrl = `${baseUrl}${ROUTES.DASHBOARD.QUOTES_REQUESTS}`;
+  const dashboardUrl = `${baseUrl}${ROUTES.DASHBOARD.QUOTES}`;
   const subject = getQuoteRequestOwnerNotificationSubject(payload.customerName);
   const html = buildQuoteRequestOwnerNotificationHtml(payload, dashboardUrl);
 

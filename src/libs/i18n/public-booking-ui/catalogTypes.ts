@@ -22,6 +22,7 @@ export type PublicBookingUi = {
   common: {
     back: string;
     continue: string;
+    close: string;
     select: string;
     summary: string;
     total: string;
@@ -46,6 +47,8 @@ export type PublicBookingUi = {
     schedule: string;
     customer: string;
     subtotal: string;
+    /** `Tax (8.25%)` — rate label already includes the percent sign. */
+    salesTax: (rate: string) => string;
     visitTotal: string;
     /** Summary row when customer email was left blank */
     emailNotProvided: string;
@@ -164,6 +167,11 @@ export type PublicBookingUi = {
     notificationsSmsFinePrintLinkLabel: string;
     /** Inline linked text to `/terms` after the privacy link. */
     notificationsSmsTermsLinkLabel: string;
+    policyHeading: string;
+    policyConsentCheckboxLabel: string;
+    policyReviewLead: string;
+    policyLinkLabel: string;
+    policyConsentRequired: string;
     continueToPayment: string;
     confirmBooking: string;
     chooseHowToPay: string;
@@ -364,6 +372,9 @@ export type PublicBookingUi = {
     firstVisitTimeTitle: string;
     firstVisitTimeRequired: string;
     firstVisitNoSlots: string;
+    reviewTitle: string;
+    /** Date row on the subscribe review. The visit itself is not a charge. */
+    reviewFirstVisitLabel: string;
     /** Back link on `/{slug}/subscribe`. */
     subscribePageBackLabel: string;
     subscribeStepBackLabel: string;
@@ -373,6 +384,9 @@ export type PublicBookingUi = {
     alreadySubscribed: string;
     checkoutReturnSuccess: string;
     checkoutReturnCancel: string;
+    plansLoadError: string;
+    plansRetry: string;
+    plansLoadingAriaLabel: string;
     successTitle: string;
     successSubtitle: string;
     successSubtitleWithBusiness: (businessName: string) => string;
@@ -438,9 +452,21 @@ export type PublicBookingUi = {
     galleryTab: string;
     galleryEmptyTitle: string;
     galleryEmptyDescription: string;
+    workPhotoAlt: (
+      businessName: string,
+      index: number,
+      total: number
+    ) => string;
+    lightboxClose: string;
+    lightboxPrevious: string;
+    lightboxNext: string;
+    lightboxPhotoPosition: (current: number, total: number) => string;
     bioTab: string;
     reviewsTab: string;
     noBioYet: string;
+    specialtiesAriaLabel: string;
+    bookingPolicyLabel: string;
+    viewBookingPolicy: (businessName: string) => string;
     /** Public profile: free cap — clarify bookings are paused via ServiceLink only. */
     notTakingBookingsRightNow: string;
     reviewCountLabel: (count: number) => string;
@@ -451,6 +477,9 @@ export type PublicBookingUi = {
     reviewsLoadError: string;
     reviewsRetry: string;
     reviewsLoadingAriaLabel: string;
+    galleryLoadError: string;
+    galleryRetry: string;
+    galleryLoadingAriaLabel: string;
     /** Public profile: uncategorized services tab label. */
     serviceCategoryOther: string;
     /** Public profile: category filter tablist label. */
@@ -482,13 +511,25 @@ export type PublicBookingUi = {
   };
   quoteForm: {
     quoteDetails: string;
-    serviceRequested: string;
-    serviceRequestedPlaceholder: string;
     whenOptional: string;
+    whenLabel: string;
     whenPlaceholder: string;
     detailsLabel: string;
+    successDetailsLabel: string;
     detailsPlaceholder: string;
+    addAnotherVehicle: string;
+    secondVehicle: string;
+    removeVehicle: string;
+    reviewTitle: string;
+    reviewSubtitle: string;
+    reviewRequest: string;
+    backToRequest: string;
+    edit: string;
     submitRequest: string;
+    successTitle: string;
+    successSubtitle: (businessName: string) => string;
+    successCardHeader: string;
+    successBack: string;
     timelineAsap: string;
     timelineThisWeek: string;
     timelineNextTwoWeeks: string;
@@ -497,7 +538,6 @@ export type PublicBookingUi = {
     errName: string;
     errEmail: string;
     errPhone: string;
-    errService: string;
     errDetails: string;
     errVehicleYear: string;
     errVehicleMake: string;

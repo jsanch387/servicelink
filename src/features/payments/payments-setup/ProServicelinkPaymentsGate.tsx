@@ -17,7 +17,9 @@ import {
  * After Stripe Connect succeeds: owner must explicitly enable ServiceLink
  * checkout before the full payments settings UI appears.
  */
-export const ProServicelinkPaymentsGate: React.FC = () => {
+export const ProServicelinkPaymentsGate: React.FC<{
+  showSalesTaxCard?: boolean;
+}> = ({ showSalesTaxCard = false }) => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +104,10 @@ export const ProServicelinkPaymentsGate: React.FC = () => {
         Preview of your payments home after you turn payments on.
       </p>
 
-      <FreePaymentPreviewLockedDashboard className="mt-8 w-full sm:mt-10" />
+      <FreePaymentPreviewLockedDashboard
+        className="mt-8 w-full sm:mt-10"
+        showSalesTaxCard={showSalesTaxCard}
+      />
     </div>
   );
 };

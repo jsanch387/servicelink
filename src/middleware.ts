@@ -1,5 +1,10 @@
 import { AUTH_REQUIRED_PATH_PREFIXES, ROUTES } from '@/constants/routes';
+import { applyMarketingAttributionCookie } from '@/features/marketing-attribution/server/applyMarketingAttributionCookie';
 import { bookingReferralCaptureRedirect } from '@/features/booking-attribution/server/bookingReferralCookie';
+import {
+  paymentLinkResumeCookie,
+  paymentLinkShortCodeFromPathname,
+} from '@/features/payments/walk-up/paymentLinkResumeCookie';
 import { isMarketplacePublicEnabled } from '@/features/marketplace/config/isMarketplacePublicEnabled';
 import {
   isProAccess,
@@ -29,8 +34,16 @@ export async function middleware(request: NextRequest) {
     request.cookies.getAll()
   );
   const staleAuthCookieNameSet = new Set(staleAuthCookieNames);
-  const withStaleExpiry = (res: NextResponse) =>
-    expireStaleAuthCookies(res, staleAuthCookieNames);
+  const pathname = request.nextUrl.pathname;
+  const resumeCode = paymentLinkShortCodeFromPathname(pathname);
+  const withStaleExpiry = (res: NextResponse) => {
+    applyMarketingAttributionCookie(request, res);
+    const out = expireStaleAuthCookies(res, staleAuthCookieNames);
+    if (resumeCode) {
+      out.cookies.set(paymentLinkResumeCookie(resumeCode));
+    }
+    return out;
+  };
 
   let response = withStaleExpiry(
     NextResponse.next({
@@ -39,8 +52,6 @@ export async function middleware(request: NextRequest) {
       },
     })
   );
-
-  const pathname = request.nextUrl.pathname;
 
   // Marketplace discovery is live; flip `isMarketplacePublicEnabled` to pull it.
   if (!isMarketplacePublicEnabled()) {
@@ -215,6 +226,18 @@ export async function middleware(request: NextRequest) {
     );
 
     if (!onboardingComplete) {
+      type MemberAccessRow = { id?: string | null };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: memberRow } = await (supabase as any)
+        .from('business_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .limit(1)
+        .maybeSingle();
+      if ((memberRow as MemberAccessRow | null)?.id) {
+        return response;
+      }
       const allowOnboardingBusinessProfileReturn =
         isBusinessProfileRoute && onboardingCompleteReturn;
       if (allowOnboardingBusinessProfileReturn) {
@@ -240,12 +263,6 @@ export async function middleware(request: NextRequest) {
       if (!hasAppAccess && !isUpgradeRoute) {
         return withStaleExpiry(
           NextResponse.redirect(new URL(ROUTES.DASHBOARD.UPGRADE, request.url))
-        );
-      }
-
-      if (hasAppAccess && isUpgradeRoute) {
-        return withStaleExpiry(
-          NextResponse.redirect(new URL(ROUTES.DASHBOARD.MAIN, request.url))
         );
       }
     }

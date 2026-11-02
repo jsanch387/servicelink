@@ -42,6 +42,7 @@ import {
 } from '@/features/availability/booking/utils/ownerManualBookingJobs';
 import { appointmentMoneyFieldsFromJobs } from '@/features/availability/booking/utils/resolveBookingLineSubtotalCents';
 import { PUBLIC_BOOKING_MAX_JOBS } from '@/features/availability/booking/constants/publicBookingJobs';
+import { salesTaxEmailLine } from '@/features/availability/booking/utils/publicBookingSalesTax';
 import { createBooking } from '@/features/availability/services/bookingService';
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
@@ -62,20 +63,30 @@ import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance
 import { sendMaintenanceEnrollmentConfirmedIfApplicable } from '@/features/maintenance/server/sendMaintenanceEnrollmentConfirmedIfApplicable';
 import { resolveBookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingDiscountSnapshot';
 import { normalizeEnteredPromoCode } from '@/features/marketing/server/resolveBookingPromoDiscountSnapshot';
-import { hasMultipleActiveSubscriptions } from '@/features/pricing/server/checkActiveSubscriptions';
+import { reconcileExtraPlatformProSubscriptions } from '@/features/pricing/server/openPlatformSubscriptions';
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
 import { notifyPaymentFailedOnce } from '@/features/pricing/server/notifyPaymentFailedOnce';
 import { resolveBillingIntervalFromStripeSubscription } from '@/features/pricing/server/resolveSubscriptionBillingInterval';
-import { sendProWelcomeIfFirstPaidPro } from '@/features/pricing/server/sendProWelcomeIfFirstPaidPro';
+import {
+  platformPlanForStripeSubscription,
+  stampCatalogPlatformPlanMetadata,
+} from '@/libs/stripe/platformPlanForStripeSubscription';
+import { scheduleProFirstPaidSideEffects } from '@/features/marketing-attribution/server/scheduleProFirstPaidSideEffects';
 import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stripeSubscriptionPeriodEnd';
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
 import { applyPlatformProCheckoutSessionCompleted } from '@/features/pricing/server/applyPlatformProCheckoutSessionCompleted';
 import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/utils/subscriptionScheduledCancel';
+import { applyCustomerInvoiceCheckoutCompleted } from '@/features/invoices/server/applyCustomerInvoiceCheckoutCompleted';
+import { applyWalkUpPaymentCheckoutCompleted } from '@/features/payments/walk-up/applyWalkUpPaymentCheckoutCompleted';
+import { applyWalkUpPaymentCheckoutExpired } from '@/features/payments/walk-up/applyWalkUpPaymentCheckoutExpired';
+import { applyWalkUpTapToPayPaymentIntent } from '@/features/payments/walk-up/applyWalkUpTapToPayPaymentIntent';
+import { WALKUP_PAYMENT_TAP_TO_PAY_KIND } from '@/features/payments/walk-up/constants';
 import { applyMembershipCheckoutSessionCompleted } from '@/features/subscriptions/server/applyMembershipCheckoutSessionCompleted';
 import { applyMembershipInvoiceEvent } from '@/features/subscriptions/server/applyMembershipInvoiceEvent';
 import { applyMembershipSubscriptionLifecycle } from '@/features/subscriptions/server/applyMembershipSubscriptionLifecycle';
 import { stripeSubscriptionIdFromInvoice } from '@/features/subscriptions/server/membershipStripeHelpers';
 import { getStripePlatform } from '@/libs/stripe';
+import { applyQuoteCheckoutCompleted } from '@/features/quotes/server/quoteCheckout';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse, after } from 'next/server';
@@ -161,6 +172,9 @@ type StoredBookingCheckoutPayload = {
   };
   totalPriceCents: number;
   requiredOnlineAmountCents: number;
+  /** Frozen at checkout. Zero when the business was not collecting tax. */
+  taxRateBps?: number;
+  taxCents?: number;
   paymentMethodSelected: 'pay_now' | 'pay_in_person' | 'none';
   depositType?: 'fixed' | 'percent' | null;
   depositValue?: number | null;
@@ -171,6 +185,8 @@ type StoredBookingCheckoutPayload = {
   jobs?: CreateBookingJobItem[];
   /** Public SMS opt-in from contact checkbox (default true when omitted). */
   agreedToNotifications?: boolean;
+  /** Set by checkout when a signed-in shop user started the payment. */
+  createdByUserId?: string;
 };
 
 function customerFormFromCheckoutStored(
@@ -311,6 +327,14 @@ function parseStoredBookingCheckoutPayload(
     },
     totalPriceCents,
     requiredOnlineAmountCents,
+    taxRateBps:
+      typeof p.taxRateBps === 'number' && Number.isFinite(p.taxRateBps)
+        ? Math.max(0, Math.round(p.taxRateBps))
+        : 0,
+    taxCents:
+      typeof p.taxCents === 'number' && Number.isFinite(p.taxCents)
+        ? Math.max(0, Math.round(p.taxCents))
+        : 0,
     paymentMethodSelected: method,
     depositType:
       p.depositType === 'fixed' || p.depositType === 'percent'
@@ -336,6 +360,12 @@ function parseStoredBookingCheckoutPayload(
         : p.agreedToNotifications === true
           ? true
           : undefined,
+    ...(typeof p.createdByUserId === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      p.createdByUserId.trim()
+    )
+      ? { createdByUserId: p.createdByUserId.trim() }
+      : {}),
   };
 }
 
@@ -429,6 +459,23 @@ export async function POST(request: NextRequest) {
       );
     }
     const session = event.data.object as Stripe.Checkout.Session;
+    if (session.metadata?.kind === 'quote_checkout') {
+      try {
+        await applyQuoteCheckoutCompleted(supabase, session);
+      } catch (error) {
+        console.error('[quote-checkout] webhook failed', error);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from('stripe_webhook_events')
+          .delete()
+          .eq('event_id', event.id);
+        return NextResponse.json(
+          { error: 'Quote checkout failed' },
+          { status: 500 }
+        );
+      }
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
     const isBookingCheckout = session.metadata?.kind === 'booking_checkout';
     if (isBookingCheckout) {
       logBookingCheckoutStage('checkout.session.completed.received', {
@@ -530,7 +577,7 @@ export async function POST(request: NextRequest) {
       const { data: capProfileRow, error: capProfileError } = await supabase
         .from('business_profiles')
         .select(
-          'id, profile_id, free_bookings_month, free_bookings_count, business_name, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+          'id, profile_id, free_bookings_month, free_bookings_count, business_name, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, shop_city, shop_state, shop_zip'
         )
         .eq('id', bookingPayload.businessId.trim())
         .maybeSingle();
@@ -565,6 +612,9 @@ export async function POST(request: NextRequest) {
         business_zip: string | null;
         shop_street_address: string | null;
         shop_unit: string | null;
+        shop_city: string | null;
+        shop_state: string | null;
+        shop_zip: string | null;
       };
 
       const freeTierCap = await enforceFreeTierBookingCapBeforeCreate(
@@ -718,6 +768,7 @@ export async function POST(request: NextRequest) {
         }),
         discountSnapshot,
         smsOptIn: checkoutSmsOptIn,
+        createdByUserId: bookingPayload.createdByUserId ?? null,
         ...(jobDetails
           ? {
               jobDetails,
@@ -731,10 +782,9 @@ export async function POST(request: NextRequest) {
         checkoutSessionRowId: String(checkoutSessionRow.id),
         bookingId: createdBooking.id,
       });
-      const remainingCents = Math.max(
-        bookingPayload.totalPriceCents - amountPaidCents,
-        0
-      );
+      const taxCents = bookingPayload.taxCents ?? 0;
+      const jobTotalCents = bookingPayload.totalPriceCents + taxCents;
+      const remainingCents = Math.max(jobTotalCents - amountPaidCents, 0);
       const paymentStatus = remainingCents > 0 ? 'deposit_paid' : 'paid_full';
       const currencyCode =
         typeof session.currency === 'string' && session.currency.trim()
@@ -808,11 +858,19 @@ export async function POST(request: NextRequest) {
               },
             }
           : {}),
+        ...(salesTaxEmailLine(bookingPayload.taxRateBps ?? 0, taxCents)
+          ? {
+              salesTax: salesTaxEmailLine(
+                bookingPayload.taxRateBps ?? 0,
+                taxCents
+              )!,
+            }
+          : {}),
         paymentSummary: buildStripeCheckoutPaymentSummary({
           paymentStatus,
           amountPaidCents,
           remainingCents,
-          totalPriceCents: bookingPayload.totalPriceCents,
+          totalPriceCents: jobTotalCents,
           currency: currencyCode,
           hasPriceLineItems,
         }),
@@ -827,10 +885,12 @@ export async function POST(request: NextRequest) {
         payment_status: paymentStatus,
         payment_method_selected: bookingPayload.paymentMethodSelected,
         currency: currencyCode,
-        total_amount_cents: bookingPayload.totalPriceCents,
+        total_amount_cents: jobTotalCents,
         required_online_amount_cents: bookingPayload.requiredOnlineAmountCents,
         paid_online_amount_cents: amountPaidCents,
         remaining_amount_cents: remainingCents,
+        tax_rate_bps: bookingPayload.taxRateBps ?? 0,
+        tax_cents: taxCents,
         deposit_type: bookingPayload.depositType,
         deposit_value: bookingPayload.depositValue,
         last_checkout_session_id: session.id,
@@ -938,6 +998,7 @@ export async function POST(request: NextRequest) {
               type: 'booking_confirmation',
               to: bookingCheckoutNotifyContext.customerPhone,
               message: buildBookingConfirmedSms({
+                businessName: bookingCheckoutNotifyContext.businessDisplayName,
                 scheduledDate: bookingCheckoutNotifyContext.scheduledDate,
                 startTime: bookingCheckoutNotifyContext.startTime,
               }),
@@ -1120,6 +1181,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
+    if (session.metadata?.kind === 'customer_invoice') {
+      await applyCustomerInvoiceCheckoutCompleted(supabase, {
+        eventId: event.id,
+        session,
+      });
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+
+    if (session.metadata?.kind === 'walkup_payment_link') {
+      await applyWalkUpPaymentCheckoutCompleted(supabase, {
+        event,
+        session,
+      });
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+
     const userId = session.metadata?.userId as string | undefined;
     if (!userId?.trim()) {
       console.error(
@@ -1145,41 +1222,84 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // MONITORING: Detect if customer has multiple active subscriptions (edge case alert)
-    const customerId =
-      typeof session.customer === 'string' ? session.customer : null;
-    if (customerId) {
-      try {
-        const hasMultiple = await hasMultipleActiveSubscriptions(
-          stripe,
-          customerId
+    // Extra open Pro subs on this customer (e.g. leftover past_due) are
+    // canceled inside applyPlatformProCheckoutSessionCompleted.
+
+    // First paid Pro upgrade only (direct paid checkout — no trial).
+    // `after()` so the stamp and welcome email are not dropped when this 200 returns.
+    // Idempotency is already recorded, so Stripe will not replay a dropped call.
+    scheduleProFirstPaidSideEffects(supabase, event.id, { userId });
+  }
+
+  if (event.type === 'checkout.session.expired') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('stripe_webhook_events').insert({
+        event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+      });
+    } catch (insertError: unknown) {
+      const code = (insertError as { code?: string })?.code;
+      if (code === '23505') {
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+      console.error('Stripe webhook idempotency insert error:', insertError);
+      return NextResponse.json(
+        { error: 'Idempotency check failed' },
+        { status: 500 }
+      );
+    }
+
+    const expiredSession = event.data.object as Stripe.Checkout.Session;
+    if (expiredSession.metadata?.kind === 'walkup_payment_link') {
+      await applyWalkUpPaymentCheckoutExpired(supabase, {
+        event,
+        session: expiredSession,
+      });
+    }
+    return NextResponse.json({ received: true }, { status: 200 });
+  }
+
+  if (
+    event.type === 'payment_intent.succeeded' ||
+    event.type === 'payment_intent.canceled' ||
+    event.type === 'payment_intent.payment_failed'
+  ) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('stripe_webhook_events').insert({
+        event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+      });
+    } catch (insertError: unknown) {
+      const code = (insertError as { code?: string })?.code;
+      if (code !== '23505') {
+        console.error('Stripe webhook idempotency insert error:', insertError);
+        return NextResponse.json(
+          { error: 'Idempotency check failed' },
+          { status: 500 }
         );
-        if (hasMultiple) {
-          console.error(
-            '[stripe:webhook] ⚠️ ALERT: Customer has multiple active subscriptions after checkout',
-            {
-              eventId: event.id,
-              sessionId: session.id,
-              customerId: customerId.slice(-8),
-              userId,
-            }
-          );
-          // This should not happen with the duplicate prevention checks in place
-          // If this log appears, investigate immediately - customer is being double-charged
-        }
-      } catch (multiCheckErr) {
-        console.warn(
-          '[stripe:webhook] multi-subscription check failed (non-blocking)',
-          multiCheckErr
+      }
+      // Duplicate event id: still apply (idempotent) in case the first
+      // attempt stored the event then failed to persist payment_requests.
+    }
+
+    const paymentIntent = event.data.object as Stripe.PaymentIntent;
+    if (paymentIntent.metadata?.kind === WALKUP_PAYMENT_TAP_TO_PAY_KIND) {
+      const applyResult = await applyWalkUpTapToPayPaymentIntent(supabase, {
+        event,
+        paymentIntent,
+      });
+      if ('retry' in applyResult && applyResult.retry) {
+        return NextResponse.json(
+          { error: 'Walk-up Tap to Pay apply failed' },
+          { status: 500 }
         );
       }
     }
-
-    // First paid Pro upgrade only (direct paid checkout — no trial). Best-effort;
-    // the atomic claim inside guarantees once-only across retries/resubscribes.
-    void sendProWelcomeIfFirstPaidPro(supabase, { userId }).catch(err => {
-      console.error('[stripe:webhook] pro welcome email (checkout)', err);
-    });
+    return NextResponse.json({ received: true }, { status: 200 });
   }
 
   // Subscription updated (renewal, status change to past_due/unpaid, etc.)
@@ -1231,6 +1351,7 @@ export async function POST(request: NextRequest) {
       subscriptionIsScheduledCancelWithoutRenewal(subscription);
     let billingInterval =
       resolveBillingIntervalFromStripeSubscription(subscription);
+    let subscriptionPlan = platformPlanForStripeSubscription(subscription);
     try {
       const stripe = getStripePlatform();
       const fresh = await stripe.subscriptions.retrieve(subId);
@@ -1238,6 +1359,8 @@ export async function POST(request: NextRequest) {
       status = fresh.status;
       cancelAtPeriodEnd = subscriptionIsScheduledCancelWithoutRenewal(fresh);
       billingInterval = resolveBillingIntervalFromStripeSubscription(fresh);
+      subscriptionPlan = platformPlanForStripeSubscription(fresh);
+      await stampCatalogPlatformPlanMetadata(stripe, fresh, subscriptionPlan);
     } catch (retrieveErr) {
       console.warn(
         '[Stripe webhook] subscriptions.retrieve failed; using event payload',
@@ -1255,15 +1378,9 @@ export async function POST(request: NextRequest) {
       currentPeriodEndUnix: periodEnd ?? null,
       cancelAtPeriodEnd,
       subscriptionBillingInterval: billingInterval,
+      subscriptionPlan,
     });
-    if (!result.success) {
-      if (result.noMatchingProfile) {
-        console.warn(
-          '[Stripe webhook] customer.subscription.updated: no profile row for subscription (skip)',
-          { eventId: event.id, stripeSubscriptionId: subId }
-        );
-        return NextResponse.json({ received: true }, { status: 200 });
-      }
+    if (!result.success && !result.noMatchingProfile) {
       console.error(
         'Stripe webhook: syncProfileFromSubscriptionUpdated failed',
         result.error
@@ -1273,16 +1390,81 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+    if (result.noMatchingProfile) {
+      console.warn(
+        '[Stripe webhook] customer.subscription.updated: no profile row for subscription (skip sync)',
+        { eventId: event.id, stripeSubscriptionId: subId }
+      );
+    }
+
+    const stripeCustomerId =
+      typeof subscription.customer === 'string'
+        ? subscription.customer
+        : subscription.customer &&
+            typeof subscription.customer === 'object' &&
+            'id' in subscription.customer
+          ? String((subscription.customer as { id?: string }).id ?? '').trim()
+          : '';
+    if (stripeCustomerId) {
+      try {
+        const stripeClient = getStripePlatform();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: profileRow } = await (supabase as any)
+          .from('profiles')
+          .select('user_id, stripe_subscription_id')
+          .eq('stripe_customer_id', stripeCustomerId)
+          .maybeSingle();
+        const preferred =
+          typeof profileRow?.stripe_subscription_id === 'string'
+            ? profileRow.stripe_subscription_id.trim()
+            : null;
+        const reconciled = await reconcileExtraPlatformProSubscriptions(
+          stripeClient,
+          stripeCustomerId,
+          preferred
+        );
+        if (
+          profileRow?.user_id &&
+          reconciled.keeperId &&
+          reconciled.keeperId !== preferred
+        ) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('profiles')
+            .update({
+              stripe_subscription_id: reconciled.keeperId,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('user_id', profileRow.user_id);
+        }
+        if (reconciled.canceledIds.length) {
+          console.warn(
+            '[stripe:webhook] canceled extra platform Pro subscriptions',
+            {
+              eventId: event.id,
+              customerId: stripeCustomerId.slice(-8),
+              keeperIdSuffix: reconciled.keeperId?.slice(-8),
+              canceledSuffixes: reconciled.canceledIds.map(id => id.slice(-8)),
+            }
+          );
+        }
+      } catch (reconcileErr) {
+        console.warn(
+          '[stripe:webhook] extra-subscription reconcile failed (non-blocking)',
+          reconcileErr
+        );
+      }
+    }
+
+    if (result.noMatchingProfile) {
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
 
     // Covers trial -> paid conversion (status becomes `active`). First-time only:
     // the atomic claim ensures renewals and cancel->resubscribe never re-send.
-    void sendProWelcomeIfFirstPaidPro(supabase, {
+    // `after()` so the stamp and welcome email survive the webhook response.
+    scheduleProFirstPaidSideEffects(supabase, event.id, {
       stripeSubscriptionId: subId,
-    }).catch(err => {
-      console.error(
-        '[stripe:webhook] pro welcome email (subscription.updated)',
-        err
-      );
     });
   }
 
@@ -1436,6 +1618,7 @@ export async function POST(request: NextRequest) {
             subscriptionIsScheduledCancelWithoutRenewal(subscription),
           subscriptionBillingInterval:
             resolveBillingIntervalFromStripeSubscription(subscription),
+          subscriptionPlan: platformPlanForStripeSubscription(subscription),
           // Don't let a transient `active` status here clear the failure guard —
           // recovery is handled by the `customer.subscription.updated` path.
           resetPaymentFailedFlagOnGrant: false,

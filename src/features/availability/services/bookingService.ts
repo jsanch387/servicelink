@@ -7,35 +7,31 @@ import {
   ownerBookingSlotValidationMessage,
   validateOwnerBookingSlot,
 } from '@/features/availability/booking/server/validateOwnerBookingSlot';
-import type { BookingReferralSource } from '@/features/booking-attribution/constants';
+import type {
+  BookingReferralSource,
+  BookingSource,
+} from '@/features/booking-attribution/constants';
 import { upsertCustomerForBooking } from '@/features/customer-management/server/upsertCustomerForBooking';
 import {
   upsertCustomerPetsFromBooking,
   upsertCustomerVehiclesFromBooking,
 } from '@/features/customer-management/server/upsertCustomerAssets';
 import { buildPetAssetDraft } from '@/features/customer-management/utils/customerAssetTypes';
-import {
-  customerAlreadyReviewedForBooking,
-  loadReviewInviteEligibilityContext,
-  willSendReviewInviteOnBookingComplete,
-} from '@/features/reviews/server/reviewInviteEligibility';
+import { hydrateBookingRowsForDisplay } from '@/features/availability/booking/server/hydrateBookingRowsForDisplay';
+import { wallClockHHmm } from '@/features/availability/booking/utils/wallClockHHmm';
 import type { BookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingSaleDiscountSnapshot';
 import { bookingDiscountColumnsFromSnapshot } from '@/features/marketing/server/resolveBookingSaleDiscountSnapshot';
 import { resolveDiscountColumnsForReschedule } from '@/features/marketing/server/resolveDiscountColumnsForReschedule';
 import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import {
-  mapBookingRowToDisplay,
-  type BookingRow,
-} from '../booking/dashboard/utils/mapBookingRowToDisplay';
-import { attachPaymentSummaryToDisplay } from '../booking/dashboard/utils/attachPaymentSummaryToDisplay';
+import type { BookingRow } from '../booking/dashboard/utils/mapBookingRowToDisplay';
 import type { AddOnAtBooking, CustomerFormData } from '../booking/types';
 import type { BookingJobDetailsItem } from '../booking/utils/ownerManualBookingJobs';
 
 const TABLE = 'bookings';
 
-export type BookingSource = 'public' | 'owner';
+export type { BookingSource } from '@/features/booking-attribution/constants';
 
 /** How the customer committed to pay when no Stripe checkout row is involved. */
 export type PublicBookingNoCheckoutPaymentMethod =
@@ -87,6 +83,8 @@ export interface CreateBookingPayload {
   subtotal_cents: number | null;
   discount_cents: number | null;
   discount_label: string | null;
+  /** Shop user who created the appointment. Null for customer and system creates. */
+  created_by_user_id: string | null;
 }
 
 function mapCustomerToRow(
@@ -118,6 +116,7 @@ function mapCustomerToRow(
   | 'subtotal_cents'
   | 'discount_cents'
   | 'discount_label'
+  | 'created_by_user_id'
 > {
   return {
     customer_name: c.fullName.trim(),
@@ -147,8 +146,8 @@ export async function createBooking(
   payload: {
     businessId: string;
     businessSlug: string;
-    /** Server-derived origin. Omit for legacy/system flows with no direct source. */
-    bookingSource?: BookingSource | null;
+    /** Server-derived origin. Required on every new appointment. */
+    bookingSource: BookingSource;
     /** Channel that sent the customer here (cookie-based); null for direct visits. */
     referralSource?: BookingReferralSource | null;
     serviceId?: string | null;
@@ -171,6 +170,8 @@ export async function createBooking(
      * Omit for owner manual so we do not overwrite an existing preference.
      */
     smsOptIn?: boolean;
+    /** Signed-in owner or teammate. Omit for customer and system creates. */
+    createdByUserId?: string | null;
   }
 ): Promise<{ id: string; customerId: string; visitId: string }> {
   const addonDetails =
@@ -229,7 +230,7 @@ export async function createBooking(
   const row: CreateBookingPayload = {
     business_id: payload.businessId,
     business_slug: payload.businessSlug || null,
-    booking_source: payload.bookingSource ?? null,
+    booking_source: payload.bookingSource,
     referral_source: payload.referralSource ?? null,
     service_id: payload.serviceId ?? null,
     service_name: payload.serviceName.trim(),
@@ -246,6 +247,7 @@ export async function createBooking(
     visit_job_count: visitJobCount,
     job_details: jobDetails,
     ...discountColumns,
+    created_by_user_id: payload.createdByUserId?.trim() || null,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -399,6 +401,10 @@ export async function createBookingForExistingCustomer(
     startTime: string;
     /** Stored on `bookings.customer_notes` only (not merged into `customers.notes`). */
     bookingCustomerNotes?: string | null;
+    /** Server-derived origin. Required on every new appointment. */
+    bookingSource: BookingSource;
+    /** Signed-in owner or teammate. Omit for customer and system creates. */
+    createdByUserId?: string | null;
   }
 ): Promise<{ id: string }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -461,7 +467,7 @@ export async function createBookingForExistingCustomer(
   const row: CreateBookingPayload = {
     business_id: payload.businessId,
     business_slug: payload.businessSlug || null,
-    booking_source: null,
+    booking_source: payload.bookingSource,
     referral_source: null,
     service_id: payload.serviceId ?? null,
     service_name: payload.serviceName.trim(),
@@ -478,6 +484,7 @@ export async function createBookingForExistingCustomer(
     visit_job_count: 1,
     job_details: null,
     ...bookingDiscountColumnsFromSnapshot(null),
+    created_by_user_id: payload.createdByUserId?.trim() || null,
   };
 
   const { data, error } = await db
@@ -516,6 +523,8 @@ export async function insertBookingPaymentsRowForNoCheckoutPublicBooking(
     checkoutMode: string | null | undefined;
     /** When `checkout_mode` is `customer_choice`, the customer's chosen path. */
     clientPaymentMethod?: PublicBookingNoCheckoutPaymentMethod | null;
+    taxRateBps?: number;
+    taxCents?: number;
   }
 ): Promise<void> {
   const total = Math.max(0, Math.round(args.totalAmountCents));
@@ -561,6 +570,8 @@ export async function insertBookingPaymentsRowForNoCheckoutPublicBooking(
     deposit_value: null,
     last_checkout_session_id: null,
     paid_at: null,
+    tax_rate_bps: Math.max(0, Math.round(args.taxRateBps ?? 0)),
+    tax_cents: Math.max(0, Math.round(args.taxCents ?? 0)),
   });
 
   if (error) {
@@ -569,13 +580,13 @@ export async function insertBookingPaymentsRowForNoCheckoutPublicBooking(
 }
 
 /**
- * Lists all bookings for a business (owner view). Use with authenticated
- * client so RLS allows SELECT for their business_id.
+ * Lists all bookings for a business (owner view). Prefer
+ * `listBookingsForOwner` on the dashboard API so the query stays bounded.
  */
 export async function listBookingsForBusiness(
   supabase: SupabaseClient<Database>,
   businessId: string
-): Promise<ReturnType<typeof mapBookingRowToDisplay>[]> {
+): Promise<Awaited<ReturnType<typeof hydrateBookingRowsForDisplay>>> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from(TABLE)
@@ -588,89 +599,35 @@ export async function listBookingsForBusiness(
     throw error;
   }
 
-  const rows = (data ?? []) as BookingRow[];
-  const bookingIds = rows.map(r => r.id);
-  const reviewInviteEligibilityContext =
-    rows.length > 0
-      ? await loadReviewInviteEligibilityContext(supabase, businessId, rows)
-      : null;
-  const paymentByBookingId = new Map<
-    string,
-    {
-      payment_status: string | null;
-      payment_method_selected: string | null;
-      currency: string | null;
-      total_amount_cents: number | null;
-      paid_online_amount_cents: number | null;
-      remaining_amount_cents: number | null;
-    }
-  >();
-
-  if (bookingIds.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: paymentRows } = await (supabase as any)
-      .from('booking_payments')
-      .select(
-        'booking_id, payment_status, payment_method_selected, currency, total_amount_cents, paid_online_amount_cents, remaining_amount_cents'
-      )
-      .in('booking_id', bookingIds);
-
-    const normalized = (paymentRows ?? []) as Array<{
-      booking_id: string;
-      payment_status: string | null;
-      payment_method_selected: string | null;
-      currency: string | null;
-      total_amount_cents: number | null;
-      paid_online_amount_cents: number | null;
-      remaining_amount_cents: number | null;
-    }>;
-
-    for (const p of normalized) {
-      if (!p.booking_id) continue;
-      paymentByBookingId.set(p.booking_id, p);
-    }
-  }
-
-  return rows.map(row => {
-    const display = mapBookingRowToDisplay(row);
-    const payment = paymentByBookingId.get(row.id);
-    const willSendReviewInviteOnComplete = reviewInviteEligibilityContext
-      ? willSendReviewInviteOnBookingComplete(
-          row,
-          reviewInviteEligibilityContext
-        )
-      : false;
-    const customerAlreadyReviewed = reviewInviteEligibilityContext
-      ? customerAlreadyReviewedForBooking(row, reviewInviteEligibilityContext)
-      : false;
-    const withReviewFlag = {
-      ...display,
-      customerAlreadyReviewed,
-      willSendReviewInviteOnComplete,
-    };
-    return attachPaymentSummaryToDisplay(withReviewFlag, row, payment);
-  });
+  return hydrateBookingRowsForDisplay(
+    supabase,
+    businessId,
+    (data ?? []) as BookingRow[]
+  );
 }
 
 export type BookingStatusUpdate = 'completed' | 'cancelled';
 
 /**
- * Updates a booking's status. Use with authenticated client; RLS ensures
- * only the business owner can update. Returns the updated row or null if
- * not found / not allowed.
+ * Updates a booking's status. Owner sessions can rely on RLS. After a
+ * permission check, pass the service-role client and `businessId` so the
+ * update stays on that shop. Returns null when the row is missing.
  */
 export async function updateBookingStatus(
   supabase: SupabaseClient<Database>,
   bookingId: string,
-  status: BookingStatusUpdate
+  status: BookingStatusUpdate,
+  businessId?: string
 ): Promise<BookingRow | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  let query = (supabase as any)
     .from(TABLE)
     .update({ status })
-    .eq('id', bookingId)
-    .select()
-    .maybeSingle();
+    .eq('id', bookingId);
+  if (businessId) {
+    query = query.eq('business_id', businessId);
+  }
+  const { data, error } = await query.select().maybeSingle();
 
   if (error) {
     throw error;
@@ -708,8 +665,42 @@ export type RescheduleBookingForOwnerResult =
   | { ok: false; error: string; httpStatus: number };
 
 /**
+ * A second reschedule that lost the race: the row is already confirmed on the
+ * requested slot, so the caller should succeed without sending again.
+ */
+async function loadBookingAlreadyAtSlot(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  params: {
+    businessId: string;
+    bookingId: string;
+    scheduledDate: string;
+    startTimeHHmm: string;
+  }
+): Promise<BookingRow | null> {
+  const { data, error } = await db
+    .from(TABLE)
+    .select('*')
+    .eq('id', params.bookingId)
+    .eq('business_id', params.businessId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const current = data as BookingRow;
+  const onRequestedSlot =
+    String(current.status ?? '').trim() === 'confirmed' &&
+    String(current.scheduled_date ?? '').trim() === params.scheduledDate &&
+    wallClockHHmm(String(current.start_time ?? '')) === params.startTimeHHmm;
+
+  return onRequestedSlot ? current : null;
+}
+
+/**
  * Moves a confirmed booking to a new date/time after calendar validation.
+ * When the slot actually changes, emails and texts the customer (best-effort).
  * Caller must pass `businessId` from the authenticated owner context.
+ * Web and mobile both reach this through PATCH /api/availability/bookings/[id].
  */
 export async function rescheduleBookingForOwner(
   supabase: SupabaseClient<Database>,
@@ -763,6 +754,7 @@ export async function rescheduleBookingForOwner(
     startTimeHHmm: params.startTimeHHmm.trim(),
     durationMinutes,
     excludeBookingId: params.bookingId.trim(),
+    allowExistingBookingOverlap: true,
   });
 
   if (!slot.ok) {
@@ -774,6 +766,18 @@ export async function rescheduleBookingForOwner(
   }
 
   const scheduledDate = params.scheduledDate.trim();
+  const previousScheduledDate = String(
+    (row as BookingRow).scheduled_date ?? ''
+  ).trim();
+  const previousStartTimeStored = String(
+    (row as BookingRow).start_time ?? ''
+  ).trim();
+  const previousStartTime = wallClockHHmm(previousStartTimeStored);
+  const nextStartTime = wallClockHHmm(params.startTimeHHmm);
+  const slotChanged =
+    previousScheduledDate !== scheduledDate ||
+    previousStartTime !== nextStartTime;
+
   const ownerHasPro = await ownerHasProAccessForBusiness(
     supabase,
     params.businessId
@@ -790,12 +794,14 @@ export async function rescheduleBookingForOwner(
     .from(TABLE)
     .update({
       scheduled_date: scheduledDate,
-      start_time: params.startTimeHHmm.trim().slice(0, 5),
+      start_time: nextStartTime,
       ...discountColumns,
     })
     .eq('id', params.bookingId.trim())
     .eq('business_id', params.businessId)
     .eq('status', 'confirmed')
+    .eq('scheduled_date', previousScheduledDate)
+    .eq('start_time', previousStartTimeStored)
     .select()
     .maybeSingle();
 
@@ -809,11 +815,35 @@ export async function rescheduleBookingForOwner(
   }
 
   if (!updated) {
+    const alreadyMoved = await loadBookingAlreadyAtSlot(db, {
+      businessId: params.businessId,
+      bookingId: params.bookingId.trim(),
+      scheduledDate,
+      startTimeHHmm: nextStartTime,
+    });
+    if (alreadyMoved) {
+      return { ok: true, row: alreadyMoved };
+    }
     return {
       ok: false,
       error: 'That booking is no longer confirmed or was removed.',
       httpStatus: 409,
     };
+  }
+
+  if (slotChanged) {
+    try {
+      const { notifyCustomerAvailabilityBookingRescheduled } = await import(
+        '@/features/availability/services/notifyCustomerAvailabilityBookingRescheduled'
+      );
+      await notifyCustomerAvailabilityBookingRescheduled(supabase, {
+        booking: updated as BookingRow,
+        previousScheduledDate,
+        previousStartTime,
+      });
+    } catch {
+      // Customer notice is best-effort; the new time is already saved.
+    }
   }
 
   return { ok: true, row: updated as BookingRow };
@@ -824,8 +854,8 @@ export type DeleteBookingForOwnerResult =
   | { ok: false; error: string; httpStatus: number };
 
 /**
- * Permanently deletes a booking owned by the business. Related payment /
- * invite rows cascade via FK. Use with authenticated client (RLS).
+ * Permanently deletes a booking on this shop. Related payment and invite
+ * rows cascade via FK. After a permission check, pass the service-role client.
  */
 export async function deleteBookingForOwner(
   supabase: SupabaseClient<Database>,

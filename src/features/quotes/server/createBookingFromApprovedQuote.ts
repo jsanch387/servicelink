@@ -4,6 +4,7 @@
  */
 
 import { createBooking } from '@/features/availability/services/bookingService';
+import type { BookingReferralSource } from '@/features/booking-attribution/constants';
 import { normalizePhoneForLookup } from '@/features/customer-management/server/normalizeCustomerContact';
 import { normalizeQuoteAddonDetails } from '@/features/quotes/shared/quoteServiceSnapshot';
 import type { Database } from '@/libs/supabase/client';
@@ -24,6 +25,8 @@ export type QuoteRowForApprovedBooking = {
   service_address: string | null;
   service_name: string | null;
   price_cents: number | null;
+  tax_cents?: number | null;
+  tax_rate_bps?: number | null;
   duration_minutes: number | null;
   scheduled_date: string | null;
   scheduled_start_time: string | null;
@@ -36,6 +39,8 @@ export type QuoteRowForApprovedBooking = {
   service_id: string | null;
   service_price_cents: number | null;
   addon_details: unknown;
+  /** Marketplace (or later channels) captured when the customer requested. */
+  referralSource: BookingReferralSource | null;
 };
 
 /** Postgres `time` often serializes as `HH:mm:ss`; templates expect `HH:mm`. */
@@ -110,6 +115,8 @@ export async function createBookingFromApprovedQuote(
   const { id: bookingId } = await createBooking(supabase, {
     businessId: quote.business_id,
     businessSlug: businessSlug.trim(),
+    bookingSource: 'quote',
+    referralSource: quote.referralSource,
     serviceId: quote.service_id?.trim() || undefined,
     serviceName: serviceLabel,
     servicePriceCents: basePriceCents,

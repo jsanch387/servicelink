@@ -1,4 +1,6 @@
+import type { BookingReferralSource } from '@/features/booking-attribution/constants';
 import { buildQuoteRequestNote } from '@/features/quotes/public-request/buildQuoteRequestNote';
+import { buildQuoteAssets } from '@/features/quotes/shared/quoteAssets';
 import type { ValidatedPublicQuoteRequestBody } from '@/features/quotes/public-request/validatePublicQuoteRequestBody';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -13,9 +15,22 @@ export type InsertCustomerQuoteRequestResult =
 export async function insertCustomerQuoteRequest(
   admin: SupabaseClient,
   businessId: string,
-  data: ValidatedPublicQuoteRequestBody
+  data: ValidatedPublicQuoteRequestBody,
+  referralSource: BookingReferralSource | null = null
 ): Promise<InsertCustomerQuoteRequestResult> {
   const requestMessage = buildQuoteRequestNote(data.details, data.timeline);
+  const assets = buildQuoteAssets(
+    {
+      year: data.vehicleYear,
+      make: data.vehicleMake,
+      model: data.vehicleModel,
+    },
+    {
+      year: data.vehicle2Year,
+      make: data.vehicle2Make,
+      model: data.vehicle2Model,
+    }
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = admin as any;
@@ -35,6 +50,7 @@ export async function insertCustomerQuoteRequest(
       vehicle_year: data.vehicleYear,
       vehicle_make: data.vehicleMake,
       vehicle_model: data.vehicleModel,
+      assets,
       service_name: data.serviceName,
       price_cents: 0,
       duration_minutes: 60,
@@ -44,6 +60,7 @@ export async function insertCustomerQuoteRequest(
       scheduled_start_time: null,
       status: 'requested',
       source: 'customer_requested',
+      referral_source: referralSource,
     })
     .select('id');
 

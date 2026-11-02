@@ -1,6 +1,8 @@
 'use client';
 
 import { GlassCard } from '@/components/shared';
+import { quotePublicBookingSalesTax } from '@/features/availability/booking/utils/publicBookingSalesTax';
+import { formatSalesTaxRateLabel } from '@/features/payments/utils/salesTaxRate';
 import React, { useMemo } from 'react';
 import type { CreateAppointmentJobDraft } from '../types';
 import { formatCatalogPriceCents } from '../utils/catalogServiceHelpers';
@@ -9,17 +11,33 @@ export interface SelectionSummaryCardProps {
   draft: CreateAppointmentJobDraft;
   /** Membership Book visit: show Membership instead of $0. */
   membershipCovered?: boolean;
+  /** Business sales tax. Off or a zero rate leaves the price unchanged. */
+  salesTaxEnabled?: boolean;
+  salesTaxRateBps?: number;
 }
 
 export function SelectionSummaryCard({
   draft,
   membershipCovered = false,
+  salesTaxEnabled = false,
+  salesTaxRateBps = 0,
 }: SelectionSummaryCardProps) {
   const addOnTotal = useMemo(
     () => draft.selectedAddOns.reduce((s, a) => s + a.priceCents, 0),
     [draft.selectedAddOns]
   );
-  const totalCents = draft.servicePriceCents + addOnTotal;
+  const priceCents = draft.servicePriceCents + addOnTotal;
+  const salesTax = useMemo(
+    () =>
+      quotePublicBookingSalesTax({
+        priceAfterDiscountCents: priceCents,
+        taxEnabled: salesTaxEnabled && !membershipCovered,
+        taxRateBps: salesTaxRateBps,
+      }),
+    [priceCents, salesTaxEnabled, salesTaxRateBps, membershipCovered]
+  );
+  const totalCents = salesTax.totalCents;
+  const taxLabel = formatSalesTaxRateLabel(salesTax.rateBps);
   const servicePriceLabel =
     membershipCovered && draft.servicePriceCents === 0
       ? 'Membership'
@@ -75,6 +93,17 @@ export function SelectionSummaryCard({
                 </li>
               ))}
             </ul>
+          ) : null}
+
+          {salesTax.taxCents > 0 ? (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-zinc-400">
+                {taxLabel ? `Tax (${taxLabel})` : 'Tax'}
+              </span>
+              <span className="tabular-nums text-zinc-300">
+                {formatCatalogPriceCents(salesTax.taxCents)}
+              </span>
+            </div>
           ) : null}
 
           <div className="h-px w-full bg-white/10" aria-hidden />

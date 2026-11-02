@@ -16,12 +16,14 @@ export type {
 export {
   buildBookingConfirmedSms,
   buildBookingReminderSms,
+  buildBookingRescheduledSms,
   buildJobCompletedSms,
   buildJobCompletedInvoiceSms,
   buildJobStartedSms,
   buildMembershipVisitReminderSms,
   buildMembershipScheduleLinkSms,
   buildOnMyWaySms,
+  buildQuoteReminderSms,
   buildReviewRequestSms,
   buildWorkFinishedSms,
 } from './messages/bookingSms';

@@ -1,7 +1,12 @@
+import { ROUTES } from '@/constants/routes';
 import { SettingsContent } from '@/features/settings';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { isProAccess } from '@/features/pricing';
 import { getSubscriptionPriceDisplay } from '@/features/pricing/server/getSubscriptionMonthlyPriceDisplay';
+import { refreshProfilePlanFromStripeSubscription } from '@/features/pricing/server/refreshProfilePlanFromStripeSubscription';
+import { resolvePlatformBillingAction } from '@/features/pricing/server/resolvePlatformBillingAction';
+import { isOwnerEmailAllowedForTeamRollout } from '@/features/team/config/teamRolloutAllowlist';
+import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -20,9 +25,13 @@ export default async function SettingsPage({
 }: {
   searchParams: Promise<{
     checkout?: string;
+    /** Set when Stripe sends the owner back after a Pro → Team confirmation. */
+    team?: string;
     email_notice?: string;
     /** @deprecated Prefer `email_notice=updated` */
     email_updated?: string;
+    /** @deprecated Team now lives at /dashboard/team */
+    tab?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -44,6 +53,15 @@ export default async function SettingsPage({
 
     if (authError || !user) {
       redirect('/login');
+    }
+
+    await requireDashboardPageAccess('team.manage');
+
+    if (
+      params?.tab === 'team' &&
+      isOwnerEmailAllowedForTeamRollout(user.email)
+    ) {
+      redirect(ROUTES.DASHBOARD.TEAM);
     }
 
     // Get complete onboarding state
@@ -73,7 +91,7 @@ export default async function SettingsPage({
       supabase
         .from('profiles')
         .select(
-          'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, subscription_cancel_at_period_end, subscription_billing_interval'
+          'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, subscription_cancel_at_period_end, subscription_billing_interval, subscription_plan'
         )
         .eq('user_id', user.id)
         .maybeSingle(),
@@ -90,7 +108,7 @@ export default async function SettingsPage({
     };
     const hasSlug = !!(slug.business_slug && slug.business_link);
 
-    const profileRow = profileResult.data as {
+    let profileRow = profileResult.data as {
       subscription_tier?: string | null;
       subscription_current_period_end?: string | null;
       subscription_status?: string | null;
@@ -98,7 +116,27 @@ export default async function SettingsPage({
       stripe_customer_id?: string | null;
       subscription_cancel_at_period_end?: boolean | null;
       subscription_billing_interval?: string | null;
+      subscription_plan?: string | null;
     } | null;
+
+    if (params?.team === 'confirmed') {
+      const confirmedSubscriptionId =
+        profileRow?.stripe_subscription_id?.trim() ?? '';
+      if (confirmedSubscriptionId) {
+        await refreshProfilePlanFromStripeSubscription(confirmedSubscriptionId);
+        const refreshed = await supabase
+          .from('profiles')
+          .select(
+            'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, subscription_cancel_at_period_end, subscription_billing_interval, subscription_plan'
+          )
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (refreshed.data) {
+          profileRow = refreshed.data as typeof profileRow;
+        }
+      }
+    }
+
     const hasProAccess = isProAccess(
       profileRow?.subscription_tier,
       profileRow?.subscription_current_period_end,
@@ -107,6 +145,7 @@ export default async function SettingsPage({
       profileRow?.stripe_customer_id
     );
     const planId = hasProAccess ? ('pro' as const) : ('free' as const);
+    const isTeamPlan = profileRow?.subscription_plan === 'team';
 
     const storedBillingInterval =
       profileRow?.subscription_billing_interval === 'year'
@@ -114,15 +153,24 @@ export default async function SettingsPage({
         : profileRow?.subscription_billing_interval === 'month'
           ? 'month'
           : null;
+    const subscriptionId = profileRow?.stripe_subscription_id?.trim() ?? '';
+    const [billingAction, priceDisplay] = await Promise.all([
+      resolvePlatformBillingAction({
+        stripeCustomerId: profileRow?.stripe_customer_id,
+        stripeSubscriptionId: profileRow?.stripe_subscription_id,
+        subscriptionStatus: profileRow?.subscription_status,
+      }),
+      hasProAccess && subscriptionId
+        ? getSubscriptionPriceDisplay(subscriptionId)
+        : Promise.resolve(null),
+    ]);
     let subscriptionMonthlyPrice: string | null = null;
     let subscriptionBillingInterval: 'month' | 'year' | null =
       storedBillingInterval;
-    const subscriptionId = profileRow?.stripe_subscription_id?.trim();
-    if (hasProAccess && subscriptionId) {
-      const priceDisplay = await getSubscriptionPriceDisplay(subscriptionId);
-      subscriptionMonthlyPrice = priceDisplay?.amount ?? null;
+    if (priceDisplay) {
+      subscriptionMonthlyPrice = priceDisplay.amount ?? null;
       subscriptionBillingInterval =
-        storedBillingInterval ?? priceDisplay?.interval ?? null;
+        storedBillingInterval ?? priceDisplay.interval ?? null;
     }
 
     const signedInWithGoogle = !(user.identities ?? []).some(
@@ -149,6 +197,7 @@ export default async function SettingsPage({
             hasSlug: false,
           },
       planId,
+      isTeamPlan,
       subscriptionStatus: profileRow?.subscription_status ?? null,
       subscriptionCurrentPeriodEnd:
         profileRow?.subscription_current_period_end ?? null,
@@ -156,6 +205,8 @@ export default async function SettingsPage({
         profileRow?.subscription_cancel_at_period_end === true,
       subscriptionMonthlyPrice,
       subscriptionBillingInterval,
+      billingAction,
+      stripeCustomerId: profileRow?.stripe_customer_id ?? null,
       accountEmail: user.email ?? '',
       signedInWithGoogle,
       pendingEmail: user.new_email ?? null,

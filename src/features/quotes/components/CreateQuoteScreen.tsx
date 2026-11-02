@@ -10,12 +10,20 @@ import {
 } from '@/components/shared';
 import { resolveBusinessIndustry } from '@/constants/businessTypes';
 import { API_ROUTES, ROUTES } from '@/constants/routes';
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import { DateSelector } from '@/features/availability/booking/components/DateSelector';
 import { TimeSlotGrid } from '@/features/availability/booking/components/TimeSlotGrid';
 import { usePublicBlockedSlots } from '@/features/availability/booking/hooks/usePublicBlockedSlots';
 import { useDashboardQuoteDetail } from '@/features/quotes/dashboard/hooks/useDashboardQuoteDetail';
 import { isDashboardQuoteEditableByOwner } from '@/features/quotes/dashboard/utils/isDashboardQuoteEditableByOwner';
 import { parsePublicQuoteRequestNote } from '@/features/quotes/dashboard/utils/parsePublicQuoteRequestNote';
+import {
+  extraQuoteAssetHeading,
+  extraQuoteAssetsFromQuote,
+  formatQuoteAssetLine,
+  primaryVehicleFieldsFromQuote,
+  type QuoteAsset,
+} from '@/features/quotes/shared/quoteAssets';
 import {
   centsToWholeDollarDigits,
   durationPickerValueFromQuote,
@@ -24,10 +32,25 @@ import {
 } from '@/features/quotes/dashboard/utils/quoteFormHydrationFromDashboard';
 import { useOwnerQuoteScheduling } from '@/features/quotes/hooks/useOwnerQuoteScheduling';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
+import {
+  QuoteSendPaymentChoice,
+  quotePaymentCollectionSummary,
+} from '@/features/quotes/components/QuoteSendPaymentChoice';
+import type { QuoteSendPaymentOffer } from '@/features/quotes/components/QuoteSendPaymentChoice';
+import {
+  formatUsdFromCents,
+  type QuotePaymentCollection,
+} from '@/features/quotes/shared/quotePaymentCollection';
 import { QuoteStickyBar } from '@/features/quotes/shared/components/QuoteStickyBar';
-import { QuoteServiceSummaryCard } from '@/features/quotes/shared/components/QuoteServiceSummaryCard';
+import {
+  quoteSalesTax,
+  quoteSalesTaxLabel,
+} from '@/features/quotes/shared/quoteSalesTax';
 import { resolveCustomerRequestRawText } from '@/features/quotes/shared/resolveCustomerRequestRawText';
-import type { QuoteAddonDetail } from '@/features/quotes/shared/quoteServiceSnapshot';
+import {
+  splitQuoteServiceDisplayName,
+  type QuoteAddonDetail,
+} from '@/features/quotes/shared/quoteServiceSnapshot';
 import type { QuoteCatalogService } from '@/features/quotes/server/loadQuoteServiceCatalog';
 import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
 import {
@@ -42,7 +65,8 @@ import {
   isValidServiceEditDurationInput,
   parseServiceEditDurationForSave,
 } from '@/features/services/utils/serviceEditForm';
-import { CheckIcon } from '@heroicons/react/24/solid';
+import { SubscriptionSuccessCheckmark } from '@/features/subscriptions/components/SubscriptionSuccessCheckmark';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React, {
   useCallback,
@@ -61,9 +85,20 @@ export type CreateQuoteScreenProps = {
   /** Active catalog services for “from your services” on the service step. */
   serviceCatalog?: QuoteCatalogService[];
   serviceCategories?: ServiceCategoryRow[];
+  /** Present when the shop can charge cards on Pro. */
+  paymentOffer?: QuoteSendPaymentOffer | null;
+  salesTaxEnabled?: boolean;
+  salesTaxRateBps?: number;
 };
 
-type Step = 'customer' | 'vehicle' | 'service' | 'schedule' | 'review' | 'sent';
+type Step =
+  | 'customer'
+  | 'vehicle'
+  | 'service'
+  | 'schedule'
+  | 'payment'
+  | 'review'
+  | 'sent';
 
 /** How the owner wants to handle scheduling on the date step. */
 type ScheduleMode = 'pick' | 'customer' | null;
@@ -73,25 +108,21 @@ function getTodayAtMidnight() {
   return new Date(today.getFullYear(), today.getMonth(), today.getDate());
 }
 
-/** Matches public `/q/[token]` total line (whole dollars, no cents). */
-function formatQuoteTotalFromDigits(digits: string): string {
-  if (!digits) return '—';
-  const n = parseInt(digits, 10);
-  if (Number.isNaN(n)) return '—';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(n);
-}
-
-function formatReviewDate(d: Date): string {
-  return d.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+function QuoteReviewField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="text-sm leading-5 text-white/60">{label}</p>
+      <div className="mt-1 min-w-0 break-words text-sm font-normal leading-5 text-white">
+        {children}
+      </div>
+    </div>
+  );
 }
 
 function formatTime12(hhmm: string): string {
@@ -103,7 +134,6 @@ function formatTime12(hhmm: string): string {
     : `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
 }
 
-/** Minimal RFC-style check for sending quote links. */
 function isValidEmail(value: string): boolean {
   const v = value.trim();
   if (!v) return false;
@@ -117,6 +147,9 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   quoteId,
   serviceCatalog = [],
   serviceCategories = [],
+  paymentOffer = null,
+  salesTaxEnabled = false,
+  salesTaxRateBps = 0,
 }) => {
   const isEdit = mode === 'edit' && Boolean(quoteId?.trim());
   const editId = quoteId?.trim() ?? '';
@@ -139,6 +172,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   const [preferredTimingHint, setPreferredTimingHint] = useState<string | null>(
     null
   );
+  const [extraAssets, setExtraAssets] = useState<QuoteAsset[]>([]);
   const [customerRequestDetails, setCustomerRequestDetails] = useState('');
 
   const [step, setStep] = useState<Step>('customer');
@@ -170,6 +204,8 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>(null);
   const [sendingQuote, setSendingQuote] = useState(false);
+  const [paymentCollection, setPaymentCollection] =
+    useState<QuotePaymentCollection>('none');
   const [sendError, setSendError] = useState<string | null>(null);
 
   const durationMinutes = useMemo(() => {
@@ -196,6 +232,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   const {
     weeklySchedule,
     timeOffBlocks,
+    bufferTime,
     loading: scheduleDataLoading,
     hasSavedAvailability,
   } = useOwnerQuoteScheduling();
@@ -209,6 +246,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     editHydratedRef.current = false;
     prevDurationRef.current = null;
     setPreferredTimingHint(null);
+    setExtraAssets([]);
     setCustomerRequestDetails('');
   }, [editId]);
 
@@ -223,9 +261,10 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     setCustomerPhone(
       (quote.customerPhone ?? '').replace(/\D/g, '').slice(0, 10)
     );
-    setVehicleYear(quote.vehicleYear ?? '');
-    setVehicleMake(quote.vehicleMake ?? '');
-    setVehicleModel(quote.vehicleModel ?? '');
+    const primaryVehicle = primaryVehicleFieldsFromQuote(quote);
+    setVehicleYear(primaryVehicle.year);
+    setVehicleMake(primaryVehicle.make);
+    setVehicleModel(primaryVehicle.model);
     setServiceName(quote.serviceName);
     setPriceDigits(centsToWholeDollarDigits(quote.totalCents));
     const durPick = durationPickerValueFromQuote(quote);
@@ -240,18 +279,23 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     setCatalogAddonDetails([]);
     setCatalogServicePriceCents(null);
     setPreferredTimingHint(null);
+    setExtraAssets([]);
     setCustomerRequestDetails('');
     if (quote.source === 'customer_requested') {
       const raw = resolveCustomerRequestRawText(quote);
       const parsed = parsePublicQuoteRequestNote(raw);
       setCustomerRequestDetails(parsed.detailsOnly);
       setPreferredTimingHint(parsed.preferredTiming);
+      setExtraAssets(
+        extraQuoteAssetsFromQuote(quote.assets, parsed.secondVehicleLine)
+      );
       const legacyIntake =
         !quote.requestMessage?.trim() &&
         (quote.status === 'requested' || quote.status === 'draft');
       setNote(legacyIntake ? '' : (quote.note?.trim() ?? ''));
     } else {
       setNote(quote.note ?? '');
+      setExtraAssets(extraQuoteAssetsFromQuote(quote.assets));
     }
     setSelectedDate(parseLocalDateFromYmd(quote.scheduledDate));
     setSelectedTime(pickStartTimeHHmm(quote.scheduledTime));
@@ -395,6 +439,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
       servicePriceOptionId?: string;
       servicePriceCents?: number;
       addonDetails?: QuoteAddonDetail[];
+      paymentCollection?: QuotePaymentCollection;
     } = {
       customerName: customerName.trim(),
       customerEmail: customerEmail.trim(),
@@ -422,6 +467,9 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
       if (catalogAddonDetails.length > 0) {
         body.addonDetails = catalogAddonDetails;
       }
+    }
+    if (!(isEdit && !isFirstSendFromEdit)) {
+      body.paymentCollection = paymentCollection;
     }
     return body;
   };
@@ -579,17 +627,81 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     );
   }
 
+  const quotedPriceCents = Number.isFinite(parseInt(priceDigits, 10))
+    ? parseInt(priceDigits, 10) * 100
+    : 0;
+  const reviewTax = quoteSalesTax({
+    priceCents: quotedPriceCents,
+    taxEnabled: salesTaxEnabled,
+    taxRateBps: salesTaxRateBps,
+  });
+
+  const collectsPaymentOnSend = Boolean(
+    paymentOffer?.available && !(isEdit && !isFirstSendFromEdit)
+  );
+  const stepAfterSchedule: Step = collectsPaymentOnSend ? 'payment' : 'review';
+  const paymentSummary = paymentOffer
+    ? quotePaymentCollectionSummary(
+        paymentOffer,
+        reviewTax.totalCents,
+        paymentCollection
+      )
+    : null;
+  const reviewService = splitQuoteServiceDisplayName(serviceName);
+  const reviewServiceOption =
+    (reviewOptionLabel ?? reviewService.optionLabel)?.trim() || null;
+  const reviewVehicleLine = [vehicleYear, vehicleMake, vehicleModel]
+    .map(value => value.trim())
+    .filter(Boolean)
+    .join(' ');
+  const reviewExtraVehicleLines = extraAssets.flatMap((asset, index) => {
+    const line = formatQuoteAssetLine(asset);
+    if (!line) return [];
+    return [
+      {
+        key: `${line}-${index}`,
+        text: `${extraQuoteAssetHeading(asset, index)}: ${line}`,
+      },
+    ];
+  });
+
+  const returnToSchedule = () => {
+    if (scheduleComplete) {
+      setScheduleMode('pick');
+    } else {
+      setScheduleMode(null);
+    }
+    setStep('schedule');
+  };
+
+  const flowBackHref = isEdit
+    ? ROUTES.DASHBOARD.QUOTE_DETAIL(editId)
+    : ROUTES.DASHBOARD.MAIN;
+  const flowBackLabel = isEdit ? 'Quote' : 'Dashboard';
+
   return (
     <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
-      <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 pb-32 pt-6 sm:px-6 sm:pb-32 sm:pt-8 lg:px-8 lg:pt-10">
+      {step === 'customer' ? (
+        <div className="w-full pl-4 pt-6 sm:pt-8 lg:pt-10">
+          <Link
+            href={flowBackHref}
+            className="group mb-6 inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+          >
+            <ArrowLeftIcon className="h-4 w-4 shrink-0" aria-hidden />
+            {flowBackLabel}
+          </Link>
+        </div>
+      ) : null}
+      <div
+        className={`mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 pb-32 sm:px-6 sm:pb-32 lg:px-8 ${
+          step === 'customer' ? 'pt-0' : 'pt-6 sm:pt-8 lg:pt-10'
+        }`}
+      >
         {step === 'customer' ? (
           <QuoteFlowHeader
-            backHref={
-              isEdit
-                ? ROUTES.DASHBOARD.QUOTE_DETAIL(editId)
-                : ROUTES.DASHBOARD.MAIN
-            }
-            backLabel={isEdit ? 'Quote' : 'Dashboard'}
+            backHref={flowBackHref}
+            backLabel={flowBackLabel}
+            hideBackLink
             title={
               isFinishingCustomerRequest
                 ? 'Create quote'
@@ -600,8 +712,9 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
             subtitle={
               isEdit && !isFinishingCustomerRequest
                 ? 'Update customer, service, and schedule, then save. Your customer will see changes the next time they open the link.'
-                : 'Customer, service, then date — or let them choose when they accept.'
+                : undefined
             }
+            hideDividerAfterTitle={!isEdit || isFinishingCustomerRequest}
           />
         ) : null}
 
@@ -647,6 +760,32 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 ? 'Pick an available slot for this quote.'
                 : 'Choose a date yourself, or let your customer pick when they accept.'}
             </p>
+          </div>
+        ) : null}
+
+        {step === 'payment' ? (
+          <div className="mb-6">
+            <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+              Payment
+            </h1>
+            <p className="mt-0.5 text-sm text-gray-500">
+              Choose what they pay to accept.
+            </p>
+          </div>
+        ) : null}
+
+        {step === 'review' ? (
+          <div className="mb-6 flex items-end justify-between gap-3">
+            <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+              {isEdit && !isFirstSendFromEdit ? 'Review changes' : 'Review'}
+            </h1>
+            <button
+              type="button"
+              onClick={() => setStep('customer')}
+              className="cursor-pointer text-sm font-medium text-white/60 transition-colors hover:text-white"
+            >
+              Edit
+            </button>
           </div>
         ) : null}
 
@@ -763,6 +902,19 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   required={false}
                 />
               </div>
+              {extraAssets.map((asset, index) => {
+                const line = formatQuoteAssetLine(asset);
+                if (!line) return null;
+                return (
+                  <p
+                    key={`${asset.type}-${line}-${index}`}
+                    className="mt-3 text-sm text-gray-400"
+                  >
+                    {extraQuoteAssetHeading(asset, index)}:{' '}
+                    <span className="text-gray-200">{line}</span>
+                  </p>
+                );
+              })}
             </GlassCard>
           </div>
         )}
@@ -854,7 +1006,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     setSelectedDate(null);
                     setSelectedTime(null);
                     setScheduleMode('customer');
-                    setStep('review');
+                    setStep(stepAfterSchedule);
                   }}
                   className="flex w-full min-h-[52px] cursor-pointer touch-manipulation items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-left text-zinc-300 transition-colors hover:border-white/20 hover:bg-white/[0.06]"
                 >
@@ -904,6 +1056,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   serviceDurationMinutes={durationMinutes}
                   existingBookings={blockedSlots}
                   timeOffBlocks={timeOffBlocks}
+                  bufferTime={bufferTime}
                   selectedDate={selectedDate}
                   onSelectDate={handleSelectDate}
                   minDate={getTodayAtMidnight()}
@@ -914,6 +1067,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   weeklySchedule={weeklySchedule}
                   existingBookings={blockedSlots}
                   timeOffBlocks={timeOffBlocks}
+                  bufferTime={bufferTime}
                   selectedTime={selectedTime}
                   onSelectTime={setSelectedTime}
                 />
@@ -922,295 +1076,176 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
           </div>
         )}
 
-        {step === 'review' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold tracking-tight text-white">
-                {isEdit && !isFirstSendFromEdit
-                  ? 'Review changes'
-                  : 'Review quote'}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setStep('customer')}
-                className="cursor-pointer text-sm font-medium text-zinc-400 underline underline-offset-4 transition-colors hover:text-white"
-              >
-                Edit
-              </button>
+        {step === 'payment' && paymentOffer ? (
+          <QuoteSendPaymentChoice
+            offer={paymentOffer}
+            totalCents={reviewTax.totalCents}
+            value={paymentCollection}
+            onChange={setPaymentCollection}
+          />
+        ) : null}
+
+        {step === 'sent' ? (
+          <div className="mb-8 flex flex-col items-center text-center">
+            <div className="mb-7">
+              <SubscriptionSuccessCheckmark />
             </div>
-            <GlassCard
-              padding="md"
-              rounded="rounded-2xl"
-              blurColor="bg-zinc-500"
-              showBlur={true}
-              className="w-full"
-            >
-              <div className="space-y-4">
-                <div>
-                  <p className="mb-1 text-sm font-medium text-gray-500">
-                    Service
-                  </p>
-                  <QuoteServiceSummaryCard
-                    serviceName={serviceName.trim()}
-                    optionLabel={reviewOptionLabel}
-                    durationMinutes={durationMinutes}
-                    totalCents={
-                      Number.isFinite(parseInt(priceDigits, 10))
-                        ? parseInt(priceDigits, 10) * 100
-                        : 0
-                    }
-                    addOns={reviewAddOns}
-                  />
-                </div>
-                <div className="h-px bg-white/10" />
-
-                <div>
-                  <p className="mb-1 text-sm font-medium text-gray-500">
-                    Date &amp; time
-                  </p>
-                  {scheduleComplete && selectedDate && selectedTime ? (
-                    <>
-                      <p className="font-medium text-white">
-                        {formatReviewDate(selectedDate)}
-                      </p>
-                      <p className="mt-0.5 text-sm text-gray-400">
-                        Starts {formatTime12(selectedTime)}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="font-medium text-white">
-                      Customer will choose when accepting
-                    </p>
-                  )}
-                </div>
-                <div className="h-px bg-white/10" />
-
-                <div>
-                  <p className="mb-1 text-sm font-medium text-gray-500">
-                    Customer
-                  </p>
-                  <p className="font-medium text-white">
-                    {customerName.trim()}
-                  </p>
-                  <p className="break-words text-sm text-gray-400">
-                    {customerEmail.trim()}
-                  </p>
-                  {customerPhone.length === 10 ? (
-                    <p className="mt-0.5 text-sm text-gray-400 tabular-nums">
-                      {formatUsPhoneDigits(customerPhone)}
-                    </p>
-                  ) : null}
-                </div>
-                {vehicleYear.trim() ||
-                vehicleMake.trim() ||
-                vehicleModel.trim() ? (
-                  <>
-                    <div className="h-px bg-white/10" />
-                    <div>
-                      <p className="mb-1 text-sm font-medium text-gray-500">
-                        Vehicle
-                      </p>
-                      <p className="font-medium text-white">
-                        {[
-                          vehicleYear.trim(),
-                          vehicleMake.trim(),
-                          vehicleModel.trim(),
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                      </p>
-                    </div>
-                  </>
-                ) : null}
-
-                {customerRequestDetails.trim() ? (
-                  <>
-                    <div className="h-px bg-white/10" />
-                    <div>
-                      <p className="mb-1 text-sm font-medium text-gray-500">
-                        Customer note
-                      </p>
-                      <p className="whitespace-pre-wrap text-sm text-gray-400">
-                        {customerRequestDetails.trim()}
-                      </p>
-                    </div>
-                  </>
-                ) : null}
-
-                {note.trim().length > 0 && (
-                  <>
-                    <div className="h-px bg-white/10" />
-                    <div>
-                      <p className="mb-1 text-sm font-medium text-gray-500">
-                        Your notes
-                      </p>
-                      <p className="whitespace-pre-wrap text-sm text-gray-400">
-                        {note.trim()}
-                      </p>
-                    </div>
-                  </>
-                )}
-                <div className="h-px bg-white/10" />
-                <div className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2">
-                  <p className="text-sm font-medium text-gray-300">Total</p>
-                  <p className="text-lg font-bold text-white">
-                    {formatQuoteTotalFromDigits(priceDigits)}
-                  </p>
-                </div>
-              </div>
-            </GlassCard>
-          </div>
-        )}
-
-        {step === 'sent' && (
-          <div className="flex w-full flex-col py-6 pb-14">
-            <div className="mb-7 flex h-20 w-20 self-center items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/25">
-              <CheckIcon className="h-10 w-10 text-white" />
-            </div>
-            <h2 className="mb-2 text-center text-2xl font-bold text-white">
+            <h2 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
               {isEdit && !isFirstSendFromEdit ? 'Quote updated' : 'Quote sent'}
             </h2>
-            <p className="mx-auto mb-8 max-w-sm text-center text-sm text-gray-400">
+            <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-400">
               {isEdit && !isFirstSendFromEdit
-                ? 'Your changes are saved. The customer will see the updated details the next time they open their link.'
-                : 'The quote has been emailed to your customer. They can review the details and accept or decline from that email.'}
+                ? `${customerName.trim() || 'Your customer'} will see the updates the next time they open the quote.`
+                : `Emailed to ${customerName.trim() || 'your customer'}. They can accept or decline from there.`}
             </p>
-            <GlassCard
-              padding="none"
-              rounded="rounded-2xl"
-              blurColor="bg-emerald-500"
-              showBlur={true}
-              className="mb-7 w-full"
-            >
-              <div className="border-b border-white/10 px-4 py-3">
-                <p className="text-xs font-semibold text-gray-400">
-                  {isEdit && !isFirstSendFromEdit
-                    ? 'Updated summary'
-                    : 'Quote summary'}
-                </p>
-              </div>
-              <div className="space-y-4 p-4 sm:p-6">
-                <div>
-                  <p className="mb-1.5 text-sm font-medium text-gray-500">
-                    Service
-                  </p>
-                  <QuoteServiceSummaryCard
-                    serviceName={serviceName.trim()}
-                    optionLabel={reviewOptionLabel}
-                    durationMinutes={durationMinutes}
-                    totalCents={
-                      Number.isFinite(parseInt(priceDigits, 10))
-                        ? parseInt(priceDigits, 10) * 100
-                        : 0
-                    }
-                    addOns={reviewAddOns}
-                  />
-                </div>
-                <div className="h-px bg-white/10" />
-                <div>
-                  <p className="mb-0.5 text-sm font-medium text-gray-500">
-                    Customer
-                  </p>
-                  <p className="font-medium text-white">
-                    {customerName.trim()}
-                  </p>
-                  <p className="break-words text-sm text-gray-400">
+          </div>
+        ) : null}
+
+        {(step === 'review' || step === 'sent') && (
+          <div className="space-y-4">
+            <section className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] text-white">
+              <ul className="space-y-3 px-4 py-4 text-sm sm:px-6 sm:py-5">
+                <li className="flex items-baseline justify-between gap-4">
+                  <span className="min-w-0 break-words">
+                    {reviewService.title}
+                    {reviewServiceOption ? (
+                      <span className="text-white/60">
+                        {' '}
+                        · {reviewServiceOption}
+                      </span>
+                    ) : null}
+                    <span className="mt-0.5 block text-white/60">
+                      {formatDurationMinutes(durationMinutes)}
+                    </span>
+                  </span>
+                </li>
+                {(reviewAddOns ?? [])
+                  .filter(addOn => addOn.name.trim())
+                  .map(addOn => (
+                    <li
+                      key={addOn.id || addOn.name}
+                      className="flex items-baseline justify-between gap-4"
+                    >
+                      <span className="min-w-0 break-words">
+                        {addOn.name.trim()}
+                      </span>
+                      <span className="shrink-0 tabular-nums text-white/60">
+                        {formatUsdFromCents(addOn.priceCents)}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            </section>
+
+            <section className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] text-white">
+              <div className="grid grid-cols-1 gap-5 px-4 py-4 sm:grid-cols-2 sm:gap-x-8 sm:px-6 sm:py-5">
+                <QuoteReviewField label="Customer">
+                  <p>{customerName.trim()}</p>
+                  <p className="break-words text-sm leading-5 text-white/60">
                     {customerEmail.trim()}
                   </p>
                   {customerPhone.length === 10 ? (
-                    <p className="mt-0.5 text-sm text-gray-400 tabular-nums">
+                    <p className="text-sm leading-5 text-white/60 tabular-nums">
                       {formatUsPhoneDigits(customerPhone)}
                     </p>
                   ) : null}
-                </div>
-                {vehicleYear.trim() ||
-                vehicleMake.trim() ||
-                vehicleModel.trim() ? (
-                  <>
-                    <div className="h-px bg-white/10" />
-                    <div>
-                      <p className="mb-0.5 text-sm font-medium text-gray-500">
-                        Vehicle
-                      </p>
-                      <p className="font-medium text-white">
-                        {[
-                          vehicleYear.trim(),
-                          vehicleMake.trim(),
-                          vehicleModel.trim(),
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                      </p>
-                    </div>
-                  </>
-                ) : null}
-                <div className="h-px bg-white/10" />
-                <div>
-                  <p className="mb-0.5 text-sm font-medium text-gray-500">
-                    Date &amp; time
+                </QuoteReviewField>
+                <QuoteReviewField label="When">
+                  <p>
+                    {scheduleComplete && selectedDate && selectedTime
+                      ? `${selectedDate.toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                        })} · ${formatTime12(selectedTime)}`
+                      : 'Customer will choose when accepting'}
                   </p>
-                  {scheduleComplete && selectedDate && selectedTime ? (
-                    <>
-                      <p className="font-medium text-white">
-                        {formatReviewDate(selectedDate)}
+                </QuoteReviewField>
+                {reviewVehicleLine || reviewExtraVehicleLines.length > 0 ? (
+                  <QuoteReviewField
+                    label={
+                      reviewExtraVehicleLines.length > 0
+                        ? 'Vehicles'
+                        : 'Vehicle'
+                    }
+                  >
+                    {reviewVehicleLine ? <p>{reviewVehicleLine}</p> : null}
+                    {reviewExtraVehicleLines.map(row => (
+                      <p key={row.key} className="text-sm text-white/60">
+                        {row.text}
                       </p>
-                      <p className="text-sm text-gray-400">
-                        Starts {formatTime12(selectedTime)}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="font-medium text-white">
-                      Customer will choose when accepting
-                    </p>
-                  )}
-                </div>
-                {customerRequestDetails.trim() ? (
-                  <>
-                    <div className="h-px bg-white/10" />
-                    <div>
-                      <p className="mb-0.5 text-sm font-medium text-gray-500">
-                        Customer note
-                      </p>
-                      <p className="whitespace-pre-wrap text-sm text-gray-400">
-                        {customerRequestDetails.trim()}
-                      </p>
-                    </div>
-                  </>
+                    ))}
+                  </QuoteReviewField>
                 ) : null}
-                {note.trim().length > 0 && (
-                  <>
-                    <div className="h-px bg-white/10" />
-                    <div>
-                      <p className="mb-0.5 text-sm font-medium text-gray-500">
-                        Your notes
+                {collectsPaymentOnSend && paymentSummary ? (
+                  <QuoteReviewField label="Payment">
+                    <p>{paymentSummary.label}</p>
+                    {paymentSummary.detail.includes('$') ? (
+                      <p className="text-sm text-white/60">
+                        {paymentSummary.detail}
                       </p>
-                      <p className="whitespace-pre-wrap text-sm text-gray-400">
-                        {note.trim()}
-                      </p>
-                    </div>
-                  </>
-                )}
-                <div className="h-px bg-white/10" />
-                <div className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2">
-                  <p className="text-sm font-medium text-gray-300">Total</p>
-                  <p className="text-lg font-bold text-white">
-                    {formatQuoteTotalFromDigits(priceDigits)}
-                  </p>
-                </div>
+                    ) : null}
+                  </QuoteReviewField>
+                ) : null}
               </div>
-            </GlassCard>
-            <Link
-              href={
-                isEdit
-                  ? ROUTES.DASHBOARD.QUOTE_DETAIL(editId)
-                  : ROUTES.DASHBOARD.MAIN
-              }
-              className="inline-flex min-h-[48px] cursor-pointer items-center justify-center self-center rounded-xl bg-white px-6 text-sm font-semibold text-black transition-colors hover:bg-gray-100"
-            >
-              {isEdit ? 'Back to quote' : 'Back to dashboard'}
-            </Link>
+
+              {customerRequestDetails.trim() || note.trim() ? (
+                <>
+                  <div className="mx-4 border-t border-white/[0.08] sm:mx-6" />
+                  <p className="whitespace-pre-wrap px-4 py-4 text-sm leading-6 text-white/60 sm:px-6">
+                    <span className="font-medium text-white">Notes: </span>
+                    {[customerRequestDetails.trim(), note.trim()]
+                      .filter(Boolean)
+                      .join('\n\n')}
+                  </p>
+                </>
+              ) : null}
+
+              <div className="mx-4 border-t border-white/[0.08] sm:mx-6" />
+              <dl className="flex flex-col gap-2 px-4 py-4 text-base sm:px-6">
+                {reviewTax.taxCents > 0 ? (
+                  <>
+                    <div className="flex items-center justify-between gap-4 text-white/60">
+                      <dt>Quote</dt>
+                      <dd className="tabular-nums text-white">
+                        {formatUsdFromCents(quotedPriceCents)}
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-4 text-white/60">
+                      <dt>{quoteSalesTaxLabel(reviewTax.rateBps)}</dt>
+                      <dd className="tabular-nums text-white">
+                        {formatUsdFromCents(reviewTax.taxCents)}
+                      </dd>
+                    </div>
+                  </>
+                ) : null}
+                <div className="flex items-baseline justify-between gap-4 font-semibold">
+                  <dt>Total</dt>
+                  <dd className="text-xl tabular-nums">
+                    {quotedPriceCents > 0
+                      ? formatUsdFromCents(reviewTax.totalCents)
+                      : '—'}
+                  </dd>
+                </div>
+              </dl>
+            </section>
           </div>
         )}
+
+        {step === 'sent' ? (
+          <Button
+            href={
+              isEdit
+                ? ROUTES.DASHBOARD.QUOTE_DETAIL(editId)
+                : ROUTES.DASHBOARD.MAIN
+            }
+            variant="inverse"
+            fullWidth
+            className="mt-6"
+          >
+            {isEdit ? 'Back to quote' : 'Back to dashboard'}
+          </Button>
+        ) : null}
       </div>
 
       {/* Match public booking flow: sticky bottom bar + inverse primary (see AvailabilityBookingPage) */}
@@ -1390,11 +1425,33 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   size="sm"
                   className="min-w-0 flex-1 font-semibold"
                   disabled={!scheduleComplete}
-                  onClick={() => setStep('review')}
+                  onClick={() => setStep(stepAfterSchedule)}
                 >
-                  Review quote
+                  Continue
                 </Button>
               ) : null}
+            </div>
+          )}
+          {step === 'payment' && (
+            <div className="flex items-stretch gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="shrink-0 self-auto px-5"
+                onClick={returnToSchedule}
+              >
+                Back
+              </Button>
+              <Button
+                type="button"
+                variant="inverse"
+                size="sm"
+                className="min-w-0 flex-1 font-semibold"
+                onClick={() => setStep('review')}
+              >
+                Continue
+              </Button>
             </div>
           )}
           {step === 'review' && (
@@ -1405,12 +1462,11 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 size="sm"
                 className="shrink-0 self-auto px-5"
                 onClick={() => {
-                  if (scheduleComplete) {
-                    setScheduleMode('pick');
-                  } else {
-                    setScheduleMode(null);
+                  if (collectsPaymentOnSend) {
+                    setStep('payment');
+                    return;
                   }
-                  setStep('schedule');
+                  returnToSchedule();
                 }}
               >
                 Back

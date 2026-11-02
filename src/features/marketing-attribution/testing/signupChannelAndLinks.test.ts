@@ -49,6 +49,22 @@ describe('deriveSignupAttributionChannel', () => {
         utmCampaign: 'outreach-july',
       })
     ).toBe('social_dm');
+
+    expect(
+      deriveSignupAttributionChannel({
+        utmSource: 'instagram',
+        utmMedium: 'cpc',
+        utmCampaign: 'ig-prospecting',
+      })
+    ).toBe('meta_ads');
+
+    expect(
+      deriveSignupAttributionChannel({
+        utmSource: 'instagram',
+        utmMedium: 'paid',
+        utmCampaign: 'ig-retarget',
+      })
+    ).toBe('meta_ads');
   });
 
   it('classifies blog and site CTAs', () => {

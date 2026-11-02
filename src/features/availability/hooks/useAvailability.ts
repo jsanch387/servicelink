@@ -2,8 +2,9 @@
 
 /**
  * Loads and caches the current user's business availability.
- * - Refetches whenever the Availability screen mounts so lead time + time off
- *   always match the DB (including canonical range / all-day blocks).
+ * - Refetches whenever the Availability screen mounts so lead time, buffer
+ *   time, and time off always match the DB (including canonical range /
+ *   all-day blocks).
  * - After save, use updateFromSave(responseData) to update cache immediately.
  */
 

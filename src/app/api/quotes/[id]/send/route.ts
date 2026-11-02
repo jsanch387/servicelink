@@ -15,11 +15,13 @@ import {
   shortUserIdForLog,
   supabaseErrorForLogs,
 } from '@/features/quotes/server/quoteSendRouteLog';
+import { loadQuoteSalesTax } from '@/features/quotes/server/loadQuoteSalesTax';
+import { resolveQuotePaymentSnapshot } from '@/features/quotes/server/quotePaymentSnapshot';
 import { sendExistingQuoteAsSent } from '@/features/quotes/server/sendExistingQuoteAsSent';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { assertOwnerQuoteSendRateLimits } from '@/server/rateLimit/ownerQuoteSendRateLimit';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextRequest } from 'next/server';
 
 const ROUTE_LABEL = 'POST /api/quotes/[id]/send';
@@ -107,7 +109,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(supabase, 'quotes.write');
     if (!resolved.ok) {
       logQuoteSend(requestId, ROUTE_LABEL, 'warn', 'business_resolve_failed', {
         authMethod,
@@ -149,11 +151,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       business_name: string | null;
     };
 
-    if (
-      businessRow.id !== resolved.businessId ||
-      !businessRow.profile_id ||
-      businessRow.profile_id !== user.id
-    ) {
+    if (businessRow.id !== resolved.businessId) {
       logQuoteSend(
         requestId,
         ROUTE_LABEL,
@@ -199,6 +197,24 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ||
       request.nextUrl.origin;
 
+    const salesTax = await loadQuoteSalesTax(
+      admin,
+      resolved.businessId,
+      parsed.data.priceCents
+    );
+    const payment = await resolveQuotePaymentSnapshot(admin, {
+      businessId: resolved.businessId,
+      priceCents: salesTax.totalCents,
+      requested: parsed.data.paymentCollection,
+    });
+    if (!payment.ok) {
+      return quoteSendJsonResponse(
+        requestId,
+        { success: false, error: payment.error },
+        payment.status
+      );
+    }
+
     const result = await sendExistingQuoteAsSent({
       admin,
       quoteId,
@@ -206,6 +222,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       ownerUserId: user.id,
       businessDisplayName,
       payload: parsed.data,
+      payment: payment.snapshot,
+      salesTax,
       siteOrigin,
     });
 

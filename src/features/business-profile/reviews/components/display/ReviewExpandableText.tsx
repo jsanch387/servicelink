@@ -3,6 +3,7 @@
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import React, { useMemo, useState, useSyncExternalStore } from 'react';
 import {
+  hasVisibleReviewBody,
   reviewCollapsedMaxChars,
   reviewTextNeedsExpand,
   truncateReviewText,
@@ -54,7 +55,7 @@ export const ReviewExpandableText: React.FC<ReviewExpandableTextProps> = ({
     return truncateReviewText(text, maxChars);
   }, [text, needsExpand, expanded, maxChars]);
 
-  if (!text.trim()) {
+  if (!hasVisibleReviewBody(text)) {
     return null;
   }
 

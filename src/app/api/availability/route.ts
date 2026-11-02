@@ -7,34 +7,26 @@ import {
   getAvailabilityForBusiness,
   upsertAvailabilityForBusiness,
 } from '@/features/availability/services/availabilityService';
-import { isMinimumNoticeValue } from '@/features/availability/types/availability';
+import {
+  isBufferTimeValue,
+  isMinimumNoticeValue,
+} from '@/features/availability/types/availability';
 import { normalizeAvailabilityRow } from '@/features/availability/utils/normalizeAvailabilityRow';
 import { parseTimeOffBlocksFromRequestBody } from '@/features/availability/utils/timeOffBlocksPayload';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
 async function getAuthAndBusinessId(supabase: SupabaseClient) {
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { error: 'Authentication required', status: 401 as const };
+  const resolved = await requireBusinessPermission(
+    supabase,
+    'availability.write'
+  );
+  if (!resolved.ok) {
+    return { error: resolved.error, status: resolved.status };
   }
-
-  const { data: businessProfile, error: businessError } = await supabase
-    .from('business_profiles')
-    .select('id')
-    .eq('profile_id', user.id)
-    .single();
-
-  if (businessError || !businessProfile) {
-    return { error: 'Business profile not found', status: 404 as const };
-  }
-
-  return { businessId: businessProfile.id };
+  return { businessId: resolved.businessId };
 }
 
 export async function GET() {
@@ -94,6 +86,10 @@ export async function POST(request: NextRequest) {
       isMinimumNoticeValue(body.minimumNotice)
         ? body.minimumNotice
         : 'none';
+    const bufferTime =
+      typeof body.bufferTime === 'string' && isBufferTimeValue(body.bufferTime)
+        ? body.bufferTime
+        : 'none';
     const selectedPreset =
       typeof body.selectedPreset === 'string' &&
       SELECTED_PRESET_VALUES.includes(
@@ -123,6 +119,7 @@ export async function POST(request: NextRequest) {
       {
         accept_bookings: acceptBookings,
         minimum_notice: minimumNotice,
+        buffer_time: bufferTime,
         weekly_schedule: schedule,
         selected_preset: selectedPreset,
         time_off_blocks: timeOffParsed.value,

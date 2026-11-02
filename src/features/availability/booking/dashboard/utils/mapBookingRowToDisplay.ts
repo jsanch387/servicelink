@@ -4,6 +4,7 @@
  */
 
 import { normalizeWallClockHm } from '@/features/availability/types/blockTime';
+import { isBookingSource } from '@/features/booking-attribution/constants';
 import type {
   AvailabilityBookingDisplay,
   AvailabilityBookingJobDisplay,
@@ -58,6 +59,7 @@ export interface BookingRow {
   visit_job_index?: number | null;
   visit_job_count?: number | null;
   job_details?: unknown | null;
+  assigned_user_id?: string | null;
 }
 
 /** Postgres time "HH:mm:ss" or "HH:mm" → "2:30 PM" */
@@ -145,10 +147,9 @@ export function mapBookingRowToDisplay(
 
   return {
     id: row.id,
-    bookingSource:
-      row.booking_source === 'public' || row.booking_source === 'owner'
-        ? row.booking_source
-        : null,
+    bookingSource: isBookingSource(row.booking_source)
+      ? row.booking_source
+      : null,
     customerName: row.customer_name,
     customerPhone: row.customer_phone ?? '',
     customerEmail: row.customer_email ?? '',
@@ -179,5 +180,6 @@ export function mapBookingRowToDisplay(
     },
     notes: row.customer_notes ?? '',
     createdAt: row.created_at,
+    assignedUserId: row.assigned_user_id?.trim() || null,
   };
 }

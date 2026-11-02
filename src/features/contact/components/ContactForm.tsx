@@ -38,13 +38,24 @@ const initialInAppForm: InAppFormState = {
   website: '',
 };
 
+type ContactFormBaseProps = {
+  compact?: boolean;
+  onDone?: () => void;
+  instanceId?: string;
+};
+
 export type ContactFormProps =
-  | { variant?: 'public' }
-  | { variant: 'inApp'; accountEmail: string };
+  | ({ variant?: 'public' } & ContactFormBaseProps)
+  | ({ variant: 'inApp'; accountEmail: string } & ContactFormBaseProps);
 
 export function ContactForm(props: ContactFormProps = {}) {
   const variant = props.variant ?? 'public';
   const isInApp = variant === 'inApp';
+  const compact = props.compact === true;
+  const onDone = props.onDone;
+  const instanceId = props.instanceId ?? 'contact';
+  const accountEmail =
+    props.variant === 'inApp' ? props.accountEmail : undefined;
 
   const [publicForm, setPublicForm] =
     useState<PublicFormState>(initialPublicForm);
@@ -145,7 +156,12 @@ export function ContactForm(props: ContactFormProps = {}) {
   if (submitted) {
     return (
       <ContactFormSuccess
-        doneHref={isInApp ? ROUTES.DASHBOARD.SETTINGS : undefined}
+        compact={compact}
+        replyEmail={accountEmail}
+        onDone={onDone}
+        doneHref={
+          isInApp && !onDone && !compact ? ROUTES.DASHBOARD.MAIN : undefined
+        }
       />
     );
   }
@@ -163,7 +179,11 @@ export function ContactForm(props: ContactFormProps = {}) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 space-y-5"
+      className={
+        compact
+          ? 'space-y-4'
+          : 'rounded-2xl border border-white/10 bg-white/[0.04] p-4 space-y-5'
+      }
       noValidate
     >
       <Select
@@ -198,7 +218,7 @@ export function ContactForm(props: ContactFormProps = {}) {
         onChange={updateMessage}
         placeholder="Tell us what you need — the more detail, the better we can help."
         required
-        rows={6}
+        rows={compact ? 4 : 6}
         maxLength={5000}
         hideCharCount
         error={fieldErrors.message}
@@ -209,9 +229,9 @@ export function ContactForm(props: ContactFormProps = {}) {
         className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden"
         aria-hidden
       >
-        <label htmlFor="contact-website">Website</label>
+        <label htmlFor={`${instanceId}-website`}>Website</label>
         <input
-          id="contact-website"
+          id={`${instanceId}-website`}
           type="text"
           name="website"
           tabIndex={-1}

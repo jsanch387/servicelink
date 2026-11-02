@@ -1,9 +1,11 @@
 import { ROUTES } from '@/constants/routes';
-import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { CreateQuoteScreen } from '@/features/quotes';
+import { loadQuoteTaxPreview } from '@/features/quotes/server/loadQuoteSalesTax';
+import { loadQuoteSendPaymentOffer } from '@/features/quotes/server/quotePaymentSnapshot';
 import { loadQuoteServiceCatalog } from '@/features/quotes/server/loadQuoteServiceCatalog';
 import { getServiceCategories } from '@/features/services/categories/api/getServiceCategories';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { requireCompletedShopPage } from '@/features/team/server/requireDashboardPageAccess';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -18,26 +20,12 @@ export default async function DashboardQuoteEditPage({ params }: PageProps) {
     redirect(ROUTES.DASHBOARD.QUOTES);
   }
 
-  const supabase = await createSupabaseServerClient();
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    redirect(ROUTES.AUTH.LOGIN);
-  }
-
-  const stateResult = await getOnboardingState(user.id, supabase);
-  if (!stateResult.success || stateResult.data?.status !== 'completed') {
-    redirect(ROUTES.DASHBOARD.MAIN);
-  }
+  const { supabase, context } = await requireCompletedShopPage('quotes.write');
 
   const { data: businessRow, error: businessError } = await supabase
     .from('business_profiles')
     .select('id, business_slug, business_type')
-    .eq('profile_id', user.id)
+    .eq('id', context.businessId)
     .maybeSingle();
 
   if (businessError || !businessRow) {
@@ -50,10 +38,13 @@ export default async function DashboardQuoteEditPage({ params }: PageProps) {
     business_type?: string | null;
   };
 
-  const [serviceCatalog, categoriesResult] = await Promise.all([
-    loadQuoteServiceCatalog(supabase, business.id),
-    getServiceCategories(business.id),
-  ]);
+  const [serviceCatalog, categoriesResult, paymentOffer, salesTax] =
+    await Promise.all([
+      loadQuoteServiceCatalog(supabase, business.id),
+      getServiceCategories(business.id),
+      loadQuoteSendPaymentOffer(createSupabaseAdminClient(), business.id),
+      loadQuoteTaxPreview(createSupabaseAdminClient(), business.id),
+    ]);
 
   return (
     <CreateQuoteScreen
@@ -63,6 +54,9 @@ export default async function DashboardQuoteEditPage({ params }: PageProps) {
       quoteId={quoteId.trim()}
       serviceCatalog={serviceCatalog}
       serviceCategories={categoriesResult.data ?? []}
+      paymentOffer={paymentOffer}
+      salesTaxEnabled={salesTax.salesTaxEnabled}
+      salesTaxRateBps={salesTax.salesTaxRateBps}
     />
   );
 }

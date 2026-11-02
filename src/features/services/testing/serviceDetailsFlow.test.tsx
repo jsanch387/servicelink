@@ -63,13 +63,6 @@ vi.mock('@/components/shared', () => ({
   ),
 }));
 
-vi.mock(
-  '@/features/availability/booking/components/BookCalendarLoadingSkeleton',
-  () => ({
-    BookCalendarLoadingSkeleton: () => <div>calendar loading</div>,
-  })
-);
-
 vi.mock('@/features/services/booking-flow/PriceOptionSelector', () => ({
   PriceOptionSelector: ({
     options,
@@ -144,14 +137,20 @@ const mobileOnlyLocation = {
   city: 'Austin',
   state: 'TX',
   zip: '78701',
+  shopCity: '',
+  shopState: '',
+  shopZip: '',
   hasCompleteShopAddress: false,
 };
 
 const bothLocation = {
   ...mobileOnlyLocation,
   mode: 'both' as const,
-  shopAddressLabel: '100 Main St, Austin, TX 78701',
-  shopStreet: '100 Main St',
+  shopAddressLabel: '410 E Pecan St, Pflugerville, TX 78660',
+  shopStreet: '410 E Pecan St',
+  shopCity: 'Pflugerville',
+  shopState: 'TX',
+  shopZip: '78660',
   hasCompleteShopAddress: true,
 };
 
@@ -267,7 +266,7 @@ describe('ServiceDetailsScreen flow', () => {
     expect(screen.getByText(/optional add-ons/i)).toBeTruthy();
   });
 
-  it('shows the calendar skeleton immediately after Continue is clicked', async () => {
+  it('shows the booking loader immediately after Continue is clicked', async () => {
     const user = userEvent.setup();
     render(
       <ServiceDetailsScreen
@@ -283,7 +282,9 @@ describe('ServiceDetailsScreen flow', () => {
     await user.click(screen.getByRole('button', { name: /pick sedan/i }));
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
 
-    expect(screen.getByText('calendar loading')).toBeTruthy();
+    expect(
+      screen.getByRole('progressbar', { name: /loading booking/i })
+    ).toBeTruthy();
   });
 
   it('owner manual booking navigates via URL with priceOptionId, add-ons, and detailsStep', async () => {
@@ -333,6 +334,28 @@ describe('ServiceDetailsScreen flow', () => {
       screen.getByRole('heading', { name: /choose pricing option/i })
     ).toBeTruthy();
     expect(screen.getByText(/optional add-ons/i)).toBeTruthy();
+  });
+
+  it('skips the price summary and opens location when there is nothing to configure', () => {
+    render(
+      <ServiceDetailsScreen
+        businessSlug="acme-auto"
+        serviceId="svc-1"
+        service={{ ...baseService, priceOptionsEnabled: false }}
+        addOns={[]}
+        priceOptions={[]}
+        serviceLocation={bothLocation}
+      />
+    );
+
+    expect(screen.queryByText('summary')).toBeNull();
+    expect(
+      screen.getByRole('heading', { name: /where should service happen/i })
+    ).toBeTruthy();
+    expect(screen.getByRole('link', { name: /back to profile/i })).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: /back to options/i })
+    ).toBeNull();
   });
 
   it('asks for mobile vs shop before calendar when business offers both', async () => {

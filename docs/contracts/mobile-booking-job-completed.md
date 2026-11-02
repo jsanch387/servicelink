@@ -182,7 +182,7 @@ Disable **Complete** until local `amountDueCents === 0`.
 
 ## Customer notification (what the owner’s customer receives)
 
-- **SMS (primary):** `Your receipt is ready: {link}` (+ soft review ask when eligible). Link prefers `/r/{shortCode}`.
+- **SMS (primary):** `{Business}: Your receipt is ready: {link}` (+ soft review ask when eligible). Link prefers `/r/{shortCode}`.
 - **Email (fallback):** Same intent, only if SMS skipped/failed
 - **Link:** `/r/{shortCode}` when available (fallback `/i/{invoicePublicToken}`) — HTML receipt + review button when eligible
 - **Never both** SMS and email on the same completion

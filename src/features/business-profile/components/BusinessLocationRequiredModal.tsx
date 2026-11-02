@@ -9,33 +9,26 @@ import {
   SERVICE_AREA_PROMPT_DISMISSIBLE,
   serviceAreaSessionSkipKey,
 } from '@/features/business-profile/constants/serviceAreaPrompt';
+import {
+  DEFAULT_SERVICE_RADIUS_MILES,
+  SERVICE_RADIUS_OPTIONS,
+} from '@/features/business-profile/constants/serviceRadius';
 import { LocationAutocomplete } from '@/features/location/components/LocationAutocomplete';
 import type { StructuredLocation } from '@/features/location/types/location';
 import React, { useEffect, useState } from 'react';
 import { FiNavigation } from 'react-icons/fi';
 
-const SERVICE_RADIUS_OPTIONS = [
-  { value: '5', label: '5 miles' },
-  { value: '10', label: '10 miles' },
-  { value: '15', label: '15 miles' },
-  { value: '20', label: '20 miles' },
-  { value: '25', label: '25 miles' },
-  { value: '30', label: '30 miles' },
-  { value: '40', label: '40 miles' },
-  { value: '50', label: '50 miles' },
-  { value: '75', label: '75 miles' },
-  { value: '100', label: '100 miles' },
-] as const;
-
 interface BusinessLocationRequiredModalProps {
   businessProfileId: string;
   /** When true, owner already confirmed a primary service area in the DB. */
   hasConfirmedServiceArea: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
 export function BusinessLocationRequiredModal({
   businessProfileId,
   hasConfirmedServiceArea,
+  onOpenChange,
 }: BusinessLocationRequiredModalProps) {
   const skipKey = serviceAreaSessionSkipKey(businessProfileId);
 
@@ -44,7 +37,7 @@ export function BusinessLocationRequiredModal({
   const [locationQuery, setLocationQuery] = useState('');
   const [selectedLocation, setSelectedLocation] =
     useState<StructuredLocation | null>(null);
-  const [radius, setRadius] = useState('25');
+  const [radius, setRadius] = useState(String(DEFAULT_SERVICE_RADIUS_MILES));
   const [locationError, setLocationError] = useState<string>();
   const [radiusError, setRadiusError] = useState<string>();
   const [submitError, setSubmitError] = useState<string>();
@@ -53,22 +46,26 @@ export function BusinessLocationRequiredModal({
   useEffect(() => {
     if (hasConfirmedServiceArea) {
       setIsOpen(false);
+      onOpenChange?.(false);
       return;
     }
 
     if (SERVICE_AREA_PROMPT_DISMISSIBLE) {
       const skippedThisSession = window.sessionStorage.getItem(skipKey) === '1';
       setIsOpen(!skippedThisSession);
+      onOpenChange?.(!skippedThisSession);
       return;
     }
 
     setIsOpen(true);
-  }, [hasConfirmedServiceArea, skipKey]);
+    onOpenChange?.(true);
+  }, [hasConfirmedServiceArea, onOpenChange, skipKey]);
 
   const handleSkip = () => {
     if (!SERVICE_AREA_PROMPT_DISMISSIBLE) return;
     window.sessionStorage.setItem(skipKey, '1');
     setIsOpen(false);
+    onOpenChange?.(false);
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -96,6 +93,7 @@ export function BusinessLocationRequiredModal({
 
       window.sessionStorage.removeItem(skipKey);
       setIsOpen(false);
+      onOpenChange?.(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -158,7 +156,7 @@ export function BusinessLocationRequiredModal({
               setRadius(value);
               setRadiusError(undefined);
             }}
-            options={[...SERVICE_RADIUS_OPTIONS]}
+            options={SERVICE_RADIUS_OPTIONS}
             placeholder="Select radius"
             name="required-business-radius"
             required

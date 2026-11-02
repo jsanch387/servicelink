@@ -1,4 +1,8 @@
 export {
+  AFFONSO_COOKIE_DURATION_DAYS,
+  AFFONSO_PUBLIC_PROGRAM_ID,
+  AUTH_REDIRECT_ATTRIBUTION_PARAM,
+  MARKETING_UTM_COOKIE_NAME,
   MARKETING_UTM_STORAGE_KEY,
   PENDING_SIGNUP_ATTRIBUTION_KEY,
   SIGNUP_ATTRIBUTION_PROFILE_MAX_AGE_MS,
@@ -7,6 +11,8 @@ export {
 
 export type {
   MarketingUtmAttribution,
+  PaidConversionPeriod,
+  PaidConversionReport,
   SaveSignupAttributionResult,
   SignupAttributionRow,
 } from './types';
@@ -22,12 +28,19 @@ export {
   captureMarketingUtmsFromSearchParams,
   getStoredMarketingUtms,
   hasMarketingUtmData,
+  hasSignupAttributionSignal,
   isAppShellPath,
   isNonAcquisitionReferrer,
   isWeakMarketingAttribution,
   parseMarketingUtmsFromSearchParams,
   persistMarketingUtms,
 } from './utils/utmCapture';
+export { resolveFirstTouchAttribution } from './utils/firstTouchAttribution';
+export {
+  appendAttributionToAuthRedirect,
+  decodeAttributionFromRedirect,
+  encodeAttributionForRedirect,
+} from './utils/authRedirectAttribution';
 export {
   blogGuideSignupPath,
   blogIndexSignupPath,
@@ -40,3 +53,12 @@ export {
   markPendingSignupAttribution,
 } from './utils/pendingSignupAttribution';
 export { tryRecordSignupAttribution } from './utils/attributionApi';
+export { isInternalAnalyticsEmail } from './config/internalAnalyticsAllowlist';
+export {
+  buildPaidConversionReport,
+  isPaidAdChannel,
+  parsePaidConversionPeriod,
+} from './utils/paidConversion';
+export { trackAffonsoSignupOnce } from './utils/affonsoSignupTracking';
+export type { AffonsoSignupDetails } from './utils/affonsoSignupTracking';
+export { getAffonsoReferralId } from './utils/affonsoReferral';

@@ -114,8 +114,7 @@ Update the same `payment_accounts` columns and `last_synced_at`. Use **idempoten
 
 ## What we are explicitly **not** doing in this planning slice
 
-- No `payment_transactions` table in v1 (Stripe Dashboard for history).
-- No in-app ledger until product is ready.
+- No `payment_transactions` table. Owner history is a live Stripe list (`GET /api/payments/transactions`).
 
 ---
 

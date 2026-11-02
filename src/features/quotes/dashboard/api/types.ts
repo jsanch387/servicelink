@@ -21,6 +21,8 @@ export interface QuoteDbRow {
   customer_phone: string | null;
   service_name: string | null;
   price_cents: number | null;
+  tax_cents?: number | null;
+  tax_rate_bps?: number | null;
   duration_minutes: number | null;
   created_at: string;
   updated_at: string;
@@ -31,6 +33,7 @@ export interface QuoteDbRow {
   vehicle_year: string | null;
   vehicle_make: string | null;
   vehicle_model: string | null;
+  assets?: unknown;
   customer_street_address: string | null;
   customer_unit_apt: string | null;
   customer_city: string | null;
@@ -41,6 +44,10 @@ export interface QuoteDbRow {
   service_price_option_id: string | null;
   service_price_cents: number | null;
   addon_details: unknown;
+  /** First customer open of `/q/`. */
+  viewed_at: string | null;
+  /** One-shot customer reminder email/SMS. */
+  customer_reminder_sent_at: string | null;
 }
 
 export interface QuotePublicLinkRow {

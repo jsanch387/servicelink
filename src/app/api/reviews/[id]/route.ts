@@ -2,7 +2,7 @@ import type { ReviewUpdateResponse } from '@/features/reviews/dashboard/api/type
 import { updateDashboardReview } from '@/features/reviews/dashboard/server/updateDashboardReview';
 import { validateUpdateReviewBody } from '@/features/reviews/dashboard/server/validateUpdateReviewBody';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -24,7 +24,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     }
 
     const supabase = await createSupabaseServerClient();
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(supabase, 'reviews.write');
 
     if (!resolved.ok) {
       return NextResponse.json(

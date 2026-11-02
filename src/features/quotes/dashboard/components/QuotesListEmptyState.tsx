@@ -12,25 +12,33 @@ import React from 'react';
 interface QuotesListEmptyStateProps {
   filter: QuotesDashboardFilterId;
   hasAnyQuotes: boolean;
+  canCreate?: boolean;
 }
 
 export const QuotesListEmptyState: React.FC<QuotesListEmptyStateProps> = ({
   filter,
   hasAnyQuotes,
+  canCreate = true,
 }) => {
   const title = !hasAnyQuotes
     ? 'No quotes yet'
-    : filter === 'open'
-      ? 'No open quotes'
-      : filter === 'closed'
-        ? 'No closed quotes'
-        : 'No quotes';
+    : filter === 'requested'
+      ? 'No quote requests'
+      : filter === 'awaiting_reply'
+        ? 'No quotes awaiting a reply'
+        : filter === 'approved'
+          ? 'No approved quotes'
+          : 'No quotes yet';
 
   const description = !hasAnyQuotes
     ? 'Send your first quote in a few taps — your customer gets a link to review and respond.'
-    : filter === 'all'
-      ? 'Try another filter or create a new quote.'
-      : 'Nothing in this filter right now. Try All or create a new quote.';
+    : filter === 'requested'
+      ? 'When a customer asks for a price, it will show up here.'
+      : filter === 'awaiting_reply'
+        ? 'Sent quotes waiting on the customer will show up here.'
+        : filter === 'approved'
+          ? 'Approved quotes will show up here.'
+          : 'Quotes you send and requests from customers will show up here.';
 
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02] px-6 py-16 text-center">
@@ -39,14 +47,16 @@ export const QuotesListEmptyState: React.FC<QuotesListEmptyStateProps> = ({
       </div>
       <h2 className="text-lg font-bold text-zinc-200">{title}</h2>
       <p className="mt-1 max-w-sm text-sm text-zinc-500">{description}</p>
-      <Button
-        href={ROUTES.DASHBOARD.QUOTES_NEW}
-        variant="inverse"
-        icon={<PlusIcon className="h-4 w-4" />}
-        className="mt-6"
-      >
-        New quote
-      </Button>
+      {canCreate ? (
+        <Button
+          href={ROUTES.DASHBOARD.QUOTES_NEW}
+          variant="inverse"
+          icon={<PlusIcon className="h-4 w-4" />}
+          className="mt-6"
+        >
+          New quote
+        </Button>
+      ) : null}
     </div>
   );
 };

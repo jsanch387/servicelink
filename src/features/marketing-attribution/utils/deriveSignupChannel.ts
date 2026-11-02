@@ -59,6 +59,7 @@ function isSiteMarketingPath(path?: string | null): boolean {
     normalized === '/' ||
     normalized === '/pricing' ||
     normalized === '/features' ||
+    normalized === '/affiliates' ||
     normalized === '/find-detailers' ||
     normalized === '/contact' ||
     normalized === '/workshop' ||
@@ -148,7 +149,8 @@ export function deriveSignupAttributionChannel(
     source === 'fb' ||
     medium === 'ig' ||
     medium === 'fb' ||
-    Boolean(attribution.fbclid)
+    Boolean(attribution.fbclid) ||
+    ((source === 'instagram' || source === 'ig') && isPaidMedium(medium))
   ) {
     return 'meta_ads';
   }

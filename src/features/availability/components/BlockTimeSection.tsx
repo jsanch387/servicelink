@@ -1,11 +1,7 @@
 'use client';
 
 import { Button } from '@/components/shared';
-import {
-  CalendarDaysIcon,
-  PlusIcon,
-  TrashIcon,
-} from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React, { useCallback, useMemo, useState } from 'react';
 import type { BlockTimeEntry } from '../types/blockTime';
 import { formatTimeOffDateRange } from '../utils/formatTimeOffDateRange';
@@ -97,13 +93,9 @@ export const BlockTimeSection: React.FC<BlockTimeSectionProps> = ({
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <CalendarDaysIcon
-                  className="h-5 w-5 text-gray-400 shrink-0"
-                  aria-hidden
-                />
-                <h2 className="font-semibold text-lg text-white">Time off</h2>
-              </div>
+              <h2 className="mb-1 font-semibold text-lg text-white">
+                Time off
+              </h2>
               <p className="text-sm text-gray-400">
                 Block days or times when you can&apos;t take bookings.
               </p>

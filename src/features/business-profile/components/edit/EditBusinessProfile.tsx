@@ -1,8 +1,23 @@
 'use client';
 
+import {
+  resolveBusinessSpecialties,
+  specialtiesAllowedForBusinessType,
+} from '@/constants/businessSpecialties';
 import { useUploadPortfolio } from '@/features/media/hooks';
+import type { StructuredLocation } from '@/features/location/types/location';
 import React, { useEffect, useState } from 'react';
+import {
+  buildServiceAreaPayload,
+  savePrimaryServiceArea,
+} from '../../api/savePrimaryServiceArea';
+import {
+  DEFAULT_SERVICE_RADIUS_MILES,
+  normalizeServiceRadiusMiles,
+} from '../../constants/serviceRadius';
+import { SHOP_ADDRESS_FIELD_ID } from '../../constants/shopAddressPrompt';
 import { CompleteBusinessProfile } from '../../types/businessProfile';
+import type { PrimaryServiceArea } from '../../types/primaryServiceArea';
 import {
   bookingLinkLocalesPersistFromUi,
   bookingLinkLocalesUiFromProfile,
@@ -15,7 +30,13 @@ import {
   saveBusinessProfile,
 } from '../../utils/editing/editingHelpers';
 import { DashboardProfileBookingLanguageCard } from '../DashboardProfileBookingLanguageCard';
+import { DashboardProfileBookingPolicyCard } from '../DashboardProfileBookingPolicyCard';
 import { DashboardProfileServiceLocationCard } from '../DashboardProfileServiceLocationCard';
+import {
+  bookingPolicyPersistFromUi,
+  bookingPolicyUiFromProfile,
+  type BookingPolicyUiState,
+} from '../../utils/bookingPolicy';
 import {
   serviceLocationPersistFromUi,
   serviceLocationUiFromProfile,
@@ -30,16 +51,23 @@ import {
   formatServiceArea,
   parseServiceAreaCityState,
 } from '../../utils/businessLocation';
+import {
+  formatServiceCoverageLabel,
+  isServiceCoverageDirty,
+  primaryServiceAreaToStructuredLocation,
+  structuredLocationToPrimaryServiceArea,
+  validateServiceCoverage,
+} from '../../utils/primaryServiceArea';
 import { BannerSection } from './sections/BannerSection';
 import { BusinessInfoSection } from './sections/BusinessInfoSection';
 import { ContactSection } from './sections/ContactSection';
 import { PortfolioSection } from './sections/PortfolioSection';
 import { ProfileImageSection } from './sections/ProfileImageSection';
+import { EditProfileTabNav } from './EditProfileTabNav';
 import {
-  EditProfileTabNav,
   tabForSaveErrors,
   type EditProfileTabId,
-} from './EditProfileTabNav';
+} from '../../utils/editProfileTab';
 import { EditProfileActionBar } from './EditProfileActionBar';
 
 /**
@@ -112,6 +140,27 @@ interface EditBusinessProfileProps {
   isLoading: boolean;
   /** When true, show upgrade CTA in portfolio when at image limit. */
   isFreeTier?: boolean;
+  /** Primary `business_service_areas` row for Details → Location. */
+  primaryServiceArea?: PrimaryServiceArea | null;
+  onPrimaryServiceAreaChange?: (area: PrimaryServiceArea) => void;
+  initialTab?: EditProfileTabId;
+  focusShopAddress?: boolean;
+}
+
+function initialFormLocation(
+  profile: CompleteBusinessProfile,
+  area?: PrimaryServiceArea | null
+) {
+  if (area) {
+    return {
+      service_area: formatServiceArea(area.city, area.stateCode),
+      business_zip: area.postalCode || profile.business_zip || '',
+    };
+  }
+  return {
+    service_area: profile.service_area || '',
+    business_zip: profile.business_zip || '',
+  };
 }
 
 export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
@@ -120,15 +169,44 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
   onCancel,
   isLoading,
   isFreeTier = false,
+  primaryServiceArea = null,
+  onPrimaryServiceAreaChange,
+  initialTab = 'photos',
+  focusShopAddress = false,
 }) => {
+  const [savedServiceArea, setSavedServiceArea] =
+    useState<PrimaryServiceArea | null>(primaryServiceArea);
+  const [selectedLocation, setSelectedLocation] =
+    useState<StructuredLocation | null>(() =>
+      primaryServiceArea
+        ? primaryServiceAreaToStructuredLocation(primaryServiceArea)
+        : null
+    );
+  const [locationQuery, setLocationQuery] = useState(
+    () => primaryServiceArea?.label ?? businessProfile.service_area ?? ''
+  );
+  const [radiusMiles, setRadiusMiles] = useState(() =>
+    primaryServiceArea
+      ? normalizeServiceRadiusMiles(primaryServiceArea.radiusMiles)
+      : DEFAULT_SERVICE_RADIUS_MILES
+  );
+
   // Form state
   const [formData, setFormData] = useState<EditingFormData>(() => {
     const social = parseSocialMedia(businessProfile.social_media);
+    const locationFields = initialFormLocation(
+      businessProfile,
+      primaryServiceArea
+    );
     return {
       business_name: businessProfile.business_name || '',
       business_type: businessProfile.business_type || '',
-      service_area: businessProfile.service_area || '',
-      business_zip: businessProfile.business_zip || '',
+      specialties: resolveBusinessSpecialties(
+        businessProfile.business_type,
+        businessProfile.specialties
+      ),
+      service_area: locationFields.service_area,
+      business_zip: locationFields.business_zip,
       bio: businessProfile.bio || '',
       phone_number_call: businessProfile.phone_number_call || '',
       phone_number_text: '', // Not used; we only store one number (call)
@@ -156,7 +234,11 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
       serviceLocationUiFromProfile(businessProfile)
     );
 
-  const [activeTab, setActiveTab] = useState<EditProfileTabId>('photos');
+  const [bookingPolicy, setBookingPolicy] = useState<BookingPolicyUiState>(() =>
+    bookingPolicyUiFromProfile(businessProfile)
+  );
+
+  const [activeTab, setActiveTab] = useState<EditProfileTabId>(initialTab);
 
   const [errors, setErrors] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -175,11 +257,56 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
   }, [formData.images]);
 
   useEffect(() => {
+    if (focusShopAddress && activeTab === 'booking') {
+      const timer = window.setTimeout(() => {
+        const field = document.getElementById(SHOP_ADDRESS_FIELD_ID);
+        field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        field?.focus();
+      }, 80);
+      return () => window.clearTimeout(timer);
+    }
+
     window.scrollTo({ top: 0, behavior: 'auto' });
-  }, [activeTab]);
+  }, [activeTab, focusShopAddress]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors.length > 0) setErrors([]);
+  };
+
+  const handleBusinessTypeChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      business_type: value,
+      specialties: specialtiesAllowedForBusinessType(value, prev.specialties),
+    }));
+    if (errors.length > 0) setErrors([]);
+  };
+
+  const handleSpecialtiesChange = (next: string[]) => {
+    setFormData(prev => ({ ...prev, specialties: next }));
+    if (errors.length > 0) setErrors([]);
+  };
+
+  const applySelectedLocation = (location: StructuredLocation) => {
+    setSelectedLocation(location);
+    setLocationQuery(location.label);
+    setFormData(prev => ({
+      ...prev,
+      service_area: formatServiceArea(location.city, location.state),
+      business_zip: location.zip.trim() || prev.business_zip,
+    }));
+    if (errors.length > 0) setErrors([]);
+  };
+
+  const handleLocationQueryChange = (value: string) => {
+    setLocationQuery(value);
+    setSelectedLocation(null);
+    if (errors.length > 0) setErrors([]);
+  };
+
+  const handleRadiusChange = (miles: number) => {
+    setRadiusMiles(normalizeServiceRadiusMiles(miles));
     if (errors.length > 0) setErrors([]);
   };
 
@@ -306,12 +433,70 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
         }
       }
 
+      const coverageErrors = validateServiceCoverage(
+        selectedLocation,
+        radiusMiles
+      );
+      if (coverageErrors.length > 0) {
+        setErrors(coverageErrors);
+        setActiveTab(tabForSaveErrors(coverageErrors));
+        return;
+      }
+
+      const baselineCoverage = {
+        location: savedServiceArea
+          ? primaryServiceAreaToStructuredLocation(savedServiceArea)
+          : null,
+        radiusMiles: savedServiceArea
+          ? normalizeServiceRadiusMiles(savedServiceArea.radiusMiles)
+          : DEFAULT_SERVICE_RADIUS_MILES,
+      };
+
+      if (
+        selectedLocation &&
+        isServiceCoverageDirty(baselineCoverage, {
+          location: selectedLocation,
+          radiusMiles,
+        })
+      ) {
+        const areaResult = await savePrimaryServiceArea(
+          buildServiceAreaPayload(selectedLocation, radiusMiles)
+        );
+        if (!areaResult.success) {
+          const areaErrors = [
+            areaResult.error || 'Unable to save service area.',
+          ];
+          setErrors(areaErrors);
+          setActiveTab(tabForSaveErrors(areaErrors));
+          return;
+        }
+
+        const nextArea = structuredLocationToPrimaryServiceArea(
+          selectedLocation,
+          radiusMiles,
+          savedServiceArea?.id
+        );
+        setSavedServiceArea(nextArea);
+        onPrimaryServiceAreaChange?.(nextArea);
+        finalFormData = {
+          ...finalFormData,
+          service_area: formatServiceArea(
+            selectedLocation.city,
+            selectedLocation.state
+          ),
+          business_zip:
+            selectedLocation.zip.trim() || finalFormData.business_zip,
+        };
+        setFormData(finalFormData);
+      }
+
       // Save everything to database
       const result = await saveBusinessProfile(
         businessProfile.id,
         finalFormData,
         bookingLinkLocales,
-        serviceLocation
+        serviceLocation,
+        bookingPolicy
       );
 
       if (result.success) {
@@ -323,6 +508,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
           bookingLinkLocalesPersistFromUi(bookingLinkLocales);
         const serviceLocationPersist =
           serviceLocationPersistFromUi(serviceLocation);
+        const policyPersist = bookingPolicyPersistFromUi(bookingPolicy);
         await onSave({
           ...(finalFormData as unknown as Record<string, unknown>),
           social_media: socialMediaForPersist({
@@ -333,6 +519,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
           public_booking_default_locale:
             bookingPersist.public_booking_default_locale,
           ...serviceLocationPersist,
+          ...policyPersist,
         });
       } else {
         const saveErrors = [result.error || 'Failed to save business profile'];
@@ -354,6 +541,12 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     state,
     formData.business_zip
   );
+  const coverageLabel =
+    formatServiceCoverageLabel(
+      selectedLocation?.city ?? city,
+      selectedLocation?.state ?? state,
+      selectedLocation ? radiusMiles : savedServiceArea?.radiusMiles
+    ) ?? profileLocationLabel;
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] pb-28">
@@ -426,7 +619,15 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
             <BusinessInfoSection
               formData={formData}
               onInputChange={handleInputChange}
+              onBusinessTypeChange={handleBusinessTypeChange}
+              onSpecialtiesChange={handleSpecialtiesChange}
               errors={errors}
+              locationQuery={locationQuery}
+              onLocationQueryChange={handleLocationQueryChange}
+              selectedLocation={selectedLocation}
+              onSelectLocation={applySelectedLocation}
+              radiusMiles={radiusMiles}
+              onRadiusChange={handleRadiusChange}
             />
           </div>
         ) : null}
@@ -444,27 +645,14 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
                 setServiceLocation(next);
                 if (errors.length > 0) setErrors([]);
               }}
-              profileLocation={{
-                city,
-                state,
-                zip: formData.business_zip,
-              }}
-              onProfileLocationChange={({
-                city: nextCity,
-                state: nextState,
-                zip,
-              }) => {
-                if (nextCity !== undefined || nextState !== undefined) {
-                  handleInputChange(
-                    'service_area',
-                    formatServiceArea(nextCity ?? city, nextState ?? state)
-                  );
-                }
-                if (zip !== undefined) {
-                  handleInputChange('business_zip', zip);
-                }
-              }}
-              profileLocationLabel={profileLocationLabel}
+              coverageLabel={coverageLabel}
+              onEditDetails={() => setActiveTab('details')}
+              locationQuery={locationQuery}
+              onLocationQueryChange={handleLocationQueryChange}
+              selectedLocation={selectedLocation}
+              onSelectLocation={applySelectedLocation}
+              radiusMiles={radiusMiles}
+              onRadiusChange={handleRadiusChange}
               errors={errors}
             />
 
@@ -485,6 +673,19 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
                   ...prev,
                   visitorDefaultLocale,
                 }))
+              }
+            />
+
+            <DashboardProfileBookingPolicyCard
+              value={bookingPolicy}
+              onChange={next => {
+                setBookingPolicy(next);
+                if (errors.length > 0) setErrors([]);
+              }}
+              error={
+                errors.find(message =>
+                  message.toLowerCase().includes('policy')
+                ) ?? undefined
               }
             />
           </div>

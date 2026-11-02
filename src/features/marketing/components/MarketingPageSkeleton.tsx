@@ -8,15 +8,19 @@ export const MarketingPageSkeleton: React.FC = () => {
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="mb-8">
-            <div className={`h-9 w-40 ${pulse}`} />
-            <div className={`mt-2 h-4 w-80 max-w-full ${pulse}`} />
-          </div>
-
-          {/* Action Buttons */}
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-            <div className={`h-12 w-full sm:w-48 rounded-[10px] ${pulse}`} />
-            <div className={`h-12 w-full sm:w-36 rounded-[10px] ${pulse}`} />
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className={`h-9 w-40 ${pulse}`} />
+              <div className={`mt-2 h-4 w-80 max-w-full ${pulse}`} />
+            </div>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <div
+                className={`h-[42px] w-full rounded-[10px] sm:w-44 ${pulse}`}
+              />
+              <div
+                className={`h-[42px] w-full rounded-[10px] sm:w-32 ${pulse}`}
+              />
+            </div>
           </div>
 
           {/* Tabs */}

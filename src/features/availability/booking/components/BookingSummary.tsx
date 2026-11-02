@@ -90,6 +90,9 @@ interface BookingSummaryProps {
   /** Savings amount in cents when a sale applies. */
   saleDiscountCents?: number;
   saleAppliesLine?: string | null;
+  /** Tax added on the price after discounts. Omitted when tax is off. */
+  salesTaxCents?: number;
+  salesTaxLabel?: string | null;
   date: string;
   /** Local wall time `HH:mm` (24h); formatted for display using `bookingFlowLocale`. */
   startTimeHhmm: string;
@@ -119,6 +122,8 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   saleEstimatedTotalCents,
   saleDiscountCents,
   saleAppliesLine,
+  salesTaxCents,
+  salesTaxLabel,
   date,
   startTimeHhmm,
   customer,
@@ -164,9 +169,17 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
     saleEstimatedTotalCents < saleSubtotalCents;
   const hasAddOns = selectedAddOns.length > 0;
   const hasPrice = totalPriceCents != null && totalPriceCents > 0;
+  const showSalesTax =
+    salesTaxCents != null && salesTaxCents > 0 && Boolean(salesTaxLabel);
+  const priceBeforeTaxCents = showSalePricing
+    ? saleEstimatedTotalCents!
+    : (totalPriceCents ?? 0);
+  const priceWithTaxCents =
+    priceBeforeTaxCents + (showSalesTax ? salesTaxCents! : 0);
   const showServicePrice = servicePriceCents != null && servicePriceCents > 0;
   const showPriceFooter =
-    hasPrice && (hasAddOns || showSalePricing || Boolean(saleAppliesLine));
+    hasPrice &&
+    (hasAddOns || showSalePricing || Boolean(saleAppliesLine) || showSalesTax);
 
   const detailRows: Array<{
     key: string;
@@ -278,6 +291,14 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
       {hideServiceLines ? (
         hasPrice ? (
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden px-4 py-3 space-y-2">
+            {showSalesTax ? (
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-zinc-400">{salesTaxLabel}</span>
+                <span className="tabular-nums text-zinc-300">
+                  {formatCents(salesTaxCents!)}
+                </span>
+              </div>
+            ) : null}
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm font-medium text-gray-300">
                 {ui.common.bookingTotal}
@@ -288,12 +309,18 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
                     {formatCents(saleSubtotalCents!)}
                   </span>
                   <span className="text-sm font-semibold text-white tabular-nums">
-                    {formatCents(saleEstimatedTotalCents!)}
+                    {formatCents(
+                      showSalesTax
+                        ? priceWithTaxCents
+                        : saleEstimatedTotalCents!
+                    )}
                   </span>
                 </div>
               ) : (
                 <span className="text-sm font-semibold text-white tabular-nums">
-                  {formatCents(totalPriceCents!)}
+                  {formatCents(
+                    showSalesTax ? priceWithTaxCents : totalPriceCents!
+                  )}
                 </span>
               )}
             </div>
@@ -349,6 +376,14 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
 
           {showPriceFooter ? (
             <div className="px-4 py-3 border-t border-white/[0.06] space-y-2">
+              {showSalesTax ? (
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-zinc-400">{salesTaxLabel}</span>
+                  <span className="tabular-nums text-zinc-300">
+                    {formatCents(salesTaxCents!)}
+                  </span>
+                </div>
+              ) : null}
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium text-gray-300">
                   {ui.common.bookingTotal}
@@ -359,12 +394,18 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
                       {formatCents(saleSubtotalCents!)}
                     </span>
                     <span className="text-sm font-semibold text-white tabular-nums">
-                      {formatCents(saleEstimatedTotalCents!)}
+                      {formatCents(
+                        showSalesTax
+                          ? priceWithTaxCents
+                          : saleEstimatedTotalCents!
+                      )}
                     </span>
                   </div>
                 ) : (
                   <span className="text-sm font-semibold text-white tabular-nums">
-                    {formatCents(totalPriceCents!)}
+                    {formatCents(
+                      showSalesTax ? priceWithTaxCents : totalPriceCents!
+                    )}
                   </span>
                 )}
               </div>

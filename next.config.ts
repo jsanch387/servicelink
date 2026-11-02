@@ -1,6 +1,17 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Welcome email attaches these PNGs. `public/` is not in the function
+  // bundle unless it is listed here.
+  outputFileTracingIncludes: {
+    '/api/onboarding-v2/complete': [
+      './public/email/instagram.png',
+      './public/store/app-store-badge.png',
+    ],
+  },
+  // Phone testing on the LAN (http://192.168.x.x:3000) needs this so
+  // /_next assets hydrate instead of mismatching the server HTML.
+  allowedDevOrigins: ['192.168.1.226'],
   eslint: {
     // Warning: This allows production builds to successfully complete even if
     // your project has ESLint errors.
@@ -10,6 +21,42 @@ const nextConfig: NextConfig = {
     // Warning: This allows production builds to successfully complete even if
     // your project has type errors.
     ignoreBuildErrors: false,
+  },
+  async redirects() {
+    return [
+      {
+        source: '/resources/servicelink-vs-detaildeck-2026',
+        destination: '/resources/servicelink-vs-detaildeck',
+        permanent: true,
+      },
+      {
+        source: '/resources/servicelink-vs-urable-2026',
+        destination: '/resources/servicelink-vs-urable',
+        permanent: true,
+      },
+      {
+        source: '/resources/how-much-to-charge-for-mobile-detailing-2026',
+        destination: '/resources/how-much-to-charge-for-mobile-detailing',
+        permanent: true,
+      },
+      {
+        source: '/resources/how-to-start-a-mobile-detailing-business-2026',
+        destination: '/resources/how-to-start-a-mobile-detailing-business',
+        permanent: true,
+      },
+      {
+        source: '/resources/servicelink-vs-detail-connect-vs-detailermade-2026',
+        destination: '/resources/servicelink-vs-detail-connect-vs-detailermade',
+        permanent: true,
+      },
+      {
+        source:
+          '/resources/how-mobile-detailers-get-clients-from-instagram-2026',
+        destination:
+          '/resources/how-mobile-detailers-get-clients-from-instagram',
+        permanent: true,
+      },
+    ];
   },
   images: {
     formats: ['image/avif', 'image/webp'],
@@ -23,6 +70,12 @@ const nextConfig: NextConfig = {
         hostname: 'qailotbnrtwyzhbwufvk.supabase.co',
         port: '',
         pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'qailotbnrtwyzhbwufvk.supabase.co',
+        port: '',
+        pathname: '/storage/v1/render/image/public/**',
       },
     ],
   },

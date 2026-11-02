@@ -3,6 +3,7 @@
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
+import { trackAffonsoSignupOnce } from '../utils/affonsoSignupTracking';
 import { tryRecordSignupAttribution } from '../utils/attributionApi';
 import { captureMarketingUtmsFromSearchParams } from '../utils/utmCapture';
 
@@ -22,7 +23,11 @@ export function MarketingAttributionRoot() {
   useEffect(() => {
     if (!isInitialized || isLoading || !supabaseUser?.id) return;
     void tryRecordSignupAttribution(supabaseUser.id);
-  }, [isInitialized, isLoading, supabaseUser?.id]);
+    void trackAffonsoSignupOnce({
+      email: supabaseUser.email,
+      externalUserId: supabaseUser.id,
+    });
+  }, [isInitialized, isLoading, supabaseUser?.id, supabaseUser?.email]);
 
   return null;
 }

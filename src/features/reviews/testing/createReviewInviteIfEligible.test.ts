@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createReviewInviteIfEligible } from '../server/createReviewInviteIfEligible';
+import * as ensureInvite from '../server/ensureReviewInviteRecordIfEligible';
 
 vi.mock('@/features/email/review-invite/sendReviewInviteEmail', () => ({
   sendReviewInviteEmail: vi
@@ -203,6 +204,43 @@ describe('createReviewInviteIfEligible', () => {
         publicReviewUrl: expect.stringContaining('/review/'),
       })
     );
+  });
+
+  it('emails the reused pending-invite link when the customer has not reviewed', async () => {
+    const spy = vi
+      .spyOn(ensureInvite, 'ensureReviewInviteRecordIfEligible')
+      .mockResolvedValue({
+        ok: true,
+        skipped: false,
+        inviteId: 'inv-pending',
+        rawReviewToken: 'reused-token',
+        reusedExisting: true,
+      });
+
+    try {
+      const result = await createReviewInviteIfEligible(mockSupabase({}), {
+        ...baseBooking(),
+        customer_phone: '5807545207',
+      });
+
+      expect(result).toEqual({
+        ok: true,
+        skipped: false,
+        sent: true,
+        channel: 'email',
+        inviteId: 'inv-pending',
+        sms: { sent: false, messageId: null, reason: 'not_configured' },
+        email: { sent: true, messageId: 'email-1', reason: null },
+      });
+      expect(sendReviewInviteEmail).toHaveBeenCalledWith(
+        'jane@example.com',
+        expect.objectContaining({
+          publicReviewUrl: expect.stringContaining('/review/reused-token'),
+        })
+      );
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('emails directly when there is no phone (sms.reason = no_phone)', async () => {

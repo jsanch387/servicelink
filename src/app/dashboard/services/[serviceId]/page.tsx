@@ -5,7 +5,7 @@
  * Fetches service by ID and add-ons from DB, renders ServiceEditScreen.
  */
 
-import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
+import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
 import {
   getAddOns,
   getServiceAddOnIds,
@@ -14,8 +14,8 @@ import {
   getServices,
   ServiceEditScreen,
 } from '@/features/services';
-import { hasPriceOptionsAccess } from '@/features/services/utils/priceOptionsAccess';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { requireCompletedShopPage } from '@/features/team/server/requireDashboardPageAccess';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { notFound, redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -27,27 +27,8 @@ interface ServiceEditPageProps {
 export default async function ServiceEditPage({
   params,
 }: ServiceEditPageProps) {
-  const supabase = await createSupabaseServerClient();
   const { serviceId } = await params;
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    redirect('/login');
-  }
-
-  const stateResult = await getOnboardingState(user.id, supabase);
-  if (!stateResult.success || !stateResult.data) {
-    redirect('/dashboard');
-  }
-
-  const { status, businessProfile } = stateResult.data;
-  if (status !== 'completed' || !businessProfile?.id) {
-    redirect('/dashboard');
-  }
+  const { context } = await requireCompletedShopPage('services.write');
 
   const [
     servicesResult,
@@ -56,17 +37,17 @@ export default async function ServiceEditPage({
     optionsResult,
     categoriesResult,
   ] = await Promise.all([
-    getServices(businessProfile.id),
-    getAddOns(businessProfile.id),
+    getServices(context.businessId),
+    getAddOns(context.businessId),
     getServiceAddOnIds(serviceId),
-    getServicePriceOptions(serviceId, businessProfile.id),
-    getServiceCategories(businessProfile.id),
+    getServicePriceOptions(serviceId, context.businessId),
+    getServiceCategories(context.businessId),
   ]);
 
-  const canUsePriceOptions = await hasPriceOptionsAccess({
-    supabase,
-    userId: user.id,
-  });
+  const canUsePriceOptions = await ownerHasProAccessForBusiness(
+    createSupabaseAdminClient(),
+    context.businessId
+  );
 
   if (!servicesResult.success || !servicesResult.data) {
     redirect('/dashboard/services');

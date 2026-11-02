@@ -39,7 +39,13 @@ import {
   type OwnerManualBookingJobInput,
 } from '@/features/availability/booking/utils/ownerManualBookingJobs';
 import { appointmentMoneyFieldsFromJobs } from '@/features/availability/booking/utils/resolveBookingLineSubtotalCents';
-import { bookingOverlapsTimeOff } from '@/features/availability/booking/utils/slotGeneration';
+import type { ExistingBooking } from '@/features/availability/booking/types';
+import { shouldRejectExistingBookingOverlap } from '@/features/availability/booking/utils/shouldRejectExistingBookingOverlap';
+import {
+  bookingOverlapsExistingBookings,
+  bookingOverlapsTimeOff,
+} from '@/features/availability/booking/utils/slotGeneration';
+import { bufferTimeToMinutes } from '@/features/availability/utils/bufferTime';
 import {
   getPublicBookingRequestId,
   logBookingTransaction,
@@ -50,7 +56,10 @@ import {
   insertBookingPaymentsRowForNoCheckoutPublicBooking,
 } from '@/features/availability/services/bookingService';
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
-import { isSlotAllowedByLeadTime } from '@/features/availability/utils/minimumNotice';
+import {
+  isSlotAllowedByLeadTime,
+  resolvePublicBookingLeadTimeZone,
+} from '@/features/availability/utils/minimumNotice';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
 import { loadCustomerSmsOptIn } from '@/features/customer-management/server/loadCustomerSmsOptIn';
 import {
@@ -60,6 +69,10 @@ import {
 import { linkMembershipPeriodVisit } from '@/features/subscriptions/server/linkMembershipPeriodVisit';
 import { bookingReferralSourceForBusiness } from '@/features/booking-attribution/server/bookingReferralCookie';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
+import {
+  publicBookingPolicyError,
+  resolvePublicBookingPolicy,
+} from '@/features/business-profile/utils/bookingPolicy';
 import {
   buildPublicBookingServiceLocation,
   customerUsesShopAddress,
@@ -84,12 +97,36 @@ import type { BookingDiscountSnapshot } from '@/features/marketing/server/bookin
 import { promoDiscountResolveErrorMessage } from '@/features/marketing/utils/promoDiscountResolveErrorMessage';
 import { normalizeEnteredPromoCode } from '@/features/marketing/server/resolveBookingPromoDiscountSnapshot';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
+import {
+  quotePublicBookingSalesTax,
+  salesTaxEmailLine,
+} from '@/features/availability/booking/utils/publicBookingSalesTax';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { assertPublicBookingsRateLimits } from '@/server/rateLimit/publicApiRateLimit';
 import { supabaseErrorForLogs } from '@/server/logging/structuredLog';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextRequest, NextResponse } from 'next/server';
+
+function publicBookingStoredTax(args: {
+  /** Membership visits are covered. Tax stays off even when the switch is on. */
+  membershipCovered: boolean;
+  paySettings: {
+    tax_enabled?: boolean;
+    tax_rate_bps?: number | null;
+  } | null;
+  priceAfterDiscountCents: number;
+}) {
+  return quotePublicBookingSalesTax({
+    priceAfterDiscountCents: args.priceAfterDiscountCents,
+    taxEnabled:
+      !args.membershipCovered && args.paySettings?.tax_enabled === true,
+    taxRateBps:
+      typeof args.paySettings?.tax_rate_bps === 'number'
+        ? args.paySettings.tax_rate_bps
+        : 0,
+  });
+}
 
 function publicBookingJson(
   requestId: string,
@@ -222,13 +259,14 @@ export async function POST(request: NextRequest) {
     }
 
     let ownerAuthMethod: 'bearer' | 'cookie' | 'public' = 'public';
+    let createdByUserId: string | null = null;
 
     const supabase = createSupabaseAdminClient();
 
     const { data: profile, error: profileError } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_slug, business_name, profile_id, free_bookings_count, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, business_type'
+        'id, business_slug, business_name, profile_id, free_bookings_count, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, shop_city, shop_state, shop_zip, business_type, booking_policy_enabled, booking_policy_text'
       )
       .eq('business_slug', body.businessSlug.trim())
       .single();
@@ -248,6 +286,19 @@ export async function POST(request: NextRequest) {
         requestId,
         { success: false, error: 'Business not found' },
         404
+      );
+    }
+
+    const policyError = publicBookingPolicyError({
+      ownerManualBooking,
+      agreedToPolicy: body.agreedToPolicy === true,
+      policyRequired: resolvePublicBookingPolicy(profile) != null,
+    });
+    if (policyError) {
+      return publicBookingJson(
+        requestId,
+        { success: false, error: policyError },
+        400
       );
     }
 
@@ -412,7 +463,10 @@ export async function POST(request: NextRequest) {
           auth.status
         );
       }
-      const resolved = await resolveCurrentBusinessId(auth.supabase);
+      const resolved = await requireBusinessPermission(
+        auth.supabase,
+        'bookings.write'
+      );
       if (!resolved.ok) {
         logBookingTransaction(requestId, 'warn', 'owner_business', {
           http: resolved.status,
@@ -432,6 +486,7 @@ export async function POST(request: NextRequest) {
         );
       }
       ownerAuthMethod = auth.authMethod;
+      createdByUserId = auth.user.id;
     }
 
     const p = profile as {
@@ -467,17 +522,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const availabilityRow = await getAvailabilityForBusiness(
+      supabase,
+      businessId
+    );
+    const durationMinutes = parsedJobs
+      ? sumJobDurationMinutes(parsedJobs)
+      : body.durationMinutes!;
+
     if (!ownerManualBooking) {
-      const availabilityRow = await getAvailabilityForBusiness(
-        supabase,
-        businessId
-      );
       const timeOffIntervals = parseStoredTimeOffBlocks(
         availabilityRow?.time_off_blocks
       ).map(toTimeOffIntervalFields);
-      const durationMinutes = parsedJobs
-        ? sumJobDurationMinutes(parsedJobs)
-        : body.durationMinutes!;
       if (
         bookingOverlapsTimeOff(
           body.scheduledDate,
@@ -500,7 +556,8 @@ export async function POST(request: NextRequest) {
         !isSlotAllowedByLeadTime(
           body.scheduledDate,
           body.startTime.trim(),
-          availabilityRow?.minimum_notice
+          availabilityRow?.minimum_notice,
+          { timeZone: resolvePublicBookingLeadTimeZone(body.timeZone) }
         )
       ) {
         return publicBookingJson(
@@ -514,13 +571,76 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (shouldRejectExistingBookingOverlap(ownerManualBooking)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: dayBookings, error: dayBookErr } = await (supabase as any)
+        .from('bookings')
+        .select('scheduled_date, start_time, duration_minutes')
+        .eq('business_id', businessId)
+        .eq('scheduled_date', body.scheduledDate)
+        .in('status', ['confirmed', 'completed']);
+
+      if (dayBookErr) {
+        logBookingTransaction(requestId, 'warn', 'load_day_bookings', {
+          code: dayBookErr.code ?? 'unknown',
+        });
+        return publicBookingJson(
+          requestId,
+          {
+            success: false,
+            error:
+              'We could not verify availability. Please try again in a moment.',
+          },
+          503
+        );
+      }
+
+      const existingForOverlap: ExistingBooking[] = (dayBookings ?? []).map(
+        (r: {
+          scheduled_date?: string;
+          start_time?: string;
+          duration_minutes?: number;
+        }) => ({
+          date: String(r.scheduled_date ?? '').trim(),
+          startTime: String(r.start_time ?? '')
+            .trim()
+            .slice(0, 5),
+          durationMinutes: Math.max(
+            1,
+            Math.round(Number(r.duration_minutes ?? 60))
+          ),
+        })
+      );
+
+      if (
+        bookingOverlapsExistingBookings(
+          body.scheduledDate,
+          body.startTime.trim(),
+          durationMinutes,
+          existingForOverlap,
+          bufferTimeToMinutes(availabilityRow?.buffer_time)
+        )
+      ) {
+        return publicBookingJson(
+          requestId,
+          {
+            success: false,
+            error: 'That time was just booked. Please pick another slot.',
+          },
+          409
+        );
+      }
+    }
+
     const { ownerHasPro } = await resolvePublicBookingFreeTierGate(supabase, {
       profileId,
       freeBookingsCount: p.free_bookings_count,
     });
     const { data: paymentSettingsRow, error: paymentSettingsError } =
       await paymentSettingsOf(supabase)
-        .select('payments_enabled, checkout_mode, currency')
+        .select(
+          'payments_enabled, checkout_mode, currency, tax_enabled, tax_rate_bps'
+        )
         .eq('business_id', businessId)
         .maybeSingle();
 
@@ -534,6 +654,8 @@ export async function POST(request: NextRequest) {
       payments_enabled?: boolean;
       checkout_mode?: string | null;
       currency?: string | null;
+      tax_enabled?: boolean;
+      tax_rate_bps?: number | null;
     } | null;
 
     const rawClientPm = body.paymentMethodSelected;
@@ -690,6 +812,7 @@ export async function POST(request: NextRequest) {
           ...(typeof publicSmsOptIn === 'boolean'
             ? { smsOptIn: publicSmsOptIn }
             : {}),
+          createdByUserId,
         });
       } catch (createErr) {
         logBookingTransaction(requestId, 'error', 'appointment_create_failed', {
@@ -708,14 +831,21 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const visitTotalAfterDiscount = discountSnapshot
+        ? Math.max(0, visitGross - discountSnapshot.discountCents)
+        : visitGross;
+      const visitTax = publicBookingStoredTax({
+        membershipCovered: paymentMethodForInsert === 'membership',
+        paySettings,
+        priceAfterDiscountCents: visitTotalAfterDiscount,
+      });
       try {
-        const visitTotalAfterDiscount = discountSnapshot
-          ? Math.max(0, visitGross - discountSnapshot.discountCents)
-          : visitGross;
         await insertBookingPaymentsRowForNoCheckoutPublicBooking(supabase, {
           bookingId: result.id,
           businessId,
-          totalAmountCents: visitTotalAfterDiscount,
+          totalAmountCents: visitTax.totalCents,
+          taxRateBps: visitTax.rateBps,
+          taxCents: visitTax.taxCents,
           currency: paySettings?.currency?.trim() || 'usd',
           paymentsEnabled: paySettings?.payments_enabled === true,
           checkoutMode: paySettings?.checkout_mode ?? null,
@@ -768,7 +898,8 @@ export async function POST(request: NextRequest) {
         checkoutMode: paySettings?.checkout_mode,
         clientPaymentMethod,
         currency: paySettings?.currency?.trim() || 'usd',
-        totalPriceCents: visitGross,
+        totalPriceCents:
+          visitTax.taxCents > 0 ? visitTax.totalCents : visitGross,
         hasPriceLineItems,
       });
 
@@ -793,6 +924,11 @@ export async function POST(request: NextRequest) {
                   discountSnapshot.subtotalCents -
                   discountSnapshot.discountCents,
               },
+            }
+          : {}),
+        ...(salesTaxEmailLine(visitTax.rateBps, visitTax.taxCents)
+          ? {
+              salesTax: salesTaxEmailLine(visitTax.rateBps, visitTax.taxCents),
             }
           : {}),
         jobs: emailJobs,
@@ -851,6 +987,7 @@ export async function POST(request: NextRequest) {
           type: 'booking_confirmation',
           to: sanitizedCustomer.phone,
           message: buildBookingConfirmedSms({
+            businessName: businessDisplayName,
             scheduledDate: body.scheduledDate,
             startTime: body.startTime.trim(),
           }),
@@ -984,16 +1121,24 @@ export async function POST(request: NextRequest) {
       ...(typeof publicSmsOptIn === 'boolean'
         ? { smsOptIn: publicSmsOptIn }
         : {}),
+      createdByUserId,
     });
 
+    const totalAfterDiscount = discountSnapshot
+      ? Math.max(0, totalPriceCentsForEmail - discountSnapshot.discountCents)
+      : totalPriceCentsForEmail;
+    const bookingTax = publicBookingStoredTax({
+      membershipCovered: paymentMethodForInsert === 'membership',
+      paySettings,
+      priceAfterDiscountCents: totalAfterDiscount,
+    });
     try {
-      const totalAfterDiscount = discountSnapshot
-        ? Math.max(0, totalPriceCentsForEmail - discountSnapshot.discountCents)
-        : totalPriceCentsForEmail;
       await insertBookingPaymentsRowForNoCheckoutPublicBooking(supabase, {
         bookingId: result.id,
         businessId,
-        totalAmountCents: totalAfterDiscount,
+        totalAmountCents: bookingTax.totalCents,
+        taxRateBps: bookingTax.rateBps,
+        taxCents: bookingTax.taxCents,
         currency: paySettings?.currency?.trim() || 'usd',
         paymentsEnabled: paySettings?.payments_enabled === true,
         checkoutMode: paySettings?.checkout_mode ?? null,
@@ -1029,7 +1174,10 @@ export async function POST(request: NextRequest) {
       checkoutMode: paySettings?.checkout_mode,
       clientPaymentMethod,
       currency: paySettings?.currency?.trim() || 'usd',
-      totalPriceCents: totalPriceCentsForEmail,
+      totalPriceCents:
+        bookingTax.taxCents > 0
+          ? bookingTax.totalCents
+          : totalPriceCentsForEmail,
       hasPriceLineItems,
     });
 
@@ -1060,6 +1208,14 @@ export async function POST(request: NextRequest) {
               estimatedTotalCents:
                 discountSnapshot.subtotalCents - discountSnapshot.discountCents,
             },
+          }
+        : {}),
+      ...(salesTaxEmailLine(bookingTax.rateBps, bookingTax.taxCents)
+        ? {
+            salesTax: salesTaxEmailLine(
+              bookingTax.rateBps,
+              bookingTax.taxCents
+            ),
           }
         : {}),
       paymentSummary,
@@ -1116,6 +1272,7 @@ export async function POST(request: NextRequest) {
         type: 'booking_confirmation',
         to: sanitizedCustomer.phone,
         message: buildBookingConfirmedSms({
+          businessName: businessDisplayName,
           scheduledDate: body.scheduledDate,
           startTime: body.startTime.trim(),
         }),

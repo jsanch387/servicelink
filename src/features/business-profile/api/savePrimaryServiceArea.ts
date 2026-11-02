@@ -38,25 +38,33 @@ export function buildServiceAreaPayload(
 export async function savePrimaryServiceArea(
   input: SaveServiceAreaInput
 ): Promise<SaveServiceAreaResponse> {
-  const response = await fetch(API_ROUTES.BUSINESS_PROFILE_SERVICE_AREA, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-
-  let payload: SaveServiceAreaResponse | null = null;
   try {
-    payload = (await response.json()) as SaveServiceAreaResponse;
-  } catch {
-    payload = null;
-  }
+    const response = await fetch(API_ROUTES.BUSINESS_PROFILE_SERVICE_AREA, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
 
-  if (!response.ok || !payload?.success) {
+    let payload: SaveServiceAreaResponse | null = null;
+    try {
+      payload = (await response.json()) as SaveServiceAreaResponse;
+    } catch {
+      payload = null;
+    }
+
+    if (!response.ok || !payload?.success) {
+      return {
+        success: false,
+        error: payload?.error || 'Unable to save service area.',
+      };
+    }
+
+    return { success: true };
+  } catch {
     return {
       success: false,
-      error: payload?.error || 'Unable to save service area.',
+      error:
+        'Could not reach the server. Make sure the app is running and try again.',
     };
   }
-
-  return { success: true };
 }

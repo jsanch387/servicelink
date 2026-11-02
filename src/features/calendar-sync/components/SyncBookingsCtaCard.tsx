@@ -15,7 +15,7 @@ export function SyncBookingsCtaCard({
 }: SyncBookingsCtaCardProps) {
   if (variant === 'header') {
     return (
-      <div className={`shrink-0 self-start pt-0.5 sm:pt-1 ${className}`.trim()}>
+      <div className={`shrink-0 ${className}`.trim()}>
         <button
           type="button"
           onClick={onSyncClick}

@@ -65,6 +65,7 @@ describe('mapBookingRowToDisplay — multi-job add-ons', () => {
     expect(display.servicePriceCents).toBe(379_00);
     expect(display.discount?.discountCents).toBe(39_90);
     expect(display.discount?.subtotalCents).toBe(399_00);
+    expect(display.assignedUserId).toBeNull();
     expect(display.jobs).toHaveLength(2);
     expect(display.jobs[0]).toMatchObject({
       serviceName: 'Signature Shinee',
@@ -137,5 +138,39 @@ describe('mapBookingRowToDisplay — multi-job add-ons', () => {
       '2018 Toyota Camry',
       '2021 Honda CR-V',
     ]);
+  });
+
+  it('maps assigned_user_id onto the display booking', () => {
+    const display = mapBookingRowToDisplay({
+      id: 'b3',
+      business_id: 'biz',
+      business_slug: 'acme',
+      service_id: null,
+      service_name: 'Wash',
+      service_price_cents: 50_00,
+      addon_details: [],
+      duration_minutes: 30,
+      scheduled_date: '2026-07-29',
+      start_time: '11:00:00',
+      customer_name: 'Pat',
+      customer_email: null,
+      customer_phone: null,
+      customer_street_address: null,
+      customer_unit_apt: null,
+      customer_city: null,
+      customer_state: null,
+      customer_zip: null,
+      customer_vehicle_year: null,
+      customer_vehicle_make: null,
+      customer_vehicle_model: null,
+      customer_notes: null,
+      customer_id: null,
+      status: 'confirmed',
+      created_at: '2026-07-29T00:00:00Z',
+      updated_at: '2026-07-29T00:00:00Z',
+      assigned_user_id: 'worker-1',
+    });
+
+    expect(display.assignedUserId).toBe('worker-1');
   });
 });
