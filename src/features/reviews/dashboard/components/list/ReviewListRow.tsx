@@ -42,10 +42,10 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
     <GlassCard
       blurColor="bg-zinc-500"
       rounded="rounded-2xl"
-      className="border-white/[0.06] bg-white/[0.02]"
+      className="flex h-full flex-col border-white/[0.06] bg-white/[0.02]"
       padding="none"
     >
-      <div className="p-3.5 sm:p-5">
+      <div className="flex h-full flex-col p-3.5 sm:p-5">
         <ReviewCardHeader
           authorDisplayName={review.authorDisplayName}
           createdAt={review.createdAt}

@@ -16,17 +16,43 @@ export type GoogleReviewRow = {
 const SELECT =
   'id, author_display_name, rating, body, provider_create_time, owner_reply_body, owner_replied_at';
 
-function mapRow(row: GoogleReviewRow): PublicProfileReview {
+export function mapGoogleReviewRowToPublic(
+  row: unknown
+): PublicProfileReview | null {
+  if (!row || typeof row !== 'object') return null;
+  const record = row as Partial<GoogleReviewRow>;
+  if (typeof record.id !== 'string' || !record.id.trim()) return null;
+  if (
+    typeof record.author_display_name !== 'string' ||
+    !record.author_display_name.trim()
+  ) {
+    return null;
+  }
+  if (
+    typeof record.rating !== 'number' ||
+    !Number.isFinite(record.rating) ||
+    record.rating < 1 ||
+    record.rating > 5
+  ) {
+    return null;
+  }
+  if (
+    typeof record.provider_create_time !== 'string' ||
+    !record.provider_create_time.trim()
+  ) {
+    return null;
+  }
+
   return {
-    id: `google:${row.id}`,
-    authorDisplayName: row.author_display_name,
-    rating: row.rating,
-    body: row.body ?? '',
-    createdAt: row.provider_create_time,
+    id: `google:${record.id.trim()}`,
+    authorDisplayName: record.author_display_name.trim(),
+    rating: Math.round(record.rating),
+    body: typeof record.body === 'string' ? record.body : '',
+    createdAt: record.provider_create_time.trim(),
     source: 'google',
     ownerReply:
-      row.owner_reply_body && row.owner_replied_at
-        ? { body: row.owner_reply_body, repliedAt: row.owner_replied_at }
+      record.owner_reply_body && record.owner_replied_at
+        ? { body: record.owner_reply_body, repliedAt: record.owner_replied_at }
         : undefined,
   };
 }
@@ -48,7 +74,9 @@ export async function loadPublicGoogleReviews(businessId: string): Promise<{
     return { reviews: [], count: 0 };
   }
 
-  const reviews = (data ?? []).map(row => mapRow(row as GoogleReviewRow));
+  const reviews = (data ?? [])
+    .map(row => mapGoogleReviewRowToPublic(row))
+    .filter((review): review is PublicProfileReview => review !== null);
   return { reviews, count: reviews.length };
 }
 

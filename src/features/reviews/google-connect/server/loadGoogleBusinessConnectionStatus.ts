@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 export type GoogleBusinessConnectionStatus = {
   connected: boolean;
   locationTitle: string | null;
+  lastSyncedAt: string | null;
 };
 
 export async function loadGoogleBusinessConnectionStatus(
@@ -19,7 +20,7 @@ export async function loadGoogleBusinessConnectionStatus(
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
     .from('google_business_connections')
-    .select('id, google_location_title')
+    .select('id, google_location_title, last_synced_at')
     .eq('business_id', trimmed)
     .maybeSingle();
 
@@ -33,6 +34,7 @@ export async function loadGoogleBusinessConnectionStatus(
     status: {
       connected: Boolean(data?.id),
       locationTitle: data?.google_location_title ?? null,
+      lastSyncedAt: data?.last_synced_at ?? null,
     },
   };
 }

@@ -2,7 +2,6 @@
 
 import { Button } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
-import { deriveReviewsSummary } from '@/features/reviews/utils/deriveReviewsSummary';
 import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
 import { bcp47ForBookingLocale } from '@/libs/i18n/publicBookingUi';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -16,13 +15,13 @@ import type { DashboardReview, ReviewsDashboardFilterId } from '../types';
 import { reviewMatchesFilter } from '../utils/reviewFilters';
 import { ReviewsDashboardHeader } from './ReviewsDashboardHeader';
 import { ReviewsDashboardShell } from './ReviewsDashboardShell';
-import { ReviewsCollectCard } from './cards/ReviewsCollectCard';
 import { ReviewsGoogleConnectCard } from './cards/ReviewsGoogleConnectCard';
 import { ReviewsSummaryCard } from './cards/ReviewsSummaryCard';
 import { ReviewListRow } from './list/ReviewListRow';
 import { ReviewsDashboardSkeleton } from './list/ReviewsDashboardSkeleton';
 import { ReviewsFilterPills } from './list/ReviewsFilterPills';
 import { ReviewsListEmptyState } from './list/ReviewsListEmptyState';
+import { ReviewsSetupEmptyState } from './list/ReviewsSetupEmptyState';
 
 export interface ReviewsDashboardPageProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
@@ -32,14 +31,26 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
   bookingFlowLocale = 'en',
 }) => {
   const locale = bcp47ForBookingLocale(bookingFlowLocale);
-  const { reviews, loadStatus, loadError, reloadReviews, updateReview } =
-    useDashboardReviews();
+  const {
+    reviews,
+    summary,
+    hasMore,
+    loadingMore,
+    loadMoreError,
+    loadStatus,
+    loadError,
+    reloadReviews,
+    loadMoreReviews,
+    updateReview,
+  } = useDashboardReviews();
   const {
     connected: googleConnected,
     importedCount,
     connectLoading,
     pullLoading,
+    refreshCoolingDown,
     connectError,
+    reviewReloadNonce,
     startConnect,
     pullReviews,
   } = useGoogleBusinessConnection();
@@ -49,8 +60,6 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
   const canWriteReviews = useDashboardAccess().can('reviews.write');
   const [filter, setFilter] = useState<ReviewsDashboardFilterId>('all');
   const [openReplyId, setOpenReplyId] = useState<string | null>(null);
-
-  const summary = useMemo(() => deriveReviewsSummary(reviews), [reviews]);
 
   const filtered = useMemo(
     () => reviews.filter(r => reviewMatchesFilter(r, filter)),
@@ -94,6 +103,11 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
   }, []);
 
   useEffect(() => {
+    if (reviewReloadNonce === 0) return;
+    void reloadReviews();
+  }, [reviewReloadNonce, reloadReviews]);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const google = params.get('google');
     if (google === 'connected' || google === 'error') {
@@ -106,6 +120,8 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
   }, []);
 
   const hasAnyReviews = reviews.length > 0;
+  const googleKnownConnected =
+    googleConnected || googleReturnNotice === 'connected';
   /** Full skeleton only on first load — avoids flashing over existing data on retry. */
   const showLoadingSkeleton = loadStatus === 'loading' && !hasAnyReviews;
 
@@ -126,21 +142,34 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
         </p>
       ) : null}
 
-      <div className="mb-6 space-y-3">
-        <ReviewsGoogleConnectCard
-          connected={googleConnected || googleReturnNotice === 'connected'}
-          importedCount={importedCount}
-          connectLoading={connectLoading}
-          pullLoading={pullLoading}
-          connectError={connectError}
-          onConnect={() => void startConnect()}
-          onPullReviews={() => {
-            void pullReviews().then(ok => {
-              if (ok) void reloadReviews();
-            });
-          }}
-        />
-        <ReviewsCollectCard />
+      <div className="mb-6 grid gap-3 lg:grid-cols-2">
+          {showLoadingSkeleton ? (
+            <div
+              className="h-40 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.02]"
+              aria-hidden
+            />
+          ) : loadStatus !== 'error' ? (
+            <ReviewsSummaryCard
+              summary={summary}
+              bookingFlowLocale={bookingFlowLocale}
+            />
+          ) : null}
+          <div className={loadStatus === 'error' ? 'lg:col-span-2' : 'h-full'}>
+            <ReviewsGoogleConnectCard
+              connected={googleKnownConnected}
+              importedCount={importedCount}
+              connectLoading={connectLoading}
+              pullLoading={pullLoading}
+              refreshCoolingDown={refreshCoolingDown}
+              connectError={connectError}
+              onConnect={() => void startConnect()}
+              onPullReviews={() => {
+                void pullReviews().then(ok => {
+                  if (ok) void reloadReviews();
+                });
+              }}
+            />
+          </div>
       </div>
 
       {showLoadingSkeleton ? (
@@ -162,31 +191,29 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
       ) : (
         <>
           {hasAnyReviews ? (
-            <div className="mb-6">
-              <ReviewsSummaryCard
-                summary={summary}
-                bookingFlowLocale={bookingFlowLocale}
-              />
-            </div>
-          ) : null}
-
-          {hasAnyReviews ? (
-            <div className="mb-4">
-              <ReviewsFilterPills value={filter} onChange={setFilter} />
-              <p className="mt-3 text-xs text-zinc-500">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-zinc-500">
                 Showing {sorted.length} of {reviews.length} reviews
               </p>
+              <ReviewsFilterPills value={filter} onChange={setFilter} />
             </div>
           ) : null}
 
           {!hasAnyReviews ? (
-            <ReviewsListEmptyState filter={filter} hasAnyReviews={false} />
+            <ReviewsSetupEmptyState />
           ) : sorted.length === 0 ? (
             <ReviewsListEmptyState filter={filter} hasAnyReviews />
           ) : (
-            <ul className="flex list-none flex-col gap-2 pb-8 sm:gap-3 sm:pb-10">
+            <ul className="grid list-none grid-cols-1 gap-2 pb-8 sm:gap-3 lg:grid-cols-2 lg:gap-4 sm:pb-10">
               {sorted.map(review => (
-                <li key={review.id}>
+                <li
+                  key={review.id}
+                  className={
+                    canWriteReviews && openReplyId === review.id
+                      ? 'h-full lg:col-span-2'
+                      : 'h-full'
+                  }
+                >
                   <ReviewListRow
                     review={review}
                     locale={locale}
@@ -203,6 +230,21 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
               ))}
             </ul>
           )}
+          {hasMore ? (
+            <div className="px-4 py-6 text-center">
+              {loadMoreError ? (
+                <p className="mb-3 text-sm text-zinc-500">{loadMoreError}</p>
+              ) : null}
+              <button
+                type="button"
+                disabled={loadingMore}
+                onClick={() => void loadMoreReviews()}
+                className="cursor-pointer text-sm font-medium text-white/80 underline-offset-2 hover:text-white hover:underline disabled:cursor-not-allowed disabled:text-zinc-500 disabled:no-underline"
+              >
+                Load more
+              </button>
+            </div>
+          ) : null}
         </>
       )}
     </ReviewsDashboardShell>

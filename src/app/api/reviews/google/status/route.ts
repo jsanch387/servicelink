@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
       success: true,
       connected: loaded.status.connected,
       locationTitle: loaded.status.locationTitle,
+      lastSyncedAt: loaded.status.lastSyncedAt,
     });
   } catch (error) {
     console.error('[reviews:google-connect] GET status failed', error);

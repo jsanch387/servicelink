@@ -8,9 +8,13 @@ import {
 } from '@/features/reviews/google-connect/server/googleBusinessOAuth';
 import { googleConnectReturnPath } from '@/features/reviews/google-connect/server/googleConnectReturnPath';
 import { verifyGoogleConnectState } from '@/features/reviews/google-connect/server/googleConnectState';
+import { pullGoogleBusinessReviews } from '@/features/reviews/google-connect/server/pullGoogleBusinessReviews';
 import { upsertGoogleBusinessConnection } from '@/features/reviews/google-connect/server/upsertGoogleBusinessConnection';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { NextRequest, NextResponse } from 'next/server';
+
+export const runtime = 'nodejs';
+export const maxDuration = 120;
 
 function reviewsRedirect(
   request: NextRequest,
@@ -86,6 +90,13 @@ export async function GET(request: NextRequest) {
     });
     if (!saved.ok) {
       return reviewsRedirect(request, 'error');
+    }
+
+    const pulled = await pullGoogleBusinessReviews(verified.value.businessId);
+    if (!pulled.ok) {
+      console.warn('[reviews:google-connect] initial pull failed', {
+        status: pulled.status,
+      });
     }
 
     return reviewsRedirect(request, 'connected');

@@ -6,26 +6,17 @@ Owners can show **all** of their Google Business Profile reviews on their Servic
 
 ---
 
-## Parked — read this next time (Sep 8, 2026)
+## Resume — API access approved (Nov 1, 2026)
 
-v1 **app code is done** on branch `google-reviews-integration`. Live pull is blocked on Google, not on us.
+v1 **app code is done** on branch `google-reviews-integration`. Google approved Basic API Access (case `6-3847000041545`, submitted Sep 8, 2026).
 
-**Why quota is 0:** we did **not** fail a quota-increase request. New Cloud projects start at **Requests per minute = 0** until Google **allowlists** the project. Enabling the API in the console does nothing. **Edit Quotas** on that row also does nothing. You have to apply for **Business Profile API access** first.
+**Still to do**
 
-**Current case:** `6-3847000041545`  
-Submitted **Sep 8, 2026** via [GBP API contact form](https://support.google.com/business/contact/api_default) → **Application for Basic API Access**. Google said **7–10 business days**. That case will **not** appear in Cloud Console support — only in the confirmation email. An earlier case (`3-0566000041119`, Aug 22) disappeared; treat it as gone.
+1. Confirm **Requests per minute** is above 0: Cloud Console → ServiceLink → **APIs & Services → Enabled APIs → My Business Account Management API → Quotas**. A live number is usually **300**.
+2. Reviews → **Connect to Google**. Connect imports reviews immediately. A daily job refreshes them, and opening Reviews refreshes again when the last import is more than 12 hours old. **Refresh now** is optional. Old tokens were never stored.
+3. Confirm the dashboard inbox shows a **Google** label, then the public Reviews tab.
 
-**When you come back**
-
-1. Cloud Console → ServiceLink → **APIs & Services → Enabled APIs → My Business Account Management API → Quotas**.
-2. **Requests per minute**
-   - still **0** → not approved yet. Do not click Pull. Do not Edit Quotas.
-   - **300** (or anything > 0) → approved. Continue below.
-3. Restore the missing SQL files if they are still absent (`docs/migrations/` is empty; tables already exist in production).
-4. Reviews → **Connect to Google** → **Pull Google reviews**. `google_business_connections` and `google_reviews` are **0 rows** — reconnect is required.
-5. Confirm inbox (Google label) + public Reviews tab.
-
-ServiceLink listing was verified **Aug 22, 2026**. Google’s form wants 60+ days; if this case is rejected for age, reapply around **Oct 21** with the Cloud **project number** (digits), listing owner/manager email.
+SQL for the two tables is restored in `docs/migrations/`. Those tables already exist in production; do not re-apply unless you are on a fresh database.
 
 ---
 
@@ -42,7 +33,7 @@ ServiceLink listing was verified **Aug 22, 2026**. Google’s form wants 60+ day
 **Owner flow**
 
 1. `/dashboard/reviews` → **Connect to Google** → Google OAuth.
-2. **Pull Google reviews** → we find the listing and import reviews.
+2. We import reviews before sending the owner back. A daily cron keeps them current. Opening Reviews also refreshes when the last import is older than 12 hours. **Refresh now** is optional.
 
 There is no “find my listing” step in the UI. Listing lookup is server-side inside pull (and also attempted on the OAuth callback).
 
@@ -70,9 +61,8 @@ Card: `ReviewsGoogleConnectCard` on `ReviewsDashboardPage`. Copy: `dashboard/cop
 | State | What they see |
 | ----- | ------------- |
 | Not connected | Connect explanation + **Connect to Google** |
-| Connected, no pull yet | **Pull Google reviews** |
-| Pull succeeded | Imported count + Pull again (refresh) |
-| Pull failed | Error under the button (quota, no listing, Google error) |
+| Connected | Imported count, or a note that new reviews show up on their own. **Refresh now** is optional and waits 3 minutes between tries. |
+| Refresh failed | Error under the button (quota, no listing, Google error). A quiet background refresh does not show this. |
 
 Google rows in the inbox have `source: 'google'`. They are excluded from **Needs reply** and have no reply UI.
 
@@ -153,7 +143,7 @@ sequenceDiagram
   App->>DB: Upsert google_business_connections
   App->>Owner: Redirect /dashboard/reviews?google=connected
 
-  Owner->>App: Pull Google reviews
+  Owner->>App: Lands back on Reviews
   App->>Google: Find listing again
   App->>Google: Page reviews.list
   App->>DB: Upsert google_reviews
@@ -190,7 +180,7 @@ Restart `next dev` after changing `.env.local`.
 
 Do **not** use **Edit Quotas** on that row. Apply at the [GBP API contact form](https://support.google.com/business/contact/api_default) → **Application for Basic API Access**. The form wants a **verified listing live 60+ days** and the Cloud **project number** (digits), not the project id string (`servicelink-488502`).
 
-When quota is live: Reviews → **Pull Google reviews**. Confirm rows in the inbox (Google label) and the public Reviews tab. See **Parked — read this next time** at the top for the current case id.
+When quota is live: Reviews → **Connect to Google**. Confirm rows in the inbox (Google label) and the public Reviews tab. Later reviews arrive from the daily job. See **Resume — API access approved** at the top.
 
 ---
 
@@ -259,7 +249,6 @@ Google public ids are `google:{providerReviewId}` (import) or `google:{row.id}` 
 
 - Disconnect / revoke
 - Multi-listing picker
-- Scheduled / cron pull
 - Reply or hide Google reviews from ServiceLink
 - Mixing Google stars into the public header average
 

@@ -518,6 +518,8 @@ export const publicBookingUiEn: PublicBookingUi = {
     googleReviewsSectionTitle: 'Google reviews',
     reviewsShowingSample: 'Showing recent reviews',
     reviewsLoadError: 'Reviews could not be loaded. Please try again.',
+    reviewsLoadMore: 'Load more',
+    reviewsLoadMoreError: 'Could not load more reviews.',
     reviewsRetry: 'Try again',
     reviewsLoadingAriaLabel: 'Loading reviews',
     galleryLoadError: 'Photos could not be loaded. Please try again.',

@@ -1,7 +1,12 @@
 'use client';
 
 import { API_ROUTES } from '@/constants/routes';
-import { useCallback, useEffect, useState } from 'react';
+import {
+  GOOGLE_REVIEW_MANUAL_PULL_COOLDOWN_MS,
+  GOOGLE_REVIEW_PULL_COOLDOWN_MESSAGE,
+} from '@/features/reviews/google-connect/googleReviewPullCooldown';
+import { isGoogleReviewSyncStale } from '@/features/reviews/google-connect/server/googleReviewSyncFreshness';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 type LoadStatus = 'loading' | 'ready' | 'error';
 
@@ -11,7 +16,10 @@ export type UseGoogleBusinessConnectionResult = {
   loadStatus: LoadStatus;
   connectLoading: boolean;
   pullLoading: boolean;
+  refreshCoolingDown: boolean;
   connectError: string | null;
+  /** Bumps after a background refresh so the inbox can reload. */
+  reviewReloadNonce: number;
   startConnect: () => Promise<void>;
   pullReviews: () => Promise<boolean>;
 };
@@ -23,6 +31,23 @@ export function useGoogleBusinessConnection(): UseGoogleBusinessConnectionResult
   const [connectLoading, setConnectLoading] = useState(false);
   const [pullLoading, setPullLoading] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [reviewReloadNonce, setReviewReloadNonce] = useState(0);
+  const [refreshLockedUntil, setRefreshLockedUntil] = useState(0);
+  const [, setCooldownTick] = useState(0);
+  const autoRefreshStarted = useRef(false);
+
+  const syncedLockUntil = (() => {
+    if (!lastSyncedAt) return 0;
+    const syncedAt = Date.parse(lastSyncedAt);
+    if (Number.isNaN(syncedAt)) return 0;
+    return syncedAt + GOOGLE_REVIEW_MANUAL_PULL_COOLDOWN_MS;
+  })();
+  const refreshLockedUntilEffective = Math.max(
+    syncedLockUntil,
+    refreshLockedUntil
+  );
+  const refreshCoolingDown = refreshLockedUntilEffective > Date.now();
 
   useEffect(() => {
     let cancelled = false;
@@ -33,6 +58,7 @@ export function useGoogleBusinessConnection(): UseGoogleBusinessConnectionResult
         const json = (await response.json().catch(() => null)) as {
           success?: boolean;
           connected?: boolean;
+          lastSyncedAt?: string | null;
         } | null;
         if (cancelled) return;
         if (!response.ok || !json?.success) {
@@ -40,6 +66,9 @@ export function useGoogleBusinessConnection(): UseGoogleBusinessConnectionResult
           return;
         }
         setConnected(json.connected === true);
+        setLastSyncedAt(
+          typeof json.lastSyncedAt === 'string' ? json.lastSyncedAt : null
+        );
         setLoadStatus('ready');
       } catch {
         if (!cancelled) setLoadStatus('error');
@@ -84,8 +113,8 @@ export function useGoogleBusinessConnection(): UseGoogleBusinessConnectionResult
     }
   }, []);
 
-  const pullReviews = useCallback(async () => {
-    setConnectError(null);
+  const pullReviews = useCallback(async (options?: { quiet?: boolean }) => {
+    if (!options?.quiet) setConnectError(null);
     setPullLoading(true);
     try {
       const response = await fetch(API_ROUTES.REVIEWS_GOOGLE_PULL, {
@@ -98,27 +127,68 @@ export function useGoogleBusinessConnection(): UseGoogleBusinessConnectionResult
       } | null;
 
       if (!response.ok || !json?.success) {
-        setConnectError(
-          typeof json?.error === 'string' && json.error.trim()
-            ? json.error
-            : 'Could not pull Google reviews.'
-        );
+        if (response.status === 429) {
+          const retryHeader = Number(response.headers.get('Retry-After'));
+          const retrySec =
+            Number.isFinite(retryHeader) && retryHeader > 0
+              ? retryHeader
+              : GOOGLE_REVIEW_MANUAL_PULL_COOLDOWN_MS / 1000;
+          setRefreshLockedUntil(Date.now() + retrySec * 1000);
+          if (!options?.quiet) {
+            setConnectError(
+              typeof json?.error === 'string' && json.error.trim()
+                ? json.error
+                : GOOGLE_REVIEW_PULL_COOLDOWN_MESSAGE
+            );
+          }
+          return false;
+        }
+        if (!options?.quiet) {
+          setConnectError(
+            typeof json?.error === 'string' && json.error.trim()
+              ? json.error
+              : 'Could not pull Google reviews.'
+          );
+        }
         return false;
       }
 
       setImportedCount(
         typeof json.importedCount === 'number' ? json.importedCount : 0
       );
+      setLastSyncedAt(new Date().toISOString());
       return true;
     } catch {
-      setConnectError(
-        'Something went wrong. Check your connection and try again.'
-      );
+      if (!options?.quiet) {
+        setConnectError(
+          'Something went wrong. Check your connection and try again.'
+        );
+      }
       return false;
     } finally {
       setPullLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!refreshCoolingDown) return;
+    const delay = Math.max(0, refreshLockedUntilEffective - Date.now());
+    const timer = window.setTimeout(
+      () => setCooldownTick(tick => tick + 1),
+      delay
+    );
+    return () => window.clearTimeout(timer);
+  }, [refreshCoolingDown, refreshLockedUntilEffective]);
+
+  useEffect(() => {
+    if (autoRefreshStarted.current) return;
+    if (loadStatus !== 'ready' || !connected) return;
+    if (!isGoogleReviewSyncStale(lastSyncedAt)) return;
+    autoRefreshStarted.current = true;
+    void pullReviews({ quiet: true }).then(ok => {
+      if (ok) setReviewReloadNonce(nonce => nonce + 1);
+    });
+  }, [connected, lastSyncedAt, loadStatus, pullReviews]);
 
   return {
     connected,
@@ -126,7 +196,9 @@ export function useGoogleBusinessConnection(): UseGoogleBusinessConnectionResult
     loadStatus,
     connectLoading,
     pullLoading,
+    refreshCoolingDown,
     connectError,
+    reviewReloadNonce,
     startConnect,
     pullReviews,
   };

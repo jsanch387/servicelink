@@ -37,6 +37,15 @@ export const CRON_JOBS = [
     description:
       'Sent quotes still open 2–3 days later: one customer email + SMS with the /q/ link.',
   },
+  {
+    id: 'google-review-pulls',
+    path: API_ROUTES.INTERNAL_CRON_GOOGLE_REVIEW_PULLS,
+    schedule: CRON_DAILY_14_UTC,
+    maxDurationSeconds: 300,
+    work: 'src/features/reviews/google-connect/server/runScheduledGoogleReviewPulls.ts',
+    description:
+      'Connected Google listings: pull reviews so owners do not have to refresh.',
+  },
 ] as const;
 
 export type CronJob = (typeof CRON_JOBS)[number];

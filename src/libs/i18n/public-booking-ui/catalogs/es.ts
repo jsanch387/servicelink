@@ -529,6 +529,8 @@ export const publicBookingUiEs: PublicBookingUi = {
     googleReviewsSectionTitle: 'Reseñas de Google',
     reviewsShowingSample: 'Mostrando reseñas recientes',
     reviewsLoadError: 'No se pudieron cargar las reseñas. Vuelve a intentarlo.',
+    reviewsLoadMore: 'Cargar más',
+    reviewsLoadMoreError: 'No se pudieron cargar más reseñas.',
     reviewsRetry: 'Reintentar',
     reviewsLoadingAriaLabel: 'Cargando reseñas',
     galleryLoadError: 'No se pudieron cargar las fotos. Vuelve a intentarlo.',

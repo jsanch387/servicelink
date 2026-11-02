@@ -2,7 +2,7 @@
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import type {
-  PublicProfileReviewsData,
+  PublicProfileReview,
   PublicProfileReviewsSummary,
 } from '@/features/reviews';
 import { getPublicProfileReviewsApiPath } from '@/features/reviews/utils/getPublicProfileReviewsApiPath';
@@ -13,6 +13,11 @@ import { ProfileReviewsList } from './list/ProfileReviewsList';
 import { ProfileReviewsSummary } from './summary/ProfileReviewsSummary';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
+
+type ReviewsFeedPage = {
+  reviews: PublicProfileReview[];
+  hasMore: boolean;
+};
 
 interface LazyPublicReviewsSectionProps {
   businessSlug: string;
@@ -26,49 +31,70 @@ export const LazyPublicReviewsSection: React.FC<
   LazyPublicReviewsSectionProps
 > = ({ businessSlug, summary, bookingFlowLocale = 'en', isActive }) => {
   const ui = publicBookingUi(bookingFlowLocale);
-  const [data, setData] = useState<PublicProfileReviewsData | null>(null);
+  const [reviews, setReviews] = useState<PublicProfileReview[]>([]);
+  const [hasMore, setHasMore] = useState(false);
   const [loadState, setLoadState] = useState<LoadState>('idle');
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(false);
 
-  const fetchReviews = useCallback(async () => {
-    setLoadState('loading');
-    try {
-      const res = await fetch(getPublicProfileReviewsApiPath(businessSlug), {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-      });
-      const json = (await res.json()) as {
-        success?: boolean;
-        data?: PublicProfileReviewsData;
-        error?: string;
-      };
-
-      if (!res.ok || !json.success || !json.data) {
-        setLoadState('error');
-        return;
+  const fetchReviews = useCallback(
+    async (offset: number) => {
+      const isFirstPage = offset === 0;
+      if (isFirstPage) {
+        setLoadState('loading');
+        setLoadMoreError(false);
+      } else {
+        setLoadingMore(true);
+        setLoadMoreError(false);
       }
 
-      setData(json.data);
-      setLoadState('ready');
-    } catch {
-      setLoadState('error');
-    }
-  }, [businessSlug]);
+      try {
+        const res = await fetch(
+          getPublicProfileReviewsApiPath(businessSlug, offset),
+          {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+          }
+        );
+        const json = (await res.json()) as {
+          success?: boolean;
+          data?: ReviewsFeedPage;
+          error?: string;
+        };
+
+        if (!res.ok || !json.success || !json.data) {
+          if (isFirstPage) setLoadState('error');
+          else setLoadMoreError(true);
+          return;
+        }
+
+        const serverReviews = json.data.reviews ?? [];
+        setReviews(current => {
+          if (isFirstPage) return serverReviews;
+          const seen = new Set(current.map(review => review.id));
+          const next = serverReviews.filter(review => !seen.has(review.id));
+          return [...current, ...next];
+        });
+        setHasMore(json.data.hasMore);
+        if (isFirstPage) setLoadState('ready');
+      } catch {
+        if (isFirstPage) setLoadState('error');
+        else setLoadMoreError(true);
+      } finally {
+        if (!isFirstPage) setLoadingMore(false);
+      }
+    },
+    [businessSlug]
+  );
 
   useEffect(() => {
     if (!isActive) return;
-    if (data || loadState === 'loading') return;
+    if (reviews.length > 0 || loadState === 'loading') return;
     if (loadState === 'ready' || loadState === 'error') return;
-    void fetchReviews();
-  }, [isActive, data, loadState, fetchReviews]);
+    void fetchReviews(0);
+  }, [isActive, reviews.length, loadState, fetchReviews]);
 
-  const displaySummary = data?.summary ?? summary;
-  const googleReviews = data?.googleReviews ?? [];
-  const googleSummary = data?.googleSummary ?? null;
-  const showServiceLinkSummary = displaySummary.reviewCount > 0;
-  const showServiceLinkList =
-    loadState === 'ready' && data && data.reviews.length > 0;
-  const showGoogleBlock =
-    loadState === 'ready' && googleReviews.length > 0 && googleSummary;
+  const showServiceLinkSummary = summary.reviewCount > 0;
 
   return (
     <section
@@ -78,7 +104,7 @@ export const LazyPublicReviewsSection: React.FC<
       {showServiceLinkSummary ? (
         <ProfileReviewsSummary
           bookingFlowLocale={bookingFlowLocale}
-          summary={displaySummary}
+          summary={summary}
         />
       ) : null}
 
@@ -91,37 +117,38 @@ export const LazyPublicReviewsSection: React.FC<
           <p className="text-sm text-zinc-500">{ui.profile.reviewsLoadError}</p>
           <button
             type="button"
-            onClick={() => {
-              setLoadState('idle');
-              void fetchReviews();
-            }}
-            className="mt-3 text-sm font-medium text-white/80 underline-offset-2 hover:text-white hover:underline touch-manipulation"
+            onClick={() => setLoadState('idle')}
+            className="mt-3 cursor-pointer text-sm font-medium text-white/80 underline-offset-2 hover:text-white hover:underline touch-manipulation"
           >
             {ui.profile.reviewsRetry}
           </button>
         </div>
       ) : null}
 
-      {showServiceLinkList ? (
+      {reviews.length > 0 ? (
         <ProfileReviewsList
-          reviews={data.reviews}
+          reviews={reviews}
           bookingFlowLocale={bookingFlowLocale}
         />
       ) : null}
 
-      {showGoogleBlock ? (
-        <div className={showServiceLinkSummary ? 'mt-10' : undefined}>
-          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-400">
-            {ui.profile.googleReviewsSectionTitle}
-          </h3>
-          <ProfileReviewsSummary
-            bookingFlowLocale={bookingFlowLocale}
-            summary={googleSummary}
-          />
-          <ProfileReviewsList
-            reviews={googleReviews}
-            bookingFlowLocale={bookingFlowLocale}
-          />
+      {loadState === 'ready' && (hasMore || loadMoreError) ? (
+        <div className="px-4 py-6 text-center sm:px-8">
+          {loadMoreError ? (
+            <p className="mb-3 text-sm text-zinc-500">
+              {ui.profile.reviewsLoadMoreError}
+            </p>
+          ) : null}
+          {hasMore ? (
+            <button
+              type="button"
+              disabled={loadingMore}
+              onClick={() => void fetchReviews(reviews.length)}
+              className="cursor-pointer text-sm font-medium text-white/80 underline-offset-2 hover:text-white hover:underline disabled:cursor-not-allowed disabled:text-zinc-500 disabled:no-underline"
+            >
+              {ui.profile.reviewsLoadMore}
+            </button>
+          ) : null}
         </div>
       ) : null}
     </section>

@@ -475,6 +475,8 @@ export type PublicBookingUi = {
     googleReviewsSectionTitle: string;
     reviewsShowingSample: string;
     reviewsLoadError: string;
+    reviewsLoadMore: string;
+    reviewsLoadMoreError: string;
     reviewsRetry: string;
     reviewsLoadingAriaLabel: string;
     galleryLoadError: string;

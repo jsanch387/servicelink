@@ -1,20 +1,15 @@
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
-import {
-  loadPublicBusinessReviews,
-  publicReviewsDataFromLoadResult,
-} from '@/features/reviews';
-import {
-  googleReviewsSummaryFromList,
-  loadPublicGoogleReviews,
-} from '@/features/reviews/google-connect/server/loadGoogleReviews';
+import { loadPublicReviewFeed } from '@/features/reviews/server/loadPublicReviewFeed';
+import { PUBLIC_REVIEW_PAGE_SIZE } from '@/features/reviews/utils/pagePublicReviews';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { assertPublicProfileGetRateLimits } from '@/server/rateLimit/publicApiRateLimit';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * GET /api/public/profile/[slug]/reviews
- * Full visible reviews — fetched when the customer opens the Reviews tab.
+ * GET /api/public/profile/[slug]/reviews?offset=0
+ * One newest-first page of ServiceLink and Google reviews.
+ * The score card stays on the full ServiceLink summary from the profile page.
  */
 export async function GET(
   request: NextRequest,
@@ -60,39 +55,38 @@ export async function GET(
       );
     }
 
-    const result = await loadPublicBusinessReviews(admin, businessId);
-    const serviceLinkData = publicReviewsDataFromLoadResult(result);
-    const google = await loadPublicGoogleReviews(businessId);
-    const googleSummary = googleReviewsSummaryFromList(google.reviews);
+    const offsetParam = request.nextUrl.searchParams.get('offset');
+    const offset = offsetParam == null || offsetParam === '' ? 0 : Number(offsetParam);
+    if (!Number.isInteger(offset) || offset < 0) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid review page' },
+        { status: 400 }
+      );
+    }
 
-    if (!serviceLinkData && google.reviews.length === 0) {
+    const feed = await loadPublicReviewFeed(admin, businessId, {
+      offset,
+      limit: PUBLIC_REVIEW_PAGE_SIZE,
+    });
+    if (!feed.ok) {
+      return NextResponse.json(
+        { success: false, error: feed.error },
+        { status: feed.error === 'Invalid review page' ? 400 : 500 }
+      );
+    }
+
+    if (offset === 0 && feed.reviews.length === 0) {
       return NextResponse.json(
         { success: false, error: 'No reviews available' },
         { status: 404 }
       );
     }
 
-    const data = serviceLinkData ?? {
-      reviews: [],
-      summary: {
-        averageRating: 0,
-        reviewCount: 0,
-        breakdown: [
-          { stars: 5, percent: 0 },
-          { stars: 4, percent: 0 },
-          { stars: 3, percent: 0 },
-          { stars: 2, percent: 0 },
-          { stars: 1, percent: 0 },
-        ],
-      },
-    };
-
     return NextResponse.json({
       success: true,
       data: {
-        ...data,
-        googleReviews: google.reviews,
-        googleSummary,
+        reviews: feed.reviews,
+        hasMore: feed.hasMore,
       },
     });
   } catch (err) {

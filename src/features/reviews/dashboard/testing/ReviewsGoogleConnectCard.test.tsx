@@ -7,7 +7,7 @@ import {
   GOOGLE_CONNECT_CONNECTED_TITLE,
   GOOGLE_CONNECT_CTA,
   GOOGLE_CONNECT_LEAD,
-  GOOGLE_CONNECT_PULL_CTA,
+  GOOGLE_CONNECT_REFRESH_CTA,
   GOOGLE_CONNECT_TITLE,
 } from '../copy/googleConnectCopy';
 
@@ -53,7 +53,7 @@ describe('ReviewsGoogleConnectCard', () => {
       screen.queryByRole('button', { name: GOOGLE_CONNECT_CTA })
     ).toBeNull();
     expect(
-      screen.getByRole('button', { name: GOOGLE_CONNECT_PULL_CTA })
+      screen.getByRole('button', { name: GOOGLE_CONNECT_REFRESH_CTA })
     ).toBeTruthy();
   });
 
@@ -69,7 +69,7 @@ describe('ReviewsGoogleConnectCard', () => {
     );
 
     await user.click(
-      screen.getByRole('button', { name: GOOGLE_CONNECT_PULL_CTA })
+      screen.getByRole('button', { name: GOOGLE_CONNECT_REFRESH_CTA })
     );
     expect(onPullReviews).toHaveBeenCalledTimes(1);
   });

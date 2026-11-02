@@ -1,11 +1,11 @@
 import type { ReviewsListResponse } from '@/features/reviews/dashboard/api/types';
-import { loadDashboardReviews } from '@/features/reviews/dashboard/server/loadDashboardReviews';
-import { loadDashboardGoogleReviews } from '@/features/reviews/google-connect/server/loadGoogleReviews';
+import { loadDashboardReviewFeed } from '@/features/reviews/dashboard/server/loadDashboardReviewFeed';
+import { PUBLIC_REVIEW_PAGE_SIZE } from '@/features/reviews/utils/pagePublicReviews';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request?: Request) {
   try {
     const supabase = await createSupabaseServerClient();
     const resolved = await requireBusinessPermission(supabase, 'reviews.read');
@@ -17,26 +17,35 @@ export async function GET() {
       );
     }
 
-    const loaded = await loadDashboardReviews(supabase, resolved.businessId);
-
-    if (!loaded.ok) {
+    const offsetParam = request
+      ? new URL(request.url).searchParams.get('offset')
+      : null;
+    const offset =
+      offsetParam == null || offsetParam === '' ? 0 : Number(offsetParam);
+    if (!Number.isInteger(offset) || offset < 0) {
       return NextResponse.json(
-        { success: false, error: loaded.error } satisfies ReviewsListResponse,
-        { status: loaded.status }
+        { success: false, error: 'Invalid review page' } satisfies ReviewsListResponse,
+        { status: 400 }
       );
     }
 
-    const googleReviews = await loadDashboardGoogleReviews(
-      resolved.businessId
-    ).catch(() => []);
-    const reviews = [...loaded.reviews, ...googleReviews].sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    const feed = await loadDashboardReviewFeed(supabase, resolved.businessId, {
+      offset,
+      limit: PUBLIC_REVIEW_PAGE_SIZE,
+    });
+
+    if (!feed.ok) {
+      return NextResponse.json(
+        { success: false, error: feed.error } satisfies ReviewsListResponse,
+        { status: feed.status }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      reviews,
+      reviews: feed.reviews,
+      hasMore: feed.hasMore,
+      summary: feed.summary,
     } satisfies ReviewsListResponse);
   } catch (err) {
     console.error('[reviews] GET /api/reviews failed', err);

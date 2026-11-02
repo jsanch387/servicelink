@@ -1,5 +1,6 @@
 'use client';
 
+import { GoogleIcon } from '@/components/shared';
 import React from 'react';
 import {
   reviewAuthorNameClass,
@@ -34,20 +35,19 @@ export const ReviewCardHeader: React.FC<ReviewCardHeaderProps> = ({
         <AuthorTag className={reviewAuthorNameClass}>
           {authorDisplayName}
         </AuthorTag>
-        {source === 'google' ? (
-          <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-            Google
-          </p>
-        ) : null}
         <time className={`mt-1 block ${reviewDateClass}`} dateTime={createdAt}>
           {formatReviewDate(createdAt, locale)}
         </time>
       </div>
-      <StarRatingDisplay
-        rating={rating}
-        size="sm"
-        className="shrink-0 pt-0.5"
-      />
+      <div className="flex shrink-0 flex-col items-end gap-1.5 pt-0.5">
+        <StarRatingDisplay rating={rating} size="sm" />
+        {source === 'google' ? (
+          <span className="inline-flex items-center gap-1 text-xs text-zinc-400">
+            <GoogleIcon className="h-3 w-3" />
+            Google
+          </span>
+        ) : null}
+      </div>
     </header>
   );
 };
