@@ -25,7 +25,7 @@ export default function PrivacyPage() {
 
         <div className="prose prose-invert max-w-none space-y-6 text-gray-400">
           <p className="text-sm text-gray-500 mb-8">
-            Last updated: August 10, 2026
+            Last updated: November 1, 2026
           </p>
 
           <section>
@@ -69,6 +69,11 @@ export default function PrivacyPage() {
               <li>
                 Usage and device data (logs, browser information, and platform
                 activity)
+              </li>
+              <li>
+                If a business connects Google, the Google listing they connect
+                and the reviews Google returns for that listing, as described
+                below
               </li>
             </ul>
           </section>
@@ -199,7 +204,64 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              5. Sharing and Disclosure
+              5. Google Business Profile
+            </h2>
+            <p className="text-base leading-relaxed">
+              A business owner can choose to connect the Google account that
+              manages their Google Business Profile. We ask Google for the{' '}
+              <span className="text-gray-300">business.manage</span> permission
+              so we can find that listing and import its reviews. We do not use
+              this permission for anything else.
+            </p>
+            <p className="text-base leading-relaxed mt-4">
+              When a business connects Google, we receive and store the
+              connected listing, the tokens Google gives us so we can keep the
+              connection, and the review details Google returns. Those details
+              can include the star rating, review text, reviewer name and
+              photo, review date, and a reply the business already posted on
+              Google.
+            </p>
+            <p className="text-base leading-relaxed mt-4">
+              We use this information to show those reviews to the business
+              owner in ServiceLink and on that business&apos;s public
+              ServiceLink page. Reviews imported from Google are labeled as
+              Google reviews. They do not change the ServiceLink star rating,
+              which comes only from reviews left through ServiceLink.
+            </p>
+            <p className="text-base leading-relaxed mt-4">
+              We do not sell Google user data. We do not use it for
+              advertising, and we do not use it to train generalized
+              artificial intelligence or machine learning models. We do not
+              allow people to read it except to provide this feature, keep
+              ServiceLink secure, comply with the law, or respond to a support
+              request. Companies that host ServiceLink process it only to run
+              the product. We do not share it with other businesses.
+            </p>
+            <p className="text-base leading-relaxed mt-4">
+              A business owner can remove ServiceLink&apos;s access in their
+              Google Account settings. They can also email us and ask us to
+              disconnect Google and delete the stored connection and imported
+              reviews. Deleting the ServiceLink account deletes that
+              connection, the tokens, and the imported reviews with the rest of
+              that business&apos;s data.
+            </p>
+            <p className="text-base leading-relaxed mt-4">
+              Our use of information received from Google APIs follows the{' '}
+              <a
+                href="https://developers.google.com/terms/api-services-user-data-policy"
+                className="text-orange-400 hover:text-orange-300 underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Google API Services User Data Policy
+              </a>
+              , including the Limited Use requirements.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
+              6. Sharing and Disclosure
             </h2>
             <p className="text-base leading-relaxed mb-4">
               We do not sell personal information. We may share information:
@@ -218,6 +280,10 @@ export default function PrivacyPage() {
                 With business owners when customers submit booking requests or
                 subscribe to that business&apos;s membership / recurring plans
               </li>
+              <li>
+                Google user data only as described in the Google Business
+                Profile section. We do not sell it
+              </li>
               <li>To comply with legal obligations or enforce our rights</li>
               <li>
                 In connection with a merger, acquisition, financing, or sale of
@@ -233,7 +299,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              6. Data Retention
+              7. Data Retention
             </h2>
             <p className="text-base leading-relaxed">
               We retain personal information for as long as needed to provide
@@ -257,7 +323,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              7. Data Security
+              8. Data Security
             </h2>
             <p className="text-base leading-relaxed">
               We use reasonable technical and organizational safeguards to
@@ -268,7 +334,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              8. Your Privacy Rights
+              9. Your Privacy Rights
             </h2>
             <p className="text-base leading-relaxed mb-4">
               Depending on your location, you may have rights to access,
@@ -296,7 +362,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              9. Cookies and Similar Technologies
+              10. Cookies and Similar Technologies
             </h2>
             <p className="text-base leading-relaxed">
               We may use cookies and similar technologies for authentication,
@@ -308,7 +374,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              10. Children&apos;s Privacy
+              11. Children&apos;s Privacy
             </h2>
             <p className="text-base leading-relaxed">
               ServiceLink is not intended for children under 13, and we do not
@@ -318,7 +384,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              11. Changes to This Privacy Policy
+              12. Changes to This Privacy Policy
             </h2>
             <p className="text-base leading-relaxed">
               We may update this Privacy Policy from time to time. We will post
@@ -329,7 +395,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              12. Contact Us
+              13. Contact Us
             </h2>
             <p className="text-base leading-relaxed">
               If you have any questions about this Privacy Policy, please

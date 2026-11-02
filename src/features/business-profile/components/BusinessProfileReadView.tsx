@@ -3,6 +3,7 @@
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import type { PublicProfileReviewsSummary } from '@/features/reviews';
+import { deriveReviewsSummary } from '@/features/reviews/utils/deriveReviewsSummary';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
 import type { CustomerSubscriptionPlan } from '@/features/subscriptions/types/customerSubscriptionPlan';
 import { toast } from '@/components/shared';
@@ -36,6 +37,8 @@ export interface BusinessProfileReadViewProps {
   publicFreeBookingsCapReached?: boolean;
   bookingFlowLocale?: PublicBookingFlowLocale;
   publicReviewSummary?: PublicProfileReviewsSummary | null;
+  /** Imported Google reviews. Shows the Reviews tab when ServiceLink has none. */
+  publicGoogleReviewCount?: number;
   publicProfileSlug?: string;
   publicActiveSale?: PublicActiveSale | null;
   /** Eager plans (dashboard preview). Public landing uses the flag + lazy fetch. */
@@ -59,6 +62,7 @@ export const BusinessProfileReadView: React.FC<
   publicFreeBookingsCapReached = false,
   bookingFlowLocale = 'en',
   publicReviewSummary = null,
+  publicGoogleReviewCount = 0,
   publicProfileSlug,
   publicActiveSale = null,
   publicSubscriptionPlans = [],
@@ -69,9 +73,9 @@ export const BusinessProfileReadView: React.FC<
   membershipCheckoutCanceled = false,
 }) => {
   const showReviewsTab = Boolean(
-    publicReviewSummary &&
-      publicReviewSummary.reviewCount > 0 &&
-      publicProfileSlug
+    publicProfileSlug &&
+      ((publicReviewSummary && publicReviewSummary.reviewCount > 0) ||
+        publicGoogleReviewCount > 0)
   );
   const showSubscriptionsTab =
     publicSubscriptionPlans.length > 0 ||
@@ -85,7 +89,10 @@ export const BusinessProfileReadView: React.FC<
     if (initialTab === 'subscriptions' && showSubscriptionsTab) {
       return 'subscriptions';
     }
-    if (initialTab === 'reviews' && publicReviewSummary?.reviewCount) {
+    if (
+      initialTab === 'reviews' &&
+      (publicReviewSummary?.reviewCount || publicGoogleReviewCount > 0)
+    ) {
       return 'reviews';
     }
     if (
@@ -304,10 +311,10 @@ export const BusinessProfileReadView: React.FC<
               bookingFlowLocale={bookingFlowLocale}
             />
           </section>
-        ) : showReviewsTab && publicReviewSummary && publicProfileSlug ? (
+        ) : showReviewsTab && publicProfileSlug ? (
           <LazyPublicReviewsSection
             businessSlug={publicProfileSlug}
-            summary={publicReviewSummary}
+            summary={publicReviewSummary ?? deriveReviewsSummary([])}
             bookingFlowLocale={bookingFlowLocale}
             isActive={activeTab === 'reviews'}
           />

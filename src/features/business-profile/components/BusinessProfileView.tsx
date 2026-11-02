@@ -89,6 +89,8 @@ interface BusinessProfileViewProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
   /** Ratings summary for header + Reviews tab; full list loads on tab click. */
   publicReviewSummary?: PublicProfileReviewsSummary | null;
+  /** Google reviews already imported — shows Reviews tab even with no ServiceLink reviews. */
+  publicGoogleReviewCount?: number;
   /** Slug for lazy reviews API (public profile + booking-link preview). */
   publicProfileSlug?: string;
   /** Live sale to announce on the public booking link (Pro owners only). */
@@ -126,6 +128,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   publicFreeBookingsCapReached = false,
   bookingFlowLocale = 'en',
   publicReviewSummary = null,
+  publicGoogleReviewCount = 0,
   publicProfileSlug,
   publicActiveSale = null,
   publicSubscriptionPlans = [],
@@ -444,6 +447,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                 publicFreeBookingsCapReached={publicFreeBookingsCapReached}
                 bookingFlowLocale={bookingFlowLocale}
                 publicReviewSummary={publicReviewSummary}
+                publicGoogleReviewCount={publicGoogleReviewCount}
                 publicProfileSlug={publicProfileSlug}
                 publicActiveSale={publicActiveSale}
                 publicSubscriptionPlans={publicSubscriptionPlans}

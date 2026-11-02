@@ -3,7 +3,8 @@
 Human-readable schema and behavior for **`review_invites`** and **`reviews`**. Use this for implementation, AI context, and onboarding.
 
 - **End-to-end flows (start here for product):** [FLOWS.md](./FLOWS.md)
-- **Migrations (run in order):** `001_review_invites` → `002_reviews` → [`003_one_review_per_customer.sql`](./migrations/003_one_review_per_customer.sql)
+- **Migrations (run in order):** `001_review_invites` → `002_reviews` → [`003_one_review_per_customer.sql`](./migrations/003_one_review_per_customer.sql) → [`004_google_business_connections.sql`](./migrations/004_google_business_connections.sql) → [`005_google_reviews.sql`](./migrations/005_google_reviews.sql)
+- **Google import:** [GOOGLE_REVIEWS.md](./GOOGLE_REVIEWS.md)
 - **Per-table detail:** [`REVIEW_INVITES_TABLE.md`](./REVIEW_INVITES_TABLE.md), [`REVIEWS_TABLE.md`](./REVIEWS_TABLE.md)
 
 ---
@@ -36,12 +37,14 @@ Repeat customers who already reviewed are skipped silently (no second email, no 
 
 ## Tables at a glance
 
-| Table            | Role                                            | Created by                                     |
-| ---------------- | ----------------------------------------------- | ---------------------------------------------- |
-| `review_invites` | One-time magic link per booking; email + expiry | Service role when booking marked **completed** |
-| `reviews`        | Stars + comment + optional owner reply          | Service role when customer **submits** form    |
+| Table                         | Role                                            | Created by                                     |
+| ----------------------------- | ----------------------------------------------- | ---------------------------------------------- |
+| `review_invites`              | One-time magic link per booking; email + expiry | Service role when booking marked **completed** |
+| `reviews`                     | Stars + comment + optional owner reply          | Service role when customer **submits** form    |
+| `google_business_connections` | Owner OAuth tokens + linked Google location     | Service role after Google connect callback     |
+| `google_reviews`              | Imported Google Business Profile reviews        | Service role on **Pull Google reviews**        |
 
-Both tables scope to **`business_profiles`** via `business_id` and tie to **`bookings`**.
+Native invite tables scope to **`business_profiles`** via `business_id` and tie to **`bookings`**. Google tables also scope by `business_id` but have **no** booking/invite FK — do not write Google rows into `reviews`.
 
 ---
 
@@ -51,6 +54,8 @@ Both tables scope to **`business_profiles`** via `business_id` and tie to **`boo
 erDiagram
   business_profiles ||--o{ review_invites : has
   business_profiles ||--o{ reviews : has
+  business_profiles ||--o| google_business_connections : "one Google link"
+  business_profiles ||--o{ google_reviews : imports
   bookings ||--o| review_invites : "one invite per booking"
   bookings ||--o| reviews : "review links to first visit"
   review_invites ||--o| reviews : "one submit"
@@ -90,9 +95,24 @@ erDiagram
     text body
     boolean is_hidden
   }
+
+  google_business_connections {
+    uuid id PK
+    uuid business_id FK UK
+    text google_location_name
+    text refresh_token
+  }
+
+  google_reviews {
+    uuid id PK
+    uuid business_id FK
+    text provider_review_id
+    smallint rating
+    text body
+  }
 ```
 
-**Cascade deletes:** Deleting a `business_profiles` or `bookings` row removes related invites and reviews.
+**Cascade deletes:** Deleting a `business_profiles` or `bookings` row removes related invites and reviews. Deleting a business also removes its Google connection and imported Google reviews.
 
 ---
 
@@ -293,9 +313,9 @@ where business_id = $1
 
 | Surface                    | Data source                         | Filter                                            |
 | -------------------------- | ----------------------------------- | ------------------------------------------------- |
-| `/dashboard/reviews`       | `reviews`                           | All rows for business; client filters needs reply |
-| Public profile Reviews tab | `reviews`                           | `is_hidden = false`                               |
-| Profile header rating      | `reviews` aggregate                 | `is_hidden = false`                               |
+| `/dashboard/reviews`       | `reviews` + `google_reviews`        | All ServiceLink rows; Google labeled, no reply    |
+| Public profile Reviews tab | `reviews` + `google_reviews`        | ServiceLink `is_hidden = false`; Google separate  |
+| Profile header rating      | `reviews` aggregate                 | `is_hidden = false` (Google not mixed in)         |
 | `/review/[token]` form     | `review_invites` + booking snapshot | Valid pending invite                              |
 
 Code (UI only today; mocks until API wired):
@@ -337,4 +357,5 @@ Comparable patterns elsewhere:
 | [DATABASE.md](./DATABASE.md)                         | This file — overview, flows, RLS, queries |
 | [REVIEW_INVITES_TABLE.md](./REVIEW_INVITES_TABLE.md) | `review_invites` columns & constraints    |
 | [REVIEWS_TABLE.md](./REVIEWS_TABLE.md)               | `reviews` columns & owner update rules    |
+| [GOOGLE_REVIEWS.md](./GOOGLE_REVIEWS.md)             | Google connect, pull, `google_*` tables   |
 | [../README.md](../README.md)                         | Feature folder + implementation status    |

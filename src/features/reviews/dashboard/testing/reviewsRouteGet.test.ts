@@ -4,11 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   createSupabaseServerClientMock,
   requireBusinessPermissionMock,
-  loadDashboardReviewsMock,
+  loadDashboardReviewFeedMock,
 } = vi.hoisted(() => ({
   createSupabaseServerClientMock: vi.fn(),
   requireBusinessPermissionMock: vi.fn(),
-  loadDashboardReviewsMock: vi.fn(),
+  loadDashboardReviewFeedMock: vi.fn(),
 }));
 
 vi.mock('@/libs/supabase/server', () => ({
@@ -20,14 +20,24 @@ vi.mock('@/features/team/server/requireBusinessPermission', () => ({
     requireBusinessPermissionMock(...args),
 }));
 
-vi.mock('@/features/reviews/dashboard/server/loadDashboardReviews', () => ({
-  loadDashboardReviews: loadDashboardReviewsMock,
+vi.mock('@/features/reviews/dashboard/server/loadDashboardReviewFeed', () => ({
+  loadDashboardReviewFeed: loadDashboardReviewFeedMock,
 }));
+
+function reviewsRequest() {
+  return new Request('http://localhost/api/reviews');
+}
 
 describe('GET /api/reviews', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createSupabaseServerClientMock.mockResolvedValue({} as never);
+    loadDashboardReviewFeedMock.mockResolvedValue({
+      ok: true,
+      reviews: [],
+      hasMore: false,
+      summary: { averageRating: 0, reviewCount: 0, breakdown: [] },
+    });
   });
 
   it('returns auth/business resolution errors', async () => {
@@ -37,12 +47,12 @@ describe('GET /api/reviews', () => {
       error: 'Unauthorized',
     });
 
-    const res = await GET();
+    const res = await GET(reviewsRequest());
     const json = await res.json();
 
     expect(res.status).toBe(401);
     expect(json).toEqual({ success: false, error: 'Unauthorized' });
-    expect(loadDashboardReviewsMock).not.toHaveBeenCalled();
+    expect(loadDashboardReviewFeedMock).not.toHaveBeenCalled();
   });
 
   it('returns server helper errors', async () => {
@@ -50,13 +60,13 @@ describe('GET /api/reviews', () => {
       ok: true,
       businessId: 'biz-1',
     });
-    loadDashboardReviewsMock.mockResolvedValue({
+    loadDashboardReviewFeedMock.mockResolvedValue({
       ok: false,
       status: 500,
       error: 'Failed to load reviews',
     });
 
-    const res = await GET();
+    const res = await GET(reviewsRequest());
     const json = await res.json();
 
     expect(res.status).toBe(500);
@@ -68,22 +78,29 @@ describe('GET /api/reviews', () => {
       ok: true,
       businessId: 'biz-1',
     });
-    loadDashboardReviewsMock.mockResolvedValue({
+    loadDashboardReviewFeedMock.mockResolvedValue({
       ok: true,
       reviews: [{ id: 'rev-1' }],
+      hasMore: true,
+      summary: { averageRating: 5, reviewCount: 1, breakdown: [] },
     });
 
-    const res = await GET();
+    const res = await GET(reviewsRequest());
     const json = await res.json();
 
     expect(res.status).toBe(200);
-    expect(json).toEqual({ success: true, reviews: [{ id: 'rev-1' }] });
+    expect(json).toEqual({
+      success: true,
+      reviews: [{ id: 'rev-1' }],
+      hasMore: true,
+      summary: { averageRating: 5, reviewCount: 1, breakdown: [] },
+    });
   });
 
   it('returns 500 on unexpected throw', async () => {
     requireBusinessPermissionMock.mockRejectedValue(new Error('boom'));
 
-    const res = await GET();
+    const res = await GET(reviewsRequest());
     const json = await res.json();
 
     expect(res.status).toBe(500);

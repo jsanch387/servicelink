@@ -51,6 +51,7 @@ Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit tes
 | `booking-reminders`        | Tomorrow’s confirmed bookings: owner push + customer email/SMS  | [`availability/.../reminders`](../../availability/booking/server/reminders/README.md) |
 | `quote-request-follow-ups` | Unanswered quote requests in a 3-day window: one owner push/day | [`quotes/.../reminders`](../../quotes/server/reminders/README.md)                     |
 | `quote-customer-reminders` | Sent quotes still open 2–3 days later: one customer email + SMS | [`quotes/.../reminders`](../../quotes/server/reminders/README.md)                     |
+| `google-review-pulls`      | Connected Google listings: import reviews without a manual pull | [`reviews/docs/GOOGLE_REVIEWS.md`](../../reviews/docs/GOOGLE_REVIEWS.md)             |
 
 ### booking-reminders
 
@@ -76,6 +77,14 @@ Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit tes
 - **Entry:** `runQuoteCustomerReminders`
 - **Customer idempotency:** `quotes.customer_reminder_sent_at` + `{quoteId}:quote_reminder`
 - **Channels:** email + SMS together; SMS includes the same `/q/` URL as the email
+
+### google-review-pulls
+
+- **Route:** `GET /api/internal/cron/google-review-pulls`
+- **Duration:** `maxDuration = 300`
+- **Entry:** `runScheduledGoogleReviewPulls`
+- **Batch:** oldest sync first, 40 businesses per run
+- **Also:** connect imports immediately, and opening Reviews refreshes when the last import is older than 12 hours
 
 ---
 

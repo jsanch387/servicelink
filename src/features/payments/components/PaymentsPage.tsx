@@ -37,7 +37,7 @@ export interface PaymentsPageProps {
   stripeExpressAccountId?: string | null;
   /** Had Connect and/or `payment_settings` before losing Pro (churned / downgraded). */
   priorPaymentsSetup?: boolean;
-  /** Prod test: sales tax card is visible only for the allowlisted owner. */
+  /** Shows the sales tax settings card. */
   showSalesTaxCard?: boolean;
 }
 

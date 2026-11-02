@@ -1,7 +1,6 @@
 import { ROUTES } from '@/constants/routes';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { PaymentsPage } from '@/features/payments';
-import { isOwnerEmailAllowedForSalesTax } from '@/features/payments/config/salesTaxRolloutAllowlist';
 import { logConnect } from '@/features/payments/server/connectOnboardingLog';
 import { getHasProAccessForPayments } from '@/features/payments/server/getHasProAccessForPayments';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
@@ -149,7 +148,7 @@ export default async function DashboardPaymentsSettingsPage({
       priorPaymentsSetup={priorPaymentsSetup}
       paymentSettings={paymentSettingsForDashboard}
       stripeExpressAccountId={paymentAccount?.stripe_account_id?.trim() ?? null}
-      showSalesTaxCard={isOwnerEmailAllowedForSalesTax(user.email)}
+      showSalesTaxCard
     />
   );
 }

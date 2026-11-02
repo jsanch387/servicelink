@@ -43,6 +43,13 @@ describe('CRON_JOBS catalog', () => {
     ).toBe(API_ROUTES.INTERNAL_CRON_QUOTE_CUSTOMER_REMINDERS);
   });
 
+  it('registers google review pulls', () => {
+    expect(CRON_JOBS.map(job => job.id)).toContain('google-review-pulls');
+    expect(
+      CRON_JOBS.find(job => job.id === 'google-review-pulls')?.path
+    ).toBe(API_ROUTES.INTERNAL_CRON_GOOGLE_REVIEW_PULLS);
+  });
+
   it('runs all jobs on the same daily slot', () => {
     expect(new Set(CRON_JOBS.map(job => job.schedule))).toEqual(
       new Set([CRON_DAILY_14_UTC])

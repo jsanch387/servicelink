@@ -42,16 +42,17 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
     <GlassCard
       blurColor="bg-zinc-500"
       rounded="rounded-2xl"
-      className="border-white/[0.06] bg-white/[0.02]"
+      className="flex h-full flex-col border-white/[0.06] bg-white/[0.02]"
       padding="none"
     >
-      <div className="p-3.5 sm:p-5">
+      <div className="flex h-full flex-col p-3.5 sm:p-5">
         <ReviewCardHeader
           authorDisplayName={review.authorDisplayName}
           createdAt={review.createdAt}
           rating={review.rating}
           locale={locale}
           authorAs="h3"
+          source={review.source}
         />
 
         {hasVisibleReviewBody(review.body) ? (
@@ -75,7 +76,10 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
           />
         ) : null}
 
-        {!hasReply && !isReplyOpen && onToggleReply ? (
+        {review.source !== 'google' &&
+        !hasReply &&
+        !isReplyOpen &&
+        onToggleReply ? (
           <Button
             type="button"
             variant="secondary"
@@ -87,7 +91,11 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
           </Button>
         ) : null}
 
-        {!hasReply && isReplyOpen && onSendReply && onToggleReply ? (
+        {review.source !== 'google' &&
+        !hasReply &&
+        isReplyOpen &&
+        onSendReply &&
+        onToggleReply ? (
           <ReviewReplyForm
             onSend={body => onSendReply(review.id, body)}
             onCancel={onToggleReply}
