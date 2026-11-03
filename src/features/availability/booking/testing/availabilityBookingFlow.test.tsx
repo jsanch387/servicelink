@@ -263,9 +263,10 @@ describe('AvailabilityBookingPage (Spanish locale)', () => {
     const user = userEvent.setup();
     renderBookingFlow({ bookingFlowLocale: 'es' });
 
-    expect(screen.getByRole('button', { name: /^continuar$/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^continuar$/i })).toBeNull();
 
     await openFullCalendar(user, 'es');
+    expect(screen.getByRole('button', { name: /^continuar$/i })).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /pick date/i }));
     await user.click(screen.getByRole('button', { name: /pick time/i }));
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));

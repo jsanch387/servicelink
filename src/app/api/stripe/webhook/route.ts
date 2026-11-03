@@ -45,6 +45,7 @@ import { PUBLIC_BOOKING_MAX_JOBS } from '@/features/availability/booking/constan
 import { salesTaxEmailLine } from '@/features/availability/booking/utils/publicBookingSalesTax';
 import { createBooking } from '@/features/availability/services/bookingService';
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
+import { businessHasAnyBooking } from '@/features/onboarding-v3/server/businessHasTestBooking';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
 import {
   buildPublicBookingServiceLocation,
@@ -617,26 +618,32 @@ export async function POST(request: NextRequest) {
         shop_zip: string | null;
       };
 
-      const freeTierCap = await enforceFreeTierBookingCapBeforeCreate(
+      const practiceBooking = !(await businessHasAnyBooking(
         supabase,
-        capProfile
-      );
-      if (!freeTierCap.ok) {
-        logBookingCheckoutStage('free_tier_booking_cap', {
-          eventId: event.id,
-          sessionId: session.id,
-          checkoutSessionRowId: String(checkoutSessionRow.id),
-        });
-        console.warn('[booking-checkout:webhook] free tier cap', {
-          businessId: bookingPayload.businessId,
-          sessionId: session.id,
-        });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any)
-          .from('booking_checkout_sessions')
-          .update({ status: 'failed' })
-          .eq('id', checkoutSessionRow.id);
-        return NextResponse.json({ received: true }, { status: 200 });
+        capProfile.id
+      ));
+      if (!practiceBooking) {
+        const freeTierCap = await enforceFreeTierBookingCapBeforeCreate(
+          supabase,
+          capProfile
+        );
+        if (!freeTierCap.ok) {
+          logBookingCheckoutStage('free_tier_booking_cap', {
+            eventId: event.id,
+            sessionId: session.id,
+            checkoutSessionRowId: String(checkoutSessionRow.id),
+          });
+          console.warn('[booking-checkout:webhook] free tier cap', {
+            businessId: bookingPayload.businessId,
+            sessionId: session.id,
+          });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('booking_checkout_sessions')
+            .update({ status: 'failed' })
+            .eq('id', checkoutSessionRow.id);
+          return NextResponse.json({ received: true }, { status: 200 });
+        }
       }
 
       const optionLabel = bookingPayload.servicePriceOptionLabel?.trim();
@@ -769,6 +776,7 @@ export async function POST(request: NextRequest) {
         discountSnapshot,
         smsOptIn: checkoutSmsOptIn,
         createdByUserId: bookingPayload.createdByUserId ?? null,
+        isTest: practiceBooking,
         ...(jobDetails
           ? {
               jobDetails,

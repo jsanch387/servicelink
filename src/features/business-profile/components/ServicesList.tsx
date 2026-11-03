@@ -5,6 +5,7 @@ import { BookFlowAdvancingOverlay } from '@/features/availability/booking/compon
 import { PublicBookingPolicyAgreeDialog } from '@/features/availability/booking/components/BookingPolicyAgreeModal';
 import { usePublicBookingPolicyAgreement } from '@/features/availability/booking/hooks/usePublicBookingPolicyAgreement';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
+import { useOwnerTestGuidePhase } from '@/features/onboarding-v3/ownerTestGuide';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { useRouter } from 'next/navigation';
 import {
@@ -55,6 +56,7 @@ export const ServicesList: React.FC<ServicesListProps> = ({
   publicActiveSale = null,
 }) => {
   const router = useRouter();
+  const ownerTestGuide = useOwnerTestGuidePhase() === 'public';
   const bookingUi = publicBookingUi(bookingFlowLocale);
   const services = useMemo(
     () => businessProfile.services || [],
@@ -148,16 +150,20 @@ export const ServicesList: React.FC<ServicesListProps> = ({
                 showCategoryFilters ? 'mt-3' : ''
               }`}
             >
-              {displayServices.map(service => {
+              {displayServices.map((service, index) => {
                 const copy = isPublic
                   ? localizedServiceCopy(bookingFlowLocale, service)
                   : {
                       name: service.name,
                       description: service.description,
                     };
-                return (
+                const guideThisService =
+                  isPublic &&
+                  ownerTestGuide &&
+                  !publicHideBookLinks &&
+                  index === 0;
+                const card = (
                   <ServiceCard
-                    key={service.id}
                     service={{
                       id: service.id,
                       name: copy.name,
@@ -175,6 +181,7 @@ export const ServicesList: React.FC<ServicesListProps> = ({
                     hideBookLink={publicHideBookLinks}
                     bookingFlowLocale={bookingFlowLocale}
                     publicActiveSale={publicActiveSale}
+                    guideSelect={guideThisService}
                     onSelectNavigate={
                       policyAgreement.required && !policyAgreement.hasAgreed
                         ? href => {
@@ -186,6 +193,11 @@ export const ServicesList: React.FC<ServicesListProps> = ({
                         : undefined
                     }
                   />
+                );
+                return (
+                  <div key={service.id} className="min-w-0">
+                    {card}
+                  </div>
                 );
               })}
             </div>

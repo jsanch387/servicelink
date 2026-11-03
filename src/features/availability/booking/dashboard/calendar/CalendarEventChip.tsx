@@ -1,5 +1,6 @@
 'use client';
 
+import { useOwnerTestGuidePhase } from '@/features/onboarding-v3/ownerTestGuide';
 import { calendarAssigneeLabel } from '../utils/bookingAssigneeBoardLabel';
 import { formatMinutesLabel } from './dateUtils';
 import { eventChipClass } from './eventStyles';
@@ -18,6 +19,11 @@ export function CalendarEventChip({
   showTime = true,
   compact = false,
 }: CalendarEventChipProps) {
+  const guidePhase = useOwnerTestGuidePhase();
+  const guideThisJob =
+    guidePhase !== 'complete' &&
+    event.booking?.isTest === true &&
+    event.booking.status === 'confirmed';
   const assignee = calendarAssigneeLabel(event.assigneeLabel);
   const className = `flex w-full min-w-0 items-center gap-1.5 text-left font-medium leading-tight ${
     compact
@@ -46,6 +52,12 @@ export function CalendarEventChip({
       type="button"
       onClick={onSelect}
       className={`${className} cursor-pointer`}
+      data-owner-test-guide={guideThisJob ? 'job' : undefined}
+      data-owner-test-copy={
+        guideThisJob
+          ? 'Tap your appointment, then mark it complete.'
+          : undefined
+      }
     >
       {body}
     </button>

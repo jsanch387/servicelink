@@ -17,10 +17,22 @@ import type {
 //   SyncBookingsCtaCard,
 // } from '@/features/calendar-sync';
 import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
+import {
+  dismissOwnerTestGuide,
+  readOwnerTestGuide,
+  readOwnerTestGuideDismissed,
+  setOwnerTestGuide,
+} from '@/features/onboarding-v3/ownerTestGuide';
 import { shopHasBookingAssignees } from '@/features/team/utils/shopHasBookingAssignees';
 import { FreeBookingsTracker, FREE_BOOKINGS_LIMIT } from '@/features/pricing';
 import { PlusIcon } from '@heroicons/react/24/outline';
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { AvailabilityBookingDetailPanel } from './AvailabilityBookingDetailPanel';
 import { BookingsCalendar } from './calendar/BookingsCalendar';
 import { CalendarModeToggle } from './calendar/CalendarModeToggle';
@@ -68,6 +80,7 @@ export function AvailabilityBookingsView({
     bookings,
     isLoading,
     isLoadingMore,
+    totalCount,
     listPageIndex,
     hasNextListPage,
     setListPage,
@@ -113,6 +126,30 @@ export function AvailabilityBookingsView({
     },
     [assignedToMe, loadRange]
   );
+
+  // Walk through the first appointment only. Another appointment, or the
+  // close button, ends it for good on this browser.
+  useEffect(() => {
+    if (isLoading) return;
+    const moreThanOne =
+      totalCount == null ? bookings.length > 1 : totalCount > 1;
+    if (readOwnerTestGuideDismissed()) {
+      if (readOwnerTestGuide()) dismissOwnerTestGuide();
+      return;
+    }
+    if (moreThanOne) {
+      if (!readOwnerTestGuideDismissed() || readOwnerTestGuide()) {
+        dismissOwnerTestGuide();
+      }
+      return;
+    }
+    const hasOpenTest = bookings.some(
+      booking => booking.isTest && booking.status === 'confirmed'
+    );
+    if (!hasOpenTest || selectedBooking) return;
+    if (readOwnerTestGuide() === 'job') return;
+    setOwnerTestGuide('job');
+  }, [bookings, isLoading, selectedBooking, totalCount]);
 
   const timeOffIntervalsForSlots = useMemo<TimeOffInterval[]>(
     () => timeOffBlocks.map(toTimeOffIntervalFields),
@@ -356,6 +393,17 @@ export function AvailabilityBookingsView({
             onListActive={loadCurrentList}
             onVisibleRangeChange={loadVisibleRange}
             onSelectBooking={booking => {
+              const onlyPractice =
+                !readOwnerTestGuideDismissed() &&
+                (totalCount === 1 ||
+                  (totalCount == null && bookings.length === 1));
+              if (
+                onlyPractice &&
+                booking.isTest &&
+                booking.status === 'confirmed'
+              ) {
+                setOwnerTestGuide('complete');
+              }
               setUpdateError(null);
               setSelectedBooking(booking);
             }}
@@ -366,7 +414,16 @@ export function AvailabilityBookingsView({
       {selectedBooking && (
         <AvailabilityBookingDetailPanel
           booking={selectedBooking}
-          onClose={() => setSelectedBooking(null)}
+          onClose={() => {
+            setSelectedBooking(null);
+            if (
+              selectedBooking?.isTest &&
+              selectedBooking.status === 'confirmed' &&
+              readOwnerTestGuide() === 'complete'
+            ) {
+              setOwnerTestGuide('job');
+            }
+          }}
           readOnly={!canWriteBookings}
           canRunActions={canRunBookings}
           canDelete={canDeleteBookings}

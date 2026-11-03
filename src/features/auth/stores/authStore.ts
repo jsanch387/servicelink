@@ -3,6 +3,7 @@
 import { ROUTES, isTeamInvitePath } from '@/constants/routes';
 import { appendAttributionToAuthRedirect } from '@/features/marketing-attribution/utils/authRedirectAttribution';
 import { getStoredMarketingUtms } from '@/features/marketing-attribution/utils/utmCapture';
+import { clearV3ChecklistDismissed } from '@/features/onboarding-v3/v3Guide';
 import { ProfileService } from '@/features/profiles';
 import { createClient } from '@/libs/supabase';
 import { create } from 'zustand';
@@ -341,6 +342,7 @@ export const useAuthStore = create<AuthStore>()(
 
           // Clear persisted storage
           localStorage.removeItem('auth-store');
+          clearV3ChecklistDismissed();
 
           return { success: true };
         } catch (error) {

@@ -15,6 +15,7 @@ export const publicBookingUiEs: PublicBookingUi = {
     backToAddOns: 'Volver a complementos',
     backToServices: 'Volver a servicios',
     backToBookings: 'Volver a reservas',
+    backToDashboard: 'Volver al panel',
     backToAppointmentType: 'Volver al tipo de cita',
   },
   common: {
@@ -338,8 +339,6 @@ export const publicBookingUiEs: PublicBookingUi = {
     cardHeaderOwner: 'Cita',
     cardHeaderCustomer: 'Tu reserva',
     ownerPaymentNote: 'Los datos de pago quedan guardados con esta cita.',
-    customerPaymentNote:
-      'Los detalles de pago aparecerán en tu confirmación de reserva.',
     goToBookings: 'Ir a reservas',
     backToProfile: 'Volver al perfil',
   },

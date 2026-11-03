@@ -197,6 +197,11 @@ export type PublicBookingJobDraft = {
   durationMinutes: number;
   vehicle: PublicBookingJobVehicleDraft;
   pet?: PublicBookingJobPetDraft;
+  /**
+   * True when the customer saw price options, add-ons, or a location choice
+   * before the calendar. False when Select skipped straight to the date.
+   */
+  hasServiceDetails?: boolean;
 };
 
 /** Per-job vehicle for owner multi-job visits (`jobs[]`). */
@@ -280,6 +285,11 @@ export interface CreateBookingRequest {
    * authenticated session for this business; customer email may be omitted.
    */
   ownerManualBooking?: boolean;
+  /**
+   * Set only while the owner is in the onboarding test-appointment walkthrough.
+   * The server ignores it unless the signed-in user owns this business.
+   */
+  ownerTest?: boolean;
   /**
    * Multi-job appointment (1…N). When present, creates **one** booking row with
    * jobs stored in `job_details`. Appointment duration = sum of job durations.

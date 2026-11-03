@@ -37,6 +37,10 @@ export type Database = {
           full_name: string | null;
           onboarding_step: number;
           onboarding_status: 'not_started' | 'in_progress' | 'completed';
+          /** NULL and v2 are the 5-step flow. v3 is the 2-step flow. */
+          onboarding_flow: 'v2' | 'v3' | null;
+          /** Client the account was created on. */
+          signup_platform: 'web' | 'ios' | 'android' | null;
           created_at: string;
           updated_at: string;
           subscription_tier: string;
@@ -60,6 +64,8 @@ export type Database = {
           full_name?: string | null;
           onboarding_step?: number;
           onboarding_status?: 'not_started' | 'in_progress' | 'completed';
+          onboarding_flow?: 'v2' | 'v3' | null;
+          signup_platform?: 'web' | 'ios' | 'android' | null;
           created_at?: string;
           updated_at?: string;
           subscription_tier?: string;
@@ -82,6 +88,8 @@ export type Database = {
           full_name?: string | null;
           onboarding_step?: number;
           onboarding_status?: 'not_started' | 'in_progress' | 'completed';
+          onboarding_flow?: 'v2' | 'v3' | null;
+          signup_platform?: 'web' | 'ios' | 'android' | null;
           created_at?: string;
           updated_at?: string;
           subscription_tier?: string;

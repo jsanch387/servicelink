@@ -304,6 +304,7 @@ export function ServiceDetailsScreen({
         durationMinutes: a.durationMinutes ?? undefined,
       })),
       durationMinutes: Math.max(1, baseDurationMinutes + addOnMinutes),
+      hasServiceDetails: true,
       vehicle: keepVisitDraft
         ? (existing!.jobs[0].vehicle ?? { year: '', make: '', model: '' })
         : { year: '', make: '', model: '' },

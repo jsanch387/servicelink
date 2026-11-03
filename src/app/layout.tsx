@@ -12,6 +12,7 @@ import {
   HOME_SEO_TITLE,
 } from '@/features/landing-page/data/homeSeoContent';
 import { ToastViewport } from '@/components/shared';
+import { OwnerTestGuideHost } from '@/features/onboarding-v3/components/OwnerTestGuideHost';
 import type { Metadata } from 'next';
 import {
   Geist,
@@ -253,6 +254,7 @@ export default function RootLayout({
           <MarketingAttributionRoot />
         </Suspense>
         {children}
+        <OwnerTestGuideHost />
         <ToastViewport />
         <Analytics />
         <SpeedInsights />

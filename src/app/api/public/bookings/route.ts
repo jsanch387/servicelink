@@ -102,6 +102,8 @@ import {
   salesTaxEmailLine,
 } from '@/features/availability/booking/utils/publicBookingSalesTax';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
+import { businessHasAnyBooking } from '@/features/onboarding-v3/server/businessHasTestBooking';
+import { OWNER_TEST_BOOKING_COOKIE } from '@/features/onboarding-v3/ownerTestBooking';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { assertPublicBookingsRateLimits } from '@/server/rateLimit/publicApiRateLimit';
@@ -131,15 +133,23 @@ function publicBookingStoredTax(args: {
 function publicBookingJson(
   requestId: string,
   body: unknown,
-  status: number
+  status: number,
+  clearOwnerTestCookie = false
 ): NextResponse {
-  return NextResponse.json(body, {
+  const response = NextResponse.json(body, {
     status,
     headers: {
       'X-Request-ID': requestId,
       'Cache-Control': 'no-store',
     },
   });
+  if (clearOwnerTestCookie) {
+    response.cookies.set(OWNER_TEST_BOOKING_COOKIE, '', {
+      path: '/',
+      maxAge: 0,
+    });
+  }
+  return response;
 }
 
 export async function POST(request: NextRequest) {
@@ -260,6 +270,7 @@ export async function POST(request: NextRequest) {
 
     let ownerAuthMethod: 'bearer' | 'cookie' | 'public' = 'public';
     let createdByUserId: string | null = null;
+    let isOwnerTestBooking = false;
 
     const supabase = createSupabaseAdminClient();
 
@@ -509,17 +520,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cap = await enforceFreeTierBookingCapBeforeCreate(supabase, {
-      id: businessId,
-      profile_id: profileId,
-      free_bookings_count: p.free_bookings_count,
-    });
-    if (!cap.ok) {
-      return publicBookingJson(
-        requestId,
-        { success: false, error: cap.message },
-        403
-      );
+    // The first public booking is the practice appointment, signed in or not.
+    // A later visit, including Book a test appointment, counts toward the five.
+    if (
+      !ownerManualBooking &&
+      !(await businessHasAnyBooking(supabase, businessId))
+    ) {
+      isOwnerTestBooking = true;
+    }
+
+    if (!isOwnerTestBooking) {
+      const cap = await enforceFreeTierBookingCapBeforeCreate(supabase, {
+        id: businessId,
+        profile_id: profileId,
+        free_bookings_count: p.free_bookings_count,
+      });
+      if (!cap.ok) {
+        return publicBookingJson(
+          requestId,
+          { success: false, error: cap.message },
+          403
+        );
+      }
     }
 
     const availabilityRow = await getAvailabilityForBusiness(
@@ -813,6 +835,7 @@ export async function POST(request: NextRequest) {
             ? { smsOptIn: publicSmsOptIn }
             : {}),
           createdByUserId,
+          isTest: isOwnerTestBooking,
         });
       } catch (createErr) {
         logBookingTransaction(requestId, 'error', 'appointment_create_failed', {
@@ -1041,7 +1064,8 @@ export async function POST(request: NextRequest) {
             jobCount,
           },
         },
-        201
+        201,
+        isOwnerTestBooking
       );
     }
 
@@ -1122,6 +1146,7 @@ export async function POST(request: NextRequest) {
         ? { smsOptIn: publicSmsOptIn }
         : {}),
       createdByUserId,
+      isTest: isOwnerTestBooking,
     });
 
     const totalAfterDiscount = discountSnapshot
@@ -1305,7 +1330,8 @@ export async function POST(request: NextRequest) {
           jobCount: 1,
         },
       },
-      201
+      201,
+      isOwnerTestBooking
     );
   } catch (err) {
     logBookingTransaction(requestId, 'error', 'unhandled', {

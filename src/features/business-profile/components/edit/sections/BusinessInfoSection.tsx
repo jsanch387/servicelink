@@ -96,7 +96,7 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
       </div>
 
       <div>
-        <p className="text-sm font-medium text-gray-200">Location</p>
+        <p className="text-sm font-medium text-gray-200">Service area</p>
         <GlassCard padding="sm" rounded="rounded-xl" className="mt-2 w-full">
           <DashboardProfileCoverageCard
             locationQuery={locationQuery}
@@ -106,6 +106,7 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
             radiusMiles={radiusMiles}
             onRadiusChange={onRadiusChange}
             error={coverageError}
+            locationLabel="City or ZIP"
           />
         </GlassCard>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, GlassCard } from '@/components/shared';
+import { OwnerTestReturnLink } from '@/features/onboarding-v3/components/OwnerTestReturnLink';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { formatBookingWallTime } from '@/features/availability/booking/utils/formatBookingWallTime';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
@@ -159,7 +160,7 @@ export function BookingPaymentSuccess({
       <h2 className="text-2xl font-bold text-white mb-2 text-center">
         {paidTitle}
       </h2>
-      <p className="self-center text-gray-400 text-sm mb-8 max-w-md text-center px-2">
+      <p className="mb-8 max-w-md self-center px-2 text-center text-sm text-gray-400">
         {heroSubtitle}
       </p>
 
@@ -168,7 +169,7 @@ export function BookingPaymentSuccess({
         rounded="rounded-2xl"
         blurColor="bg-emerald-500"
         showBlur={true}
-        className="w-full mb-8"
+        className="w-full"
       >
         <div className="p-4 sm:p-6 space-y-4">
           <div>
@@ -305,11 +306,18 @@ export function BookingPaymentSuccess({
         </div>
       </GlassCard>
 
-      <Button href={`/${businessSlug}`} variant="inverse" fullWidth>
-        {ui.bookingPaymentSuccess.backToProfile}
-      </Button>
+      <div className="mt-6 w-full">
+        <OwnerTestReturnLink
+          label={ui.nav.backToDashboard}
+          fallback={
+            <Button href={`/${businessSlug}`} variant="inverse" fullWidth>
+              {ui.bookingPaymentSuccess.backToProfile}
+            </Button>
+          }
+        />
+      </div>
 
-      <p className="text-sm text-gray-400 text-center mt-4">
+      <p className="mt-6 text-center text-sm text-gray-400">
         {ui.bookingPaymentSuccess.confirmationNote}
       </p>
     </div>

@@ -17,6 +17,7 @@ export type PublicBookingUi = {
     backToAddOns: string;
     backToServices: string;
     backToBookings: string;
+    backToDashboard: string;
     backToAppointmentType: string;
   };
   common: {
@@ -313,7 +314,6 @@ export type PublicBookingUi = {
     cardHeaderOwner: string;
     cardHeaderCustomer: string;
     ownerPaymentNote: string;
-    customerPaymentNote: string;
     goToBookings: string;
     backToProfile: string;
   };

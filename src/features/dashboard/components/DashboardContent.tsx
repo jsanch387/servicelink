@@ -6,7 +6,27 @@
 'use client';
 
 import { Button, CrownIcon } from '@/components/shared';
-import { ROUTES } from '@/constants/routes';
+import { getPublicBusinessProfilePath, ROUTES } from '@/constants/routes';
+import {
+  FinishChecklistCard,
+  OnboardingPreviewFlow,
+  previewHasPhone,
+  TestBookingCalendarGuide,
+  useOnboardingPreview,
+} from '@/features/onboarding-preview';
+import { PREVIEW_DISMISS_GUIDE_EVENT } from '@/features/onboarding-preview/session';
+import {
+  readOwnerTestGuide,
+  setOwnerTestGuide,
+  startOwnerTestGuide,
+} from '@/features/onboarding-v3/ownerTestGuide';
+import {
+  clearV3CalendarGuide,
+  dismissV3Checklist,
+  readV3CalendarGuide,
+  readV3ChecklistDismissed,
+  V3_GUIDE_EVENT,
+} from '@/features/onboarding-v3/v3Guide';
 import {
   DEFAULT_ANALYTICS_PERIOD,
   useAnalytics,
@@ -23,7 +43,6 @@ import {
 } from '@/features/dashboard';
 import { FREE_BOOKINGS_LIMIT } from '@/features/pricing';
 import { ClockIcon } from '@heroicons/react/24/outline';
-import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { useDashboardAccess } from '../context/DashboardAccessContext';
 import { DashboardRevenueChart } from './DashboardRevenueChart';
@@ -70,14 +89,25 @@ interface DashboardData {
   freeBookingsUsed?: number;
   /** When true, show free-tier upgrade CTA. */
   isFreeTier?: boolean;
+  locationReady: boolean;
+  hasProfilePhotos: boolean;
+  hasHours: boolean;
+  servicesEdited: boolean;
 }
 
 interface DashboardContentProps {
   dashboardData: DashboardData;
+  /** Set for owners who finished the 2-step flow. */
+  v3Setup?: {
+    hasPhone: boolean;
+    hasTestBooking: boolean;
+    slug: string;
+  } | null;
 }
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({
   dashboardData,
+  v3Setup = null,
 }) => {
   const { businessProfile, slugData } = dashboardData;
   const access = useDashboardAccess();
@@ -102,6 +132,43 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 
   const [linkViewsPeriod, setLinkViewsPeriod] =
     useState<DashboardLinkViewsPeriod>(DEFAULT_ANALYTICS_PERIOD);
+  const onboardingPreview = useOnboardingPreview();
+  const [v3ChecklistDismissed, setV3ChecklistDismissed] = useState(true);
+  const [v3GuideArmed, setV3GuideArmed] = useState(false);
+  const [v3Ready, setV3Ready] = useState(false);
+
+  useEffect(() => {
+    setV3ChecklistDismissed(readV3ChecklistDismissed());
+    setV3Ready(true);
+    const syncGuide = () => setV3GuideArmed(readV3CalendarGuide());
+    syncGuide();
+    window.addEventListener(V3_GUIDE_EVENT, syncGuide);
+    const clearGuide = () => clearV3CalendarGuide();
+    window.addEventListener(PREVIEW_DISMISS_GUIDE_EVENT, clearGuide);
+    return () => {
+      window.removeEventListener(V3_GUIDE_EVENT, syncGuide);
+      window.removeEventListener(PREVIEW_DISMISS_GUIDE_EVENT, clearGuide);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (v3Setup && v3GuideArmed && !v3Setup.hasTestBooking) {
+      clearV3CalendarGuide();
+    }
+  }, [v3Setup, v3GuideArmed]);
+
+  useEffect(() => {
+    if (!v3Setup || v3Setup.hasTestBooking) return;
+    if (readOwnerTestGuide()) setOwnerTestGuide(null);
+  }, [v3Setup]);
+
+  const showPreviewChecklist = onboardingPreview.showChecklist && !v3Setup;
+  const showV3Checklist = Boolean(
+    v3Setup && !v3ChecklistDismissed && !onboardingPreview.session.open
+  );
+  const showV3Guide = Boolean(
+    v3Setup?.hasTestBooking && v3GuideArmed && !onboardingPreview.session.open
+  );
 
   useEffect(() => {
     if (isFreeTier && linkViewsPeriod !== '24h') {
@@ -116,7 +183,10 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 
   return (
     <main className="flex-1 pt-5 pb-24 sm:pt-6 sm:pb-8 lg:pt-8 lg:pb-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
-      {canManageShop ? (
+      {canManageShop &&
+      !onboardingPreview.showChecklist &&
+      !showV3Checklist &&
+      !(v3Setup && !v3Ready) ? (
         <>
           <BusinessLocationRequiredModal
             businessProfileId={businessProfile.id}
@@ -132,58 +202,67 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
       ) : null}
       <div className="w-full min-w-0">
         {/* Header */}
-        <div className="mb-5 sm:mb-6">
-          <h1 className="logo-text text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold text-white tracking-tight truncate">
-            {businessProfile.business_name}
-          </h1>
-          {canManageShop && !slugData?.hasSlug ? (
-            <p className="text-sm text-zinc-500 mt-1">
-              Set up your booking link to get started
-            </p>
+        <div className="mb-5 flex items-start justify-between gap-3 sm:mb-6">
+          <div className="min-w-0">
+            <h1 className="logo-text text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold text-white tracking-tight truncate">
+              {businessProfile.business_name}
+            </h1>
+            {canManageShop && !slugData?.hasSlug ? (
+              <p className="text-sm text-zinc-500 mt-1">
+                Set up your booking link to get started
+              </p>
+            ) : null}
+          </div>
+          {canManageShop && dashboardData.isFreeTier ? (
+            <Button
+              href={ROUTES.DASHBOARD.UPGRADE}
+              variant="primary"
+              size="sm"
+              icon={<CrownIcon className="h-4 w-4" />}
+              className="shrink-0"
+            >
+              Upgrade to Pro
+            </Button>
           ) : null}
         </div>
 
-        {canManageShop && dashboardData.isFreeTier ? (
-          <div
-            className={`mb-5 sm:mb-6 rounded-2xl border px-4 py-3 ${
-              atFreeBookingCap
-                ? 'border-amber-500/30 bg-amber-500/[0.07]'
-                : 'border-white/10 bg-white/[0.04]'
-            }`}
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="min-w-0 text-sm leading-snug text-zinc-400">
-                {atFreeBookingCap ? (
-                  <>
-                    <span className="font-medium text-zinc-200">
-                      You&apos;ve used all {FREE_BOOKINGS_LIMIT} free bookings
-                      on your plan.
-                    </span>{' '}
-                    Upgrade to Pro for unlimited bookings and the rest of our
-                    Pro tools.
-                  </>
-                ) : (
-                  <>
-                    You&apos;re on the Free plan.{' '}
-                    <span className="text-zinc-200">
-                      Upgrade to Pro for unlimited bookings and more.
-                    </span>
-                  </>
-                )}
-              </p>
-              <Link
-                href={ROUTES.DASHBOARD.UPGRADE}
-                className={`shrink-0 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                  atFreeBookingCap
-                    ? 'bg-amber-500 text-zinc-950 hover:bg-amber-400'
-                    : 'bg-white text-zinc-950 hover:bg-zinc-200'
-                }`}
-              >
-                <CrownIcon className="h-4 w-4 shrink-0" aria-hidden />
-                Upgrade to Pro
-              </Link>
-            </div>
-          </div>
+        {onboardingPreview.session.calendarGuide &&
+        !onboardingPreview.session.open &&
+        !v3Setup ? (
+          <TestBookingCalendarGuide />
+        ) : null}
+        {showV3Guide ? <TestBookingCalendarGuide /> : null}
+
+        {showPreviewChecklist ? (
+          <FinishChecklistCard
+            bookedTest={onboardingPreview.session.bookedTest}
+            hasPhone={previewHasPhone(onboardingPreview.session.phone)}
+            onBookTest={() => onboardingPreview.openAt('live')}
+            onDismiss={onboardingPreview.dismissChecklist}
+          />
+        ) : null}
+
+        {showV3Checklist && v3Setup ? (
+          <FinishChecklistCard
+            bookedTest={v3Setup.hasTestBooking}
+            hasPhone={v3Setup.hasPhone}
+            locationReady={dashboardData.locationReady}
+            hasPhotos={dashboardData.hasProfilePhotos}
+            hasServices={dashboardData.servicesEdited}
+            hasHours={dashboardData.hasHours}
+            upgraded={!dashboardData.isFreeTier}
+            onBookTest={() => {
+              if (!v3Setup.slug) return;
+              startOwnerTestGuide();
+              window.location.assign(
+                getPublicBusinessProfilePath(v3Setup.slug)
+              );
+            }}
+            onDismiss={() => {
+              dismissV3Checklist();
+              setV3ChecklistDismissed(true);
+            }}
+          />
         ) : null}
 
         <div className="space-y-5 sm:space-y-6 w-full min-w-0">
@@ -263,6 +342,15 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           </div>
         </div>
       </div>
+      {onboardingPreview.session.open ? (
+        <OnboardingPreviewFlow
+          session={onboardingPreview.session}
+          onChange={onboardingPreview.patch}
+          onExit={onboardingPreview.exit}
+          onStartOver={onboardingPreview.startOver}
+          onFinish={onboardingPreview.finish}
+        />
+      ) : null}
     </main>
   );
 };

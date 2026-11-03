@@ -36,6 +36,7 @@ import {
   SERVICE_EDIT_DURATION_ERROR,
   parseServiceEditDurationForSave,
 } from '@/features/services/utils/serviceEditForm';
+import { useOwnerTestGuidePhase } from '@/features/onboarding-v3/ownerTestGuide';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { ShoppingBagIcon } from '@heroicons/react/24/outline';
 import type { ReactNode } from 'react';
@@ -110,6 +111,7 @@ export function BookServicePicker({
   bookingPolicy = null,
 }: BookServicePickerProps) {
   const router = useRouter();
+  const guided = useOwnerTestGuidePhase() === 'public';
   const ui = publicBookingUi(bookingFlowLocale);
   const policyAgreement = usePublicBookingPolicyAgreement({
     businessSlug,
@@ -577,8 +579,19 @@ export function BookServicePicker({
 
           {displayServices.length > 0 ? (
             <div className="space-y-2" role="list">
-              {displayServices.map(s => (
-                <div key={s.id} role="listitem">
+              {displayServices.map((s, index) => (
+                <div
+                  key={s.id}
+                  role="listitem"
+                  data-owner-test-guide={
+                    guided && index === 0 ? 'step' : undefined
+                  }
+                  data-owner-test-copy={
+                    guided && index === 0
+                      ? 'Choose your service, then tap Continue.'
+                      : undefined
+                  }
+                >
                   <BookFlowServiceRow
                     service={{
                       id: s.id,

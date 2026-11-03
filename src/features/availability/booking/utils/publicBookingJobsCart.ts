@@ -261,7 +261,28 @@ function buildPublicBookingJobDraft(
       breed: job.pet?.breed.trim() ?? '',
       size: job.pet?.size.trim() ?? '',
     },
+    ...(typeof job.hasServiceDetails === 'boolean'
+      ? { hasServiceDetails: job.hasServiceDetails }
+      : {}),
   };
+}
+
+/**
+ * Whether calendar back should return to the service screen.
+ * A skipped service (no options, add-ons, or location choice) goes to the profile.
+ */
+export function publicVisitJobOpenedServiceDetails(
+  job: PublicBookingJobDraft,
+  serviceLocationType?: 'mobile' | 'shop'
+): boolean {
+  if (job.hasServiceDetails === true) return true;
+  if (job.hasServiceDetails === false) return false;
+  return (
+    Boolean(job.servicePriceOptionLabel?.trim()) ||
+    job.selectedAddOns.length > 0 ||
+    serviceLocationType === 'mobile' ||
+    serviceLocationType === 'shop'
+  );
 }
 
 export function appendPublicBookingJob(args: {

@@ -8,6 +8,9 @@ import {
   loadDashboardShopView,
 } from '@/features/dashboard/server/loadDashboardShopView';
 import { OnboardingFlowV2 } from '@/features/onboarding-v2';
+import { OnboardingFlowV3 } from '@/features/onboarding-v3';
+import { businessHasTestBooking } from '@/features/onboarding-v3/server/businessHasTestBooking';
+import { stampV3ForNewProfile } from '@/features/onboarding-v3/server/stampV3ForNewProfile';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { RemovedFromTeamScreen } from '@/features/team';
 import { can } from '@/features/team/constants/teamPermissions';
@@ -60,6 +63,8 @@ export default async function DashboardPage({
     currentStep,
     businessProfile,
     services: existingServices,
+    onboardingFlow,
+    contactInfo,
   } = stateResult.data!;
 
   // Map old onboarding services to v2 shape (for step 2 resume)
@@ -134,7 +139,34 @@ export default async function DashboardPage({
     return <DashboardContent dashboardData={dashboardData} />;
   }
 
-  // Render based on onboarding status (new signups and in-progress see v2 flow)
+  const showNewOnboarding =
+    (status === 'not_started' || status === 'in_progress') &&
+    (onboardingFlow === 'v3' ||
+      (status === 'not_started' && onboardingFlow == null));
+
+  if (showNewOnboarding) {
+    if (onboardingFlow == null) {
+      await stampV3ForNewProfile(supabase, user.id);
+    }
+    const phoneDigits = (contactInfo.phone_number_call ?? '')
+      .replace(/\D/g, '')
+      .slice(0, 10);
+    return (
+      <OnboardingFlowV3
+        initialStep={currentStep >= 2 ? 'business' : 'industry'}
+        industry={(businessProfile?.business_type as string) ?? ''}
+        trades={resolveBusinessSpecialties(
+          (businessProfile?.business_type as string) ?? '',
+          (businessProfile as { specialties?: string[] | null } | null)
+            ?.specialties
+        )}
+        businessName={(businessProfile?.business_name as string) ?? ''}
+        phone={phoneDigits}
+      />
+    );
+  }
+
+  // People already in the 5-step flow stay there. New accounts are v3.
   switch (status) {
     case 'not_started':
     case 'in_progress':
@@ -204,7 +236,38 @@ export default async function DashboardPage({
         redirect('/login');
       }
 
-      return <DashboardContent dashboardData={dashboardData} />;
+      let v3Setup: {
+        hasPhone: boolean;
+        hasTestBooking: boolean;
+        slug: string;
+      } | null = null;
+      if (onboardingFlow === 'v3' && access.context.isOwner) {
+        const { data: contactRaw } = await supabase
+          .from('business_profiles')
+          .select('phone_number_call')
+          .eq('id', access.context.businessId)
+          .maybeSingle();
+        const contact = contactRaw as {
+          phone_number_call: string | null;
+        } | null;
+        const phone = (contact?.phone_number_call ?? '').replace(/\D/g, '');
+        const slug =
+          dashboardData.slugData.hasSlug && dashboardData.slugData.slug
+            ? dashboardData.slugData.slug
+            : '';
+        v3Setup = {
+          hasPhone: phone.length === 10,
+          hasTestBooking: await businessHasTestBooking(
+            supabase,
+            access.context.businessId
+          ),
+          slug,
+        };
+      }
+
+      return (
+        <DashboardContent dashboardData={dashboardData} v3Setup={v3Setup} />
+      );
     }
 
     default:

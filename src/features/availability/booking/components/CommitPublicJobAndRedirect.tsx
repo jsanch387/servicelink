@@ -89,6 +89,7 @@ export function CommitPublicJobAndRedirect({
       servicePriceCents,
       durationMinutes,
       selectedAddOns,
+      hasServiceDetails: false,
       vehicle: keepVisitDraft
         ? (existing!.jobs[0].vehicle ?? { year: '', make: '', model: '' })
         : { year: '', make: '', model: '' },

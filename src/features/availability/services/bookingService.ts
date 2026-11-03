@@ -172,6 +172,8 @@ export async function createBooking(
     smsOptIn?: boolean;
     /** Signed-in owner or teammate. Omit for customer and system creates. */
     createdByUserId?: string | null;
+    /** Owner test appointment from onboarding. Does not count as a real booking. */
+    isTest?: boolean;
   }
 ): Promise<{ id: string; customerId: string; visitId: string }> {
   const addonDetails =
@@ -253,7 +255,7 @@ export async function createBooking(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from(TABLE)
-    .insert(row)
+    .insert({ ...row, is_test: payload.isTest === true })
     .select('id, customer_id')
     .single();
 

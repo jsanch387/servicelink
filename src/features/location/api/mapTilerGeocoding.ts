@@ -3,6 +3,10 @@ import type {
   StructuredLocation,
 } from '../types/location';
 import { isAbortError } from '../utils/isAbortError';
+import {
+  rankStreetAddressSuggestions,
+  streetAddressQueryVariants,
+} from '../utils/streetAddressQuery';
 
 const MAPTILER_GEOCODING_URL = 'https://api.maptiler.com/geocoding';
 const SEARCH_CACHE_TTL_MS = 15 * 60 * 1000;
@@ -305,11 +309,28 @@ export async function searchMapTilerLocations(
     limit: '5',
     types: geocodingTypesForMode(mode),
   });
-  const locations = await fetchMapTilerLocations(
-    encodeURIComponent(query.trim()),
-    params,
-    signal
+  const queries =
+    mode === 'street-address'
+      ? streetAddressQueryVariants(query)
+      : [query.trim()];
+  const batches = await Promise.all(
+    queries.map(variant =>
+      fetchMapTilerLocations(encodeURIComponent(variant), params, signal)
+    )
   );
+  const seen = new Set<string>();
+  const merged: StructuredLocation[] = [];
+  for (const batch of batches) {
+    for (const location of batch) {
+      if (seen.has(location.providerId)) continue;
+      seen.add(location.providerId);
+      merged.push(location);
+    }
+  }
+  const locations =
+    mode === 'street-address'
+      ? rankStreetAddressSuggestions(query, merged)
+      : merged;
 
   cacheLocations(cacheKey, locations);
   return locations;

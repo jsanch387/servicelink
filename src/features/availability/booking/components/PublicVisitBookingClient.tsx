@@ -3,6 +3,7 @@
 import {
   getBusinessBookDetailsPath,
   getBusinessBookPath,
+  getPublicBusinessProfilePath,
   type PublicBookingFlowLocale,
 } from '@/constants/routes';
 import type { PublicBookingPaymentSettings } from '../types';
@@ -19,6 +20,7 @@ import { BookFlowLoadingState } from './BookFlowLoadingState';
 import {
   clearPublicBookingJobsCart,
   loadPublicBookingJobsCart,
+  publicVisitJobOpenedServiceDetails,
   publicBookingVisitServiceNameSummary,
   removePublicBookingJob,
   sumPublicBookingJobsDurationMinutes,
@@ -121,8 +123,21 @@ export function PublicVisitBookingClient({
       return { href: exitCalendarFlowHref, label: exitCalendarFlowLabel };
     }
     if (jobs.length === 1) {
+      const job = jobs[0];
+      const openedServiceDetails = publicVisitJobOpenedServiceDetails(
+        job,
+        locationChoice ?? undefined
+      );
+      if (!openedServiceDetails) {
+        return {
+          href: getPublicBusinessProfilePath(businessSlug, {
+            lang: bookingFlowLocale,
+          }),
+          label: ui.nav.backToProfile,
+        };
+      }
       return {
-        href: getBusinessBookDetailsPath(businessSlug, jobs[0].serviceId, {
+        href: getBusinessBookDetailsPath(businessSlug, job.serviceId, {
           lang: bookingFlowLocale,
           // Explicit edit — keep contact/schedule; do not treat as a fresh start.
           editVisit: true,
@@ -143,6 +158,8 @@ export function PublicVisitBookingClient({
     bookingFlowLocale,
     exitCalendarFlowHref,
     exitCalendarFlowLabel,
+    locationChoice,
+    ui.nav.backToProfile,
     ui.nav.backToService,
     ui.nav.backToServices,
   ]);

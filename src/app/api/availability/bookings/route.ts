@@ -43,11 +43,23 @@ export async function GET(request: NextRequest) {
         : undefined
     );
 
+    let totalCount: number | null = null;
+    // bookings is not in the hand-written Database type.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count, error: countError } = await (supabase as any)
+      .from('bookings')
+      .select('id', { count: 'exact', head: true })
+      .eq('business_id', authResult.businessId);
+    if (!countError && typeof count === 'number') {
+      totalCount = count;
+    }
+
     return NextResponse.json({
       success: true,
       data: page.bookings,
       hasMore: page.hasMore,
       nextCursor: page.nextCursor,
+      totalCount,
     });
   } catch (err) {
     console.error('[API] GET /api/availability/bookings:', err);

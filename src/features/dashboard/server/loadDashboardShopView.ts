@@ -1,5 +1,10 @@
-import { shopAddressNeedsUpdate } from '@/features/business-profile/utils/location';
+import {
+  serviceLocationUiFromProfile,
+  shopAddressNeedsUpdate,
+} from '@/features/business-profile/utils/location';
+import { isUntouchedSampleService } from '@/features/onboarding-preview/sampleServices';
 import { isProAccess } from '@/features/pricing';
+import { ownerCustomizedHours } from './ownerCustomizedHours';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -20,12 +25,16 @@ type DashboardProfileRow = {
   shop_street_address: string | null;
   shop_city: string | null;
   shop_state: string | null;
+  logo_path: string | null;
+  banner_path: string | null;
   services: { count: number }[] | null;
   images: { count: number }[] | null;
 };
 
 type BusinessAvailabilityRow = {
   accept_bookings: boolean | null;
+  weekly_schedule: unknown;
+  selected_preset: string | null;
 };
 
 export type DashboardShopViewData = {
@@ -67,6 +76,12 @@ export type DashboardShopViewData = {
   upcomingBookingsCount: number;
   freeBookingsUsed: number;
   isFreeTier: boolean;
+  locationReady: boolean;
+  hasProfilePhotos: boolean;
+  /** True once hours are no longer the Monday–Friday 9–5 signup default. */
+  hasHours: boolean;
+  /** True once a service is no longer an untouched signup sample. */
+  servicesEdited: boolean;
 };
 
 export async function loadDashboardShopView(
@@ -82,6 +97,7 @@ export async function loadDashboardShopView(
           business_slug, business_link, legacy_request_booking_enabled,
           free_bookings_count,
           service_location_mode, shop_street_address, shop_city, shop_state,
+          logo_path, banner_path,
           services:business_services(count),
           images:business_images(count)
         `
@@ -121,10 +137,14 @@ export async function loadDashboardShopView(
 
   const { data: availabilityRow } = await supabase
     .from('business_availability')
-    .select('accept_bookings')
+    .select('accept_bookings, weekly_schedule, selected_preset')
     .eq('business_id', profile.id)
     .maybeSingle();
   const availability = availabilityRow as BusinessAvailabilityRow | null;
+  const { data: serviceRows } = await supabase
+    .from('business_services')
+    .select('name, description, price_cents, duration_minutes')
+    .eq('business_id', profile.id);
   const useAvailabilityBooking = availability?.accept_bookings === true;
   const today = new Date().toISOString().slice(0, 10);
   let upcomingBookingsCount = 0;
@@ -195,7 +215,35 @@ export async function loadDashboardShopView(
     upcomingBookingsCount,
     freeBookingsUsed: profile.free_bookings_count ?? 0,
     isFreeTier: options.isFreeTier,
+    locationReady: profileLocationReady(profile, hasConfirmedServiceArea),
+    hasProfilePhotos: Boolean(
+      profile.logo_path?.trim() && profile.banner_path?.trim()
+    ),
+    hasHours: ownerCustomizedHours(
+      availability?.weekly_schedule,
+      availability?.selected_preset
+    ),
+    servicesEdited: (serviceRows ?? []).some(
+      row =>
+        !isUntouchedSampleService({
+          name: row.name,
+          description: row.description,
+          priceCents: row.price_cents,
+          durationMinutes: row.duration_minutes,
+        })
+    ),
   };
+}
+
+function profileLocationReady(
+  profile: DashboardProfileRow,
+  hasConfirmedServiceArea: boolean
+): boolean {
+  const { mode } = serviceLocationUiFromProfile(profile);
+  const shopReady = !shopAddressNeedsUpdate(profile);
+  if (mode === 'shop_only') return shopReady;
+  if (mode === 'both') return shopReady && hasConfirmedServiceArea;
+  return hasConfirmedServiceArea;
 }
 
 export function isFreeTierFromProfileRow(

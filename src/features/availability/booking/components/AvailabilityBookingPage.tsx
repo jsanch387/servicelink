@@ -20,6 +20,10 @@ import {
   PublicFlowStickyBackHeader,
   publicFlowBackNavClassName,
 } from '@/components/shared';
+import {
+  setOwnerTestGuide,
+  useOwnerTestGuidePhase,
+} from '@/features/onboarding-v3/ownerTestGuide';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -434,6 +438,14 @@ export function AvailabilityBookingPage({
     gateOnMount: !isOwnerManualBooking,
   });
   const router = useRouter();
+  const ownerTestGuide = useOwnerTestGuidePhase() === 'public';
+  const ownerTestStep = (copy: string) =>
+    ownerTestGuide
+      ? {
+          'data-owner-test-guide': 'step',
+          'data-owner-test-copy': copy,
+        }
+      : {};
 
   useEffect(() => {
     if (policyAgreement.hasAgreed) {
@@ -1515,25 +1527,28 @@ export function AvailabilityBookingPage({
           : ('none' as const);
 
       const body = isMultiJobVisit
-        ? buildPublicMultiJobBookingBody({
-            businessId,
-            businessSlug,
-            jobs: visitJobs,
-            scheduledDate,
-            startTime: selectedTime,
-            timeZone: clientBookingTimeZone(),
-            customer: customerForSubmit,
-            customerServiceLocation:
-              customerServiceLocationPayload ?? undefined,
-            paymentMethodSelected: paymentMethodForPublicCreate,
-            promoCode: appliedPromo?.code,
-            ...(!isOwnerManualBooking
-              ? {
-                  agreedToNotifications: agreedToPublicNotifications,
-                  agreedToPolicy: agreedToBookingPolicy,
-                }
-              : {}),
-          })
+        ? {
+            ...buildPublicMultiJobBookingBody({
+              businessId,
+              businessSlug,
+              jobs: visitJobs,
+              scheduledDate,
+              startTime: selectedTime,
+              timeZone: clientBookingTimeZone(),
+              customer: customerForSubmit,
+              customerServiceLocation:
+                customerServiceLocationPayload ?? undefined,
+              paymentMethodSelected: paymentMethodForPublicCreate,
+              promoCode: appliedPromo?.code,
+              ...(!isOwnerManualBooking
+                ? {
+                    agreedToNotifications: agreedToPublicNotifications,
+                    agreedToPolicy: agreedToBookingPolicy,
+                  }
+                : {}),
+            }),
+            ...(ownerTestGuide ? { ownerTest: true } : {}),
+          }
         : {
             businessSlug,
             businessId,
@@ -1564,6 +1579,7 @@ export function AvailabilityBookingPage({
               : {}),
             paymentMethodSelected: paymentMethodForPublicCreate,
             ...(isOwnerManualBooking ? { ownerManualBooking: true } : {}),
+            ...(ownerTestGuide ? { ownerTest: true } : {}),
             ...(!isOwnerManualBooking && appliedPromo?.code
               ? { promoCode: appliedPromo.code }
               : {}),
@@ -1600,6 +1616,7 @@ export function AvailabilityBookingPage({
         customer: customerForSubmit,
         selectedAddOns,
       });
+      if (ownerTestGuide) setOwnerTestGuide('nav');
       setShowSuccess(true);
     } catch {
       setSubmitError('Something went wrong. Please try again.');
@@ -1692,6 +1709,11 @@ export function AvailabilityBookingPage({
   }
 
   const headerClassName = publicFlowBackNavClassName;
+  const quickScheduleVisible =
+    step === 'schedule' &&
+    !isOwnerManualBooking &&
+    !showFullCalendar &&
+    earliestAvailableSlot != null;
 
   const trackerStage: PublicBookingTrackerStage =
     step === 'details'
@@ -1796,7 +1818,7 @@ export function AvailabilityBookingPage({
       </PublicFlowStickyBackHeader>
 
       <div className="flex flex-col min-h-[60vh] max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pb-24 w-full">
-        <div className="flex-1 pb-28">
+        <div className={`flex-1 ${quickScheduleVisible ? 'pb-8' : 'pb-28'}`}>
           {!isOwnerManualBooking ? (
             <PublicBookingStepTracker
               currentStage={trackerStage}
@@ -1884,6 +1906,11 @@ export function AvailabilityBookingPage({
                   onBookThisTime={handleQuickBookEarliest}
                   onChooseDifferentTime={() => setShowFullCalendar(true)}
                   labels={ui.quickSchedule}
+                  guideCopy={
+                    ownerTestGuide
+                      ? 'Book this time, or choose a different time.'
+                      : undefined
+                  }
                 />
               ) : (
                 <>
@@ -2739,37 +2766,17 @@ export function AvailabilityBookingPage({
         </div>
 
         {/* Sticky bottom CTA — high z-index + touch-manipulation avoid taps being eaten on mobile */}
-        <div
-          className="fixed bottom-0 left-0 right-0 z-[100] border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm p-4 safe-area-pb touch-manipulation"
-          style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
-        >
+        {!quickScheduleVisible ? (
           <div
-            className={`max-w-2xl mx-auto ${
-              isOwnerManualBooking ? 'grid grid-cols-2 gap-3' : ''
-            }`}
+            className="fixed bottom-0 left-0 right-0 z-[100] border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm p-4 safe-area-pb touch-manipulation"
+            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
-            {isOwnerManualBooking && step === 'location' ? (
-              <Button
-                href={exitCalendarFlowHref}
-                variant="secondary"
-                fullWidth
-                className="font-semibold"
-              >
-                {ui.common.back}
-              </Button>
-            ) : null}
-            {isOwnerManualBooking && step === 'schedule' ? (
-              needsInlineLocationStep ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  fullWidth
-                  className="font-semibold"
-                  onClick={() => setStep('location')}
-                >
-                  {ui.common.back}
-                </Button>
-              ) : (
+            <div
+              className={`max-w-2xl mx-auto ${
+                isOwnerManualBooking ? 'grid grid-cols-2 gap-3' : ''
+              }`}
+            >
+              {isOwnerManualBooking && step === 'location' ? (
                 <Button
                   href={exitCalendarFlowHref}
                   variant="secondary"
@@ -2778,137 +2785,175 @@ export function AvailabilityBookingPage({
                 >
                   {ui.common.back}
                 </Button>
-              )
-            ) : null}
-            {isOwnerManualBooking && step === 'details' ? (
-              <Button
-                type="button"
-                variant="secondary"
-                fullWidth
-                className="font-semibold"
-                onClick={handleDetailsBack}
-              >
-                {ui.common.back}
-              </Button>
-            ) : null}
-            {isOwnerManualBooking && step === 'review' ? (
-              <Button
-                type="button"
-                variant="secondary"
-                fullWidth
-                className="font-semibold"
-                onClick={openDetailsFromReview}
-              >
-                {ui.common.back}
-              </Button>
-            ) : null}
-            {isOwnerManualBooking && step === 'payment' ? (
-              <Button
-                type="button"
-                variant="secondary"
-                fullWidth
-                className="font-semibold"
-                onClick={() => setStep('review')}
-              >
-                {ui.common.back}
-              </Button>
-            ) : null}
-            {step === 'location' && (
-              <Button
-                type="button"
-                variant="inverse"
-                fullWidth
-                className="font-semibold"
-                disabled={!canContinueFromLocation}
-                onClick={openScheduleFromLocation}
-              >
-                {ui.common.continue}
-              </Button>
-            )}
-            {step === 'schedule' && (
-              <Button
-                type="button"
-                variant="inverse"
-                fullWidth
-                className="font-semibold"
-                disabled={!canContinueFromSchedule}
-                onClick={continueFromSchedule}
-              >
-                {ui.common.continue}
-              </Button>
-            )}
-            {step === 'details' && (
-              <Button
-                key={`details-form-${detailsSubStep}`}
-                // When vehicles are incomplete, stay clickable as a button so we
-                // can toast the next step instead of a silent disabled state.
-                type={multiJobAssetsIncomplete ? 'button' : 'submit'}
-                form={CUSTOMER_FORM_ID}
-                variant="inverse"
-                fullWidth
-                className="font-semibold"
-                disabled={!detailsFormValid}
-                onClick={
-                  multiJobAssetsIncomplete
-                    ? toastMultiJobAssetRequired
-                    : undefined
-                }
-              >
-                {detailsPrimaryCtaLabel}
-              </Button>
-            )}
-            {step === 'review' && (
-              <Button
-                type="button"
-                variant="inverse"
-                fullWidth
-                className="font-semibold"
-                disabled={
-                  isSubmitting ||
-                  (requiresBookingPolicy && !agreedToBookingPolicy)
-                }
-                onClick={() => {
-                  if (requiresBookingPolicy && !agreedToBookingPolicy) return;
-                  if (shouldShowPaymentStep) setStep('payment');
-                  else void handleConfirmBooking();
-                }}
-              >
-                {shouldShowPaymentStep
-                  ? ui.calendar.continueToPayment
-                  : ui.calendar.confirmBooking}
-              </Button>
-            )}
-            {step === 'payment' && (
-              <Button
-                type="button"
-                variant="inverse"
-                fullWidth
-                className="font-semibold touch-manipulation min-h-[52px]"
-                disabled={!canContinueFromPayment}
-                loading={isSubmitting}
-                onClick={() => {
-                  const cents = amountDueNowCents;
-                  logBookingCheckoutDev('payment primary CTA clicked', {
-                    cents,
-                    action:
-                      cents > 0 ? 'stripe_checkout' : 'confirm_booking_only',
-                    ctaLabel: paymentStepCtaLabel,
-                  });
-                  if (cents > 0) void handleStartCheckout(cents);
-                  else {
-                    logBookingCheckoutDev(
-                      'payment CTA: no online amount due — creating booking without checkout',
-                      { cents }
-                    );
-                    void handleConfirmBooking();
-                  }
-                }}
-              >
-                {isSubmitting ? paymentPrimaryBusyLabel : paymentStepCtaLabel}
-              </Button>
-            )}
+              ) : null}
+              {isOwnerManualBooking && step === 'schedule' ? (
+                needsInlineLocationStep ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    fullWidth
+                    className="font-semibold"
+                    onClick={() => setStep('location')}
+                  >
+                    {ui.common.back}
+                  </Button>
+                ) : (
+                  <Button
+                    href={exitCalendarFlowHref}
+                    variant="secondary"
+                    fullWidth
+                    className="font-semibold"
+                  >
+                    {ui.common.back}
+                  </Button>
+                )
+              ) : null}
+              {isOwnerManualBooking && step === 'details' ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  className="font-semibold"
+                  onClick={handleDetailsBack}
+                >
+                  {ui.common.back}
+                </Button>
+              ) : null}
+              {isOwnerManualBooking && step === 'review' ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  className="font-semibold"
+                  onClick={openDetailsFromReview}
+                >
+                  {ui.common.back}
+                </Button>
+              ) : null}
+              {isOwnerManualBooking && step === 'payment' ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  className="font-semibold"
+                  onClick={() => setStep('review')}
+                >
+                  {ui.common.back}
+                </Button>
+              ) : null}
+              {step === 'location' && (
+                <Button
+                  type="button"
+                  variant="inverse"
+                  fullWidth
+                  className="font-semibold"
+                  disabled={!canContinueFromLocation}
+                  onClick={openScheduleFromLocation}
+                >
+                  {ui.common.continue}
+                </Button>
+              )}
+              {step === 'schedule' && (
+                <div
+                  className="w-full"
+                  {...ownerTestStep('Pick a day and time, then continue.')}
+                >
+                  <Button
+                    type="button"
+                    variant="inverse"
+                    fullWidth
+                    className="font-semibold"
+                    disabled={!canContinueFromSchedule}
+                    onClick={continueFromSchedule}
+                  >
+                    {ui.common.continue}
+                  </Button>
+                </div>
+              )}
+              {step === 'details' && (
+                <div
+                  className="w-full"
+                  {...ownerTestStep('Fill in your details, then continue.')}
+                >
+                  <Button
+                    key={`details-form-${detailsSubStep}`}
+                    // When vehicles are incomplete, stay clickable as a button so we
+                    // can toast the next step instead of a silent disabled state.
+                    type={multiJobAssetsIncomplete ? 'button' : 'submit'}
+                    form={CUSTOMER_FORM_ID}
+                    variant="inverse"
+                    fullWidth
+                    className="font-semibold"
+                    disabled={!detailsFormValid}
+                    onClick={
+                      multiJobAssetsIncomplete
+                        ? toastMultiJobAssetRequired
+                        : undefined
+                    }
+                  >
+                    {detailsPrimaryCtaLabel}
+                  </Button>
+                </div>
+              )}
+              {step === 'review' && (
+                <div
+                  className="w-full"
+                  {...ownerTestStep('Confirm the test appointment.')}
+                >
+                  <Button
+                    type="button"
+                    variant="inverse"
+                    fullWidth
+                    className="font-semibold"
+                    disabled={
+                      isSubmitting ||
+                      (requiresBookingPolicy && !agreedToBookingPolicy)
+                    }
+                    onClick={() => {
+                      if (requiresBookingPolicy && !agreedToBookingPolicy)
+                        return;
+                      if (shouldShowPaymentStep) setStep('payment');
+                      else void handleConfirmBooking();
+                    }}
+                  >
+                    {shouldShowPaymentStep
+                      ? ui.calendar.continueToPayment
+                      : ui.calendar.confirmBooking}
+                  </Button>
+                </div>
+              )}
+              {step === 'payment' && (
+                <Button
+                  type="button"
+                  variant="inverse"
+                  fullWidth
+                  className="font-semibold touch-manipulation min-h-[52px]"
+                  disabled={!canContinueFromPayment}
+                  loading={isSubmitting}
+                  onClick={() => {
+                    const cents = amountDueNowCents;
+                    logBookingCheckoutDev('payment primary CTA clicked', {
+                      cents,
+                      action:
+                        cents > 0 ? 'stripe_checkout' : 'confirm_booking_only',
+                      ctaLabel: paymentStepCtaLabel,
+                    });
+                    if (cents > 0) void handleStartCheckout(cents);
+                    else {
+                      logBookingCheckoutDev(
+                        'payment CTA: no online amount due — creating booking without checkout',
+                        { cents }
+                      );
+                      void handleConfirmBooking();
+                    }
+                  }}
+                >
+                  {isSubmitting ? paymentPrimaryBusyLabel : paymentStepCtaLabel}
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
       <PublicBookingPolicyAgreeDialog
         isOpen={policyAgreement.modalOpen}

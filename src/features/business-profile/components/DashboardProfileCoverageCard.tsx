@@ -15,6 +15,8 @@ export interface DashboardProfileCoverageCardProps {
   radiusMiles: number;
   onRadiusChange: (miles: number) => void;
   error?: string;
+  /** Field label. Details already titles the section “Service area”. */
+  locationLabel?: string;
 }
 
 export function DashboardProfileCoverageCard({
@@ -25,6 +27,7 @@ export function DashboardProfileCoverageCard({
   radiusMiles,
   onRadiusChange,
   error,
+  locationLabel = 'Service area',
 }: DashboardProfileCoverageCardProps) {
   const locationError = error?.toLowerCase().includes('travel distance')
     ? undefined
@@ -37,7 +40,7 @@ export function DashboardProfileCoverageCard({
     <div className="space-y-5">
       <LocationAutocomplete
         id="profile-service-area-location"
-        label="Base location"
+        label={locationLabel}
         value={locationQuery}
         onChange={onLocationQueryChange}
         onSelect={onSelectLocation}
@@ -70,8 +73,8 @@ export function DashboardProfileCoverageCard({
         </p>
       ) : (
         <p className="text-xs leading-5 text-zinc-500">
-          City and state are enough. Nearby customers will see this on your
-          booking link.
+          Search the city, state, or ZIP you travel to. Nearby customers will
+          see this on your booking link.
         </p>
       )}
     </div>

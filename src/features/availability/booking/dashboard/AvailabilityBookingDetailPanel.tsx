@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { useOwnerTestGuidePhase } from '@/features/onboarding-v3/ownerTestGuide';
 import { ROUTES } from '@/constants/routes';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
 import type { BookingAssigneeOption } from '@/features/team/types/bookingAssignee';
@@ -117,6 +118,10 @@ export function AvailabilityBookingDetailPanel({
   onAssign,
   isAssigning = false,
 }: AvailabilityBookingDetailPanelProps) {
+  const guideComplete =
+    useOwnerTestGuidePhase() === 'complete' &&
+    booking.isTest === true &&
+    booking.status === 'confirmed';
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
@@ -576,7 +581,21 @@ export function AvailabilityBookingDetailPanel({
                     disabled={isUpdating || isRescheduling}
                     onClick={handleMarkCompletedClick}
                     aria-label="Mark booking as completed"
-                    className={bookingActionTileClass}
+                    data-owner-test-guide={
+                      guideComplete && !showCompleteConfirm
+                        ? 'complete'
+                        : undefined
+                    }
+                    data-owner-test-copy={
+                      guideComplete && !showCompleteConfirm
+                        ? "Hit Complete. You're done."
+                        : undefined
+                    }
+                    className={`${bookingActionTileClass}${
+                      guideComplete && !showCompleteConfirm
+                        ? ' text-white ring-2 ring-white'
+                        : ''
+                    }`}
                   >
                     <CheckCircleIcon
                       className="h-5 w-5 shrink-0 text-emerald-500 group-hover:text-emerald-400 sm:h-[22px] sm:w-[22px]"

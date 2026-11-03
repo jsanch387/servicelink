@@ -77,6 +77,8 @@ export interface AvailabilityBookingDisplay {
   /** Local wall start `HH:mm` (00/30) for slot generation and reschedule APIs. */
   startTimeHHmm: string;
   status: AvailabilityBookingStatus;
+  /** Owner practice appointment from onboarding. */
+  isTest?: boolean;
   address: AvailabilityBookingAddress;
   notes: string;
   createdAt: string;

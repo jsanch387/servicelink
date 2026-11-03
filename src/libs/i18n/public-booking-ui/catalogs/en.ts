@@ -15,6 +15,7 @@ export const publicBookingUiEn: PublicBookingUi = {
     backToAddOns: 'Back to add-ons',
     backToServices: 'Back to services',
     backToBookings: 'Back to bookings',
+    backToDashboard: 'Back to dashboard',
     backToAppointmentType: 'Back to appointment type',
   },
   common: {
@@ -332,8 +333,6 @@ export const publicBookingUiEn: PublicBookingUi = {
     cardHeaderOwner: 'Appointment',
     cardHeaderCustomer: 'Your booking',
     ownerPaymentNote: 'Payment details are saved with this appointment.',
-    customerPaymentNote:
-      'Payment details will be shared in your booking confirmation.',
     goToBookings: 'Go to bookings',
     backToProfile: 'Back to profile',
   },

@@ -1,6 +1,19 @@
 'use client';
 
 import { BetaBadge, NewBadge } from '@/components/shared';
+import {
+  PREVIEW_SESSION_EVENT,
+  readPreviewSession,
+} from '@/features/onboarding-preview/session';
+import {
+  readOwnerTestGuide,
+  setOwnerTestGuide,
+  subscribeOwnerTestGuide,
+} from '@/features/onboarding-v3/ownerTestGuide';
+import {
+  readV3CalendarGuide,
+  V3_GUIDE_EVENT,
+} from '@/features/onboarding-v3/v3Guide';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React, { useEffect, useId, useRef, useState } from 'react';
@@ -28,11 +41,48 @@ export function DashboardSidebarNavGroup({
   const childActive = items.some(item =>
     isDashboardNavItemActive(pathname, item)
   );
+  const hasBookings = items.some(item => item.name === 'Bookings');
+  const onBookingsPage = items.some(
+    item => item.name === 'Bookings' && isDashboardNavItemActive(pathname, item)
+  );
   const [open, setOpen] = useState(childActive);
+  const [highlightBookings, setHighlightBookings] = useState(false);
+  const [guideBookings, setGuideBookings] = useState(false);
 
   useEffect(() => {
     if (childActive) setOpen(true);
   }, [childActive]);
+
+  useEffect(() => {
+    if (!hasBookings) return;
+    const sync = () => {
+      const show =
+        readOwnerTestGuide() === null &&
+        (readPreviewSession().calendarGuide || readV3CalendarGuide());
+      setHighlightBookings(show);
+      if (show) setOpen(true);
+    };
+    sync();
+    window.addEventListener(PREVIEW_SESSION_EVENT, sync);
+    window.addEventListener(V3_GUIDE_EVENT, sync);
+    const unsubscribeHighlight = subscribeOwnerTestGuide(sync);
+    const syncGuide = () => {
+      const phase = readOwnerTestGuide();
+      const show =
+        !onBookingsPage &&
+        (phase === 'nav' || phase === 'job' || phase === 'complete');
+      setGuideBookings(show);
+      if (show) setOpen(true);
+    };
+    syncGuide();
+    const unsubscribe = subscribeOwnerTestGuide(syncGuide);
+    return () => {
+      window.removeEventListener(PREVIEW_SESSION_EVENT, sync);
+      window.removeEventListener(V3_GUIDE_EVENT, sync);
+      unsubscribeHighlight();
+      unsubscribe();
+    };
+  }, [hasBookings, onBookingsPage]);
 
   useEffect(() => {
     if (!open || !collapsed) return;
@@ -82,13 +132,36 @@ export function DashboardSidebarNavGroup({
           aria-current={active ? 'page' : undefined}
           aria-label={label}
           onClick={() => {
+            if (item.name === 'Bookings') {
+              const phase = readOwnerTestGuide();
+              if (phase === 'public' || phase === 'nav') {
+                setOwnerTestGuide('job');
+              }
+            }
             onNavigate();
             if (collapsed) setOpen(false);
           }}
-          className={`flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2.5 text-[15px] leading-5 font-medium tracking-tight transition-colors ${
-            active
-              ? 'bg-white/10 text-white'
-              : 'text-zinc-400 hover:bg-white/[0.045] hover:text-white'
+          data-owner-test-guide={
+            guideBookings && item.name === 'Bookings' ? 'nav' : undefined
+          }
+          data-owner-test-copy={
+            guideBookings && item.name === 'Bookings'
+              ? 'Your appointment is in Bookings.'
+              : undefined
+          }
+          data-onboarding-guide={
+            highlightBookings && item.name === 'Bookings'
+              ? 'bookings'
+              : undefined
+          }
+          className={`flex w-full cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-2.5 text-[15px] leading-5 font-medium tracking-tight transition-colors ${
+            guideBookings && item.name === 'Bookings'
+              ? 'border-white bg-white/10 text-white'
+              : highlightBookings && item.name === 'Bookings'
+                ? 'border-transparent bg-white text-black ring-2 ring-white ring-offset-2 ring-offset-[#0f0f0f]'
+                : active
+                  ? 'border-transparent bg-white/10 text-white'
+                  : 'border-transparent text-zinc-400 hover:bg-white/[0.045] hover:text-white'
           }`}
         >
           <span className="min-w-0 truncate">{item.name}</span>

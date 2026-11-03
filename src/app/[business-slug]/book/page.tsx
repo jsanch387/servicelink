@@ -95,6 +95,8 @@ interface BookingRequestPageProps {
     visit?: string;
     /** Append another service to the current visit cart. */
     addJob?: string;
+    /** Owner test-appointment walkthrough. Keeps the service list on screen. */
+    guide?: string;
   }>;
 }
 
@@ -256,6 +258,7 @@ export default async function BookingRequestPage({
     lang: langParam,
     visit: visitParam,
     addJob: addJobParam,
+    guide: guideParam,
   } = sp;
 
   const isAddingAnotherJob = isPublicBookingAddJobQuery(addJobParam);
@@ -415,7 +418,11 @@ export default async function BookingRequestPage({
       .map(row => mapRowToPickerItem(row, ownerHasPro, bookingFlowLocale))
       .filter(s => s.id && s.name);
 
-    if (availabilityPickerServices.length === 1 && !isOwnerManualBooking) {
+    if (
+      availabilityPickerServices.length === 1 &&
+      !isOwnerManualBooking &&
+      guideParam !== '1'
+    ) {
       redirect(
         getBusinessBookDetailsUrl(slugForRoutes, {
           serviceId: availabilityPickerServices[0].id,

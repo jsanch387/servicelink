@@ -1,6 +1,7 @@
 'use client';
 
 import { GlassCard } from '@/components/shared';
+import { OwnerTestReturnLink } from '@/features/onboarding-v3/components/OwnerTestReturnLink';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { ROUTES } from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
@@ -136,7 +137,7 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
         rounded="rounded-2xl"
         blurColor="bg-emerald-500"
         showBlur={true}
-        className="w-full mb-8"
+        className="w-full"
       >
         <div className="px-4 py-3 border-b border-white/10">
           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
@@ -290,24 +291,31 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
         </div>
       </GlassCard>
 
-      <p className="self-center text-xs text-gray-500 text-center mb-6 max-w-sm">
-        {isOwnerManualBooking ? (
-          <>{ui.bookingSuccess.ownerPaymentNote}</>
-        ) : (
-          <>{ui.bookingSuccess.customerPaymentNote}</>
-        )}
-      </p>
+      <div className="mt-6 w-full">
+        <OwnerTestReturnLink
+          label={ui.nav.backToDashboard}
+          fallback={
+            <Link
+              href={
+                isOwnerManualBooking
+                  ? ROUTES.DASHBOARD.BOOKINGS
+                  : `/${businessSlug}`
+              }
+              className="flex min-h-[48px] w-full cursor-pointer items-center justify-center rounded-xl bg-white px-6 text-sm font-semibold text-black transition-colors hover:bg-gray-100"
+            >
+              {isOwnerManualBooking
+                ? ui.bookingSuccess.goToBookings
+                : ui.bookingSuccess.backToProfile}
+            </Link>
+          }
+        />
+      </div>
 
-      <Link
-        href={
-          isOwnerManualBooking ? ROUTES.DASHBOARD.BOOKINGS : `/${businessSlug}`
-        }
-        className="w-full flex items-center justify-center min-h-[48px] px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-100 transition-colors cursor-pointer"
-      >
-        {isOwnerManualBooking
-          ? ui.bookingSuccess.goToBookings
-          : ui.bookingSuccess.backToProfile}
-      </Link>
+      {isOwnerManualBooking ? (
+        <p className="mt-6 max-w-sm self-center text-center text-xs text-gray-500">
+          {ui.bookingSuccess.ownerPaymentNote}
+        </p>
+      ) : null}
     </div>
   );
 };

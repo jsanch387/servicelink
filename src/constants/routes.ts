@@ -164,6 +164,12 @@ export const API_ROUTES = {
    * Web: cookies. Mobile: `Authorization: Bearer`. See `docs/contracts/mobile-onboarding-complete.md`.
    */
   ONBOARDING_V2_COMPLETE: '/api/onboarding-v2/complete',
+  /** 2-step onboarding: save industry and trades. */
+  ONBOARDING_V3_STEP1: '/api/onboarding-v3/step1',
+  /** 2-step onboarding: name, link, phone, sample services, default hours. */
+  ONBOARDING_V3_FINISH: '/api/onboarding-v3/finish',
+  /** Live booking-link availability check. */
+  BUSINESS_SLUG_CHECK: '/api/business-profile/slug/check',
   /** Authenticated: Stripe Checkout session URL for Pro (web upgrade / billing). */
   STRIPE_CREATE_CHECKOUT_SESSION: '/api/stripe/create-checkout-session',
   /** Authenticated: Stripe Customer Portal session URL (manage subscription / payment method). */

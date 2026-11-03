@@ -59,6 +59,8 @@ interface ServiceCardProps {
    * modal (or pushes the same href after they have already agreed).
    */
   onSelectNavigate?: (href: string) => void;
+  /** Owner test walkthrough: Select is the step to tap. */
+  guideSelect?: boolean;
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({
@@ -74,6 +76,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   bookingFlowLocale = 'en',
   publicActiveSale = null,
   onSelectNavigate,
+  guideSelect = false,
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -232,7 +235,15 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                   }
                 : undefined
             }
-            className="inline-flex items-center gap-1 text-white text-[15px] font-semibold hover:text-zinc-200 transition-colors cursor-pointer sm:text-sm"
+            data-owner-test-guide={guideSelect ? 'step' : undefined}
+            data-owner-test-copy={
+              guideSelect ? 'Tap Select to choose your service.' : undefined
+            }
+            className={
+              guideSelect
+                ? 'inline-flex min-h-11 cursor-pointer items-center gap-1 rounded-full bg-white px-4 text-sm font-semibold text-zinc-950'
+                : 'inline-flex items-center gap-1 text-white text-[15px] font-semibold hover:text-zinc-200 transition-colors cursor-pointer sm:text-sm'
+            }
           >
             {ui.common.select}
             <ChevronRightIcon className="h-3.5 w-3.5" />

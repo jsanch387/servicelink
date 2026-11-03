@@ -5,6 +5,7 @@ import {
   StatusPill,
   type StatusPillTone,
 } from '@/components/shared';
+import { useOwnerTestGuidePhase } from '@/features/onboarding-v3/ownerTestGuide';
 import { EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
 import { Fragment, useMemo, type KeyboardEvent } from 'react';
 import { formatDayGroupLabel } from '../dayPlannerUtils';
@@ -87,6 +88,8 @@ export function CalendarListView({
   isLoadingMore = false,
   onPageChange,
 }: CalendarListViewProps) {
+  const guidePhase = useOwnerTestGuidePhase();
+  const guideJob = guidePhase !== 'complete';
   const columnCount = showAssignee ? 6 : 5;
   const sortDirection = filter === 'upcoming' ? 'asc' : 'desc';
   const grouped = useMemo(() => {
@@ -165,11 +168,21 @@ export function CalendarListView({
                 {day.rows.map(event => {
                   const booking = event.booking;
                   if (!booking) return null;
+                  const guideThisJob =
+                    guideJob &&
+                    booking.isTest === true &&
+                    booking.status === 'confirmed';
                   return (
                     <tr
                       key={event.id}
                       tabIndex={0}
                       aria-label={`Open booking for ${booking.customerName}`}
+                      data-owner-test-guide={guideThisJob ? 'job' : undefined}
+                      data-owner-test-copy={
+                        guideThisJob
+                          ? 'Tap your appointment, then mark it complete.'
+                          : undefined
+                      }
                       onClick={() => onSelectEvent(event)}
                       onKeyDown={keyEvent =>
                         openOnKey(keyEvent, () => onSelectEvent(event))
@@ -230,11 +243,21 @@ export function CalendarListView({
               {day.rows.map(event => {
                 const booking = event.booking;
                 if (!booking) return null;
+                const guideThisJob =
+                  guideJob &&
+                  booking.isTest === true &&
+                  booking.status === 'confirmed';
                 return (
                   <li key={event.id}>
                     <button
                       type="button"
                       onClick={() => onSelectEvent(event)}
+                      data-owner-test-guide={guideThisJob ? 'job' : undefined}
+                      data-owner-test-copy={
+                        guideThisJob
+                          ? 'Tap your appointment, then mark it complete.'
+                          : undefined
+                      }
                       className="block w-full cursor-pointer rounded-lg border border-white/10 bg-white/[0.02] p-4 text-left outline-none transition-colors hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-white/30"
                     >
                       <div className="flex items-start justify-between gap-3">

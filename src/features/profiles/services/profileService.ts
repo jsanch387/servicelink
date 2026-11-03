@@ -5,6 +5,7 @@
  * Only creates profile during signup. Nothing else.
  */
 
+import { stampV3ForNewProfile } from '@/features/onboarding-v3/server/stampV3ForNewProfile';
 import { createClient } from '@/libs/supabase';
 
 export class ProfileService {
@@ -19,9 +20,16 @@ export class ProfileService {
       const { error } = await supabase.from('profiles').insert({
         user_id: userId,
         full_name: fullName,
+        onboarding_flow: 'v3',
+        signup_platform: 'web',
       });
 
       if (error) {
+        // The confirm-email trigger may have inserted the row first.
+        if (error.code === '23505') {
+          await stampV3ForNewProfile(supabase, userId);
+          return { success: true };
+        }
         return { success: false, error: error.message };
       }
 

@@ -42,6 +42,7 @@ interface BookingsPage {
   bookings: AvailabilityBookingDisplay[];
   hasMore: boolean;
   nextCursor: string | null;
+  totalCount: number | null;
 }
 
 async function fetchBookingsPage(
@@ -54,6 +55,7 @@ async function fetchBookingsPage(
     data?: AvailabilityBookingDisplay[];
     hasMore?: boolean;
     nextCursor?: string | null;
+    totalCount?: number | null;
   };
   if (!res.ok) {
     throw new Error(json.error ?? 'Failed to load bookings');
@@ -62,6 +64,7 @@ async function fetchBookingsPage(
     bookings: Array.isArray(json.data) ? json.data : [],
     hasMore: Boolean(json.hasMore),
     nextCursor: json.nextCursor ?? null,
+    totalCount: typeof json.totalCount === 'number' ? json.totalCount : null,
   };
 }
 
@@ -76,6 +79,7 @@ export function useAvailabilityBookings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const [listPageIndex, setListPageIndex] = useState(0);
   const [cachedPageCount, setCachedPageCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +144,7 @@ export function useAvailabilityBookings() {
         setCachedPageCount(1);
         setBookings(page.bookings);
         setHasMore(page.hasMore);
+        setTotalCount(page.totalCount);
         nextCursorRef.current = page.nextCursor;
         setError(null);
       } catch (err) {
@@ -149,6 +154,7 @@ export function useAvailabilityBookings() {
         );
         setBookings([]);
         setHasMore(false);
+        setTotalCount(null);
         nextCursorRef.current = null;
       } finally {
         if (requestId === requestIdRef.current) {
@@ -192,6 +198,7 @@ export function useAvailabilityBookings() {
       setCachedPageCount(pagesRef.current.length);
       setBookings(page.bookings);
       setHasMore(page.hasMore);
+      if (page.totalCount != null) setTotalCount(page.totalCount);
       nextCursorRef.current = page.nextCursor;
     } catch (err) {
       if (requestId !== requestIdRef.current) return;
@@ -224,6 +231,7 @@ export function useAvailabilityBookings() {
         if (requestId !== requestIdRef.current) return;
         setBookings(page.bookings);
         setHasMore(false);
+        setTotalCount(page.totalCount);
         nextCursorRef.current = null;
         setError(null);
       } catch (err) {
@@ -232,6 +240,7 @@ export function useAvailabilityBookings() {
           err instanceof Error ? err.message : 'Failed to load bookings'
         );
         setBookings([]);
+        setTotalCount(null);
       } finally {
         if (requestId === requestIdRef.current) {
           setIsLoading(false);
@@ -457,6 +466,7 @@ export function useAvailabilityBookings() {
     isLoading,
     isLoadingMore,
     hasMore,
+    totalCount,
     listPageIndex,
     hasNextListPage,
     setListPage,
