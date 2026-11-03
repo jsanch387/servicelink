@@ -22,7 +22,7 @@ import { ReviewsSetupEmptyState } from './list/ReviewsSetupEmptyState';
 
 export interface ReviewsDashboardPageProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
-  /** Prod test: Google connect card is only for the allowlisted account. */
+  /** Shows the Google connect card. */
   showGoogleConnect?: boolean;
 }
 

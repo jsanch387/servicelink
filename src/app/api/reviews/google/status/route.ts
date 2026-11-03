@@ -1,4 +1,3 @@
-import { isGoogleReviewsRolloutEmail } from '@/features/reviews/google-connect/googleReviewsRolloutAllowlist';
 import { loadGoogleBusinessConnectionStatus } from '@/features/reviews/google-connect/server/loadGoogleBusinessConnectionStatus';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
@@ -12,15 +11,6 @@ export async function GET(request: NextRequest) {
         { success: false, error: auth.error },
         { status: auth.status }
       );
-    }
-
-    if (!isGoogleReviewsRolloutEmail(auth.user.email)) {
-      return NextResponse.json({
-        success: true,
-        connected: false,
-        locationTitle: null,
-        lastSyncedAt: null,
-      });
     }
 
     const resolved = await resolveCurrentBusinessId(auth.supabase);

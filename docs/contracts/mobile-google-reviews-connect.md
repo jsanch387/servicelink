@@ -2,8 +2,6 @@
 
 Owners connect the Google account that manages their Business Profile. ServiceLink imports those reviews onto the ServiceLink page. The web app and the Expo app use the **same endpoints**. Mobile sends a Bearer token and `{ "client": "mobile" }` so Google’s return opens the app instead of the dashboard.
 
-This is limited to the prod test account until the rollout opens. Other accounts get `403` on connect. Status returns `connected: false`.
-
 **Web reference:** `POST /api/reviews/google/connect`, `GET /api/reviews/google/callback`, `GET /api/reviews/google/status`.
 
 ---
@@ -69,7 +67,6 @@ The browser first lands on `https://<api-host>/mobile-bridge/google-reviews?goog
 | HTTP  | Body `error`                                        | When                                    |
 | ----- | --------------------------------------------------- | --------------------------------------- |
 | `401` | `Authentication required` or `Missing bearer token` | No valid session                        |
-| `403` | `Google reviews are not available yet.`             | Account is outside the current rollout  |
 | `500` | `Google Business is not configured.`                | Server is missing the Google OAuth keys |
 
 ---

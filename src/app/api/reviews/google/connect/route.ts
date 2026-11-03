@@ -1,4 +1,3 @@
-import { isGoogleReviewsRolloutEmail } from '@/features/reviews/google-connect/googleReviewsRolloutAllowlist';
 import { startGoogleBusinessConnect } from '@/features/reviews/google-connect/server/startGoogleBusinessConnect';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
@@ -11,13 +10,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: auth.error },
         { status: auth.status }
-      );
-    }
-
-    if (!isGoogleReviewsRolloutEmail(auth.user.email)) {
-      return NextResponse.json(
-        { success: false, error: 'Google reviews are not available yet.' },
-        { status: 403 }
       );
     }
 

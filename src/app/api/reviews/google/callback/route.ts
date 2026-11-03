@@ -1,5 +1,4 @@
 import { ROUTES } from '@/constants/routes';
-import { isGoogleReviewsRolloutEmail } from '@/features/reviews/google-connect/googleReviewsRolloutAllowlist';
 import { exchangeGoogleBusinessCode } from '@/features/reviews/google-connect/server/exchangeGoogleBusinessCode';
 import { fetchGoogleBusinessLocationPick } from '@/features/reviews/google-connect/server/fetchGoogleBusinessLocations';
 import {
@@ -53,8 +52,7 @@ async function mobileOwnerCanConnect(userId: string): Promise<boolean> {
   try {
     const admin = createSupabaseAdminClient();
     const { data, error } = await admin.auth.admin.getUserById(userId);
-    if (error) return false;
-    return isGoogleReviewsRolloutEmail(data.user?.email);
+    return !error && Boolean(data.user);
   } catch {
     return false;
   }
@@ -96,11 +94,7 @@ export async function GET(request: NextRequest) {
       }
     } else {
       const auth = await getAuthenticatedUser(request);
-      if (
-        'error' in auth ||
-        auth.user.id !== verified.value.userId ||
-        !isGoogleReviewsRolloutEmail(auth.user.email)
-      ) {
+      if ('error' in auth || auth.user.id !== verified.value.userId) {
         return finishConnect(request, 'error', 'web');
       }
     }
