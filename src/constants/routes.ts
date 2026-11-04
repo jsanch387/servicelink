@@ -343,6 +343,8 @@ export const API_ROUTES = {
     '/api/internal/cron/quote-customer-reminders',
   /** Vercel Cron: refresh Google reviews for connected businesses. */
   INTERNAL_CRON_GOOGLE_REVIEW_PULLS: '/api/internal/cron/google-review-pulls',
+  /** Vercel Cron: setup emails for owners who have not finished onboarding. */
+  INTERNAL_CRON_ONBOARDING_EMAILS: '/api/internal/cron/onboarding-emails',
 } as const;
 
 export const PUBLIC_ROUTES = [

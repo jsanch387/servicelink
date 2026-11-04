@@ -15,6 +15,10 @@
     {
       "path": "/api/internal/cron/google-review-pulls",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/internal/cron/onboarding-emails",
+      "schedule": "0 14 * * *"
     }
   ]
 }

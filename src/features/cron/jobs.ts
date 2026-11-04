@@ -1,6 +1,6 @@
 import { API_ROUTES } from '@/constants/routes';
 
-/** Jobs share this slot so Vercel fires them together. */
+/** Daily jobs share this slot so Vercel fires them together. */
 export const CRON_DAILY_14_UTC = '0 14 * * *';
 
 /**
@@ -45,6 +45,15 @@ export const CRON_JOBS = [
     work: 'src/features/reviews/google-connect/server/runScheduledGoogleReviewPulls.ts',
     description:
       'Connected Google listings: pull reviews so owners do not have to refresh.',
+  },
+  {
+    id: 'onboarding-emails',
+    path: API_ROUTES.INTERNAL_CRON_ONBOARDING_EMAILS,
+    schedule: CRON_DAILY_14_UTC,
+    maxDurationSeconds: 300,
+    work: 'src/features/onboarding-emails/server/runOnboardingEmails.ts',
+    description:
+      'Owners who have not finished setup: one note the next morning, and a last note three days later. Forty sends per run.',
   },
 ] as const;
 

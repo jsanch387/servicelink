@@ -44,7 +44,7 @@ sequenceDiagram
 
 ## Jobs
 
-Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit test fails if the catalog and `vercel.json` drift. All jobs share `0 14 * * *` (14:00 UTC daily).
+Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit test fails if the catalog and `vercel.json` drift. Every job shares `0 14 * * *` (14:00 UTC, about 8am Chicago).
 
 | id                         | Work                                                            | Docs                                                                                  |
 | -------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -52,6 +52,7 @@ Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit tes
 | `quote-request-follow-ups` | Unanswered quote requests in a 3-day window: one owner push/day | [`quotes/.../reminders`](../../quotes/server/reminders/README.md)                     |
 | `quote-customer-reminders` | Sent quotes still open 2–3 days later: one customer email + SMS | [`quotes/.../reminders`](../../quotes/server/reminders/README.md)                     |
 | `google-review-pulls`      | Connected Google listings: import reviews without a manual pull | [`reviews/docs/GOOGLE_REVIEWS.md`](../../reviews/docs/GOOGLE_REVIEWS.md)              |
+| `onboarding-emails`        | Unfinished setup: next morning, then one last note three days later. 40 sends per run | [`onboarding-emails/docs`](../../onboarding-emails/docs/README.md)                    |
 
 ### booking-reminders
 
@@ -77,6 +78,16 @@ Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit tes
 - **Entry:** `runQuoteCustomerReminders`
 - **Customer idempotency:** `quotes.customer_reminder_sent_at` + `{quoteId}:quote_reminder`
 - **Channels:** email + SMS together; SMS includes the same `/q/` URL as the email
+
+### onboarding-emails
+
+- **Route:** `GET /api/internal/cron/onboarding-emails`
+- **Schedule:** `0 14 * * *`
+- **Duration:** `maxDuration = 300`
+- **Entry:** `runOnboardingEmails`
+- **Docs:** [`onboarding-emails/docs/README.md`](../../onboarding-emails/docs/README.md)
+- **Batch:** 40 sends per run, 5 at a time. Anyone left is still due the next morning
+- **Idempotency:** `owner_lifecycle_emails` primary key `(user_id, email_key)`
 
 ### google-review-pulls
 
@@ -109,6 +120,9 @@ curl -i https://<your-domain>/api/internal/cron/quote-request-follow-ups \
   -H "x-internal-push-secret: $INTERNAL_PUSH_API_SECRET"
 
 curl -i https://<your-domain>/api/internal/cron/quote-customer-reminders \
+  -H "x-internal-push-secret: $INTERNAL_PUSH_API_SECRET"
+
+curl -sS "http://localhost:3000/api/internal/cron/onboarding-emails?dryRun=1&userId=USER_ID&force=1" \
   -H "x-internal-push-secret: $INTERNAL_PUSH_API_SECRET"
 ```
 

@@ -50,9 +50,18 @@ describe('CRON_JOBS catalog', () => {
     );
   });
 
-  it('runs all jobs on the same daily slot', () => {
+  it('keeps every job on the shared daily slot', () => {
     expect(new Set(CRON_JOBS.map(job => job.schedule))).toEqual(
       new Set([CRON_DAILY_14_UTC])
+    );
+  });
+
+  it('sends unfinished-setup notes on the daily run', () => {
+    expect(CRON_JOBS.find(job => job.id === 'onboarding-emails')).toMatchObject(
+      {
+        path: API_ROUTES.INTERNAL_CRON_ONBOARDING_EMAILS,
+        schedule: CRON_DAILY_14_UTC,
+      }
     );
   });
 });

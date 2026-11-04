@@ -1557,6 +1557,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      owner_lifecycle_emails: {
+        Row: {
+          user_id: string;
+          email_key: string;
+          sent_at: string;
+        };
+        Insert: {
+          user_id: string;
+          email_key: string;
+          sent_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          email_key?: string;
+          sent_at?: string;
+        };
+        Relationships: [];
+      };
     };
   };
 };
