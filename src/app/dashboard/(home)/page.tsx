@@ -212,7 +212,7 @@ export default async function DashboardPage({
       const { data: profileRow } = await supabase
         .from('profiles')
         .select(
-          'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+          'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, onboarding_completed_at'
         )
         .eq('user_id', user.id)
         .maybeSingle();
@@ -243,7 +243,15 @@ export default async function DashboardPage({
         hasTestBooking: boolean;
         slug: string;
       } | null = null;
-      if (onboardingFlow === 'v3' && access.context.isOwner) {
+      const finishedNewSetup = Boolean(
+        (profileRow as { onboarding_completed_at?: string | null } | null)
+          ?.onboarding_completed_at
+      );
+      if (
+        onboardingFlow === 'v3' &&
+        access.context.isOwner &&
+        finishedNewSetup
+      ) {
         const { data: contactRaw } = await supabase
           .from('business_profiles')
           .select('phone_number_call')

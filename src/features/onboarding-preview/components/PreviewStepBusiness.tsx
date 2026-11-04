@@ -3,7 +3,7 @@
 import { Button, Input, PhoneInput } from '@/components/shared';
 import { sanitizeSlugInput } from '@/constants/slug';
 import { CheckIcon } from '@heroicons/react/24/solid';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   bookingLinkLabel,
   resolvePreviewSlug,
@@ -11,6 +11,9 @@ import {
   type SlugPreviewResult,
 } from '../slugPreview';
 import { PreviewActionBar } from './PreviewActionBar';
+
+/** Wait until the name or link stops changing, then check once. */
+const SLUG_CHECK_DEBOUNCE_MS = 800;
 
 interface PreviewStepBusinessProps {
   compact: boolean;
@@ -51,6 +54,10 @@ export function PreviewStepBusiness({
   const [checking, setChecking] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(source);
+  const lastResult = useRef<{
+    slug: string;
+    result: SlugPreviewResult;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,21 +67,28 @@ export function PreviewStepBusiness({
       setSettled(next);
       return;
     }
-    setChecking(true);
+    if (!checkAvailability) {
+      setChecking(false);
+      setSettled(next);
+      return;
+    }
+    if (lastResult.current?.slug === source) {
+      setChecking(false);
+      setSettled(lastResult.current.result);
+      return;
+    }
+
+    setChecking(false);
+    setSettled({ state: 'idle' });
     const timer = window.setTimeout(() => {
-      if (!checkAvailability) {
-        if (!cancelled) {
-          setSettled(resolvePreviewSlug(source));
-          setChecking(false);
-        }
-        return;
-      }
+      setChecking(true);
       void checkAvailability(source).then(result => {
         if (cancelled) return;
+        lastResult.current = { slug: source, result };
         setSettled(result);
         setChecking(false);
       });
-    }, 400);
+    }, SLUG_CHECK_DEBOUNCE_MS);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);

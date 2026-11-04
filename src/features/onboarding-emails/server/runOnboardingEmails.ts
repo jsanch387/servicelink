@@ -1,16 +1,16 @@
-import { ROUTES } from '@/constants/routes';
+import { getPublicBusinessProfilePath, ROUTES } from '@/constants/routes';
+import { OWNER_TEST_PRACTICE_PARAM } from '@/features/onboarding-v3/ownerTestGuide';
 import { SERVICELINK_SUPPORT_EMAIL } from '@/constants/support';
 import { mapWithConcurrency } from '@/features/availability/booking/server/reminders/mapWithConcurrency';
 import { calendarDateInTimeZone } from '@/features/availability/booking/server/reminders/ownerBookingReminderDate';
+import { loadAppStoreBadgeAttachment } from '@/features/email/appStoreBadgeAttachment';
 import {
   getAppBaseUrl,
-  getFromEmail,
   getResendClient,
+  MARK_FROM_EMAIL,
 } from '@/features/email/services/resendClient';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
-
-import { OWNER_TEST_PRACTICE_PARAM } from '@/features/onboarding-v3/ownerTestGuide';
 
 import {
   CANDIDATE_PAGE,
@@ -20,16 +20,22 @@ import {
   SETUP_EMAILS_ENABLED,
   SETUP_EMAIL_SEND_BATCH,
   SETUP_EMAIL_SEND_CONCURRENCY,
+  QR_CODE_KEY,
+  RECEIPT_REVIEW_KEY,
   SETUP_LOOKBACK_MS,
   TEST_APPOINTMENT_KEY,
   type SetupEmailKey,
 } from '../constants';
 import { decideSetupEmail, type SetupEmailState } from '../eligibility';
 import {
+  buildQrCodeEmail,
+  buildReceiptReviewEmail,
   buildSetupEmail,
   buildTestAppointmentEmail,
 } from '../templates/setupEmails';
 import {
+  loadQrCodeDue,
+  loadReceiptReviewDue,
   loadTestAppointmentDue,
   loadTestAppointmentForUser,
 } from './loadTestAppointments';
@@ -128,14 +134,29 @@ export async function runOnboardingEmails(
   const test = userId
     ? { examined: 0, due: [] }
     : await loadTestAppointmentDue(admin, now);
+  const followUp = userId
+    ? { examined: 0, due: [] }
+    : await loadReceiptReviewDue(admin, now);
+  const qr = userId
+    ? { examined: 0, due: [] }
+    : await loadQrCodeDue(admin, now);
   const due = [
     ...primary.due,
     ...test.due.map(profile => ({
       profile,
       key: TEST_APPOINTMENT_KEY,
     })),
+    ...followUp.due.map(profile => ({
+      profile,
+      key: RECEIPT_REVIEW_KEY,
+    })),
+    ...qr.due.map(profile => ({
+      profile,
+      key: QR_CODE_KEY,
+    })),
   ];
-  const examined = primary.examined + test.examined;
+  const examined =
+    primary.examined + test.examined + followUp.examined + qr.examined;
   const queued = due.slice(0, SETUP_EMAIL_SEND_BATCH);
   const remaining = due.length - queued.length;
 
@@ -196,7 +217,7 @@ async function loadOne(
     );
     return {
       examined: 1,
-      due: match ? [{ profile: match, key: TEST_APPOINTMENT_KEY }] : [],
+      due: match ? [{ profile: match.profile, key: match.key }] : [],
     };
   }
 
@@ -417,23 +438,28 @@ async function sendOne(
     }
 
     const content = {
-      dashboardUrl: dashboardLink(item.key),
+      dashboardUrl: await actionLink(admin, item.profile.user_id, item.key),
       privacyUrl: `${getAppBaseUrl()}${ROUTES.PRIVACY}`,
       year: now.getUTCFullYear(),
     };
     const message =
-      item.key === TEST_APPOINTMENT_KEY
-        ? buildTestAppointmentEmail(content)
-        : buildSetupEmail(item.key, content);
+      item.key === QR_CODE_KEY
+        ? buildQrCodeEmail(content)
+        : item.key === RECEIPT_REVIEW_KEY
+          ? buildReceiptReviewEmail(content)
+          : item.key === TEST_APPOINTMENT_KEY
+            ? buildTestAppointmentEmail(content)
+            : buildSetupEmail(item.key, content);
 
     const { data, error } = await client.emails.send(
       {
-        from: getFromEmail(),
+        from: MARK_FROM_EMAIL,
         to: [email],
         replyTo: SERVICELINK_SUPPORT_EMAIL,
         subject: message.subject,
         html: message.html,
         text: message.text,
+        attachments: [loadAppStoreBadgeAttachment()],
         tags: [
           { name: 'category', value: 'onboarding' },
           { name: 'email_key', value: item.key },
@@ -530,12 +556,43 @@ async function lookupEmails(
   return found;
 }
 
-function dashboardLink(key: SetupEmailKey): string {
-  const url = new URL(ROUTES.DASHBOARD.MAIN, getAppBaseUrl());
-  if (key === TEST_APPOINTMENT_KEY) {
-    url.searchParams.set(OWNER_TEST_PRACTICE_PARAM, '1');
-  }
+async function actionLink(
+  admin: Admin,
+  userId: string,
+  key: SetupEmailKey
+): Promise<string> {
+  const booking =
+    key === TEST_APPOINTMENT_KEY || key === RECEIPT_REVIEW_KEY
+      ? await publicBookingLink(admin, userId)
+      : null;
+  const url = booking
+    ? new URL(booking)
+    : new URL(ROUTES.DASHBOARD.MAIN, getAppBaseUrl());
+  if (booking) url.searchParams.set(OWNER_TEST_PRACTICE_PARAM, '1');
   url.searchParams.set('utm_source', 'onboarding_email');
   url.searchParams.set('utm_campaign', key);
   return url.toString();
+}
+
+/** The public page customers book from. No login. */
+async function publicBookingLink(
+  admin: Admin,
+  userId: string
+): Promise<string | null> {
+  const { data, error } = await tables(admin)
+    .from('business_profiles')
+    .select('business_slug, created_at')
+    .eq('profile_id', userId);
+  if (error) throw error;
+  const slug = (
+    (data ?? []) as { business_slug: string | null; created_at: string }[]
+  )
+    .filter(row => row.business_slug?.trim())
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))[0]
+    ?.business_slug?.trim();
+  if (!slug) return null;
+  return new URL(
+    getPublicBusinessProfilePath(slug),
+    getAppBaseUrl()
+  ).toString();
 }

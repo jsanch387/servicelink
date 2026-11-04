@@ -6,6 +6,8 @@ import { createPortal } from 'react-dom';
 
 import {
   dismissOwnerTestGuide,
+  OWNER_TEST_PRACTICE_PARAM,
+  startOwnerTestGuide,
   useOwnerTestGuidePhase,
 } from '../ownerTestGuide';
 
@@ -83,6 +85,15 @@ function measureTip(node: HTMLElement, key: string): GuideTip | null {
 export function OwnerTestGuideHost() {
   const phase = useOwnerTestGuidePhase();
   const [tips, setTips] = useState<GuideTip[]>([]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get(OWNER_TEST_PRACTICE_PARAM) !== '1') return;
+    startOwnerTestGuide();
+    url.searchParams.delete(OWNER_TEST_PRACTICE_PARAM);
+    const next = `${url.pathname}${url.search}${url.hash}`;
+    window.history.replaceState(window.history.state, '', next);
+  }, []);
 
   useEffect(() => {
     if (!phase) {

@@ -1,3 +1,5 @@
+import { GOOGLE_PLAY_STORE_URL, IOS_APP_STORE_URL } from '@/constants/appStore';
+import { buildAppDownloadFooterRow } from '@/features/email/appDownloadFooter';
 import { escapeHtml } from '@/features/email/utils/escapeHtml';
 
 import type { SetupEmailKey } from '../constants';
@@ -28,23 +30,34 @@ export function buildSetupEmail(
         buttonLabel: 'Finish my booking page',
         content,
       }),
-      text: [
-        'Hey there,',
-        '',
-        'Looks like you got started but didn’t quite finish. You’re about a minute away from having a booking page you can send to customers.',
-        '',
-        `Finish my booking page: ${content.dashboardUrl}`,
-        '',
-        'If something got confusing, just reply and tell me. I read these.',
-        '',
-        'Mark',
-        'Founder, ServiceLink',
-      ].join('\n'),
+      text: plainText(
+        [
+          'Hey there,',
+          '',
+          'Looks like you got started but didn’t quite finish. You’re about a minute away from having a booking page you can send to customers.',
+          '',
+          `Finish my booking page: ${content.dashboardUrl}`,
+          '',
+          'If something got confusing, just reply and tell me. I read these.',
+          '',
+          'Mark',
+          'Founder, ServiceLink',
+        ],
+        content.year
+      ),
     };
   }
 
   if (key === 'A3_test_appointment') {
     return buildTestAppointmentEmail(content);
+  }
+
+  if (key === 'A4_receipt_review') {
+    return buildReceiptReviewEmail(content);
+  }
+
+  if (key === 'A5_qr_code') {
+    return buildQrCodeEmail(content);
   }
 
   return {
@@ -59,18 +72,21 @@ export function buildSetupEmail(
       buttonLabel: 'Finish setup',
       content,
     }),
-    text: [
-      'Hey there,',
-      '',
-      'Last nudge from me on this one. Your page is mostly set up. Name your business and you get a link customers can book from, any time.',
-      '',
-      `Finish setup: ${content.dashboardUrl}`,
-      '',
-      'If you got stuck, just reply and tell me. I read these.',
-      '',
-      'Mark',
-      'Founder, ServiceLink',
-    ].join('\n'),
+    text: plainText(
+      [
+        'Hey there,',
+        '',
+        'Last nudge from me on this one. Your page is mostly set up. Name your business and you get a link customers can book from, any time.',
+        '',
+        `Finish setup: ${content.dashboardUrl}`,
+        '',
+        'If you got stuck, just reply and tell me. I read these.',
+        '',
+        'Mark',
+        'Founder, ServiceLink',
+      ],
+      content.year
+    ),
   };
 }
 
@@ -82,34 +98,127 @@ export function buildTestAppointmentEmail(content: SetupEmailContent): {
   return {
     subject: 'Your booking page is ready',
     html: layout({
-      preheader: 'Book a test appointment and see it as a customer.',
+      preheader: 'Book your first appointment and see it as a customer.',
       paragraphs: [
         'Hey there,',
-        'Your booking page is ready. Book a test appointment for yourself and walk through it the way a customer would. You will see the page, the times, and the texts and emails that keep them updated.',
+        'Your booking page is ready. Book your first appointment and walk through it the way a customer would. You will see the page, the times, and the texts and emails that keep them updated.',
         'It is the quickest way to see why other businesses love ServiceLink.',
       ],
-      buttonLabel: 'Book a test appointment',
+      buttonLabel: 'Book your first appointment',
       content,
     }),
-    text: [
-      'Hey there,',
-      '',
-      'Your booking page is ready. Book a test appointment for yourself and walk through it the way a customer would. You will see the page, the times, and the texts and emails that keep them updated.',
-      '',
-      'It is the quickest way to see why other businesses love ServiceLink.',
-      '',
-      `Book a test appointment: ${content.dashboardUrl}`,
-      '',
-      'Mark',
-      'Founder, ServiceLink',
-    ].join('\n'),
+    text: plainText(
+      [
+        'Hey there,',
+        '',
+        'Your booking page is ready. Book your first appointment and walk through it the way a customer would. You will see the page, the times, and the texts and emails that keep them updated.',
+        '',
+        'It is the quickest way to see why other businesses love ServiceLink.',
+        '',
+        `Book your first appointment: ${content.dashboardUrl}`,
+        '',
+        'Mark',
+        'Founder, ServiceLink',
+      ],
+      content.year
+    ),
   };
+}
+
+export function buildReceiptReviewEmail(content: SetupEmailContent): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  return {
+    subject: 'One appointment, and the follow-up is handled',
+    html: layout({
+      preheader: 'The receipt and the review go out for you.',
+      paragraphs: [
+        'Hey there,',
+        'Book your first appointment, or send the link to someone you already know. Either one is enough.',
+        'When you mark it complete, your customer gets the receipt on their phone and in their email. ServiceLink asks them for a review, so you don’t have to.',
+        'That is the part most owners still do by hand. One booking turns it on.',
+      ],
+      buttonLabel: 'Book your first appointment',
+      content,
+    }),
+    text: plainText(
+      [
+        'Hey there,',
+        '',
+        'Book your first appointment, or send the link to someone you already know. Either one is enough.',
+        '',
+        'When you mark it complete, your customer gets the receipt on their phone and in their email. ServiceLink asks them for a review, so you don’t have to.',
+        '',
+        'That is the part most owners still do by hand. One booking turns it on.',
+        '',
+        `Book your first appointment: ${content.dashboardUrl}`,
+        '',
+        'Mark',
+        'Founder, ServiceLink',
+      ],
+      content.year
+    ),
+  };
+}
+
+export function buildQrCodeEmail(content: SetupEmailContent): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const links = [
+    { href: IOS_APP_STORE_URL, label: 'Download on the App Store' },
+    { href: GOOGLE_PLAY_STORE_URL, label: 'Get it on Google Play' },
+  ];
+  return {
+    subject: 'Turn your cards into booking machines',
+    html: layout({
+      preheader: 'Grab your free QR code in the app.',
+      paragraphs: [
+        'Hey there,',
+        'Download the ServiceLink app and get your free QR code. Put it on your cards, your van, and your flyers.',
+        'When a customer scans it, they land on your booking link, ready to book or request a quote.',
+      ],
+      links,
+      content,
+    }),
+    text: plainText(
+      [
+        'Hey there,',
+        '',
+        'Download the ServiceLink app and get your free QR code. Put it on your cards, your van, and your flyers.',
+        '',
+        'When a customer scans it, they land on your booking link, ready to book or request a quote.',
+        '',
+        ...links.map(link => `${link.label}: ${link.href}`),
+        '',
+        'Mark',
+        'Founder, ServiceLink',
+      ],
+      content.year
+    ),
+  };
+}
+
+function plainText(lines: string[], year: number): string {
+  return [
+    ...lines,
+    '',
+    'Get the app',
+    `Download on the App Store: ${IOS_APP_STORE_URL}`,
+    `Get it on Google Play: ${GOOGLE_PLAY_STORE_URL}`,
+    '',
+    `© ${year} ServiceLink LLC`,
+  ].join('\n');
 }
 
 function layout(input: {
   preheader: string;
   paragraphs: string[];
-  buttonLabel: string;
+  buttonLabel?: string;
+  links?: { href: string; label: string }[];
   content: SetupEmailContent;
 }): string {
   const { content } = input;
@@ -119,6 +228,15 @@ function layout(input: {
         `<p style="margin:0 0 16px;font-family:${FONT};font-size:16px;line-height:24px;color:#18181b;">${escapeHtml(paragraph)}</p>`
     )
     .join('');
+  const actions = (input.links ?? []).map(
+    link =>
+      `<p style="margin:0 0 12px;"><a href="${escapeHtml(link.href)}" style="display:inline-block;background:#0a0a0a;color:#ffffff;text-decoration:none;font-family:${FONT};font-size:16px;font-weight:600;line-height:20px;padding:12px 18px;border-radius:10px;">${escapeHtml(link.label)}</a></p>`
+  );
+  if (input.buttonLabel) {
+    actions.push(
+      `<p style="margin:8px 0 20px;"><a href="${escapeHtml(content.dashboardUrl)}" style="display:inline-block;background:#0a0a0a;color:#ffffff;text-decoration:none;font-family:${FONT};font-size:16px;font-weight:600;line-height:20px;padding:12px 18px;border-radius:10px;">${escapeHtml(input.buttonLabel)}</a></p>`
+    );
+  }
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -134,20 +252,12 @@ function layout(input: {
           <tr>
             <td>
               ${body}
-              <p style="margin:8px 0 20px;">
-                <a href="${escapeHtml(content.dashboardUrl)}" style="display:inline-block;background:#0a0a0a;color:#ffffff;text-decoration:none;font-family:${FONT};font-size:16px;font-weight:600;line-height:20px;padding:12px 18px;border-radius:10px;">${escapeHtml(input.buttonLabel)}</a>
-              </p>
+              ${actions.join('')}
               <p style="margin:0 0 4px;font-family:${FONT};font-size:16px;line-height:24px;color:#18181b;">Mark</p>
               <p style="margin:0;font-family:${FONT};font-size:14px;line-height:20px;color:#71717a;">Founder, ServiceLink</p>
             </td>
           </tr>
-          <tr>
-            <td style="padding-top:28px;font-family:${FONT};font-size:12px;line-height:18px;color:#a1a1aa;">
-              <a href="${escapeHtml(content.privacyUrl)}" style="color:#71717a;text-decoration:underline;">Privacy</a>
-              &nbsp;&middot;&nbsp;
-              &copy; ${content.year} ServiceLink LLC
-            </td>
-          </tr>
+          ${buildAppDownloadFooterRow(content.year)}
         </table>
       </td>
     </tr>

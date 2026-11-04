@@ -1,6 +1,10 @@
 import {
   A1_DELAY_MS,
   A2_AFTER_FIRST_MS,
+  QR_CODE_DELAY_MS,
+  QR_CODE_KEY,
+  RECEIPT_REVIEW_AFTER_ASK_MS,
+  RECEIPT_REVIEW_KEY,
   TEST_APPOINTMENT_DELAY_MS,
   TEST_APPOINTMENT_KEY,
   type SetupEmailKey,
@@ -64,4 +68,54 @@ export function decideTestAppointmentEmail(
   const elapsed = now.getTime() - state.completedAt.getTime();
   if (elapsed < TEST_APPOINTMENT_DELAY_MS) return null;
   return TEST_APPOINTMENT_KEY;
+}
+
+export interface ReceiptReviewState {
+  /** When the first-appointment email was sent. */
+  askSentAt: Date | null;
+  /** Chicago calendar day of that email. */
+  askSentOn: string | null;
+  today: string;
+  alreadySent: boolean;
+  hasBooking: boolean;
+}
+
+/**
+ * The last booking note. Only after the first-appointment email went out,
+ * three days later, and only while the calendar is still empty.
+ */
+export function decideReceiptReviewEmail(
+  state: ReceiptReviewState,
+  now: Date
+): typeof RECEIPT_REVIEW_KEY | null {
+  if (state.alreadySent || state.hasBooking || !state.askSentAt) return null;
+  if (state.askSentOn != null && state.askSentOn === state.today) return null;
+  const elapsed = now.getTime() - state.askSentAt.getTime();
+  if (elapsed < RECEIPT_REVIEW_AFTER_ASK_MS) return null;
+  return RECEIPT_REVIEW_KEY;
+}
+
+export interface QrCodeState {
+  firstBookingAt: Date | null;
+  /** Chicago calendar day of that first booking. */
+  firstBookingOn: string | null;
+  today: string;
+  alreadySent: boolean;
+}
+
+/**
+ * The last note in the track. The morning after the first booking of any kind.
+ * Nothing before that booking, and nothing again after this one goes out.
+ */
+export function decideQrCodeEmail(
+  state: QrCodeState,
+  now: Date
+): typeof QR_CODE_KEY | null {
+  if (state.alreadySent || !state.firstBookingAt) return null;
+  if (state.firstBookingOn != null && state.firstBookingOn === state.today) {
+    return null;
+  }
+  const elapsed = now.getTime() - state.firstBookingAt.getTime();
+  if (elapsed < QR_CODE_DELAY_MS) return null;
+  return QR_CODE_KEY;
 }

@@ -10,7 +10,6 @@ import { getPublicBusinessProfilePath, ROUTES } from '@/constants/routes';
 import {
   FinishChecklistCard,
   OnboardingPreviewFlow,
-  previewHasPhone,
   TestBookingCalendarGuide,
   useOnboardingPreview,
 } from '@/features/onboarding-preview';
@@ -97,7 +96,7 @@ interface DashboardData {
 
 interface DashboardContentProps {
   dashboardData: DashboardData;
-  /** Set for owners who finished the 2-step flow. */
+  /** Set for owners who finished the new setup. Older accounts stay null. */
   v3Setup?: {
     hasPhone: boolean;
     hasTestBooking: boolean;
@@ -173,7 +172,6 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
     if (readOwnerTestGuide()) setOwnerTestGuide(null);
   }, [v3Setup]);
 
-  const showPreviewChecklist = onboardingPreview.showChecklist && !v3Setup;
   const showV3Checklist = Boolean(
     v3Setup && !v3ChecklistDismissed && !onboardingPreview.session.open
   );
@@ -194,10 +192,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 
   return (
     <main className="flex-1 pt-5 pb-24 sm:pt-6 sm:pb-8 lg:pt-8 lg:pb-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
-      {canManageShop &&
-      !onboardingPreview.showChecklist &&
-      !showV3Checklist &&
-      !(v3Setup && !v3Ready) ? (
+      {canManageShop && !showV3Checklist && !(v3Setup && !v3Ready) ? (
         <>
           <BusinessLocationRequiredModal
             businessProfileId={businessProfile.id}
@@ -237,21 +232,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           ) : null}
         </div>
 
-        {onboardingPreview.session.calendarGuide &&
-        !onboardingPreview.session.open &&
-        !v3Setup ? (
-          <TestBookingCalendarGuide />
-        ) : null}
         {showV3Guide ? <TestBookingCalendarGuide /> : null}
-
-        {showPreviewChecklist ? (
-          <FinishChecklistCard
-            bookedTest={onboardingPreview.session.bookedTest}
-            hasPhone={previewHasPhone(onboardingPreview.session.phone)}
-            onBookTest={() => onboardingPreview.openAt('live')}
-            onDismiss={onboardingPreview.dismissChecklist}
-          />
-        ) : null}
 
         {showV3Checklist && v3Setup ? (
           <FinishChecklistCard

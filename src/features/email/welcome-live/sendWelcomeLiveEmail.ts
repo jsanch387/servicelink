@@ -1,4 +1,4 @@
-import { getFromEmail, getResendClient } from '../services/resendClient';
+import { getResendClient, MARK_FROM_EMAIL } from '../services/resendClient';
 import { loadWelcomeLiveInlineAttachments } from './loadWelcomeLiveInlineAttachments';
 import type {
   SendWelcomeLiveEmailResult,
@@ -21,7 +21,7 @@ export async function sendWelcomeLiveEmail(
   const html = buildWelcomeLiveHtml(payload);
 
   const { data, error } = await client.emails.send({
-    from: getFromEmail(),
+    from: MARK_FROM_EMAIL,
     to: [to],
     subject: WELCOME_LIVE_SUBJECT,
     html,

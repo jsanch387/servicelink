@@ -3,6 +3,8 @@ export const SETUP_EMAIL_KEYS = [
   'A1_setup_one_step',
   'A2_setup_final',
   'A3_test_appointment',
+  'A4_receipt_review',
+  'A5_qr_code',
 ] as const;
 
 export type SetupEmailKey = (typeof SETUP_EMAIL_KEYS)[number];
@@ -26,6 +28,16 @@ export const A2_AFTER_FIRST_MS = 3 * 24 * 60 * 60 * 1000;
 export const TEST_APPOINTMENT_DELAY_MS = 24 * 60 * 60 * 1000;
 
 export const TEST_APPOINTMENT_KEY = 'A3_test_appointment' as const;
+
+/** Last booking note: three days after the first-appointment email, if the calendar is still empty. */
+export const RECEIPT_REVIEW_AFTER_ASK_MS = 3 * 24 * 60 * 60 * 1000;
+
+export const RECEIPT_REVIEW_KEY = 'A4_receipt_review' as const;
+
+/** App QR note: the morning a day after their first booking. Then this track stops. */
+export const QR_CODE_DELAY_MS = 24 * 60 * 60 * 1000;
+
+export const QR_CODE_KEY = 'A5_qr_code' as const;
 
 /** Profiles read per page while looking for someone who still needs a note. */
 export const CANDIDATE_PAGE = 200;

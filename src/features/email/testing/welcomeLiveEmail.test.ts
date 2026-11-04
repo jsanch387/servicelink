@@ -14,6 +14,7 @@ const { sendMock, getResendClientMock, getFromEmailMock } = vi.hoisted(() => ({
 vi.mock('@/features/email/services/resendClient', () => ({
   getResendClient: getResendClientMock,
   getFromEmail: getFromEmailMock,
+  MARK_FROM_EMAIL: 'Mark from ServiceLink <mark@team.myservicelink.app>',
 }));
 
 describe('welcome live email template', () => {
@@ -105,7 +106,7 @@ describe('sendWelcomeLiveEmail', () => {
     expect(sendMock).toHaveBeenCalledTimes(1);
     expect(sendMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: 'ServiceLink <hello@myservicelink.app>',
+        from: 'Mark from ServiceLink <mark@team.myservicelink.app>',
         to: ['owner@example.com'],
         subject: WELCOME_LIVE_SUBJECT,
       })

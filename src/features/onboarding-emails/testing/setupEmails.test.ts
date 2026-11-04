@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { GOOGLE_PLAY_STORE_URL, IOS_APP_STORE_URL } from '@/constants/appStore';
+
 import {
+  buildQrCodeEmail,
+  buildReceiptReviewEmail,
   buildSetupEmail,
   buildTestAppointmentEmail,
 } from '../templates/setupEmails';
@@ -20,6 +24,8 @@ describe('setup emails', () => {
     expect(email.html).toContain('Hey there,');
     expect(email.html).toContain('Finish my booking page');
     expect(email.text).toContain('Mark');
+    expect(email.html).toContain('Get the app');
+    expect(email.html).toContain('cid:welcome-app-store');
     expect(email.html).not.toContain('Unsubscribe');
   });
 
@@ -34,10 +40,29 @@ describe('setup emails', () => {
     expect(email.text).not.toContain('Pick your services');
   });
 
-  it('asks them to book a test appointment', () => {
+  it('asks them to book their first appointment', () => {
     const email = buildTestAppointmentEmail(content);
     expect(email.subject).toBe('Your booking page is ready');
-    expect(email.html).toContain('Book a test appointment');
+    expect(email.html).toContain('Book your first appointment');
     expect(email.text).toContain('texts and emails');
+  });
+
+  it('sells the receipt and the review on the last booking note', () => {
+    const email = buildReceiptReviewEmail(content);
+    expect(email.subject).toBe('One appointment, and the follow-up is handled');
+    expect(email.html).toContain('Book your first appointment');
+    expect(email.text).toContain('receipt');
+    expect(email.text).toContain('review');
+  });
+
+  it('points the last note at the app stores and does not attach a QR image', () => {
+    const email = buildQrCodeEmail(content);
+    expect(email.subject).toBe('Turn your cards into booking machines');
+    expect(email.html).toContain(IOS_APP_STORE_URL);
+    expect(email.html).toContain(GOOGLE_PLAY_STORE_URL);
+    expect(email.text).toContain('cards');
+    expect(email.text).toContain('request a quote');
+    expect(email.html).toContain('Get the app');
+    expect(email.html).not.toContain('qrcode');
   });
 });
