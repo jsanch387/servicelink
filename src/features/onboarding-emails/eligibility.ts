@@ -1,6 +1,8 @@
 import {
   A1_DELAY_MS,
   A2_AFTER_FIRST_MS,
+  TEST_APPOINTMENT_DELAY_MS,
+  TEST_APPOINTMENT_KEY,
   type SetupEmailKey,
 } from './constants';
 
@@ -45,4 +47,21 @@ export function decideSetupEmail(
     state.firstSentOn != null && state.firstSentOn === state.today;
   if (sinceFirst >= A2_AFTER_FIRST_MS && !sameDay) return 'A2_setup_final';
   return null;
+}
+
+export interface TestAppointmentState {
+  completedAt: Date | null;
+  alreadySent: boolean;
+  hasBooking: boolean;
+}
+
+/** The next-morning note. Nothing if they already booked, or the note already went out. */
+export function decideTestAppointmentEmail(
+  state: TestAppointmentState,
+  now: Date
+): typeof TEST_APPOINTMENT_KEY | null {
+  if (state.alreadySent || state.hasBooking || !state.completedAt) return null;
+  const elapsed = now.getTime() - state.completedAt.getTime();
+  if (elapsed < TEST_APPOINTMENT_DELAY_MS) return null;
+  return TEST_APPOINTMENT_KEY;
 }

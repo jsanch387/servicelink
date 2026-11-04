@@ -14,7 +14,9 @@ Each run looks at owners who signed up in the last 14 days and have not finished
 
 - The first morning that is at least a day after signup, they get “Your booking page is one step away.” The button opens `/dashboard`.
 - Three days after that email was sent, if they are still unfinished, they get one last note. Never on the same Chicago day as the first.
-- A finished owner is not selected, so the track never starts.
+- A finished owner is not selected, so that track never starts.
+
+The same run also looks for owners who finished at least a day ago and still have no bookings. They get “Book a test appointment.” The button opens `/dashboard?practice=1`, which starts the practice coach and then their public page. Any booking, theirs or a customer’s, means this note is not sent. Finishing setup still sends the separate “you’re live” email immediately. That email no longer asks them to book.
 
 One run sends at most 40 of these, 5 at a time. That cap is what keeps a busy morning from trying to mail everyone in a single invocation and timing out. People past the cap stay due, and the next morning continues with the oldest who still need a note.
 
@@ -48,6 +50,6 @@ The primary key is `(user_id, email_key)`. One row per note. Adding a later note
 ## Still to build
 
 - [x] Come back and finish
-- [ ] Book a test appointment, after setup, and only when they have no bookings
+- [x] Book a test appointment the morning after setup, only when they have no bookings
 - [ ] Share-the-link notes while they still have no customer booking on the public page
 - [ ] One note when the first customer books on the public page

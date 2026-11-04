@@ -10,6 +10,8 @@ import {
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { OWNER_TEST_PRACTICE_PARAM } from '@/features/onboarding-v3/ownerTestGuide';
+
 import {
   CANDIDATE_PAGE,
   CANDIDATE_PAGE_LIMIT,
@@ -19,10 +21,18 @@ import {
   SETUP_EMAIL_SEND_BATCH,
   SETUP_EMAIL_SEND_CONCURRENCY,
   SETUP_LOOKBACK_MS,
+  TEST_APPOINTMENT_KEY,
   type SetupEmailKey,
 } from '../constants';
 import { decideSetupEmail, type SetupEmailState } from '../eligibility';
-import { buildSetupEmail } from '../templates/setupEmails';
+import {
+  buildSetupEmail,
+  buildTestAppointmentEmail,
+} from '../templates/setupEmails';
+import {
+  loadTestAppointmentDue,
+  loadTestAppointmentForUser,
+} from './loadTestAppointments';
 
 type Admin = SupabaseClient<Database>;
 
@@ -112,9 +122,20 @@ export async function runOnboardingEmails(
   }
 
   const today = calendarDateInTimeZone(now, ONBOARDING_EMAIL_TIMEZONE);
-  const { examined, due } = userId
+  const primary = userId
     ? await loadOne(admin, userId, now, today, force)
     : await loadDue(admin, now, today);
+  const test = userId
+    ? { examined: 0, due: [] }
+    : await loadTestAppointmentDue(admin, now);
+  const due = [
+    ...primary.due,
+    ...test.due.map(profile => ({
+      profile,
+      key: TEST_APPOINTMENT_KEY,
+    })),
+  ];
+  const examined = primary.examined + test.examined;
   const queued = due.slice(0, SETUP_EMAIL_SEND_BATCH);
   const remaining = due.length - queued.length;
 
@@ -165,6 +186,19 @@ async function loadOne(
 ): Promise<{ examined: number; due: DueOwner[] }> {
   const profile = await loadProfileById(admin, userId);
   if (!profile) return { examined: 0, due: [] };
+
+  if (profile.onboarding_status === 'completed') {
+    const match = await loadTestAppointmentForUser(
+      admin,
+      profile.user_id,
+      now,
+      force
+    );
+    return {
+      examined: 1,
+      due: match ? [{ profile: match, key: TEST_APPOINTMENT_KEY }] : [],
+    };
+  }
 
   const marks = await loadMarks(admin, [profile.user_id]);
   const key = chooseKey(profile, marks.get(profile.user_id), today, now, force);
@@ -382,11 +416,15 @@ async function sendOne(
       };
     }
 
-    const message = buildSetupEmail(item.key, {
+    const content = {
       dashboardUrl: dashboardLink(item.key),
       privacyUrl: `${getAppBaseUrl()}${ROUTES.PRIVACY}`,
       year: now.getUTCFullYear(),
-    });
+    };
+    const message =
+      item.key === TEST_APPOINTMENT_KEY
+        ? buildTestAppointmentEmail(content)
+        : buildSetupEmail(item.key, content);
 
     const { data, error } = await client.emails.send(
       {
@@ -494,6 +532,9 @@ async function lookupEmails(
 
 function dashboardLink(key: SetupEmailKey): string {
   const url = new URL(ROUTES.DASHBOARD.MAIN, getAppBaseUrl());
+  if (key === TEST_APPOINTMENT_KEY) {
+    url.searchParams.set(OWNER_TEST_PRACTICE_PARAM, '1');
+  }
   url.searchParams.set('utm_source', 'onboarding_email');
   url.searchParams.set('utm_campaign', key);
   return url.toString();

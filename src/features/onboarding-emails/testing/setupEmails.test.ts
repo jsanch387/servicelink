@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildSetupEmail } from '../templates/setupEmails';
+import {
+  buildSetupEmail,
+  buildTestAppointmentEmail,
+} from '../templates/setupEmails';
 
 const content = {
   dashboardUrl:
@@ -29,5 +32,12 @@ describe('setup emails', () => {
     expect(email.subject).toBe('Still want your booking link?');
     expect(email.text).toContain('Name your business');
     expect(email.text).not.toContain('Pick your services');
+  });
+
+  it('asks them to book a test appointment', () => {
+    const email = buildTestAppointmentEmail(content);
+    expect(email.subject).toBe('Your booking page is ready');
+    expect(email.html).toContain('Book a test appointment');
+    expect(email.text).toContain('texts and emails');
   });
 });

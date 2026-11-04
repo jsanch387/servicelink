@@ -33,7 +33,7 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ createShop?: string }>;
+  searchParams: Promise<{ createShop?: string; practice?: string }>;
 }) {
   // Create server client for SSR
   const supabase = await createSupabaseServerClient();
@@ -48,7 +48,9 @@ export default async function DashboardPage({
     redirect('/login');
   }
 
-  const startOwnShop = (await searchParams).createShop === '1';
+  const params = await searchParams;
+  const startOwnShop = params.createShop === '1';
+  const startPractice = params.practice === '1';
 
   // Get complete onboarding state
   const stateResult = await getOnboardingState(user.id, supabase);
@@ -266,7 +268,11 @@ export default async function DashboardPage({
       }
 
       return (
-        <DashboardContent dashboardData={dashboardData} v3Setup={v3Setup} />
+        <DashboardContent
+          dashboardData={dashboardData}
+          v3Setup={v3Setup}
+          startPractice={startPractice && access.context.isOwner}
+        />
       );
     }
 

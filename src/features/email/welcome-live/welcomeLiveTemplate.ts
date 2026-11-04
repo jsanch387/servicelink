@@ -145,22 +145,6 @@ export function buildWelcomeLiveHtml(payload: WelcomeLiveEmailPayload): string {
               </table>
 
               <p style="margin: 0 0 6px; font-size: 16px; font-weight: 600; color: #18181b;">
-                See what customers see
-              </p>
-              <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.5; color: #3f3f46;">
-                Schedule an appointment for yourself. You will go through the same page, services, and times your customers see, so you can experience the full system.
-              </p>
-              <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 0 28px;">
-                <tr>
-                  <td style="border-radius: 10px; background-color: #0a0a0a;">
-                    <a href="${safeUrl}" style="display: inline-block; padding: 12px 18px; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; font-family: ${FONT};">
-                      Schedule an appointment
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <p style="margin: 0 0 6px; font-size: 16px; font-weight: 600; color: #18181b;">
                 Share the link
               </p>
               <p style="margin: 0 0 8px; font-size: 15px; line-height: 1.5; color: #3f3f46;">

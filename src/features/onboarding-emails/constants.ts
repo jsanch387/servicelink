@@ -2,6 +2,7 @@
 export const SETUP_EMAIL_KEYS = [
   'A1_setup_one_step',
   'A2_setup_final',
+  'A3_test_appointment',
 ] as const;
 
 export type SetupEmailKey = (typeof SETUP_EMAIL_KEYS)[number];
@@ -20,6 +21,11 @@ export const A1_DELAY_MS = 24 * 60 * 60 * 1000;
 
 /** Last note: three days after the first one was actually sent. */
 export const A2_AFTER_FIRST_MS = 3 * 24 * 60 * 60 * 1000;
+
+/** Test appointment: the morning a day after they finished, if they still have none. */
+export const TEST_APPOINTMENT_DELAY_MS = 24 * 60 * 60 * 1000;
+
+export const TEST_APPOINTMENT_KEY = 'A3_test_appointment' as const;
 
 /** Profiles read per page while looking for someone who still needs a note. */
 export const CANDIDATE_PAGE = 200;

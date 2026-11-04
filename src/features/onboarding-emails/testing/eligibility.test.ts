@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { decideSetupEmail, type SetupEmailState } from '../eligibility';
+import {
+  decideSetupEmail,
+  decideTestAppointmentEmail,
+  type SetupEmailState,
+} from '../eligibility';
 
 const signup = new Date('2026-11-03T15:00:00.000Z');
 const day = 24 * 60 * 60 * 1000;
@@ -94,5 +98,49 @@ describe('decideSetupEmail', () => {
   it('sends nothing to an internal address', () => {
     const now = new Date(signup.getTime() + 2 * day);
     expect(decideSetupEmail(state({ excluded: true }), now)).toBeNull();
+  });
+});
+
+describe('decideTestAppointmentEmail', () => {
+  const finished = new Date('2026-11-03T15:00:00.000Z');
+
+  it('waits a day after they finish', () => {
+    const now = new Date(finished.getTime() + day - 60_000);
+    expect(
+      decideTestAppointmentEmail(
+        { completedAt: finished, alreadySent: false, hasBooking: false },
+        now
+      )
+    ).toBeNull();
+  });
+
+  it('sends once a day has passed and they still have no booking', () => {
+    const now = new Date(finished.getTime() + day);
+    expect(
+      decideTestAppointmentEmail(
+        { completedAt: finished, alreadySent: false, hasBooking: false },
+        now
+      )
+    ).toBe('A3_test_appointment');
+  });
+
+  it('sends nothing once any booking exists', () => {
+    const now = new Date(finished.getTime() + 2 * day);
+    expect(
+      decideTestAppointmentEmail(
+        { completedAt: finished, alreadySent: false, hasBooking: true },
+        now
+      )
+    ).toBeNull();
+  });
+
+  it('sends nothing after the note already went out', () => {
+    const now = new Date(finished.getTime() + 2 * day);
+    expect(
+      decideTestAppointmentEmail(
+        { completedAt: finished, alreadySent: true, hasBooking: false },
+        now
+      )
+    ).toBeNull();
   });
 });

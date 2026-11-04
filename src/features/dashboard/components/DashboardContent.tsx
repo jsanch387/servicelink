@@ -103,11 +103,14 @@ interface DashboardContentProps {
     hasTestBooking: boolean;
     slug: string;
   } | null;
+  /** Opened from the test-appointment email. Starts the coach, then the public page. */
+  startPractice?: boolean;
 }
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({
   dashboardData,
   v3Setup = null,
+  startPractice = false,
 }) => {
   const { businessProfile, slugData } = dashboardData;
   const access = useDashboardAccess();
@@ -127,6 +130,14 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   const atFreeBookingCap =
     dashboardData.isFreeTier === true &&
     freeBookingsUsed >= FREE_BOOKINGS_LIMIT;
+
+  useEffect(() => {
+    if (!startPractice) return;
+    const slug = slugData?.slug?.trim();
+    if (!slug) return;
+    startOwnerTestGuide();
+    window.location.assign(getPublicBusinessProfilePath(slug));
+  }, [startPractice, slugData?.slug]);
 
   const isFreeTier = dashboardData.isFreeTier === true;
 

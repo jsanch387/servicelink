@@ -22,7 +22,7 @@ export function buildSetupEmail(
         preheader: 'Takes about a minute to finish.',
         paragraphs: [
           'Hey there,',
-          'Mark here, I built ServiceLink. Looks like you got started but didn’t quite finish. You’re about a minute away from having a booking page you can send to customers.',
+          'Looks like you got started but didn’t quite finish. You’re about a minute away from having a booking page you can send to customers.',
           'If something got confusing, just reply and tell me. I read these.',
         ],
         buttonLabel: 'Finish my booking page',
@@ -31,7 +31,7 @@ export function buildSetupEmail(
       text: [
         'Hey there,',
         '',
-        'Mark here, I built ServiceLink. Looks like you got started but didn’t quite finish. You’re about a minute away from having a booking page you can send to customers.',
+        'Looks like you got started but didn’t quite finish. You’re about a minute away from having a booking page you can send to customers.',
         '',
         `Finish my booking page: ${content.dashboardUrl}`,
         '',
@@ -41,6 +41,10 @@ export function buildSetupEmail(
         'Founder, ServiceLink',
       ].join('\n'),
     };
+  }
+
+  if (key === 'A3_test_appointment') {
+    return buildTestAppointmentEmail(content);
   }
 
   return {
@@ -63,6 +67,38 @@ export function buildSetupEmail(
       `Finish setup: ${content.dashboardUrl}`,
       '',
       'If you got stuck, just reply and tell me. I read these.',
+      '',
+      'Mark',
+      'Founder, ServiceLink',
+    ].join('\n'),
+  };
+}
+
+export function buildTestAppointmentEmail(content: SetupEmailContent): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  return {
+    subject: 'Your booking page is ready',
+    html: layout({
+      preheader: 'Book a test appointment and see it as a customer.',
+      paragraphs: [
+        'Hey there,',
+        'Your booking page is ready. Book a test appointment for yourself and walk through it the way a customer would. You will see the page, the times, and the texts and emails that keep them updated.',
+        'It is the quickest way to see why other businesses love ServiceLink.',
+      ],
+      buttonLabel: 'Book a test appointment',
+      content,
+    }),
+    text: [
+      'Hey there,',
+      '',
+      'Your booking page is ready. Book a test appointment for yourself and walk through it the way a customer would. You will see the page, the times, and the texts and emails that keep them updated.',
+      '',
+      'It is the quickest way to see why other businesses love ServiceLink.',
+      '',
+      `Book a test appointment: ${content.dashboardUrl}`,
       '',
       'Mark',
       'Founder, ServiceLink',

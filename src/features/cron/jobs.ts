@@ -53,7 +53,7 @@ export const CRON_JOBS = [
     maxDurationSeconds: 300,
     work: 'src/features/onboarding-emails/server/runOnboardingEmails.ts',
     description:
-      'Owners who have not finished setup: one note the next morning, and a last note three days later. Forty sends per run.',
+      'Unfinished setup notes, then a test-appointment note the morning after they finish if they still have no bookings. Forty sends per run.',
   },
 ] as const;
 

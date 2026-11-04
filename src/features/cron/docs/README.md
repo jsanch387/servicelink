@@ -52,7 +52,7 @@ Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit tes
 | `quote-request-follow-ups` | Unanswered quote requests in a 3-day window: one owner push/day | [`quotes/.../reminders`](../../quotes/server/reminders/README.md)                     |
 | `quote-customer-reminders` | Sent quotes still open 2–3 days later: one customer email + SMS | [`quotes/.../reminders`](../../quotes/server/reminders/README.md)                     |
 | `google-review-pulls`      | Connected Google listings: import reviews without a manual pull | [`reviews/docs/GOOGLE_REVIEWS.md`](../../reviews/docs/GOOGLE_REVIEWS.md)              |
-| `onboarding-emails`        | Unfinished setup: next morning, then one last note three days later. 40 sends per run | [`onboarding-emails/docs`](../../onboarding-emails/docs/README.md)                    |
+| `onboarding-emails`        | Unfinished setup notes, plus a test-appointment note the morning after they finish if they have no bookings. 40 sends per run | [`onboarding-emails/docs`](../../onboarding-emails/docs/README.md)                    |
 
 ### booking-reminders
 

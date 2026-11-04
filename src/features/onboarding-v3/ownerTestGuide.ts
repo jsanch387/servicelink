@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 
+/** Email and dashboard share this. `?practice=1` starts the practice-booking coach. */
+export const OWNER_TEST_PRACTICE_PARAM = 'practice';
+
 const KEY = 'servicelink.ownerTestGuide';
 const DISMISS_KEY = 'servicelink.ownerTestGuideDismissed';
 const EVENT = 'owner-test-guide';

@@ -31,7 +31,7 @@ describe('welcome live email template', () => {
     );
     expect(html).not.toContain('/book');
     expect(html).toContain("You're live");
-    expect(html).toContain('Schedule an appointment');
+    expect(html).not.toContain('Schedule an appointment');
     expect(html).toContain('Facebook groups and Nextdoor');
     expect(html).toContain(
       'Post a before-and-after and put your link under it.'
@@ -51,7 +51,7 @@ describe('welcome live email template', () => {
     );
     expect(html).toContain('https://myservicelink.app/privacy');
     expect(html).toContain('https://myservicelink.app/terms');
-    expect(html).toContain('experience the full system');
+    expect(html).toContain('Your link');
   });
 
   it('escapes/encodes untrusted slug content', () => {
