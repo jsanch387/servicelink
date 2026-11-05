@@ -7,9 +7,7 @@
  *
  * Accounts that already started a setup stay on that setup.
  */
-export const ONBOARDING_V3_OWNER_EMAILS: readonly string[] = [
-  'app.servicelink@gmail.com',
-];
+export const ONBOARDING_V3_OWNER_EMAILS: readonly string[] = [];
 
 export function isOnboardingV3AllowlistActive(): boolean {
   return ONBOARDING_V3_OWNER_EMAILS.length > 0;
