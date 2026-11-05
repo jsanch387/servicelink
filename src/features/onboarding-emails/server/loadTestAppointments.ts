@@ -118,12 +118,17 @@ export async function loadReceiptReviewDue(
     const asks = await loadAskPage(admin, now, page);
     examined += asks.length;
     const pending = asks.filter(row => !row.followUpSent);
-    const businesses = await loadBusinesses(
+    const v3Users = await loadV3UserIds(
       admin,
       pending.map(row => row.user_id)
     );
+    const v3Pending = pending.filter(row => v3Users.has(row.user_id));
+    const businesses = await loadBusinesses(
+      admin,
+      v3Pending.map(row => row.user_id)
+    );
     const checks = await mapWithConcurrency(
-      pending.filter(row => businesses.has(row.user_id)),
+      v3Pending.filter(row => businesses.has(row.user_id)),
       SETUP_EMAIL_SEND_CONCURRENCY,
       async row => {
         const business = businesses.get(row.user_id);
@@ -258,6 +263,9 @@ export async function loadTestAppointmentForUser(
     | typeof RECEIPT_REVIEW_KEY
     | typeof QR_CODE_KEY;
 } | null> {
+  const v3Users = await loadV3UserIds(admin, [userId]);
+  if (!v3Users.has(userId)) return null;
+
   const sent = await loadSentKeys(admin, userId);
 
   const businesses = await loadBusinesses(admin, [userId]);
@@ -397,6 +405,7 @@ async function loadCompletedPage(
   const { data, error } = await tables(admin)
     .from('profiles')
     .select('user_id, created_at, onboarding_completed_at')
+    .eq('onboarding_flow', 'v3')
     .eq('onboarding_status', 'completed')
     .gte('onboarding_completed_at', windowStart.toISOString())
     .lte('onboarding_completed_at', readyAt.toISOString())
@@ -518,7 +527,7 @@ async function loadCompletedProfile(
 ): Promise<TestAppointmentProfile | null> {
   const { data, error } = await tables(admin)
     .from('profiles')
-    .select('user_id, created_at, onboarding_status')
+    .select('user_id, created_at, onboarding_status, onboarding_flow')
     .eq('user_id', userId)
     .maybeSingle();
   if (error) throw error;
@@ -526,8 +535,15 @@ async function loadCompletedProfile(
     user_id: string;
     created_at: string;
     onboarding_status: string;
+    onboarding_flow?: string | null;
   } | null;
-  if (!row || row.onboarding_status !== 'completed') return null;
+  if (
+    !row ||
+    row.onboarding_status !== 'completed' ||
+    row.onboarding_flow !== 'v3'
+  ) {
+    return null;
+  }
   return {
     user_id: row.user_id,
     onboarding_status: 'completed',
@@ -579,6 +595,7 @@ async function loadOwnersForBusinesses(
       'user_id',
       businesses.map(row => row.profile_id)
     )
+    .eq('onboarding_flow', 'v3')
     .eq('onboarding_status', 'completed');
   if (profileError) throw profileError;
   const completed = new Set(
@@ -590,6 +607,24 @@ async function loadOwnersForBusinesses(
     }
   }
   return owners;
+}
+
+async function loadV3UserIds(
+  admin: Admin,
+  userIds: string[]
+): Promise<Set<string>> {
+  const v3 = new Set<string>();
+  if (userIds.length === 0) return v3;
+  const { data, error } = await tables(admin)
+    .from('profiles')
+    .select('user_id')
+    .in('user_id', userIds)
+    .eq('onboarding_flow', 'v3');
+  if (error) throw error;
+  for (const row of (data ?? []) as { user_id: string }[]) {
+    v3.add(row.user_id);
+  }
+  return v3;
 }
 
 async function loadSent(admin: Admin, userIds: string[]): Promise<Set<string>> {

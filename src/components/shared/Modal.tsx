@@ -29,9 +29,12 @@ interface ModalProps {
   preventClose?: boolean;
   /**
    * `sheet` — bottom sheet on all screen sizes (slides up from bottom).
-   * `default` — centered dialog from sm breakpoint up.
+   * `default` — bottom sheet on phones, centered dialog from sm up.
+   * `center` — centered card on every screen size.
    */
-  presentation?: 'default' | 'sheet';
+  presentation?: 'default' | 'sheet' | 'center';
+  /** Skip the title row so the children draw the whole card. */
+  bare?: boolean;
   /** Overrides the default panel max-height classes when set. */
   panelMaxHeightClass?: string;
   /** Shows an X in the header that calls `onClose`. Hidden while `preventClose`. */
@@ -59,11 +62,13 @@ export const Modal: React.FC<ModalProps> = ({
   uniformHorizontalPadding16 = false,
   preventClose = false,
   presentation = 'default',
+  bare = false,
   panelMaxHeightClass,
   showCloseButton = true,
   closeAriaLabel = 'Close',
 }) => {
   const isSheet = presentation === 'sheet';
+  const isCenter = presentation === 'center';
   const [mounted, setMounted] = useState(false);
   const titleId = useId();
 
@@ -131,15 +136,23 @@ export const Modal: React.FC<ModalProps> = ({
     '2xl': 'max-w-full sm:max-w-2xl',
   };
 
-  const overlayAlignClass = isSheet
-    ? 'items-end justify-center p-0'
-    : 'items-end sm:items-center justify-center p-0 sm:p-6';
+  const overlayAlignClass = isCenter
+    ? 'items-center justify-center p-4'
+    : isSheet
+      ? 'items-end justify-center p-0'
+      : 'items-end sm:items-center justify-center p-0 sm:p-6';
+
+  const widthClass = isCenter
+    ? 'w-full max-w-[400px]'
+    : `w-full min-w-0 ${maxWidthClasses[maxWidth]}`;
 
   const panelRoundedClass = fullScreenMobile
     ? 'rounded-none h-full sm:rounded-2xl sm:h-auto'
-    : isSheet
-      ? 'rounded-t-[1.5rem]'
-      : 'rounded-t-[1.5rem] sm:rounded-2xl';
+    : isCenter
+      ? 'h-auto rounded-[22px]'
+      : isSheet
+        ? 'rounded-t-[1.5rem]'
+        : 'rounded-t-[1.5rem] sm:rounded-2xl';
 
   const resolvedPanelMaxHeightClass =
     panelMaxHeightClass ??
@@ -154,7 +167,8 @@ export const Modal: React.FC<ModalProps> = ({
       className={`fixed inset-0 z-[100] flex ${overlayAlignClass} bg-black/65 backdrop-blur-md overscroll-none`}
       role="dialog"
       aria-modal="true"
-      aria-labelledby={title ? titleId : undefined}
+      aria-label={bare && title ? title : undefined}
+      aria-labelledby={!bare && title ? titleId : undefined}
       style={{
         animation: 'fadeIn 0.22s ease-out',
       }}
@@ -167,13 +181,15 @@ export const Modal: React.FC<ModalProps> = ({
       }}
     >
       <div
-        className={`relative flex w-full min-w-0 ${maxWidthClasses[maxWidth]} ${resolvedPanelMaxHeightClass} ${panelRoundedClass} mx-auto flex-col overflow-hidden border border-white/[0.08] bg-[#141414] shadow-[0_24px_80px_rgba(0,0,0,0.55)] ring-1 ring-inset ring-white/[0.04] ${panelClassName}`}
+        className={`relative flex ${widthClass} ${resolvedPanelMaxHeightClass} ${panelRoundedClass} mx-auto flex-col overflow-hidden border border-white/[0.08] bg-[#141414] shadow-[0_24px_80px_rgba(0,0,0,0.55)] ring-1 ring-inset ring-white/[0.04] ${panelClassName}`}
         style={{
-          animation: 'slideUp 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
+          animation: isCenter
+            ? 'fadeIn 0.22s ease-out'
+            : 'slideUp 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
         }}
         onClick={e => e.stopPropagation()}
       >
-        {title ? (
+        {title && !bare ? (
           <div
             className={`flex min-w-0 flex-shrink-0 items-center gap-3 ${headerPaddingClass} ${headerClassName}`}
           >
@@ -196,15 +212,21 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
         ) : null}
 
-        {title ? <div className="h-px flex-shrink-0 bg-white/[0.06]" /> : null}
+        {title && !bare ? (
+          <div className="h-px flex-shrink-0 bg-white/[0.06]" />
+        ) : null}
 
-        <div
-          className={`min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-dark pt-5 pb-6 sm:pt-6 sm:pb-7 ${contentHorizontalClass} ${contentClassName}`}
-          onWheel={handleContentScroll}
-          style={{ WebkitOverflowScrolling: 'touch' }}
-        >
-          {children}
-        </div>
+        {bare ? (
+          children
+        ) : (
+          <div
+            className={`min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-dark pt-5 pb-6 sm:pt-6 sm:pb-7 ${contentHorizontalClass} ${contentClassName}`}
+            onWheel={handleContentScroll}
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            {children}
+          </div>
+        )}
       </div>
     </div>
   );

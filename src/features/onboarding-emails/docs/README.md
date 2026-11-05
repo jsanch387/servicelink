@@ -41,11 +41,11 @@ Drop `dryRun=1` to send that one email. Leave off `userId` only for the real dai
 -- src/features/onboarding-emails/docs/001_setup_emails.sql
 ```
 
-| Column | Meaning |
-| --- | --- |
-| `user_id` | The owner |
+| Column      | Meaning                                 |
+| ----------- | --------------------------------------- |
+| `user_id`   | The owner                               |
 | `email_key` | Which note, such as `A1_setup_one_step` |
-| `sent_at` | When this run claimed it |
+| `sent_at`   | When this run claimed it                |
 
 The primary key is `(user_id, email_key)`. One row per note. Adding a later note is a new key in code, not a new column.
 

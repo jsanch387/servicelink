@@ -43,6 +43,8 @@ export type Database = {
           onboarding_flow: 'v2' | 'v3' | null;
           /** Client the account was created on. */
           signup_platform: 'web' | 'ios' | 'android' | null;
+          /** Set when the owner closes the get-the-app pitch. */
+          app_pitch_dismissed_at: string | null;
           created_at: string;
           updated_at: string;
           subscription_tier: string;
@@ -69,6 +71,7 @@ export type Database = {
           onboarding_completed_at?: string | null;
           onboarding_flow?: 'v2' | 'v3' | null;
           signup_platform?: 'web' | 'ios' | 'android' | null;
+          app_pitch_dismissed_at?: string | null;
           created_at?: string;
           updated_at?: string;
           subscription_tier?: string;
@@ -94,6 +97,7 @@ export type Database = {
           onboarding_completed_at?: string | null;
           onboarding_flow?: 'v2' | 'v3' | null;
           signup_platform?: 'web' | 'ios' | 'android' | null;
+          app_pitch_dismissed_at?: string | null;
           created_at?: string;
           updated_at?: string;
           subscription_tier?: string;
@@ -111,6 +115,7 @@ export type Database = {
           profile_welcome_modal_seen?: boolean;
           subscription_plan?: string | null;
         };
+        Relationships: [];
       };
       business_service_areas: {
         Row: {
@@ -557,6 +562,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       business_images: {
         Row: {

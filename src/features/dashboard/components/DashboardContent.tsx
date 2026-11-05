@@ -6,6 +6,7 @@
 'use client';
 
 import { Button, CrownIcon } from '@/components/shared';
+import { GetAppModal } from '@/features/app-pitch/components/GetAppModal';
 import { getPublicBusinessProfilePath, ROUTES } from '@/constants/routes';
 import {
   FinishChecklistCard,
@@ -104,12 +105,15 @@ interface DashboardContentProps {
   } | null;
   /** Opened from the test-appointment email. Starts the coach, then the public page. */
   startPractice?: boolean;
+  /** Get-the-app pitch. Closing it is remembered on the profile. */
+  showAppPitch?: boolean;
 }
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({
   dashboardData,
   v3Setup = null,
   startPractice = false,
+  showAppPitch = false,
 }) => {
   const { businessProfile, slugData } = dashboardData;
   const access = useDashboardAccess();
@@ -146,6 +150,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   const [v3ChecklistDismissed, setV3ChecklistDismissed] = useState(true);
   const [v3GuideArmed, setV3GuideArmed] = useState(false);
   const [v3Ready, setV3Ready] = useState(false);
+  const [appPitchOpen, setAppPitchOpen] = useState(showAppPitch);
 
   useEffect(() => {
     setV3ChecklistDismissed(readV3ChecklistDismissed());
@@ -334,6 +339,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           </div>
         </div>
       </div>
+      <GetAppModal open={appPitchOpen} onClose={() => setAppPitchOpen(false)} />
       {onboardingPreview.session.open ? (
         <OnboardingPreviewFlow
           session={onboardingPreview.session}

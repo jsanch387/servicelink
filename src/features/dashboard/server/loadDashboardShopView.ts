@@ -141,7 +141,9 @@ export async function loadDashboardShopView(
     .eq('business_id', profile.id)
     .maybeSingle();
   const availability = availabilityRow as BusinessAvailabilityRow | null;
-  const { data: serviceRows } = await supabase
+  // The hand-written services table type does not satisfy the client's select shape.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: serviceRows } = await (supabase as any)
     .from('business_services')
     .select('name, description, price_cents, duration_minutes')
     .eq('business_id', profile.id);
@@ -223,7 +225,14 @@ export async function loadDashboardShopView(
       availability?.weekly_schedule,
       availability?.selected_preset
     ),
-    servicesEdited: (serviceRows ?? []).some(
+    servicesEdited: (
+      (serviceRows ?? []) as Array<{
+        name: string;
+        description: string | null;
+        price_cents: number | null;
+        duration_minutes: number | null;
+      }>
+    ).some(
       row =>
         !isUntouchedSampleService({
           name: row.name,

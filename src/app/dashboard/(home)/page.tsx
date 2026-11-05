@@ -10,7 +10,7 @@ import {
 import { OnboardingFlowV2 } from '@/features/onboarding-v2';
 import { OnboardingFlowV3 } from '@/features/onboarding-v3';
 import { businessHasTestBooking } from '@/features/onboarding-v3/server/businessHasTestBooking';
-import { stampV3ForNewProfile } from '@/features/onboarding-v3/server/stampV3ForNewProfile';
+import { stampOnboardingFlowForNewProfile } from '@/features/onboarding-v3/server/stampOnboardingFlowForNewProfile';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { RemovedFromTeamScreen } from '@/features/team';
 import { can } from '@/features/team/constants/teamPermissions';
@@ -141,15 +141,20 @@ export default async function DashboardPage({
     return <DashboardContent dashboardData={dashboardData} />;
   }
 
+  let resolvedFlow = onboardingFlow;
+  if (status === 'not_started' && resolvedFlow == null) {
+    resolvedFlow = await stampOnboardingFlowForNewProfile(
+      supabase,
+      user.id,
+      user.email
+    );
+  }
+
   const showNewOnboarding =
     (status === 'not_started' || status === 'in_progress') &&
-    (onboardingFlow === 'v3' ||
-      (status === 'not_started' && onboardingFlow == null));
+    resolvedFlow === 'v3';
 
   if (showNewOnboarding) {
-    if (onboardingFlow == null) {
-      await stampV3ForNewProfile(supabase, user.id);
-    }
     const phoneDigits = (contactInfo.phone_number_call ?? '')
       .replace(/\D/g, '')
       .slice(0, 10);
@@ -168,7 +173,7 @@ export default async function DashboardPage({
     );
   }
 
-  // People already in the 5-step flow stay there. New accounts are v3.
+  // People already in the 5-step flow stay there. New accounts follow the email gate.
   switch (status) {
     case 'not_started':
     case 'in_progress':
@@ -212,7 +217,7 @@ export default async function DashboardPage({
       const { data: profileRow } = await supabase
         .from('profiles')
         .select(
-          'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, onboarding_completed_at'
+          'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, onboarding_completed_at, signup_platform, app_pitch_dismissed_at'
         )
         .eq('user_id', user.id)
         .maybeSingle();
@@ -243,10 +248,21 @@ export default async function DashboardPage({
         hasTestBooking: boolean;
         slug: string;
       } | null = null;
-      const finishedNewSetup = Boolean(
-        (profileRow as { onboarding_completed_at?: string | null } | null)
-          ?.onboarding_completed_at
-      );
+      const profile = profileRow as {
+        onboarding_completed_at?: string | null;
+        signup_platform?: 'web' | 'ios' | 'android' | null;
+        app_pitch_dismissed_at?: string | null;
+      } | null;
+      const finishedNewSetup = Boolean(profile?.onboarding_completed_at);
+      const signedUpInTheApp =
+        profile?.signup_platform === 'ios' ||
+        profile?.signup_platform === 'android';
+      const showAppPitch =
+        access.context.isOwner &&
+        !signedUpInTheApp &&
+        !profile?.app_pitch_dismissed_at &&
+        ((finishedNewSetup && onboardingFlow === 'v3') ||
+          process.env.NODE_ENV === 'development');
       if (
         onboardingFlow === 'v3' &&
         access.context.isOwner &&
@@ -280,6 +296,7 @@ export default async function DashboardPage({
           dashboardData={dashboardData}
           v3Setup={v3Setup}
           startPractice={startPractice && access.context.isOwner}
+          showAppPitch={showAppPitch}
         />
       );
     }

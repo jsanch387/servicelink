@@ -232,11 +232,13 @@ async function loadProfileById(
 ): Promise<ProfileRow | null> {
   const { data, error } = await tables(admin)
     .from('profiles')
-    .select('user_id, onboarding_status, created_at')
+    .select('user_id, onboarding_status, onboarding_flow, created_at')
     .eq('user_id', userId)
     .maybeSingle();
   if (error) throw error;
-  return (data as ProfileRow | null) ?? null;
+  const row = data as (ProfileRow & { onboarding_flow?: string | null }) | null;
+  if (!row || row.onboarding_flow !== 'v3') return null;
+  return row;
 }
 
 function chooseKey(
@@ -301,6 +303,7 @@ async function loadProfilePage(
   const { data, error } = await tables(admin)
     .from('profiles')
     .select('user_id, onboarding_status, created_at')
+    .eq('onboarding_flow', 'v3')
     .gte('created_at', windowStart.toISOString())
     .in('onboarding_status', ['not_started', 'in_progress'])
     .order('created_at', { ascending: true })

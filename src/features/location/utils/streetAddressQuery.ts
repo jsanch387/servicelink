@@ -56,7 +56,9 @@ const GENERIC_TOKENS = new Set([
   'wb',
 ]);
 
-function typedHouseNumber(query: string): { house: string; rest: string } | null {
+function typedHouseNumber(
+  query: string
+): { house: string; rest: string } | null {
   const match = query.trim().match(/^(\d+[a-zA-Z]?)\s+(.+)$/);
   if (!match) return null;
   return { house: match[1], rest: match[2] };
@@ -186,9 +188,7 @@ export function rankStreetAddressSuggestions(
       ).length;
       const queryTokenSet = new Set(streetTokens(remainder));
       const extras = tokens.filter(token => !queryTokenSet.has(token)).length;
-      const hasHouse = typed
-        ? streetHasTypedHouse(street, typed.house)
-        : false;
+      const hasHouse = typed ? streetHasTypedHouse(street, typed.house) : false;
       const score = (hasHouse ? 100 : 0) + overlap * 10 - extras * 3;
       return { ...item, score };
     })

@@ -1,4 +1,5 @@
 import { CustomerScreen } from '@/features/customer-management/components/CustomerScreen';
+import { DashboardAccessProvider } from '@/features/dashboard/context/DashboardAccessContext';
 import { fetchCustomerVehicles } from '@/features/customer-management/api/fetchCustomerVehicles';
 import { fetchCustomerVisits } from '@/features/customer-management/api/fetchCustomerVisits';
 import { fetchCustomersList } from '@/features/customer-management/api/fetchCustomers';
@@ -124,10 +125,20 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+function renderScreen() {
+  return render(
+    <DashboardAccessProvider
+      value={{ isOwner: true, role: 'owner', permissions: [] }}
+    >
+      <CustomerScreen customerId={CUSTOMER_ID} />
+    </DashboardAccessProvider>
+  );
+}
+
 describe('CustomerScreen', () => {
   it('features the upcoming appointment and hides View all', async () => {
     mockCustomer(customer());
-    render(<CustomerScreen customerId={CUSTOMER_ID} />);
+    renderScreen();
 
     expect(await screen.findByText('Next visit')).toBeTruthy();
     expect(screen.queryByText('Last visit')).toBeNull();
@@ -158,7 +169,7 @@ describe('CustomerScreen', () => {
       }),
       'Beauty'
     );
-    render(<CustomerScreen customerId={CUSTOMER_ID} />);
+    renderScreen();
 
     expect(await screen.findByText('Last visit')).toBeTruthy();
     expect(screen.queryByText('Next visit')).toBeNull();
@@ -170,7 +181,7 @@ describe('CustomerScreen', () => {
   it('opens call, message, and email from the menu', async () => {
     const user = userEvent.setup();
     mockCustomer(customer(), 'Beauty');
-    render(<CustomerScreen customerId={CUSTOMER_ID} />);
+    renderScreen();
 
     await screen.findByText('Ada Lovelace');
     await user.click(screen.getByRole('button', { name: 'More' }));
@@ -189,7 +200,7 @@ describe('CustomerScreen', () => {
   it('opens edit with the saved customer and asks before delete', async () => {
     const user = userEvent.setup();
     mockCustomer(customer(), 'Beauty');
-    render(<CustomerScreen customerId={CUSTOMER_ID} />);
+    renderScreen();
 
     await screen.findByRole('button', { name: 'More' });
     await user.click(screen.getByRole('button', { name: 'More' }));
@@ -225,7 +236,7 @@ describe('CustomerScreen', () => {
       ok: true,
       vehicles: [{ id: 'veh-1', label: '2020 Honda Civic' }],
     });
-    render(<CustomerScreen customerId={CUSTOMER_ID} />);
+    renderScreen();
 
     expect(await screen.findByText('2020 Honda Civic')).toBeTruthy();
     expect(screen.queryByText('No vehicles yet')).toBeNull();

@@ -234,7 +234,8 @@ export const useAuthStore = create<AuthStore>()(
           if (signedUpUser && session) {
             const profileResult = await ProfileService.createProfile(
               signedUpUser.id,
-              null
+              null,
+              signedUpUser.email ?? email
             );
 
             if (!profileResult.success) {

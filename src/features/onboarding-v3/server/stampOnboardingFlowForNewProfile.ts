@@ -1,16 +1,21 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { onboardingFlowForEmail } from '../config/onboardingV3Allowlist';
+
 /**
- * People who have not started a flow belong on the 2-step setup.
+ * People who have not started a setup get v3 or v2 from the email gate.
  * The auth trigger can insert the profile first, without these columns.
  */
-export async function stampV3ForNewProfile(
+export async function stampOnboardingFlowForNewProfile(
   supabase: SupabaseClient,
-  userId: string
-): Promise<void> {
+  userId: string,
+  email: string | null | undefined
+): Promise<'v2' | 'v3'> {
+  const flow = onboardingFlowForEmail(email);
+
   await supabase
     .from('profiles')
-    .update({ onboarding_flow: 'v3' })
+    .update({ onboarding_flow: flow })
     .eq('user_id', userId)
     .eq('onboarding_status', 'not_started')
     .is('onboarding_flow', null);
@@ -21,4 +26,6 @@ export async function stampV3ForNewProfile(
     .eq('user_id', userId)
     .eq('onboarding_status', 'not_started')
     .is('signup_platform', null);
+
+  return flow;
 }

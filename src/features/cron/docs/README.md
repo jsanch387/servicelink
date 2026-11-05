@@ -46,12 +46,12 @@ sequenceDiagram
 
 Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit test fails if the catalog and `vercel.json` drift. Every job shares `0 14 * * *` (14:00 UTC, about 8am Chicago).
 
-| id                         | Work                                                            | Docs                                                                                  |
-| -------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `booking-reminders`        | Tomorrow’s confirmed bookings: owner push + customer email/SMS  | [`availability/.../reminders`](../../availability/booking/server/reminders/README.md) |
-| `quote-request-follow-ups` | Unanswered quote requests in a 3-day window: one owner push/day | [`quotes/.../reminders`](../../quotes/server/reminders/README.md)                     |
-| `quote-customer-reminders` | Sent quotes still open 2–3 days later: one customer email + SMS | [`quotes/.../reminders`](../../quotes/server/reminders/README.md)                     |
-| `google-review-pulls`      | Connected Google listings: import reviews without a manual pull | [`reviews/docs/GOOGLE_REVIEWS.md`](../../reviews/docs/GOOGLE_REVIEWS.md)              |
+| id                         | Work                                                                                                                                        | Docs                                                                                  |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `booking-reminders`        | Tomorrow’s confirmed bookings: owner push + customer email/SMS                                                                              | [`availability/.../reminders`](../../availability/booking/server/reminders/README.md) |
+| `quote-request-follow-ups` | Unanswered quote requests in a 3-day window: one owner push/day                                                                             | [`quotes/.../reminders`](../../quotes/server/reminders/README.md)                     |
+| `quote-customer-reminders` | Sent quotes still open 2–3 days later: one customer email + SMS                                                                             | [`quotes/.../reminders`](../../quotes/server/reminders/README.md)                     |
+| `google-review-pulls`      | Connected Google listings: import reviews without a manual pull                                                                             | [`reviews/docs/GOOGLE_REVIEWS.md`](../../reviews/docs/GOOGLE_REVIEWS.md)              |
 | `onboarding-emails`        | Unfinished setup notes, a first-appointment note, a receipt-and-review note, then one app QR note after the first booking. 40 sends per run | [`onboarding-emails/docs`](../../onboarding-emails/docs/README.md)                    |
 
 ### booking-reminders

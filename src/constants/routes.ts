@@ -168,6 +168,8 @@ export const API_ROUTES = {
   ONBOARDING_V3_STEP1: '/api/onboarding-v3/step1',
   /** 2-step onboarding: name, link, phone, sample services, default hours. */
   ONBOARDING_V3_FINISH: '/api/onboarding-v3/finish',
+  /** Owner closed the get-the-app pitch. */
+  MARK_APP_PITCH_DISMISSED: '/api/profile/mark-app-pitch-dismissed',
   /** Live booking-link availability check. */
   BUSINESS_SLUG_CHECK: '/api/business-profile/slug/check',
   /** Authenticated: Stripe Checkout session URL for Pro (web upgrade / billing). */
