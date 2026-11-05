@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { onboardingFlowForEmail } from '../config/onboardingV3Allowlist';
 
 /**
- * People who have not started a setup get v3 or v2 from the email gate.
+ * People who have not started a setup get the 2-step setup.
  * The auth trigger can insert the profile first, without these columns.
  */
 export async function stampOnboardingFlowForNewProfile(

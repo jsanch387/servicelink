@@ -7,16 +7,15 @@ import {
 } from '../config/onboardingV3Allowlist';
 
 describe('onboardingV3Allowlist', () => {
-  it('limits the new setup to the listed emails', () => {
-    expect(isOnboardingV3AllowlistActive()).toBe(true);
-    expect(ONBOARDING_V3_OWNER_EMAILS).toContain('app.servicelink@gmail.com');
+  it('leaves the new setup open to every signup', () => {
+    expect(isOnboardingV3AllowlistActive()).toBe(false);
+    expect(ONBOARDING_V3_OWNER_EMAILS).toEqual([]);
   });
 
-  it('gives the new setup only to a listed email', () => {
+  it('gives every signup the new setup', () => {
+    expect(onboardingFlowForEmail('someone@example.com')).toBe('v3');
     expect(onboardingFlowForEmail('app.servicelink@gmail.com')).toBe('v3');
-    expect(onboardingFlowForEmail(' App.ServiceLink@gmail.com ')).toBe('v3');
-    expect(onboardingFlowForEmail('someone@example.com')).toBe('v2');
-    expect(onboardingFlowForEmail(null)).toBe('v2');
-    expect(onboardingFlowForEmail('')).toBe('v2');
+    expect(onboardingFlowForEmail(null)).toBe('v3');
+    expect(onboardingFlowForEmail('')).toBe('v3');
   });
 });

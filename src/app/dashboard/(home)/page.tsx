@@ -173,7 +173,7 @@ export default async function DashboardPage({
     );
   }
 
-  // People already in the 5-step flow stay there. New accounts follow the email gate.
+  // People already in the 5-step flow stay there. New accounts get the 2-step setup.
   switch (status) {
     case 'not_started':
     case 'in_progress':
