@@ -80,7 +80,36 @@ describe('verifyTapToPayPaymentIntent', () => {
     if (result.ok) {
       expect(result.paymentIntentId).toBe('pi_123');
       expect(result.amountCents).toBe(12000);
+      expect(result.tipCents).toBe(0);
     }
+  });
+
+  it('reads the customer tip from the PaymentIntent metadata', async () => {
+    mockAdminWithIntentRow({
+      booking_id: 'booking-1',
+      business_id: 'business-1',
+      amount_cents: 14000,
+    });
+    retrieveMock.mockResolvedValue({
+      status: 'succeeded',
+      amount: 14000,
+      metadata: {
+        kind: 'booking_tap_to_pay',
+        bookingId: 'booking-1',
+        businessId: 'business-1',
+        tipCents: '2000',
+      },
+    });
+
+    const result = await verifyTapToPayPaymentIntent({
+      bookingId: 'booking-1',
+      businessId: 'business-1',
+      stripeAccountId: 'acct_123',
+      paymentIntentId: 'pi_123',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.tipCents).toBe(2000);
   });
 
   it('rejects when Stripe amount does not match the DB intent row', async () => {

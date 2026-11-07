@@ -1,21 +1,18 @@
 import { saveIndustry } from '@/features/onboarding-v3/server/saveIndustry';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
+    const auth = await getAuthenticatedUser(request);
+    if ('error' in auth) {
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
+        { success: false, error: auth.error },
+        { status: auth.status }
       );
     }
+
+    const { user, supabase } = auth;
 
     const body = (await request.json()) as {
       industry?: string;

@@ -52,6 +52,22 @@ describe('computeBookingEarningsCents', () => {
     });
   });
 
+  it('keeps a Tap to Pay tip out of job earnings', () => {
+    const result = computeBookingEarningsCents({
+      status: 'completed',
+      scheduled_date: '2026-11-05',
+      subtotal_cents: 10000,
+      booking_payments: {
+        total_amount_cents: 10000,
+        paid_online_amount_cents: 0,
+        session_payment_amount_cents: 12000,
+        tip_cents: 2000,
+        session_fees_total_cents: 0,
+      },
+    });
+    expect(result?.collectedCents).toBe(10000);
+  });
+
   it('uses the scheduled calendar day, not payment time', () => {
     const result = computeBookingEarningsCents({
       status: 'completed',

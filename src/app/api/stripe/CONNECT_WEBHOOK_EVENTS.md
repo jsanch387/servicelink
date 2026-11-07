@@ -26,6 +26,7 @@ Select **all** of these on the destination whose URL is `https://myservicelink.a
 | `payment_intent.succeeded`      | **Yes**  | Create-payment Tap to Pay → `payment_requests` paid                                                                                          |
 | `payment_intent.canceled`       | **Yes**  | Create-payment Tap to Pay → canceled                                                                                                         |
 | `payment_intent.payment_failed` | **Yes**  | Create-payment Tap to Pay → failed                                                                                                           |
+| `charge.updated`                | **Yes**  | Booking Tap to Pay: store `session_stripe_fee_cents` once the balance-transaction fee exists                                                 |
 | `invoice.paid`                  | **Yes**  | Membership renewal: ledger + customer receipt. First Checkout invoice is skipped for the receipt (`subscription_create`)                     |
 | `invoice.payment_failed`        | **Yes**  | Membership dunning email + `last_payment_failed_at`                                                                                          |
 | `customer.subscription.updated` | **Yes**  | Membership period sync + next-visit email/SMS + owner nudge                                                                                  |
@@ -102,8 +103,10 @@ Handler is one route. It branches on `event.type`, then on Stripe `metadata.kind
 ### Booking Tap to Pay (job complete)
 
 - PaymentIntent metadata: `kind = booking_tap_to_pay`
-- **No webhook required.** `job_completed` retrieves the PI and verifies it (`verifyTapToPayPaymentIntent`)
-- If Connect also receives `payment_intent.*` for these, the handler ignores them (wrong `metadata.kind`)
+- `job_completed` still verifies the PaymentIntent and writes the tip. It does not invent a processing fee
+- **Needs:** `payment_intent.succeeded` and `charge.updated` to store `booking_payments.session_stripe_fee_cents` after Stripe reports the balance-transaction fee
+- The fee stays null until that report. `0` is stored only when Stripe reports a zero fee
+- These events do not complete the job and do not touch walk-up Tap to Pay
 
 ### Connect onboarding
 

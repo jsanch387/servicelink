@@ -80,6 +80,7 @@ import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/
 import { applyCustomerInvoiceCheckoutCompleted } from '@/features/invoices/server/applyCustomerInvoiceCheckoutCompleted';
 import { applyWalkUpPaymentCheckoutCompleted } from '@/features/payments/walk-up/applyWalkUpPaymentCheckoutCompleted';
 import { applyWalkUpPaymentCheckoutExpired } from '@/features/payments/walk-up/applyWalkUpPaymentCheckoutExpired';
+import { recordBookingTapToPayStripeFeeFromWebhook } from '@/features/availability/booking/server/storeBookingTapToPayStripeFee';
 import { applyWalkUpTapToPayPaymentIntent } from '@/features/payments/walk-up/applyWalkUpTapToPayPaymentIntent';
 import { WALKUP_PAYMENT_TAP_TO_PAY_KIND } from '@/features/payments/walk-up/constants';
 import { applyMembershipCheckoutSessionCompleted } from '@/features/subscriptions/server/applyMembershipCheckoutSessionCompleted';
@@ -1303,6 +1304,70 @@ export async function POST(request: NextRequest) {
       if ('retry' in applyResult && applyResult.retry) {
         return NextResponse.json(
           { error: 'Walk-up Tap to Pay apply failed' },
+          { status: 500 }
+        );
+      }
+    }
+    if (
+      event.type === 'payment_intent.succeeded' &&
+      paymentIntent.metadata?.kind === 'booking_tap_to_pay'
+    ) {
+      const connectedAccountId =
+        typeof event.account === 'string' ? event.account.trim() : '';
+      if (connectedAccountId && paymentIntent.id) {
+        try {
+          await recordBookingTapToPayStripeFeeFromWebhook({
+            admin: supabase,
+            stripeAccountId: connectedAccountId,
+            paymentIntentId: paymentIntent.id,
+          });
+        } catch (feeError) {
+          console.error('[tap-to-pay] stripe fee webhook failed', feeError);
+          return NextResponse.json(
+            { error: 'Tap to Pay fee was not stored' },
+            { status: 500 }
+          );
+        }
+      }
+    }
+    return NextResponse.json({ received: true }, { status: 200 });
+  }
+
+  if (event.type === 'charge.updated') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: insertError } = await (supabase as any)
+      .from('stripe_webhook_events')
+      .insert({
+        event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+      });
+    if (insertError && insertError.code !== '23505') {
+      console.error('Stripe webhook idempotency insert error:', insertError);
+      return NextResponse.json(
+        { error: 'Idempotency check failed' },
+        { status: 500 }
+      );
+    }
+
+    const charge = event.data.object as Stripe.Charge;
+    const paymentIntentId =
+      typeof charge.payment_intent === 'string'
+        ? charge.payment_intent
+        : charge.payment_intent?.id;
+    const connectedAccountId =
+      typeof event.account === 'string' ? event.account.trim() : '';
+    if (paymentIntentId && connectedAccountId) {
+      try {
+        await recordBookingTapToPayStripeFeeFromWebhook({
+          admin: supabase,
+          stripeAccountId: connectedAccountId,
+          paymentIntentId,
+        });
+      } catch (feeError) {
+        console.error('[tap-to-pay] stripe fee webhook failed', feeError);
+        return NextResponse.json(
+          { error: 'Tap to Pay fee was not stored' },
           { status: 500 }
         );
       }

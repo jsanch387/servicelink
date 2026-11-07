@@ -307,4 +307,136 @@ describe('buildInvoiceSnapshot', () => {
     ]);
     expect(snapshot.totals.totalCents).toBe(0);
   });
+
+  it('lists a payment-time discount as money off, not as a fee', () => {
+    const snapshot = buildInvoiceSnapshot({
+      business: { id: 'biz-1', name: 'Test', businessSlug: 'test' },
+      booking: {
+        id: 'booking-discount',
+        service_name: 'Wash',
+        scheduled_date: '2026-08-24',
+        start_time: '09:00:00',
+        customer_name: 'Sam',
+        customer_email: null,
+        customer_phone: null,
+        service_price_cents: 18500,
+        addon_details: [],
+      },
+      sessionFees: [
+        { kind: 'fee', label: 'Travel', amountCents: 2000 },
+        { kind: 'discount', label: 'Deposit', amountCents: 5000 },
+      ],
+      amountDue: {
+        serviceCents: 18500,
+        addonCents: 0,
+        sessionFeeCents: 2000,
+        sessionDiscountCents: 5000,
+        subtotalCents: 20500,
+        discountCents: 0,
+        adjustedTotalCents: 20500,
+        paidOnlineCents: 0,
+        sessionPayCents: 15500,
+        amountDueCents: 0,
+        taxCents: 0,
+        taxRateBps: 0,
+      },
+      sessionPaymentMethod: 'cash',
+    });
+
+    expect(snapshot.lines).toEqual(
+      expect.arrayContaining([
+        { kind: 'session_fee', label: 'Travel', amountCents: 2000 },
+        { kind: 'discount', label: 'Deposit', amountCents: 5000 },
+      ])
+    );
+    expect(snapshot.totals.totalCents).toBe(15500);
+  });
+
+  it('shows a Tap to Pay tip and the charged amount without changing the visit total', () => {
+    const snapshot = buildInvoiceSnapshot({
+      business: { id: 'biz-1', name: 'Test', businessSlug: 'test' },
+      booking: {
+        id: 'booking-tip',
+        service_name: 'Wash',
+        scheduled_date: '2026-08-24',
+        start_time: '09:00:00',
+        customer_name: 'Sam',
+        customer_email: null,
+        customer_phone: null,
+        service_price_cents: 10000,
+        addon_details: [],
+      },
+      sessionFees: [],
+      amountDue: {
+        serviceCents: 10000,
+        addonCents: 0,
+        sessionFeeCents: 0,
+        subtotalCents: 10000,
+        discountCents: 0,
+        adjustedTotalCents: 10000,
+        paidOnlineCents: 0,
+        sessionPayCents: 10000,
+        amountDueCents: 0,
+        taxCents: 0,
+        taxRateBps: 0,
+      },
+      sessionPaymentMethod: 'tap_to_pay',
+      tipCents: 2000,
+    });
+
+    expect(snapshot.totals.totalCents).toBe(10000);
+    expect(snapshot.totals.tipCents).toBe(2000);
+    expect(snapshot.totals.paidCents).toBe(12000);
+    expect(snapshot.payments).toEqual([
+      {
+        kind: 'session',
+        label: 'Paid at visit',
+        method: 'tap_to_pay',
+        amountCents: 12000,
+      },
+    ]);
+    expect(snapshot.lines.some(line => line.label === 'Tip')).toBe(false);
+  });
+
+  it('leaves a snapshot with no tip unchanged', () => {
+    const input = {
+      business: { id: 'biz-1', name: 'Test', businessSlug: 'test' },
+      booking: {
+        id: 'booking-no-tip',
+        service_name: 'Wash',
+        scheduled_date: '2026-08-24',
+        start_time: '09:00:00',
+        customer_name: 'Sam',
+        customer_email: null,
+        customer_phone: null,
+        service_price_cents: 10000,
+        addon_details: [],
+      },
+      sessionFees: [],
+      amountDue: {
+        serviceCents: 10000,
+        addonCents: 0,
+        sessionFeeCents: 0,
+        subtotalCents: 10000,
+        discountCents: 0,
+        adjustedTotalCents: 10000,
+        paidOnlineCents: 0,
+        sessionPayCents: 10000,
+        amountDueCents: 0,
+        taxCents: 0,
+        taxRateBps: 0,
+      },
+      sessionPaymentMethod: 'cash' as const,
+    };
+    const omitted = buildInvoiceSnapshot(input);
+    const zero = buildInvoiceSnapshot({ ...input, tipCents: 0 });
+
+    expect(omitted.totals.tipCents).toBeUndefined();
+    expect(zero.totals.tipCents).toBeUndefined();
+    expect(omitted.totals.totalCents).toBe(10000);
+    expect(omitted.totals.paidCents).toBe(10000);
+    expect(zero.totals).toEqual(omitted.totals);
+    expect(zero.payments).toEqual(omitted.payments);
+    expect(zero.lines).toEqual(omitted.lines);
+  });
 });
