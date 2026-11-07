@@ -40,6 +40,8 @@ export interface JobCompletedNotificationInput {
   startTime?: string;
   totalCents?: number;
   subtotalCents?: number;
+  /** Tap to Pay tip. Omitted when the visit had none. */
+  tipCents?: number;
   discount?: {
     label: string;
     discountCents: number;
@@ -157,6 +159,7 @@ export async function sendJobCompletedCustomerNotification(
       startTime: input.startTime,
       totalCents: input.totalCents,
       subtotalCents: input.subtotalCents,
+      tipCents: input.tipCents,
       discount: input.discount,
       salesTax: input.salesTax,
       reviewUrl: input.reviewUrl,

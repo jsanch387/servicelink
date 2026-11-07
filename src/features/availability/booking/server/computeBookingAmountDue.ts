@@ -8,7 +8,8 @@
  * Money rules:
  * 1. Line items from `job_details` when present (else top-level service + addons)
  * 2. Frozen `discount_cents` on the booking wins over recomputing %
- * 3. amountDue = line + fees − discount − paidOnline − sessionPayment
+ * 3. amountDue = line + fees − booking discount − paidOnline − payment discounts − sessionPayment
+ * Payment-time discounts do not change the booked price or total_amount_cents.
  */
 
 import type { DiscountType } from '@/features/marketing/types';
@@ -35,7 +36,19 @@ export function sumAddonDetailsCents(addonDetails: unknown): number {
 export function sumSessionFeesCents(
   sessionFees: JobCompletedSessionFeeInput[]
 ): number {
-  return sessionFees.reduce((sum, fee) => sum + fee.amountCents, 0);
+  return sessionFees.reduce((sum, line) => {
+    if (line.kind === 'discount') return sum;
+    return sum + line.amountCents;
+  }, 0);
+}
+
+export function sumSessionDiscountsCents(
+  sessionFees: JobCompletedSessionFeeInput[]
+): number {
+  return sessionFees.reduce((sum, line) => {
+    if (line.kind !== 'discount') return sum;
+    return sum + line.amountCents;
+  }, 0);
 }
 
 export interface BookingDiscountSnapshotInput {
@@ -83,6 +96,8 @@ export interface BookingAmountDueResult {
   taxRateBps: number;
   paidOnlineCents: number;
   sessionPayCents: number;
+  /** Payment-time discounts. Not part of the booked price. */
+  sessionDiscountCents?: number;
   amountDueCents: number;
 }
 
@@ -134,6 +149,7 @@ export function computeBookingAmountDue(
   const addonCents = line.addonCents;
 
   const sessionFeeCents = sumSessionFeesCents(input.sessionFees);
+  const sessionDiscountCents = sumSessionDiscountsCents(input.sessionFees);
   const lineSubtotalCents = line.lineSubtotalCents;
   const discountCents = resolveLineDiscountCents(
     lineSubtotalCents,
@@ -169,7 +185,11 @@ export function computeBookingAmountDue(
       ? input.paidOnlineAmountCents
       : 0;
   const sessionPayCents = input.sessionPayment?.amountCents ?? 0;
-  const amountDueCents = adjustedTotalCents - paidOnlineCents - sessionPayCents;
+  const amountDueCents =
+    adjustedTotalCents -
+    paidOnlineCents -
+    sessionDiscountCents -
+    sessionPayCents;
 
   return {
     serviceCents,
@@ -182,18 +202,27 @@ export function computeBookingAmountDue(
     taxRateBps,
     paidOnlineCents,
     sessionPayCents,
+    sessionDiscountCents,
     amountDueCents,
   };
 }
 
-/** Matches `booking_payments_remaining_consistency` after Phase 1 session columns. */
+/**
+ * Matches `booking_payments_remaining_consistency`.
+ * Fees are already inside total. Discounts are subtracted once. The tip, when
+ * it is inside the captured session payment, cannot push this below 0.
+ */
 export function computeBookingRemainingAmountCents(input: {
   totalAmountCents: number;
   paidOnlineCents: number;
+  sessionDiscountCents?: number;
   sessionPayCents: number;
 }): number {
   return Math.max(
-    input.totalAmountCents - input.paidOnlineCents - input.sessionPayCents,
+    input.totalAmountCents -
+      input.paidOnlineCents -
+      (input.sessionDiscountCents ?? 0) -
+      input.sessionPayCents,
     0
   );
 }

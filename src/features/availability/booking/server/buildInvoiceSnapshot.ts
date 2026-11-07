@@ -86,8 +86,13 @@ export interface BookingInvoiceSnapshot {
      */
     discountCents?: number;
     paidCents: number;
-    /** Amount charged after discount. Includes sales tax when it was collected. */
+    /**
+     * Visit total after discount, before a customer tip.
+     * Includes sales tax when it was collected.
+     */
     totalCents: number;
+    /** Customer tip on a Tap to Pay charge. Omitted when there is no tip. */
+    tipCents?: number;
     /** Frozen sales tax included in `totalCents`. Omitted on older snapshots. */
     taxCents?: number;
     taxRateBps?: number;
@@ -120,8 +125,20 @@ interface BuildInvoiceSnapshotInput {
   sessionFees: JobCompletedSessionFeeInput[];
   amountDue: BookingAmountDueResult;
   sessionPaymentMethod?: string;
+  /**
+   * Customer tip already stored for this Tap to Pay charge.
+   * Cash, payment app, and other do not pass one.
+   */
+  tipCents?: number;
   reviewRawToken?: string | null;
   coveredByMembership?: boolean;
+}
+
+function receiptTipCents(value: number | null | undefined): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
+    return 0;
+  }
+  return value;
 }
 
 function addonLines(addonDetails: unknown): InvoiceSnapshotLine[] {
@@ -229,7 +246,7 @@ export function buildInvoiceSnapshot(
 
   for (const fee of input.sessionFees) {
     lines.push({
-      kind: 'session_fee',
+      kind: fee.kind === 'discount' ? 'discount' : 'session_fee',
       label: fee.label,
       amountCents: fee.amountCents,
     });
@@ -250,6 +267,8 @@ export function buildInvoiceSnapshot(
     });
   }
 
+  const tipCents = receiptTipCents(input.tipCents);
+  const paidAtVisitCents = input.amountDue.sessionPayCents + tipCents;
   const payments: InvoiceSnapshotPayment[] = [];
   if (input.amountDue.paidOnlineCents > 0) {
     payments.push({
@@ -258,12 +277,12 @@ export function buildInvoiceSnapshot(
       amountCents: input.amountDue.paidOnlineCents,
     });
   }
-  if (input.amountDue.sessionPayCents > 0) {
+  if (paidAtVisitCents > 0) {
     payments.push({
       kind: 'session',
       label: 'Paid at visit',
       method: input.sessionPaymentMethod,
-      amountCents: input.amountDue.sessionPayCents,
+      amountCents: paidAtVisitCents,
     });
   }
   if (input.coveredByMembership) {
@@ -275,7 +294,14 @@ export function buildInvoiceSnapshot(
   }
 
   const paidCents =
-    input.amountDue.paidOnlineCents + input.amountDue.sessionPayCents;
+    input.amountDue.paidOnlineCents +
+    input.amountDue.sessionPayCents +
+    tipCents;
+  const sessionDiscountCents = input.amountDue.sessionDiscountCents ?? 0;
+  const chargedCents = Math.max(
+    0,
+    input.amountDue.adjustedTotalCents - sessionDiscountCents
+  );
   const reviewUrl = input.reviewRawToken
     ? `${getAppBaseUrl()}${getPublicReviewPath(input.reviewRawToken)}`
     : null;
@@ -318,7 +344,8 @@ export function buildInvoiceSnapshot(
       subtotalCents: input.amountDue.subtotalCents,
       discountCents,
       paidCents,
-      totalCents: input.amountDue.adjustedTotalCents,
+      totalCents: chargedCents,
+      ...(tipCents > 0 ? { tipCents } : {}),
       ...(input.amountDue.taxCents > 0
         ? {
             taxCents: input.amountDue.taxCents,

@@ -451,9 +451,14 @@ export function PublicInvoicePageShell({
   const coveredByMembership = invoiceCoveredByMembership(snapshot);
   const membershipFullyCovered =
     coveredByMembership && snapshot.totals.totalCents === 0;
+  const tipCents =
+    typeof snapshot.totals.tipCents === 'number' && snapshot.totals.tipCents > 0
+      ? snapshot.totals.tipCents
+      : 0;
+  const visitTotalCents = snapshot.totals.totalCents;
+  const chargedCents = visitTotalCents + tipCents;
   const isPaidInFull =
-    snapshot.totals.paidCents >= snapshot.totals.totalCents &&
-    snapshot.totals.totalCents > 0;
+    snapshot.totals.paidCents >= visitTotalCents && visitTotalCents > 0;
   const jobs = snapshot.jobs?.length ? snapshot.jobs : null;
   const chargeGroups = groupInvoiceSnapshotLines(
     normalizeInvoiceSnapshotLines(snapshot.lines)
@@ -523,8 +528,28 @@ export function PublicInvoicePageShell({
                   {isPaidInFull ? 'Amount paid' : 'Amount due'}
                 </p>
                 <p className="mt-1 text-[clamp(1.75rem,8vw,2.25rem)] font-semibold leading-none tracking-[-0.03em] text-[#0f0f0f] dark:text-white">
-                  {formatCents(snapshot.totals.totalCents)}
+                  {formatCents(chargedCents)}
                 </p>
+                {tipCents > 0 ? (
+                  <div className="mt-4 space-y-1.5">
+                    <div className={PUBLIC_INVOICE_LINE_ROW_CLASS}>
+                      <p className="text-[14px] text-[#555250] dark:text-[#bbb]">
+                        Visit total
+                      </p>
+                      <p className="shrink-0 text-[14px] tabular-nums text-[#555250] dark:text-[#bbb]">
+                        {formatCents(visitTotalCents)}
+                      </p>
+                    </div>
+                    <div className={PUBLIC_INVOICE_LINE_ROW_CLASS}>
+                      <p className="text-[14px] text-[#555250] dark:text-[#bbb]">
+                        Tip
+                      </p>
+                      <p className="shrink-0 text-[14px] tabular-nums text-[#555250] dark:text-[#bbb]">
+                        {formatCents(tipCents)}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
               </>
             )}
           </div>

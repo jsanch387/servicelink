@@ -34,6 +34,7 @@ import {
   resolveWorkHandoffStatusForCompletion,
   type WorkHandoffStatus,
 } from '../workHandoffStatus';
+import { storeBookingTapToPayStripeFeeIfReported } from './storeBookingTapToPayStripeFee';
 import { verifyTapToPayPaymentIntent } from './verifyTapToPayPaymentIntent';
 
 interface BookingForJobCompleted {
@@ -256,6 +257,94 @@ export async function handleJobCompletedAction(opts: {
   const payments = paymentsData as BookingPaymentsRow | null;
   const sessionFees = parsed.body.sessionFees ?? [];
   const sessionPayment = parsed.body.sessionPayment;
+  let sessionPaymentForDue = sessionPayment;
+  let tapTipCents = 0;
+  let tapStripeAccountId: string | null = null;
+
+  if (sessionPayment?.method === 'tap_to_pay') {
+    if (!sessionPayment.stripePaymentIntentId) {
+      logJobCompletedStage(trace, 'rejected', {
+        httpStatus: 400,
+        reason: 'Tap to Pay requires stripePaymentIntentId',
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Tap to Pay requires stripePaymentIntentId.',
+        },
+        { status: 400 }
+      );
+    }
+
+    const tapCtx = await resolveTapToPayBookingContext({
+      supabase: auth.supabase,
+      bookingId,
+      businessId: business.id,
+    });
+    if (!tapCtx.ok) {
+      logJobCompletedStage(trace, 'rejected', {
+        httpStatus: tapCtx.reject.httpStatus,
+        reason: tapCtx.reject.error,
+      });
+      return NextResponse.json(
+        { success: false, error: tapCtx.reject.error },
+        { status: tapCtx.reject.httpStatus }
+      );
+    }
+
+    const verified = await verifyTapToPayPaymentIntent({
+      bookingId,
+      businessId: business.id,
+      stripeAccountId: tapCtx.ctx.stripeAccountId,
+      paymentIntentId: sessionPayment.stripePaymentIntentId,
+    });
+    if (!verified.ok) {
+      logJobCompletedStage(trace, 'rejected', {
+        httpStatus: verified.httpStatus,
+        reason: verified.error,
+      });
+      return NextResponse.json(
+        { success: false, error: verified.error },
+        { status: verified.httpStatus }
+      );
+    }
+
+    if (sessionPayment.amountCents !== verified.amountCents) {
+      logJobCompletedStage(trace, 'rejected', {
+        httpStatus: 400,
+        reason: 'tap_to_pay_session_amount_mismatch',
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Payment amount does not match the amount due.',
+        },
+        { status: 400 }
+      );
+    }
+
+    const jobPayCents = verified.amountCents - verified.tipCents;
+    if (jobPayCents < 0) {
+      logJobCompletedStage(trace, 'rejected', {
+        httpStatus: 400,
+        reason: 'tap_to_pay_tip_exceeds_charge',
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Payment amount does not match the amount due.',
+        },
+        { status: 400 }
+      );
+    }
+
+    tapTipCents = verified.tipCents;
+    tapStripeAccountId = tapCtx.ctx.stripeAccountId;
+    sessionPaymentForDue = {
+      ...sessionPayment,
+      amountCents: jobPayCents,
+    };
+  }
 
   let amountDue = computeBookingAmountDue({
     servicePriceCents: booking.service_price_cents,
@@ -263,7 +352,7 @@ export async function handleJobCompletedAction(opts: {
     jobDetails: booking.job_details,
     sessionFees,
     paidOnlineAmountCents: payments?.paid_online_amount_cents,
-    sessionPayment,
+    sessionPayment: sessionPaymentForDue,
     discount: {
       discountSource: booking.discount_source,
       discountType: booking.discount_type,
@@ -321,73 +410,6 @@ export async function handleJobCompletedAction(opts: {
     );
   }
 
-  if (
-    parsed.body.sessionPayment?.method === 'tap_to_pay' &&
-    !parsed.body.sessionPayment.stripePaymentIntentId
-  ) {
-    logJobCompletedStage(trace, 'rejected', {
-      httpStatus: 400,
-      reason: 'Tap to Pay requires stripePaymentIntentId',
-    });
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Tap to Pay requires stripePaymentIntentId.',
-      },
-      { status: 400 }
-    );
-  }
-
-  if (parsed.body.sessionPayment?.method === 'tap_to_pay') {
-    const tapCtx = await resolveTapToPayBookingContext({
-      supabase: auth.supabase,
-      bookingId,
-      businessId: business.id,
-    });
-    if (!tapCtx.ok) {
-      logJobCompletedStage(trace, 'rejected', {
-        httpStatus: tapCtx.reject.httpStatus,
-        reason: tapCtx.reject.error,
-      });
-      return NextResponse.json(
-        { success: false, error: tapCtx.reject.error },
-        { status: tapCtx.reject.httpStatus }
-      );
-    }
-
-    const verified = await verifyTapToPayPaymentIntent({
-      bookingId,
-      businessId: business.id,
-      stripeAccountId: tapCtx.ctx.stripeAccountId,
-      paymentIntentId: parsed.body.sessionPayment.stripePaymentIntentId!,
-    });
-    if (!verified.ok) {
-      logJobCompletedStage(trace, 'rejected', {
-        httpStatus: verified.httpStatus,
-        reason: verified.error,
-      });
-      return NextResponse.json(
-        { success: false, error: verified.error },
-        { status: verified.httpStatus }
-      );
-    }
-
-    const sessionPayCents = parsed.body.sessionPayment.amountCents;
-    if (sessionPayCents !== verified.amountCents) {
-      logJobCompletedStage(trace, 'rejected', {
-        httpStatus: 400,
-        reason: 'tap_to_pay_session_amount_mismatch',
-      });
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Payment amount does not match the amount due.',
-        },
-        { status: 400 }
-      );
-    }
-  }
-
   if (isSmsOutboundEnabled()) {
     const rate = await assertOwnerSmsSendRateLimits(request, auth.user.id);
     if (!rate.ok) {
@@ -412,6 +434,7 @@ export async function handleJobCompletedAction(opts: {
     workHandoffStatus,
     body: parsed.body,
     amountDue,
+    tipCents: tapTipCents,
     requestId,
   });
 
@@ -424,6 +447,23 @@ export async function handleJobCompletedAction(opts: {
       { success: false, error: persisted.error },
       { status: persisted.httpStatus }
     );
+  }
+
+  const tapPaymentIntentId = sessionPayment?.stripePaymentIntentId?.trim();
+  if (
+    sessionPayment?.method === 'tap_to_pay' &&
+    tapStripeAccountId &&
+    tapPaymentIntentId
+  ) {
+    try {
+      await storeBookingTapToPayStripeFeeIfReported({
+        admin,
+        stripeAccountId: tapStripeAccountId,
+        paymentIntentId: tapPaymentIntentId,
+      });
+    } catch (feeError) {
+      console.warn('[tap-to-pay] stripe fee not stored yet', feeError);
+    }
   }
 
   if (!invoiceAlreadyPaid) {

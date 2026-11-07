@@ -34,8 +34,10 @@ export interface JobCompletedInvoiceEmailPayload {
   serviceName?: string;
   scheduledDate?: string;
   startTime?: string;
-  /** Final amount charged (after sale/promo). */
+  /** Visit total after sale/promo, before a customer tip. */
   totalCents?: number;
+  /** Tap to Pay tip. Omitted when the visit had none. */
+  tipCents?: number;
   /** Pre-discount subtotal (service + add-ons + session fees). */
   subtotalCents?: number;
   /** Frozen sale/promo from the booking — shown so line math adds up. */
@@ -113,6 +115,28 @@ function jobsGrossCents(jobs: JobCompletedInvoiceEmailJob[]): number {
   }, 0);
 }
 
+function positiveTipCents(payload: JobCompletedInvoiceEmailPayload): number {
+  const tip = payload.tipCents;
+  if (typeof tip !== 'number' || !Number.isInteger(tip) || tip <= 0) return 0;
+  return tip;
+}
+
+function appendTipRows(
+  rows: string[],
+  visitTotalCents: number | null,
+  tipCents: number
+): string[] {
+  if (tipCents <= 0 || visitTotalCents == null) return rows;
+  return [
+    ...rows,
+    serviceLinkEmailPriceLineRow('Tip', formatPriceCents(tipCents)),
+    serviceLinkEmailPriceTotalRow(
+      'Amount paid',
+      formatPriceCents(visitTotalCents + tipCents)
+    ),
+  ];
+}
+
 function resolvePricing(payload: JobCompletedInvoiceEmailPayload): {
   subtotalCents: number | null;
   discount: { label: string; discountCents: number } | null;
@@ -176,6 +200,7 @@ function buildPricingRowsHtml(
   const { subtotalCents, discount, totalCents } = resolvePricing(payload);
   if (totalCents == null && subtotalCents == null) return '';
 
+  const tipCents = positiveTipCents(payload);
   const rows: string[] = [];
   if (subtotalCents != null && discount) {
     rows.push(
@@ -217,7 +242,8 @@ function buildPricingRowsHtml(
       serviceLinkEmailPriceTotalRow('Total', formatPriceCents(subtotalCents))
     );
   }
-  return rows.join('');
+  const visitTotal = totalCents ?? subtotalCents;
+  return appendTipRows(rows, visitTotal, tipCents).join('');
 }
 
 export function getJobCompletedInvoiceEmailSubject(
@@ -297,11 +323,22 @@ export function buildJobCompletedInvoiceEmailPlainText(
         `${payload.salesTax.label}: ${formatPriceCents(payload.salesTax.taxCents)}`
       );
     }
+    const visitTotal = pricing.totalCents ?? pricing.subtotalCents;
+    const tipCents = positiveTipCents(payload);
+    let wroteAmount = false;
     if (pricing.totalCents != null) {
-      lines.push(`Total: ${formatPriceCents(pricing.totalCents)}`, '');
+      lines.push(`Total: ${formatPriceCents(pricing.totalCents)}`);
+      wroteAmount = true;
     } else if (pricing.subtotalCents != null && !pricing.discount) {
-      lines.push(`Total: ${formatPriceCents(pricing.subtotalCents)}`, '');
+      lines.push(`Total: ${formatPriceCents(pricing.subtotalCents)}`);
+      wroteAmount = true;
     }
+    if (tipCents > 0 && visitTotal != null) {
+      lines.push(`Tip: ${formatPriceCents(tipCents)}`);
+      lines.push(`Amount paid: ${formatPriceCents(visitTotal + tipCents)}`);
+      wroteAmount = true;
+    }
+    if (wroteAmount) lines.push('');
   } else if ((payload.totalCents ?? 0) > 0) {
     lines.push(`Total: ${formatPriceCents(payload.totalCents ?? 0)}`, '');
   }
