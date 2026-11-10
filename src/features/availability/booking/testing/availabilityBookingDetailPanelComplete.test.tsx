@@ -151,3 +151,88 @@ describe('AvailabilityBookingDetailPanel complete confirmation', () => {
     expect(screen.queryByText('Reschedule')).toBeNull();
   });
 });
+
+describe('AvailabilityBookingDetailPanel appointment request', () => {
+  it('shows approve and deny without the confirmed-booking actions', async () => {
+    const user = userEvent.setup();
+    const onMarkCompleted = vi.fn();
+    const onApprove = vi.fn();
+    const onCancel = vi.fn();
+    const onDelete = vi.fn();
+
+    render(
+      <AvailabilityBookingDetailPanel
+        booking={baseBooking({ status: 'requested', date: '2026-12-20' })}
+        onClose={vi.fn()}
+        onMarkCompleted={onMarkCompleted}
+        onApprove={onApprove}
+        onCancel={onCancel}
+        onDelete={onDelete}
+        weeklySchedule={DEFAULT_SCHEDULE}
+        timeOffBlocks={[]}
+        existingBookingsForSlotGrid={[]}
+      />
+    );
+
+    expect(screen.getByText(/this customer asked for this time/i)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Approve' }));
+    await user.click(screen.getByRole('button', { name: 'Deny' }));
+
+    expect(onApprove).toHaveBeenCalledWith('booking-1');
+    expect(
+      screen.getByRole('alertdialog', { name: 'Deny request?' })
+    ).toBeTruthy();
+    expect(onCancel).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Deny request' }));
+
+    expect(onCancel).toHaveBeenCalledWith('booking-1');
+    expect(onMarkCompleted).not.toHaveBeenCalled();
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole('button', { name: /mark booking as completed/i })
+    ).toBeNull();
+    expect(screen.queryByText('Reschedule')).toBeNull();
+    expect(screen.queryByText('Create invoice')).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /delete booking/i })
+    ).toBeNull();
+  });
+
+  it('hides the decision buttons on a confirmed appointment', () => {
+    render(
+      <AvailabilityBookingDetailPanel
+        booking={baseBooking()}
+        onClose={vi.fn()}
+        onMarkCompleted={vi.fn()}
+        onCancel={vi.fn()}
+        onDelete={vi.fn()}
+        weeklySchedule={DEFAULT_SCHEDULE}
+        timeOffBlocks={[]}
+        existingBookingsForSlotGrid={[]}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Deny' })).toBeNull();
+  });
+
+  it('hides approve and deny after the request expires', () => {
+    render(
+      <AvailabilityBookingDetailPanel
+        booking={baseBooking({ status: 'expired', date: '2026-11-01' })}
+        onClose={vi.fn()}
+        onMarkCompleted={vi.fn()}
+        onCancel={vi.fn()}
+        onDelete={vi.fn()}
+        weeklySchedule={DEFAULT_SCHEDULE}
+        timeOffBlocks={[]}
+        existingBookingsForSlotGrid={[]}
+      />
+    );
+
+    expect(screen.getByText(/this request expired/i)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Deny' })).toBeNull();
+  });
+});

@@ -18,5 +18,8 @@ export function eventChipClass(
   if (status === 'cancelled') {
     return 'bg-rose-500/20 text-rose-100';
   }
+  if (status === 'expired') {
+    return 'bg-white/10 text-zinc-300';
+  }
   return 'bg-sky-500/20 text-sky-50';
 }

@@ -3,6 +3,7 @@
  * (reschedule, etc.) against weekly hours, time off, and other bookings.
  */
 
+import { SLOT_BLOCKING_BOOKING_STATUSES } from '@/features/availability/booking/constants';
 import type { ExistingBooking } from '@/features/availability/booking/types';
 import { shouldRejectExistingBookingOverlap } from '@/features/availability/booking/utils/shouldRejectExistingBookingOverlap';
 import {
@@ -144,7 +145,7 @@ export async function validateOwnerBookingSlot(
       .select('id, scheduled_date, start_time, duration_minutes')
       .eq('business_id', params.businessId)
       .eq('scheduled_date', scheduledDate)
-      .in('status', ['confirmed', 'completed']);
+      .in('status', [...SLOT_BLOCKING_BOOKING_STATUSES]);
 
     if (dayBookErr) {
       console.error(

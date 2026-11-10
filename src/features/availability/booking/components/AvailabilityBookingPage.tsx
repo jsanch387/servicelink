@@ -270,6 +270,7 @@ export function AvailabilityBookingPage({
   bufferTime = 'none',
   existingBookings: existingBookingsProp,
   isOwnerManualBooking = false,
+  requireBookingApproval = false,
   paymentSettings = null,
   exitCalendarFlowHref,
   exitCalendarFlowLabel,
@@ -289,6 +290,11 @@ export function AvailabilityBookingPage({
     () => publicBookingUi(bookingFlowLocale),
     [bookingFlowLocale]
   );
+  const appointmentRequest =
+    requireBookingApproval === true && !isOwnerManualBooking;
+  const confirmCtaLabel = appointmentRequest
+    ? ui.calendar.requestAppointment
+    : ui.calendar.confirmBooking;
   const isMultiJobVisit =
     Array.isArray(bookingJobsProp) && bookingJobsProp.length >= 1;
   const [visitJobs, setVisitJobs] = useState<PublicBookingJobDraft[]>(
@@ -878,9 +884,10 @@ export function AvailabilityBookingPage({
    * Fallback behavior: if owner didn't finish payment setup (no checkout mode
    * selected), skip payment step and use normal confirm-booking flow.
    * Deposits can be off while checkout is still fully valid.
+   * Appointment requests skip payment until the owner confirms.
    */
   const shouldShowPaymentStep =
-    paymentSettingsEnabled && hasCheckoutModeConfigured;
+    paymentSettingsEnabled && hasCheckoutModeConfigured && !appointmentRequest;
   const requiresPayNow =
     paymentSettings?.checkoutMode === 'in_app' ||
     (paymentSettings?.checkoutMode === 'customer_choice' &&
@@ -957,7 +964,7 @@ export function AvailabilityBookingPage({
     ) {
       return ui.calendar.chooseHowToPay;
     }
-    if (amountDueNowCents <= 0) return ui.calendar.confirmBooking;
+    if (amountDueNowCents <= 0) return confirmCtaLabel;
     const amt = formatPrice(
       amountDueNowCents,
       paymentCurrency,
@@ -980,6 +987,7 @@ export function AvailabilityBookingPage({
     customerPaymentChoice,
     ui,
     bookingFlowLocale,
+    confirmCtaLabel,
   ]);
 
   /** Shown with the spinner while the payment CTA is working (no ellipsis). */
@@ -987,8 +995,10 @@ export function AvailabilityBookingPage({
     if (amountDueNowCents > 0) {
       return ui.calendar.goingToCheckout;
     }
-    return ui.calendar.confirmingBooking;
-  }, [amountDueNowCents, ui]);
+    return appointmentRequest
+      ? ui.calendar.requestingAppointment
+      : ui.calendar.confirmingBooking;
+  }, [amountDueNowCents, appointmentRequest, ui]);
 
   const canContinueFromSchedule = Boolean(selectedDate && selectedTime);
   const canContinueFromLocation = isCustomerServiceLocationChoiceValid(
@@ -1367,7 +1377,7 @@ export function AvailabilityBookingPage({
               customerServiceLocation:
                 customerServiceLocationPayload ?? undefined,
               paymentMethodSelected: customerPaymentChoice ?? 'none',
-              promoCode: appliedPromo?.code,
+              promoCode: appointmentRequest ? undefined : appliedPromo?.code,
               ...(!isOwnerManualBooking
                 ? {
                     agreedToNotifications: agreedToPublicNotifications,
@@ -1435,7 +1445,9 @@ export function AvailabilityBookingPage({
               depositValue: requiresDepositNow
                 ? (paymentSettings?.depositValue ?? null)
                 : null,
-              ...(appliedPromo?.code ? { promoCode: appliedPromo.code } : {}),
+              ...(!appointmentRequest && appliedPromo?.code
+                ? { promoCode: appliedPromo.code }
+                : {}),
               ...(!isOwnerManualBooking
                 ? {
                     agreedToNotifications: agreedToPublicNotifications,
@@ -1539,7 +1551,7 @@ export function AvailabilityBookingPage({
               customerServiceLocation:
                 customerServiceLocationPayload ?? undefined,
               paymentMethodSelected: paymentMethodForPublicCreate,
-              promoCode: appliedPromo?.code,
+              promoCode: appointmentRequest ? undefined : appliedPromo?.code,
               ...(!isOwnerManualBooking
                 ? {
                     agreedToNotifications: agreedToPublicNotifications,
@@ -1580,7 +1592,9 @@ export function AvailabilityBookingPage({
             paymentMethodSelected: paymentMethodForPublicCreate,
             ...(isOwnerManualBooking ? { ownerManualBooking: true } : {}),
             ...(ownerTestGuide ? { ownerTest: true } : {}),
-            ...(!isOwnerManualBooking && appliedPromo?.code
+            ...(!isOwnerManualBooking &&
+            !appointmentRequest &&
+            appliedPromo?.code
               ? { promoCode: appliedPromo.code }
               : {}),
             ...(!isOwnerManualBooking
@@ -1656,6 +1670,7 @@ export function AvailabilityBookingPage({
         date={submittedData.date}
         time={submittedData.time}
         isOwnerManualBooking={isOwnerManualBooking}
+        isAppointmentRequest={appointmentRequest}
         bookingFlowLocale={bookingFlowLocale}
       />
     );
@@ -2443,8 +2458,11 @@ export function AvailabilityBookingPage({
                     canRemoveJob={visitJobs.length > 1}
                     onRemoveJob={removeVisitJob}
                     removeLabel={ui.multiJob.remove}
+                    estimateTotal={appointmentRequest}
                   />
-                  {!shouldShowPaymentStep && !isOwnerManualBooking
+                  {!shouldShowPaymentStep &&
+                  !isOwnerManualBooking &&
+                  !appointmentRequest
                     ? promoCodeField
                     : null}
                   {requiresBookingPolicy && bookingPolicy ? (
@@ -2502,8 +2520,11 @@ export function AvailabilityBookingPage({
                         customerServiceChoice
                       )
                     }
+                    estimateTotal={appointmentRequest}
                   />
-                  {!shouldShowPaymentStep && !isOwnerManualBooking
+                  {!shouldShowPaymentStep &&
+                  !isOwnerManualBooking &&
+                  !appointmentRequest
                     ? promoCodeField
                     : null}
                   {requiresBookingPolicy && bookingPolicy ? (
@@ -2900,6 +2921,11 @@ export function AvailabilityBookingPage({
                   className="w-full"
                   {...ownerTestStep('Confirm the test appointment.')}
                 >
+                  {appointmentRequest ? (
+                    <p className="mb-3 text-center text-sm text-gray-400">
+                      {ui.calendar.requestAppointmentNote(businessName)}
+                    </p>
+                  ) : null}
                   <Button
                     type="button"
                     variant="inverse"
@@ -2918,7 +2944,7 @@ export function AvailabilityBookingPage({
                   >
                     {shouldShowPaymentStep
                       ? ui.calendar.continueToPayment
-                      : ui.calendar.confirmBooking}
+                      : confirmCtaLabel}
                   </Button>
                 </div>
               )}

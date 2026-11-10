@@ -47,6 +47,7 @@ export const publicBookingUiEs: PublicBookingUi = {
     subtotal: 'Subtotal',
     salesTax: rate => `Impuesto (${rate})`,
     visitTotal: 'Total de la visita',
+    estimatedTotal: 'Total estimado',
     emailNotProvided: 'Sin correo electrónico',
   },
   serviceDetails: {
@@ -182,6 +183,10 @@ export const publicBookingUiEs: PublicBookingUi = {
     policyConsentRequired: 'Debes aceptar para continuar.',
     continueToPayment: 'Continuar al pago',
     confirmBooking: 'Confirmar reserva',
+    requestAppointment: 'Solicitar cita',
+    requestAppointmentNote: businessName =>
+      `Esto es una solicitud. ${businessName} la aprobará y luego te avisaremos.`,
+    requestingAppointment: 'Solicitando cita',
     chooseHowToPay: 'Elige cómo pagar',
     paymentHeading: 'Pago',
     howDoYouWantToPay: '¿Cómo quieres pagar?',
@@ -338,6 +343,12 @@ export const publicBookingUiEs: PublicBookingUi = {
       `Tu cita con ${businessName} está confirmada. No se envió correo de confirmación porque no indicaste una dirección de correo.`,
     cardHeaderOwner: 'Cita',
     cardHeaderCustomer: 'Tu reserva',
+    requestTitle: 'Solicitud enviada',
+    requestSubtitleCustomer: businessName =>
+      `Enviamos tu solicitud de cita a ${businessName}. Ellos la confirmarán.`,
+    requestSubtitleCustomerNoEmail: businessName =>
+      `Enviamos tu solicitud de cita a ${businessName}. No se envió un correo porque no indicaste una dirección.`,
+    requestCardHeader: 'Tu solicitud',
     ownerPaymentNote: 'Los datos de pago quedan guardados con esta cita.',
     goToBookings: 'Ir a reservas',
     backToProfile: 'Volver al perfil',

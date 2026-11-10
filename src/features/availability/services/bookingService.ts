@@ -174,6 +174,10 @@ export async function createBooking(
     createdByUserId?: string | null;
     /** Owner test appointment from onboarding. Does not count as a real booking. */
     isTest?: boolean;
+    /**
+     * Public appointment request. Omit to keep the column default (`confirmed`).
+     */
+    status?: 'requested';
   }
 ): Promise<{ id: string; customerId: string; visitId: string }> {
   const addonDetails =
@@ -255,7 +259,11 @@ export async function createBooking(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from(TABLE)
-    .insert({ ...row, is_test: payload.isTest === true })
+    .insert({
+      ...row,
+      is_test: payload.isTest === true,
+      ...(payload.status === 'requested' ? { status: 'requested' } : {}),
+    })
     .select('id, customer_id')
     .single();
 

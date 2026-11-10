@@ -162,7 +162,9 @@ export function AvailabilityBookingsView({
       .filter(
         b =>
           b.id !== selectedBooking.id &&
-          (b.status === 'confirmed' || b.status === 'completed')
+          (b.status === 'requested' ||
+            b.status === 'confirmed' ||
+            b.status === 'completed')
       )
       .map(b => ({
         date: b.date,
@@ -194,13 +196,32 @@ export function AvailabilityBookingsView({
     setSelectedBooking(null);
   };
 
+  const handleApprove = async (id: string) => {
+    setUpdateError(null);
+    setUpdatingId(id);
+    const result = await updateBookingStatus(id, 'confirmed');
+    setUpdatingId(null);
+    if (!result.success) {
+      setUpdateError(result.error ?? 'Failed to approve booking');
+      return;
+    }
+    setSelectedBooking(prev =>
+      prev && prev.id === id ? { ...prev, status: 'confirmed' } : prev
+    );
+  };
+
   const handleCancel = async (id: string) => {
     setUpdateError(null);
     setUpdatingId(id);
     const result = await updateBookingStatus(id, 'cancelled');
     setUpdatingId(null);
     if (!result.success) {
-      setUpdateError(result.error ?? 'Failed to cancel booking');
+      const denying =
+        selectedBooking?.id === id && selectedBooking.status === 'requested';
+      setUpdateError(
+        result.error ??
+          (denying ? 'Failed to deny request' : 'Failed to cancel booking')
+      );
       return;
     }
     setSelectedBooking(null);
@@ -428,6 +449,7 @@ export function AvailabilityBookingsView({
           canRunActions={canRunBookings}
           canDelete={canDeleteBookings}
           onMarkCompleted={handleMarkCompleted}
+          onApprove={handleApprove}
           onCancel={handleCancel}
           onDelete={handleDelete}
           onReschedule={canWriteBookings ? handleReschedule : undefined}

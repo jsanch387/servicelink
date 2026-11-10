@@ -10,5 +10,6 @@ describe('canChangeBookingAssignee', () => {
   it('locks completed and cancelled', () => {
     expect(canChangeBookingAssignee('completed')).toBe(false);
     expect(canChangeBookingAssignee('cancelled')).toBe(false);
+    expect(canChangeBookingAssignee('expired')).toBe(false);
   });
 });

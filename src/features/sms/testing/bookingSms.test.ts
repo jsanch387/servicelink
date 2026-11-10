@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildBookingConfirmedSms,
+  buildBookingRequestApprovedSms,
+  buildBookingRequestDeniedSms,
+  buildBookingRequestExpiredSms,
+  buildBookingRequestReceivedSms,
   buildBookingReminderSms,
   buildBookingRescheduledSms,
   buildCustomerInvoiceSms,
@@ -37,6 +41,67 @@ describe('booking SMS templates (ServiceLink)', () => {
     });
 
     it('does not leak the raw YYYY-MM-DD or 24h time', () => {
+      expect(msg).not.toContain('2026-06-15');
+      expect(msg).not.toContain('14:30');
+    });
+  });
+
+  describe('buildBookingRequestReceivedSms', () => {
+    it('says the request was received and is not confirmed yet', () => {
+      const msg = buildBookingRequestReceivedSms({
+        businessName: 'Black Label Detail',
+        scheduledDate: '2026-06-15',
+        startTime: '14:30',
+      });
+      expectOptOutBlock(
+        msg,
+        "We received your appointment request with Black Label Detail for Mon, Jun 15 at 2:30 PM. We'll text you when it's confirmed."
+      );
+      expect(msg).not.toContain('2026-06-15');
+      expect(msg).not.toContain('14:30');
+    });
+  });
+
+  describe('buildBookingRequestExpiredSms', () => {
+    it('says the request expired because it was not confirmed', () => {
+      const msg = buildBookingRequestExpiredSms({
+        businessName: 'Black Label Detail',
+        scheduledDate: '2026-06-15',
+        startTime: '14:30',
+      });
+      expectOptOutBlock(
+        msg,
+        "Your appointment request with Black Label Detail for Mon, Jun 15 at 2:30 PM expired because it wasn't confirmed."
+      );
+    });
+  });
+
+  describe('buildBookingRequestDeniedSms', () => {
+    it('says the request was not confirmed and the time is free', () => {
+      const msg = buildBookingRequestDeniedSms({
+        businessName: 'Black Label Detail',
+        scheduledDate: '2026-06-15',
+        startTime: '14:30',
+      });
+      expectOptOutBlock(
+        msg,
+        'Your appointment request with Black Label Detail for Mon, Jun 15 at 2:30 PM was not confirmed. That time is no longer held.'
+      );
+      expect(msg).not.toContain('canceled');
+    });
+  });
+
+  describe('buildBookingRequestApprovedSms', () => {
+    it('tells the customer the request was confirmed', () => {
+      const msg = buildBookingRequestApprovedSms({
+        businessName: 'Black Label Detail',
+        scheduledDate: '2026-06-15',
+        startTime: '14:30',
+      });
+      expectOptOutBlock(
+        msg,
+        'Your appointment with Black Label Detail was confirmed for Mon, Jun 15 at 2:30 PM.'
+      );
       expect(msg).not.toContain('2026-06-15');
       expect(msg).not.toContain('14:30');
     });

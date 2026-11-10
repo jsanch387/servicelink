@@ -5,7 +5,12 @@
 
 import type { BookingSource } from '@/features/booking-attribution/constants';
 
-export type AvailabilityBookingStatus = 'confirmed' | 'completed' | 'cancelled';
+export type AvailabilityBookingStatus =
+  | 'requested'
+  | 'confirmed'
+  | 'completed'
+  | 'cancelled'
+  | 'expired';
 
 export interface AvailabilityBookingAddress {
   street: string;

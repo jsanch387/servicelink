@@ -15,6 +15,8 @@
 
 import { mapBookingRowToDisplay } from '@/features/availability/booking/dashboard/utils/mapBookingRowToDisplay';
 import { attachPaymentSummaryToDisplay } from '@/features/availability/booking/dashboard/utils/attachPaymentSummaryToDisplay';
+import { approveRequestedBooking } from '@/features/availability/services/approveRequestedBooking';
+import { denyRequestedBooking } from '@/features/availability/services/denyRequestedBooking';
 import {
   deleteBookingForOwner,
   rescheduleBookingForOwner,
@@ -109,7 +111,7 @@ export async function PATCH(
         {
           success: false,
           error:
-            'Provide status ("completed" | "cancelled") or scheduledDate + startTime to reschedule.',
+            'Provide status ("completed" | "cancelled" | "confirmed") or scheduledDate + startTime to reschedule.',
         },
         { status: 400 }
       );
@@ -179,11 +181,47 @@ export async function PATCH(
       });
     }
 
+    if (status === 'confirmed') {
+      const approved = await approveRequestedBooking(admin, {
+        businessId,
+        bookingId: bookingId.trim(),
+      });
+      if (!approved.ok) {
+        return NextResponse.json(
+          { success: false, error: approved.error },
+          { status: approved.httpStatus }
+        );
+      }
+      return NextResponse.json({
+        success: true,
+        data: mapBookingRowToDisplay(approved.row),
+      });
+    }
+
     if (!status || !ALLOWED_STATUSES.includes(status as BookingStatusUpdate)) {
       return NextResponse.json(
         { success: false, error: 'Status must be "completed" or "cancelled"' },
         { status: 400 }
       );
+    }
+
+    if (status === 'cancelled') {
+      const denied = await denyRequestedBooking(admin, {
+        businessId,
+        bookingId: bookingId.trim(),
+      });
+      if (denied.handled) {
+        if (!denied.ok) {
+          return NextResponse.json(
+            { success: false, error: denied.error },
+            { status: denied.httpStatus }
+          );
+        }
+        return NextResponse.json({
+          success: true,
+          data: mapBookingRowToDisplay(denied.row),
+        });
+      }
     }
 
     // Completion runs the shared lifecycle path (status + maintenance + the

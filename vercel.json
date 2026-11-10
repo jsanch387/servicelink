@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/internal/cron/appointment-request-expirations",
+      "schedule": "0 14 * * *"
+    },
+    {
       "path": "/api/internal/cron/booking-reminders",
       "schedule": "0 14 * * *"
     },

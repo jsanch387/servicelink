@@ -112,6 +112,7 @@ export interface TimeOffBlockApiInput {
 
 interface AvailabilityApiRow {
   accept_bookings: boolean;
+  public_booking_approval_required?: boolean | null;
   minimum_notice: string;
   buffer_time?: string;
   weekly_schedule: unknown;
@@ -196,6 +197,7 @@ async function postAvailabilityOverrides(
   const res = await page.request.post('/api/availability', {
     data: {
       acceptBookings: row.accept_bookings,
+      requireBookingApproval: row.public_booking_approval_required === true,
       schedule: row.weekly_schedule,
       minimumNotice: overrides.minimumNotice ?? row.minimum_notice,
       bufferTime: overrides.bufferTime ?? row.buffer_time ?? 'none',

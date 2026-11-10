@@ -35,6 +35,8 @@ interface BookingSuccessProps {
   date: string;
   time: string;
   isOwnerManualBooking?: boolean;
+  /** Public customer asked for a time the business still has to approve. */
+  isAppointmentRequest?: boolean;
   bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
@@ -80,6 +82,7 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
   date,
   time,
   isOwnerManualBooking = false,
+  isAppointmentRequest = false,
   bookingFlowLocale = 'en',
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
@@ -103,6 +106,9 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
     saleEstimatedTotalCents < saleSubtotalCents;
   const showSalesTax =
     salesTaxCents != null && salesTaxCents > 0 && Boolean(salesTaxLabel);
+  const totalLabel = isAppointmentRequest
+    ? ui.common.estimatedTotal
+    : ui.common.total;
   const successTotalCents =
     (showSalePricing ? saleEstimatedTotalCents! : (totalPriceCents ?? 0)) +
     (showSalesTax ? salesTaxCents! : 0);
@@ -116,7 +122,9 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
       <h2 className="text-2xl font-bold text-white mb-2 text-center">
         {isOwnerManualBooking
           ? ui.bookingSuccess.titleOwner
-          : ui.bookingSuccess.title}
+          : isAppointmentRequest
+            ? ui.bookingSuccess.requestTitle
+            : ui.bookingSuccess.title}
       </h2>
       <p className="self-center text-gray-400 text-sm mb-8 max-w-sm text-center">
         {isOwnerManualBooking ? (
@@ -125,6 +133,12 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
               ? ui.bookingSuccess.subtitleOwner
               : ui.bookingSuccess.subtitleOwnerNoCustomerEmail}
           </>
+        ) : isAppointmentRequest ? (
+          customer.email.trim() ? (
+            ui.bookingSuccess.requestSubtitleCustomer(businessName)
+          ) : (
+            ui.bookingSuccess.requestSubtitleCustomerNoEmail(businessName)
+          )
         ) : customer.email.trim() ? (
           <>{ui.bookingSuccess.subtitleCustomer(businessName)}</>
         ) : (
@@ -143,7 +157,9 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
             {isOwnerManualBooking
               ? ui.bookingSuccess.cardHeaderOwner
-              : ui.bookingSuccess.cardHeaderCustomer}
+              : isAppointmentRequest
+                ? ui.bookingSuccess.requestCardHeader
+                : ui.bookingSuccess.cardHeaderCustomer}
           </p>
         </div>
         <div className="p-4 sm:p-6 space-y-4">
@@ -214,7 +230,7 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
                   ) : null}
                   <div className="flex justify-between items-center gap-3">
                     <p className="text-sm font-medium text-white">
-                      {ui.common.total}
+                      {totalLabel}
                     </p>
                     {showSalePricing ? (
                       <div className="flex items-baseline gap-2">
@@ -246,7 +262,7 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
                   ) : null}
                   <div className="flex justify-between items-center">
                     <p className="text-sm font-medium text-white">
-                      {ui.common.total}
+                      {totalLabel}
                     </p>
                     <p className="text-lg font-semibold text-white">
                       {formatPrice(

@@ -108,6 +108,8 @@ interface BookingSummaryProps {
    * name/variant/add-on block (still show visit total when priced).
    */
   hideServiceLines?: boolean;
+  /** Request flow: the price is not a charge yet. Tax line stays. */
+  estimateTotal?: boolean;
 }
 
 export const BookingSummary: React.FC<BookingSummaryProps> = ({
@@ -132,6 +134,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   shopAddressLabel = null,
   hideServiceAddress = false,
   hideServiceLines = false,
+  estimateTotal = false,
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
   const sl = ui.serviceLocation;
@@ -177,6 +180,9 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   const priceWithTaxCents =
     priceBeforeTaxCents + (showSalesTax ? salesTaxCents! : 0);
   const showServicePrice = servicePriceCents != null && servicePriceCents > 0;
+  const totalLabel = estimateTotal
+    ? ui.common.estimatedTotal
+    : ui.common.bookingTotal;
   const showPriceFooter =
     hasPrice &&
     (hasAddOns || showSalePricing || Boolean(saleAppliesLine) || showSalesTax);
@@ -301,7 +307,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
             ) : null}
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm font-medium text-gray-300">
-                {ui.common.bookingTotal}
+                {totalLabel}
               </span>
               {showSalePricing ? (
                 <div className="flex items-baseline gap-2">
@@ -386,7 +392,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
               ) : null}
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium text-gray-300">
-                  {ui.common.bookingTotal}
+                  {totalLabel}
                 </span>
                 {showSalePricing ? (
                   <div className="flex items-baseline gap-2">

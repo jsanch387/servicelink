@@ -80,6 +80,10 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const acceptBookings = Boolean(body.acceptBookings);
+    const requireBookingApproval =
+      typeof body.requireBookingApproval === 'boolean'
+        ? body.requireBookingApproval
+        : undefined;
     const schedule = body.schedule ?? null;
     const minimumNotice =
       typeof body.minimumNotice === 'string' &&
@@ -118,6 +122,9 @@ export async function POST(request: NextRequest) {
       authResult.businessId,
       {
         accept_bookings: acceptBookings,
+        ...(requireBookingApproval !== undefined
+          ? { public_booking_approval_required: requireBookingApproval }
+          : {}),
         minimum_notice: minimumNotice,
         buffer_time: bufferTime,
         weekly_schedule: schedule,

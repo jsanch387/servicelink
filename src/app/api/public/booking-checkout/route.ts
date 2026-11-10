@@ -50,6 +50,7 @@ import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHas
 import { getAppBaseUrl } from '@/libs/stripe/appBaseUrl';
 import { getStripePlatform } from '@/libs/stripe/platformClient';
 import { userFacingStripeConnectCheckoutError } from '@/libs/stripe/userFacingStripeConnectCheckoutError';
+import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -149,6 +150,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Business not found.' },
         { status: 404 }
+      );
+    }
+
+    const approvalRequired =
+      parsedBookingPayload.ownerManualBooking !== true &&
+      (
+        await getAvailabilityForBusiness(
+          supabase,
+          (profile as { id: string }).id
+        )
+      )?.public_booking_approval_required === true;
+    if (approvalRequired) {
+      logCheckoutDev('reject: appointment request skips payment', {
+        businessSlug,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'This business confirms the appointment before taking payment.',
+        },
+        { status: 400 }
       );
     }
 

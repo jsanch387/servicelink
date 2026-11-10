@@ -11,6 +11,15 @@ export const CRON_DAILY_14_UTC = '0 14 * * *';
  */
 export const CRON_JOBS = [
   {
+    id: 'appointment-request-expirations',
+    path: API_ROUTES.INTERNAL_CRON_APPOINTMENT_REQUEST_EXPIRATIONS,
+    schedule: CRON_DAILY_14_UTC,
+    maxDurationSeconds: 300,
+    work: 'src/features/availability/services/expirePastAppointmentRequests.ts',
+    description:
+      'Appointment requests whose calendar day has ended: mark expired and tell the customer once.',
+  },
+  {
     id: 'booking-reminders',
     path: API_ROUTES.INTERNAL_CRON_BOOKING_REMINDERS,
     schedule: CRON_DAILY_14_UTC,

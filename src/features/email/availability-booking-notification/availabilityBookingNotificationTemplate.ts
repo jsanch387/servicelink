@@ -510,31 +510,39 @@ export function buildAvailabilityBookingEmailHtml(
     .join('');
 
   const createdByOwner = payload.createdByOwner === true;
+  const appointmentRequest =
+    payload.appointmentRequest === true && !createdByOwner;
   const jobCount = payload.jobs?.length ?? 0;
 
   const heading =
     options.audience === 'owner'
-      ? createdByOwner
-        ? 'Appointment created'
-        : 'New appointment'
+      ? appointmentRequest
+        ? 'New appointment request'
+        : createdByOwner
+          ? 'Appointment created'
+          : 'New appointment'
       : 'Your appointment is confirmed';
 
   const subtitle =
     options.audience === 'owner'
-      ? createdByOwner
-        ? isMultiJob
-          ? `${jobCount} jobs`
-          : `You scheduled this appointment for ${payload.customerName}. Here are the details:`
-        : 'You have a new appointment. Here are the details:'
+      ? appointmentRequest
+        ? `${payload.customerName} requested an appointment. Here are the details:`
+        : createdByOwner
+          ? isMultiJob
+            ? `${jobCount} jobs`
+            : `You scheduled this appointment for ${payload.customerName}. Here are the details:`
+          : 'You have a new appointment. Here are the details:'
       : isMultiJob
         ? `${options.businessName} · ${jobCount} jobs`
         : `Here are the details for your visit with ${options.businessName}:`;
 
   const footerHtml =
     options.audience === 'owner'
-      ? createdByOwner
-        ? `You received this email because an appointment was created from your dashboard.<br>&copy; ${new Date().getFullYear()} ServiceLink.`
-        : `This email was sent because someone booked an appointment with your business.<br>&copy; ${new Date().getFullYear()} ServiceLink.`
+      ? appointmentRequest
+        ? `This email was sent because someone requested an appointment with your business.<br>&copy; ${new Date().getFullYear()} ServiceLink.`
+        : createdByOwner
+          ? `You received this email because an appointment was created from your dashboard.<br>&copy; ${new Date().getFullYear()} ServiceLink.`
+          : `This email was sent because someone booked an appointment with your business.<br>&copy; ${new Date().getFullYear()} ServiceLink.`
       : `You received this email because an appointment was scheduled using this address.<br>&copy; ${new Date().getFullYear()} ServiceLink.`;
 
   return wrapServiceLinkEmail({
@@ -548,8 +556,11 @@ export function buildAvailabilityBookingEmailHtml(
 
 export function getAvailabilityBookingNotificationSubject(
   customerName: string,
-  options?: { createdByOwner?: boolean }
+  options?: { createdByOwner?: boolean; appointmentRequest?: boolean }
 ): string {
+  if (options?.appointmentRequest && !options.createdByOwner) {
+    return `New appointment request from ${customerName}`;
+  }
   if (options?.createdByOwner) {
     return `Appointment created for ${customerName}`;
   }

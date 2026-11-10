@@ -123,6 +123,11 @@ export interface BusinessAvailabilityRow {
   id: string;
   business_id: string;
   accept_bookings: boolean;
+  /**
+   * When true, a finished public booking is a request the owner approves.
+   * Missing or false means the customer is confirmed immediately.
+   */
+  public_booking_approval_required?: boolean | null;
   minimum_notice: string;
   /** Gap between appointments; missing/legacy rows normalize to `'none'`. */
   buffer_time?: string | null;

@@ -113,6 +113,11 @@ export interface AvailabilityBookingPageProps {
   existingBookings?: ExistingBooking[];
   /** Dashboard owner flow (`for=owner`); changes confirmation copy and CTA. */
   isOwnerManualBooking?: boolean;
+  /**
+   * Public link only. When true, the last step says request appointment.
+   * Owner manual bookings ignore this.
+   */
+  requireBookingApproval?: boolean;
   /** Public funnel locale (`?lang=` + cookie). UI chrome only — not service copy. */
   bookingFlowLocale?: PublicBookingFlowLocale;
   /** Public payment behavior configured by business owner. */

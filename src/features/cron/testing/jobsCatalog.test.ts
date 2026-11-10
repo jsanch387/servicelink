@@ -26,7 +26,18 @@ describe('CRON_JOBS catalog', () => {
   });
 
   it('uses the centralized booking-reminders route', () => {
-    expect(CRON_JOBS[0]?.path).toBe(API_ROUTES.INTERNAL_CRON_BOOKING_REMINDERS);
+    expect(CRON_JOBS.find(job => job.id === 'booking-reminders')?.path).toBe(
+      API_ROUTES.INTERNAL_CRON_BOOKING_REMINDERS
+    );
+  });
+
+  it('expires unanswered appointment requests each day', () => {
+    expect(CRON_JOBS.map(job => job.id)).toContain(
+      'appointment-request-expirations'
+    );
+    expect(
+      CRON_JOBS.find(job => job.id === 'appointment-request-expirations')?.path
+    ).toBe(API_ROUTES.INTERNAL_CRON_APPOINTMENT_REQUEST_EXPIRATIONS);
   });
 
   it('registers quote-request follow-ups', () => {

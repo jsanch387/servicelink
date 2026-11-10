@@ -351,6 +351,8 @@ export default async function BookingRequestPage({
   const bufferTime = availabilityRow?.buffer_time ?? 'none';
   const legacyRequestBookingEnabled =
     businessProfile.legacy_request_booking_enabled === true;
+  const requireBookingApproval =
+    availabilityRow?.public_booking_approval_required === true;
   const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
 
   // Free-tier lifetime cap: at limit on Free, treat as not accepting (same as public gate helper).
@@ -653,6 +655,7 @@ export default async function BookingRequestPage({
             initialCustomerServiceChoice={serviceLocationTypeForBack ?? null}
             activeSale={activeSale}
             bookingPolicy={bookingPolicy}
+            requireBookingApproval={requireBookingApproval}
             stripeCheckoutSessionId={stripeCheckoutSessionId}
             exitCalendarFlowHref={bookPageBackHref}
             exitCalendarFlowLabel={bookPageBackLabel}
@@ -686,6 +689,7 @@ export default async function BookingRequestPage({
             minimumNotice={minimumNotice}
             bufferTime={bufferTime}
             paymentSettings={paymentSettings}
+            requireBookingApproval={requireBookingApproval}
             isOwnerManualBooking={isOwnerManualBooking}
             exitCalendarFlowHref={bookPageBackHref}
             exitCalendarFlowLabel={bookPageBackLabel}
@@ -737,6 +741,7 @@ export default async function BookingRequestPage({
             minimumNotice={minimumNotice}
             bufferTime={bufferTime}
             paymentSettings={paymentSettings}
+            requireBookingApproval={requireBookingApproval}
             isOwnerManualBooking={isOwnerManualBooking}
             exitCalendarFlowHref={bookPageBackHref}
             exitCalendarFlowLabel={bookPageBackLabel}

@@ -1,4 +1,5 @@
 import { AvailabilityBookingPage } from '@/features/availability/booking/components/AvailabilityBookingPage';
+import type { PublicBookingPaymentSettings } from '@/features/availability/booking/types';
 import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -101,12 +102,29 @@ vi.mock('@/features/availability/booking/components/CustomerForm', () => ({
   isCustomerFormStepValid: () => true,
 }));
 
-function renderBookingFlow(options?: { bookingFlowLocale?: 'en' | 'es' }) {
+const cardPaymentSettings: PublicBookingPaymentSettings = {
+  paymentsEnabled: true,
+  checkoutMode: 'in_app',
+  depositsEnabled: true,
+  depositType: 'fixed',
+  depositValue: 2000,
+  currency: 'usd',
+  taxEnabled: false,
+  taxRateBps: 0,
+};
+
+function renderBookingFlow(options?: {
+  bookingFlowLocale?: 'en' | 'es';
+  requireBookingApproval?: boolean;
+  paymentSettings?: PublicBookingPaymentSettings | null;
+}) {
   return render(
     <AvailabilityBookingPage
       businessName="Acme Auto"
       businessId="biz-1"
       businessSlug="acme-auto"
+      requireBookingApproval={options?.requireBookingApproval}
+      paymentSettings={options?.paymentSettings}
       serviceId="svc-1"
       serviceName="Detail"
       serviceDurationMinutes={120}
@@ -255,6 +273,81 @@ describe('AvailabilityBookingPage flow navigation', () => {
       );
 
     expect(postsToCreateBooking().length).toBeGreaterThan(0);
+  });
+
+  it('skips payment and requests the appointment from review', async () => {
+    const user = userEvent.setup();
+    renderBookingFlow({
+      requireBookingApproval: true,
+      paymentSettings: cardPaymentSettings,
+    });
+
+    await openFullCalendar(user);
+    await user.click(screen.getByRole('button', { name: /pick date/i }));
+    await user.click(screen.getByRole('button', { name: /pick time/i }));
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    await user.click(screen.getByRole('button', { name: /review booking/i }));
+
+    expect(
+      screen.queryByRole('button', { name: /continue to payment/i })
+    ).toBeNull();
+    expect(
+      screen.getByRole('button', { name: /request appointment/i })
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'This is a request. Acme Auto will approve it, then we’ll let you know.'
+      )
+    ).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: /payment/i })).toBeNull();
+    expect(screen.queryByLabelText(/promo code/i)).toBeNull();
+  });
+
+  it('asks to request the appointment when approval is required', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const u = typeof input === 'string' ? input : input.toString();
+      if (u.includes('/api/public/bookings/blocked/')) {
+        return {
+          ok: true,
+          json: async () => ({ success: true, blockedSlots: [] }),
+        } as Response;
+      }
+      return {
+        ok: true,
+        json: async () => ({ success: true, data: { id: 'bk-1' } }),
+      } as Response;
+    });
+
+    const user = userEvent.setup();
+    renderBookingFlow({ requireBookingApproval: true });
+
+    await openFullCalendar(user);
+    await user.click(screen.getByRole('button', { name: /pick date/i }));
+    await user.click(screen.getByRole('button', { name: /pick time/i }));
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    await user.click(screen.getByRole('button', { name: /review booking/i }));
+
+    expect(
+      screen.queryByRole('button', { name: /confirm booking/i })
+    ).toBeNull();
+    await user.click(
+      screen.getByRole('button', { name: /request appointment/i })
+    );
+
+    expect(
+      screen.queryByRole('button', { name: /continue to payment/i })
+    ).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Request sent' })).toBeTruthy();
+    expect(screen.getByText('Estimated total')).toBeTruthy();
+    expect(screen.queryByText('Total')).toBeNull();
+    expect(
+      screen.getByText(
+        'Your appointment request was sent to Acme Auto. No email was sent because no email address was provided.'
+      )
+    ).toBeTruthy();
   });
 });
 

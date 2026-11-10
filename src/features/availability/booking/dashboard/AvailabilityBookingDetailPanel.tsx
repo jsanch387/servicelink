@@ -9,6 +9,7 @@ import {
   ArrowLeftIcon,
   ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
+  CalendarDaysIcon,
   CheckCircleIcon,
   DocumentTextIcon,
   TrashIcon,
@@ -17,6 +18,7 @@ import {
 import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/react/24/solid';
 import { useState } from 'react';
 import type { ExistingBooking, TimeOffInterval } from '../types';
+import { localDateKey } from './dayPlannerUtils';
 import { formatDurationMinutes } from '../utils/formatDuration';
 import { canChangeBookingAssignee } from '@/features/team/utils/canChangeBookingAssignee';
 import { BookingAssigneeField } from './BookingAssigneeField';
@@ -41,6 +43,8 @@ interface AvailabilityBookingDetailPanelProps {
     id: string,
     args?: CompleteAppointmentConfirmArgs
   ) => void | Promise<void>;
+  /** Confirm a requested appointment. Omitted until the decision is saved. */
+  onApprove?: (id: string) => void | Promise<void>;
   onCancel: (id: string) => void;
   /** Permanently remove the booking (any status). */
   onDelete: (id: string) => void | Promise<void>;
@@ -103,6 +107,7 @@ export function AvailabilityBookingDetailPanel({
   canRunActions,
   canDelete,
   onMarkCompleted,
+  onApprove,
   onCancel,
   onDelete,
   onReschedule,
@@ -123,6 +128,7 @@ export function AvailabilityBookingDetailPanel({
     booking.isTest === true &&
     booking.status === 'confirmed';
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showDenyConfirm, setShowDenyConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
@@ -132,6 +138,11 @@ export function AvailabilityBookingDetailPanel({
   };
 
   const fullAddress = formatFullAddress(booking.address);
+  const isRequested = booking.status === 'requested';
+  const isExpired = booking.status === 'expired';
+  const requestDatePassed =
+    isRequested && booking.date < localDateKey(new Date());
+  const showExpiredRequest = isExpired || requestDatePassed;
   const isConfirmed = booking.status === 'confirmed';
   const isCancelled = booking.status === 'cancelled';
   const payment = booking.payment ?? null;
@@ -140,7 +151,9 @@ export function AvailabilityBookingDetailPanel({
   const showPaymentSection = canComplete && Boolean(payment);
   const showCompleteTile = isConfirmed && canComplete;
   const showManageTiles = isConfirmed && canManageBooking;
-  const showDeleteTile = canDelete ?? canManageBooking;
+  const showDeleteTile = (canDelete ?? canManageBooking) && !isRequested;
+  const showRequestDecision =
+    isRequested && !requestDatePassed && canManageBooking;
   const showActionsSection =
     showCompleteTile || showManageTiles || showDeleteTile;
   const jobs = booking.jobs ?? [];
@@ -203,6 +216,11 @@ export function AvailabilityBookingDetailPanel({
 
   const handleCancelClick = () => {
     setShowCancelConfirm(true);
+  };
+
+  const handleDenyConfirm = () => {
+    onCancel(booking.id);
+    setShowDenyConfirm(false);
   };
 
   const handleCancelConfirm = () => {
@@ -287,6 +305,71 @@ export function AvailabilityBookingDetailPanel({
         </div>
 
         <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain scrollbar-dark p-4 sm:p-5 [-webkit-overflow-scrolling:touch]">
+          {showExpiredRequest ? (
+            <div className="flex items-center gap-3">
+              <span
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/70"
+                aria-hidden
+              >
+                <CalendarDaysIcon className="h-4 w-4" />
+              </span>
+              <p className="text-sm leading-snug text-white/60">
+                This request expired. The date has passed.
+              </p>
+            </div>
+          ) : null}
+
+          {isRequested && !requestDatePassed ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <span
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white"
+                  aria-hidden
+                >
+                  <CalendarDaysIcon className="h-4 w-4" />
+                </span>
+                <p className="text-sm leading-snug text-white/60">
+                  This customer asked for this time. Approve it to confirm the
+                  appointment, or deny it.
+                </p>
+              </div>
+              {showRequestDecision ? (
+                <div className="space-y-3">
+                  {updateError ? (
+                    <p className="text-sm text-rose-400" role="alert">
+                      {updateError}
+                    </p>
+                  ) : null}
+                  <div className="flex gap-3">
+                    <Button
+                      variant="danger"
+                      size="md"
+                      fullWidth
+                      type="button"
+                      disabled={isUpdating}
+                      onClick={() => setShowDenyConfirm(true)}
+                    >
+                      Deny
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="md"
+                      fullWidth
+                      type="button"
+                      loading={isUpdating}
+                      disabled={isUpdating || !onApprove}
+                      onClick={() => {
+                        void onApprove?.(booking.id);
+                      }}
+                    >
+                      Approve
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           {isCancelled && (
             <div
               className="rounded-xl border border-rose-500/35 bg-rose-500/[0.09] px-4 py-3"
@@ -444,7 +527,11 @@ export function AvailabilityBookingDetailPanel({
                 </section>
               )}
 
-              {canCreateInvoice && canManageBooking && !isCancelled ? (
+              {canCreateInvoice &&
+              canManageBooking &&
+              !isCancelled &&
+              !isRequested &&
+              !showExpiredRequest ? (
                 <Button
                   href={ROUTES.DASHBOARD.INVOICES_NEW_FROM_BOOKING(booking.id)}
                   variant="secondary"
@@ -649,6 +736,46 @@ export function AvailabilityBookingDetailPanel({
         onClose={closeCompleteConfirm}
         onConfirm={handleCompleteConfirm}
       />
+
+      {showDenyConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div
+            className="bg-[#1c1c1e] border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-xl"
+            role="alertdialog"
+            aria-labelledby="deny-dialog-title"
+            aria-describedby="deny-dialog-desc"
+          >
+            <h3
+              id="deny-dialog-title"
+              className="text-lg font-bold text-white mb-2"
+            >
+              Deny request?
+            </h3>
+            <p id="deny-dialog-desc" className="text-gray-400 text-sm mb-6">
+              The customer will be told this time was not confirmed, and the
+              slot will open back up.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                fullWidth
+                disabled={isUpdating}
+                onClick={() => setShowDenyConfirm(false)}
+              >
+                Keep
+              </Button>
+              <Button
+                variant="danger"
+                fullWidth
+                disabled={isUpdating}
+                onClick={handleDenyConfirm}
+              >
+                {isUpdating ? 'Denying…' : 'Deny request'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Cancel confirmation dialog */}
       {showCancelConfirm && (
