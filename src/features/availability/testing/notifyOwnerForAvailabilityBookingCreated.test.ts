@@ -162,4 +162,62 @@ describe('notifyOwnerForAvailabilityBookingCreated', () => {
       })
     );
   });
+
+  it('titles the inbox, push, and email as an appointment request', async () => {
+    const insert = vi.fn().mockResolvedValue({ error: null });
+    const from = vi.fn().mockImplementation((table: string) => {
+      if (table === 'notifications') {
+        return { insert };
+      }
+      return { insert: vi.fn() };
+    });
+
+    const getUserById = vi.fn().mockResolvedValue({
+      data: { user: { email: 'owner@example.com' } },
+    });
+
+    const supabase = {
+      from,
+      auth: { admin: { getUserById } },
+    } as never;
+
+    await notifyOwnerForAvailabilityBookingCreated(supabase, {
+      profileId: 'profile-uuid',
+      bookingId: 'booking-uuid',
+      customerName: 'Jordan',
+      serviceSummaryLine: 'Full detail',
+      scheduledDate: '2026-05-10',
+      emailPayload: {
+        customerName: 'Jordan',
+        customerEmail: 'j@example.com',
+        serviceName: 'Full detail',
+        scheduledDate: '2026-05-10',
+        startTime: '14:00',
+        durationMinutes: 120,
+        servicePriceCents: 10000,
+        selectedAddOns: [],
+        totalPriceCents: 10000,
+        paymentSummary: { title: 'Payment', rows: [] },
+        appointmentRequest: true,
+      },
+    });
+
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'New appointment request',
+        body: 'From Jordan',
+      })
+    );
+    expect(sendExpoPushToUser).toHaveBeenCalledWith(
+      supabase,
+      expect.objectContaining({
+        title: 'New appointment request',
+        body: 'From Jordan',
+      })
+    );
+    expect(sendAvailabilityBookingNotificationEmail).toHaveBeenCalledWith(
+      'owner@example.com',
+      expect.objectContaining({ appointmentRequest: true })
+    );
+  });
 });

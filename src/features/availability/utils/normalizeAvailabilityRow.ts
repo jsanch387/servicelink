@@ -25,6 +25,8 @@ export function normalizeAvailabilityRow(
 
   return {
     ...row,
+    public_booking_approval_required:
+      row.public_booking_approval_required === true,
     minimum_notice: isMinimumNoticeValue(row.minimum_notice)
       ? row.minimum_notice
       : 'none',

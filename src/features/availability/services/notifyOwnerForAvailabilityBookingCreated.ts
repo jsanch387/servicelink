@@ -49,6 +49,8 @@ export async function notifyOwnerForAvailabilityBookingCreated(
   }
 
   const createdByOwner = params.emailPayload.createdByOwner === true;
+  const appointmentRequest =
+    params.emailPayload.appointmentRequest === true && !createdByOwner;
   const jobCount =
     typeof params.jobCount === 'number' && params.jobCount > 0
       ? params.jobCount
@@ -57,7 +59,11 @@ export async function notifyOwnerForAvailabilityBookingCreated(
     'availability_booking',
     'booking',
     '',
-    createdByOwner ? 'Appointment created' : null
+    appointmentRequest
+      ? 'New appointment request'
+      : createdByOwner
+        ? 'Appointment created'
+        : null
   );
   const bodyText = createdByOwner
     ? jobCount > 1

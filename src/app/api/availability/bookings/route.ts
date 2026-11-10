@@ -7,7 +7,12 @@
 
 import { listBookingsForOwner } from '@/features/availability/booking/server/listBookingsForOwner';
 import { parseListBookingsQuery } from '@/features/availability/booking/server/parseListBookingsQuery';
+import {
+  appointmentRequestExpiryDate,
+  expirePastAppointmentRequests,
+} from '@/features/availability/services/expirePastAppointmentRequests';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -31,6 +36,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: authResult.error },
         { status: authResult.status }
+      );
+    }
+
+    const asOf =
+      parsed.query.kind === 'page'
+        ? parsed.query.asOf
+        : appointmentRequestExpiryDate();
+    try {
+      await expirePastAppointmentRequests(createSupabaseAdminClient(), {
+        asOf,
+        businessId: authResult.businessId,
+      });
+    } catch (expireError) {
+      console.error(
+        '[API] GET /api/availability/bookings expire requests:',
+        expireError
       );
     }
 

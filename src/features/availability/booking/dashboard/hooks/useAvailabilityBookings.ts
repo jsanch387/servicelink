@@ -10,7 +10,7 @@ import type { WebCompletePaymentMethod } from '../utils/webCompletePaymentMethod
 
 const API_URL = API_ROUTES.AVAILABILITY_BOOKINGS;
 
-type StatusUpdate = 'completed' | 'cancelled';
+type StatusUpdate = 'completed' | 'cancelled' | 'confirmed';
 
 export type RescheduleBookingResult =
   | { success: true; booking: AvailabilityBookingDisplay }

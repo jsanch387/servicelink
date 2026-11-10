@@ -53,6 +53,8 @@ export type PublicMultiJobReviewSummaryProps = {
   canRemoveJob?: boolean;
   onRemoveJob?: (localId: string) => void;
   removeLabel?: string;
+  /** Request flow: the price is not a charge yet. Tax line stays. */
+  estimateTotal?: boolean;
 };
 
 /**
@@ -79,6 +81,7 @@ export function PublicMultiJobReviewSummary({
   canRemoveJob = false,
   onRemoveJob,
   removeLabel,
+  estimateTotal = false,
 }: PublicMultiJobReviewSummaryProps) {
   const ui = publicBookingUi(bookingFlowLocale);
   const sl = ui.serviceLocation;
@@ -100,6 +103,11 @@ export function PublicMultiJobReviewSummary({
     saleEstimatedTotalCents != null &&
     saleEstimatedTotalCents < saleSubtotalCents;
 
+  const totalLabel = estimateTotal
+    ? ui.common.estimatedTotal
+    : jobs.length > 1
+      ? ui.common.visitTotal
+      : ui.common.total;
   const showSalesTax =
     salesTaxCents != null && salesTaxCents > 0 && Boolean(salesTaxLabel);
   const visitTotalCents =
@@ -259,9 +267,7 @@ export function PublicMultiJobReviewSummary({
             </div>
           ) : null}
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-white">
-              {jobs.length > 1 ? ui.common.visitTotal : ui.common.total}
-            </p>
+            <p className="text-sm font-semibold text-white">{totalLabel}</p>
             <p className="text-lg font-semibold tabular-nums text-white">
               {formatCatalogPriceCents(visitTotalCents)}
             </p>

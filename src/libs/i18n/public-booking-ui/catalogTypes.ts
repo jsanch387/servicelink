@@ -51,6 +51,8 @@ export type PublicBookingUi = {
     /** `Tax (8.25%)` — rate label already includes the percent sign. */
     salesTax: (rate: string) => string;
     visitTotal: string;
+    /** Request review and request-sent screen. Includes tax when tax is on. */
+    estimatedTotal: string;
     /** Summary row when customer email was left blank */
     emailNotProvided: string;
   };
@@ -175,6 +177,12 @@ export type PublicBookingUi = {
     policyConsentRequired: string;
     continueToPayment: string;
     confirmBooking: string;
+    /** Final public CTA when the business requires approval. */
+    requestAppointment: string;
+    /** Shown above that CTA so the customer knows approval comes first. */
+    requestAppointmentNote: (businessName: string) => string;
+    /** Busy label for that same CTA. */
+    requestingAppointment: string;
     chooseHowToPay: string;
     paymentHeading: string;
     howDoYouWantToPay: string;
@@ -313,6 +321,11 @@ export type PublicBookingUi = {
     subtitleCustomerNoEmail: (businessName: string) => string;
     cardHeaderOwner: string;
     cardHeaderCustomer: string;
+    /** Public customer title when the business must approve the appointment. */
+    requestTitle: string;
+    requestSubtitleCustomer: (businessName: string) => string;
+    requestSubtitleCustomerNoEmail: (businessName: string) => string;
+    requestCardHeader: string;
     ownerPaymentNote: string;
     goToBookings: string;
     backToProfile: string;

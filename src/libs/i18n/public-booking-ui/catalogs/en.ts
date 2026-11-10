@@ -47,6 +47,7 @@ export const publicBookingUiEn: PublicBookingUi = {
     subtotal: 'Subtotal',
     salesTax: rate => `Tax (${rate})`,
     visitTotal: 'Visit total',
+    estimatedTotal: 'Estimated total',
     emailNotProvided: 'No email provided',
   },
   serviceDetails: {
@@ -180,6 +181,10 @@ export const publicBookingUiEn: PublicBookingUi = {
     policyConsentRequired: 'You must accept to continue.',
     continueToPayment: 'Continue to payment',
     confirmBooking: 'Confirm Booking',
+    requestAppointment: 'Request appointment',
+    requestAppointmentNote: businessName =>
+      `This is a request. ${businessName} will approve it, then we’ll let you know.`,
+    requestingAppointment: 'Requesting appointment',
     chooseHowToPay: 'Choose how to pay',
     paymentHeading: 'Payment',
     howDoYouWantToPay: 'How do you want to pay?',
@@ -332,6 +337,12 @@ export const publicBookingUiEn: PublicBookingUi = {
       `Your appointment with ${businessName} is confirmed. No confirmation email was sent because no email address was provided.`,
     cardHeaderOwner: 'Appointment',
     cardHeaderCustomer: 'Your booking',
+    requestTitle: 'Request sent',
+    requestSubtitleCustomer: businessName =>
+      `Your appointment request was sent to ${businessName}. They’ll confirm it.`,
+    requestSubtitleCustomerNoEmail: businessName =>
+      `Your appointment request was sent to ${businessName}. No email was sent because no email address was provided.`,
+    requestCardHeader: 'Your request',
     ownerPaymentNote: 'Payment details are saved with this appointment.',
     goToBookings: 'Go to bookings',
     backToProfile: 'Back to profile',

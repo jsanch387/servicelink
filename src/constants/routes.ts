@@ -327,6 +327,9 @@ export const API_ROUTES = {
     '/api/internal/attribution/paid-conversions',
   /** Vercel Cron: day-before owner appointment reminder. */
   INTERNAL_CRON_BOOKING_REMINDERS: '/api/internal/cron/booking-reminders',
+  /** Vercel Cron: expire appointment requests whose day has passed. */
+  INTERNAL_CRON_APPOINTMENT_REQUEST_EXPIRATIONS:
+    '/api/internal/cron/appointment-request-expirations',
   /** Owner: start Google Business Profile OAuth (reviews connect). */
   REVIEWS_GOOGLE_CONNECT: '/api/reviews/google/connect',
   /** Google OAuth redirect target for Business Profile connect. */

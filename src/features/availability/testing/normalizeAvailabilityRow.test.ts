@@ -21,6 +21,25 @@ function baseRow(
 }
 
 describe('normalizeAvailabilityRow', () => {
+  it('treats a missing approval flag as auto-confirm', () => {
+    expect(
+      normalizeAvailabilityRow(baseRow()).public_booking_approval_required
+    ).toBe(false);
+    expect(
+      normalizeAvailabilityRow(
+        baseRow({ public_booking_approval_required: null })
+      ).public_booking_approval_required
+    ).toBe(false);
+  });
+
+  it('keeps request-approval when the flag is on', () => {
+    expect(
+      normalizeAvailabilityRow(
+        baseRow({ public_booking_approval_required: true })
+      ).public_booking_approval_required
+    ).toBe(true);
+  });
+
   it('keeps expanded lead-time values', () => {
     const row = normalizeAvailabilityRow(baseRow({ minimum_notice: '30m' }));
     expect(row.minimum_notice).toBe('30m');

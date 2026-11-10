@@ -47,6 +47,7 @@ type PublicVisitBookingClientProps = {
   exitCalendarFlowHref: string;
   exitCalendarFlowLabel: string;
   bookingPolicy?: { text: string } | null;
+  requireBookingApproval?: boolean;
 };
 
 /**
@@ -72,6 +73,7 @@ export function PublicVisitBookingClient({
   exitCalendarFlowHref,
   exitCalendarFlowLabel,
   bookingPolicy = null,
+  requireBookingApproval = false,
 }: PublicVisitBookingClientProps) {
   const router = useRouter();
   const ui = publicBookingUi(bookingFlowLocale);
@@ -222,6 +224,7 @@ export function PublicVisitBookingClient({
       onBookingJobsChange={setJobs}
       onPublicMultiJobBookingCreated={handleBookingCreated}
       bookingPolicy={bookingPolicy}
+      requireBookingApproval={requireBookingApproval}
     />
   );
 }

@@ -78,6 +78,8 @@ export interface AvailabilityBookingNotificationPayload {
   customerNotes?: string;
   /** Owner scheduled this appointment from the dashboard (not a public self-booking). */
   createdByOwner?: boolean;
+  /** Public customer asked for a time the business still has to approve. */
+  appointmentRequest?: boolean;
 }
 
 /** One job line in a multi-job visit confirmation email. */

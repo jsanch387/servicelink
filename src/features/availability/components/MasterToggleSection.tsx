@@ -14,8 +14,8 @@ export const MasterToggleSection: React.FC<MasterToggleSectionProps> = ({
   onToggle,
 }) => {
   const description = acceptBookings
-    ? 'Turn off to stop receiving new booking requests.'
-    : 'Turn on to start accepting bookings.';
+    ? 'Turn off to stop accepting appointments on your public booking link.'
+    : 'Turn on to accept appointments on your public booking link.';
 
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:px-6 sm:py-4 transition-colors hover:border-white/15">

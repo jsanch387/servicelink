@@ -47,6 +47,8 @@ function emptyHint(
 }
 
 function statusLabel(status: AvailabilityBookingDisplay['status']): string {
+  if (status === 'requested') return 'Requested';
+  if (status === 'expired') return 'Expired';
   if (status === 'completed') return 'Completed';
   if (status === 'cancelled') return 'Cancelled';
   return 'Confirmed';
@@ -55,6 +57,8 @@ function statusLabel(status: AvailabilityBookingDisplay['status']): string {
 function statusTone(
   status: AvailabilityBookingDisplay['status']
 ): StatusPillTone {
+  if (status === 'requested') return 'warning';
+  if (status === 'expired') return 'neutral';
   if (status === 'completed') return 'success';
   if (status === 'cancelled') return 'danger';
   return 'info';
