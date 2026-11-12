@@ -1,16 +1,12 @@
 /**
  * Customer booking-link entry.
  * Set to false to send every business back to the current booking flow.
- * While `PUBLIC_BOOKING_V2_OWNER_EMAILS` has addresses, only those owners
- * see the new flow even when this flag is on.
+ * Add owner emails here to limit the new flow to those accounts again.
  */
 export const PUBLIC_BOOKING_V2_ENABLED = true;
 
-/** Owner accounts allowed onto booking v2 during the limited rollout. */
-export const PUBLIC_BOOKING_V2_OWNER_EMAILS: readonly string[] = [
-  'jesuss387@gmail.com',
-  'urbanink.help@gmail.com',
-];
+/** Empty means every business. Add emails to limit the rollout again. */
+export const PUBLIC_BOOKING_V2_OWNER_EMAILS: readonly string[] = [];
 
 export function isPublicBookingV2OwnerEmail(
   email: string | null | undefined
