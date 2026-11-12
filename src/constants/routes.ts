@@ -297,6 +297,8 @@ export const API_ROUTES = {
   PUBLIC_BOOKING_CHECKOUT_SUMMARY: '/api/public/booking-checkout-summary',
   /** Public: returning-customer saved vehicles/pets for the book flow. */
   PUBLIC_CUSTOMER_ASSETS: '/api/public/customer-assets',
+  /** Public: fill booking contact from a phone that already booked here. */
+  PUBLIC_BOOKING_RETURNING_CUSTOMER: '/api/public/bookings/returning-customer',
   /** Public: validate a promo code for booking checkout preview. */
   PUBLIC_PROMO_CODE_VALIDATE: '/api/public/promo-codes/validate',
   /** Public: subscribed ICS feed for a business (path includes signed token). */
@@ -508,6 +510,128 @@ export function getBusinessBookDetailsPath(
     addJob: options?.addJob,
     editVisit: options?.editVisit,
   });
+}
+
+/**
+ * Booking v2 service setup. Legacy `/book/details` stays in place.
+ * Flip `PUBLIC_BOOKING_V2_ENABLED` to send customers back to the current flow.
+ */
+export function getBusinessBookV2SetupUrl(
+  businessSlug: string,
+  params: {
+    serviceId: string;
+    lang?: PublicBookingFlowLocale | null;
+    /** Append this service to the current visit instead of starting a new one. */
+    add?: boolean;
+    /** Replace this cart item when saving. */
+    editIndex?: number;
+  }
+): string {
+  const slug = businessSlug.trim();
+  const sid = params.serviceId.trim();
+  if (!slug || !sid) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams({ serviceId: sid });
+  if (params.add) q.set('add', '1');
+  if (
+    params.editIndex != null &&
+    Number.isInteger(params.editIndex) &&
+    params.editIndex >= 0
+  ) {
+    q.set('edit', String(params.editIndex));
+  }
+  appendPublicBookingFlowLang(q, params.lang);
+  const qs = q.toString();
+  return `/${encodeURIComponent(slug)}/book/v2?${qs}`;
+}
+
+/** Booking v2 services list for adding another service. Cancel returns to the cart. */
+export function getBusinessBookV2ServicesUrl(
+  businessSlug: string,
+  params?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const slug = businessSlug.trim();
+  if (!slug) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams({ add: '1' });
+  appendPublicBookingFlowLang(q, params?.lang);
+  return `/${encodeURIComponent(slug)}/book/v2?${q.toString()}`;
+}
+
+/** Booking v2 confirmation after review. */
+export function getBusinessBookV2BookedUrl(
+  businessSlug: string,
+  params?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const slug = businessSlug.trim();
+  if (!slug) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams();
+  appendPublicBookingFlowLang(q, params?.lang);
+  const qs = q.toString();
+  return `/${encodeURIComponent(slug)}/book/v2/booked${qs ? `?${qs}` : ''}`;
+}
+
+/** Booking v2 review and pay step. */
+export function getBusinessBookV2ReviewUrl(
+  businessSlug: string,
+  params?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const slug = businessSlug.trim();
+  if (!slug) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams();
+  appendPublicBookingFlowLang(q, params?.lang);
+  const qs = q.toString();
+  return `/${encodeURIComponent(slug)}/book/v2/review${qs ? `?${qs}` : ''}`;
+}
+
+/** Booking v2 customer details step. */
+export function getBusinessBookV2DetailsUrl(
+  businessSlug: string,
+  params?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const slug = businessSlug.trim();
+  if (!slug) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams();
+  appendPublicBookingFlowLang(q, params?.lang);
+  const qs = q.toString();
+  return `/${encodeURIComponent(slug)}/book/v2/details${qs ? `?${qs}` : ''}`;
+}
+
+/** Booking v2 place step. Only used when the business offers shop and mobile. */
+export function getBusinessBookV2PlaceUrl(
+  businessSlug: string,
+  params?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const slug = businessSlug.trim();
+  if (!slug) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams();
+  appendPublicBookingFlowLang(q, params?.lang);
+  const qs = q.toString();
+  return `/${encodeURIComponent(slug)}/book/v2/place${qs ? `?${qs}` : ''}`;
+}
+
+/** Booking v2 pick-a-time step. */
+export function getBusinessBookV2TimeUrl(
+  businessSlug: string,
+  params?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const slug = businessSlug.trim();
+  if (!slug) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams();
+  appendPublicBookingFlowLang(q, params?.lang);
+  const qs = q.toString();
+  return `/${encodeURIComponent(slug)}/book/v2/time${qs ? `?${qs}` : ''}`;
+}
+
+/** Booking v2 cart. */
+export function getBusinessBookV2CartUrl(
+  businessSlug: string,
+  params?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const slug = businessSlug.trim();
+  if (!slug) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams();
+  appendPublicBookingFlowLang(q, params?.lang);
+  const qs = q.toString();
+  return `/${encodeURIComponent(slug)}/book/v2/cart${qs ? `?${qs}` : ''}`;
 }
 
 export type BookDetailsStepQuery = 'price' | 'addons' | 'location';

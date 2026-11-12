@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 describe('usePublicBookingPolicyAgreement', () => {
-  it('does not persist agreement in sessionStorage', () => {
+  it('remembers agreement in this tab so checkout cancel does not ask again', () => {
     const { result } = renderHook(() =>
       usePublicBookingPolicyAgreement({
         businessSlug: 'acme-detail',
@@ -30,7 +30,9 @@ describe('usePublicBookingPolicyAgreement', () => {
     });
 
     expect(result.current.hasAgreed).toBe(true);
-    expect(sessionStorage.length).toBe(0);
+    expect(
+      sessionStorage.getItem('servicelink.bookingPolicyAgreed.v1')
+    ).toContain('acme-detail');
   });
 
   it('does not reopen on the next screen after they already agreed this load', () => {

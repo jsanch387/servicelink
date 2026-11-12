@@ -9,6 +9,7 @@ import { StructuredData } from '@/components/shared';
 import { publicSpecialtyLabels } from '@/constants/businessSpecialties';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { ViewTracker } from '@/features/analytics';
+import { publicBookingV2EnabledForOwner } from '@/features/booking-v2/server/publicBookingV2Access';
 import { PublicBusinessProfileView } from '@/features/business-profile/components/PublicBusinessProfileView';
 import { PublicProfileLandingScrollReset } from '@/features/business-profile/components/PublicProfileLandingScrollReset';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
@@ -201,6 +202,7 @@ export default async function PublicProfilePage({
     freeTierGate,
     publicReviewSummaryResult,
     primaryServiceArea,
+    useBookingV2,
   ] = await Promise.all([
     profileId
       ? adminGate
@@ -217,6 +219,7 @@ export default async function PublicProfilePage({
     }),
     loadPublicReviewSummary(adminGate, businessProfile.id),
     loadPrimaryServiceArea(adminGate, businessProfile.id),
+    publicBookingV2EnabledForOwner(adminGate, profileId),
   ]);
 
   const ownerSubscriptionRow = (ownerProfileResult.data ??
@@ -325,6 +328,7 @@ export default async function PublicProfilePage({
         publicGoogleReviewCount={publicGoogleReviewCount}
         publicProfileSlug={slug}
         publicActiveSale={publicActiveSale}
+        useBookingV2={useBookingV2}
         hasPublicSubscriptionPlans={hasPublicSubscriptionPlans}
         initialTab={initialTab}
         membershipCheckoutCanceled={membershipCheckout === 'cancel'}

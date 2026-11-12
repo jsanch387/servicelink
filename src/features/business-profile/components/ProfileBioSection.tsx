@@ -3,10 +3,12 @@
 import { BookingPolicyAgreeModal } from '@/features/availability/booking/components/BookingPolicyAgreeModal';
 import { publicSpecialtyLabels } from '@/constants/businessSpecialties';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
+import { InstagramIcon, TikTokIcon } from '@/icons';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import React, { useState } from 'react';
 import type { CompleteBusinessProfile } from '../types/businessProfile';
 import { resolvePublicBookingPolicy } from '../utils/bookingPolicy';
+import { socialLinksForDisplay } from '../utils/socialMedia';
 
 interface ProfileBioSectionProps {
   businessProfile: CompleteBusinessProfile;
@@ -25,13 +27,38 @@ export const ProfileBioSection: React.FC<ProfileBioSectionProps> = ({
     businessProfile.specialties
   );
   const policy = resolvePublicBookingPolicy(businessProfile);
+  const socialLinks = socialLinksForDisplay(businessProfile.social_media);
 
-  if (!bio && !policy && specialties.length === 0) {
+  if (!bio && !policy && specialties.length === 0 && socialLinks.length === 0) {
     return <p className="text-sm text-zinc-500">{ui.profile.noBioYet}</p>;
   }
 
   return (
     <div className="space-y-6">
+      {socialLinks.length > 0 ? (
+        <div
+          className="flex items-center gap-2.5"
+          aria-label={ui.profile.socialMediaAriaLabel}
+        >
+          {socialLinks.map(link => (
+            <a
+              key={link.id}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={link.label}
+              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-zinc-800/80 text-zinc-300 ring-1 ring-white/10 transition-colors hover:bg-zinc-700 hover:text-white"
+            >
+              {link.id === 'instagram' ? (
+                <InstagramIcon className="h-[18px] w-[18px]" />
+              ) : (
+                <TikTokIcon className="h-[18px] w-[18px]" />
+              )}
+            </a>
+          ))}
+        </div>
+      ) : null}
+
       {specialties.length > 0 ? (
         <ul
           className="flex flex-wrap gap-2"

@@ -593,12 +593,14 @@ export async function POST(request: NextRequest) {
             businessSlug: slugForUrl,
             checkout: 'success',
             resumeQuery: resumeQuery || undefined,
+            flow: body.checkoutFlow === 'v2' ? 'v2' : undefined,
           }),
           cancel_url: buildBookPageCheckoutReturnUrl({
             baseUrl,
             businessSlug: slugForUrl,
             checkout: 'cancel',
             resumeQuery: resumeQuery || undefined,
+            flow: body.checkoutFlow === 'v2' ? 'v2' : undefined,
           }),
           metadata: {
             businessId,

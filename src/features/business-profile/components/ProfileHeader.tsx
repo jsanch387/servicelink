@@ -7,7 +7,6 @@ import { normalizePublicBookingOfferedLocales } from '@/libs/bookingFlowLocale';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { MapPinIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import { CheckBadgeIcon } from '@heroicons/react/24/solid';
-import { InstagramIcon, TikTokIcon } from '@/icons';
 import { ProfileRatingSummary } from '../reviews';
 import type { PublicProfileReviewsSummary } from '@/features/reviews';
 import { PublicBookingLanguageToggle } from './PublicBookingLanguageToggle';
@@ -21,7 +20,6 @@ import {
   getProfileCoverDisplaySrc,
   getProfileLogoDisplaySrc,
 } from '../utils/workPhotoSrc';
-import { socialLinksForDisplay } from '../utils/socialMedia';
 import { ProfileMediaImage } from './ProfileMediaImage';
 
 interface ProfileHeaderProps {
@@ -58,7 +56,6 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     (showRequestQuoteCta || !!phoneTrimmed);
   const serviceArea =
     coverageLabel?.trim() || businessProfile.service_area?.trim() || null;
-  const socialLinks = socialLinksForDisplay(businessProfile.social_media);
   const coverSrc = businessProfile.cover_image_url?.trim() || '';
   const logoSrc = businessProfile.logo_url?.trim() || '';
   const coverIsLcp = Boolean(coverSrc);
@@ -196,30 +193,6 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 {ui.profile.contactPhoneCta}
               </Button>
             ) : null}
-          </div>
-        ) : null}
-
-        {socialLinks.length > 0 ? (
-          <div
-            className="mt-3.5 flex items-center justify-center gap-2.5"
-            aria-label="Social media"
-          >
-            {socialLinks.map(link => (
-              <a
-                key={link.id}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={link.label}
-                className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-zinc-800/80 text-zinc-300 ring-1 ring-white/10 transition-colors hover:bg-zinc-700 hover:text-white"
-              >
-                {link.id === 'instagram' ? (
-                  <InstagramIcon className="h-[18px] w-[18px]" />
-                ) : (
-                  <TikTokIcon className="h-[18px] w-[18px]" />
-                )}
-              </a>
-            ))}
           </div>
         ) : null}
       </div>
