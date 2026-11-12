@@ -149,7 +149,7 @@ export const WorkPhotoLightbox: React.FC<WorkPhotoLightboxProps> = ({
         </button>
       </div>
 
-      <div className="relative min-h-0 flex-1">
+      <div className="relative min-h-0 min-w-0 w-full flex-1">
         {photos.length > 1 ? (
           <>
             <button
@@ -176,12 +176,12 @@ export const WorkPhotoLightbox: React.FC<WorkPhotoLightboxProps> = ({
         <div
           ref={scrollerRef}
           onScroll={handleScroll}
-          className="flex h-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="absolute inset-0 flex min-w-0 snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {photos.map((photo, index) => (
             <div
               key={photo.id}
-              className="flex h-full w-full min-w-full shrink-0 snap-center items-center justify-center px-3 sm:px-16"
+              className="relative h-full w-full shrink-0 grow-0 basis-full snap-center"
             >
               {Math.abs(index - activeIndex) <= 1 ? (
                 <ProfileMediaImage
@@ -192,11 +192,10 @@ export const WorkPhotoLightbox: React.FC<WorkPhotoLightboxProps> = ({
                     index + 1,
                     photos.length
                   )}
-                  width={1200}
-                  height={1200}
-                  wrapperClassName="h-[min(70dvh,640px)] w-full max-w-3xl"
+                  fill
+                  wrapperClassName="absolute inset-y-0 inset-x-3 sm:inset-x-16"
                   skeletonClassName="rounded-2xl"
-                  className="h-full w-full object-contain"
+                  className="object-contain"
                   fallbackLabel="WORK"
                   fallbackSize={{ w: 1200, h: 1200 }}
                   sizes="100vw"

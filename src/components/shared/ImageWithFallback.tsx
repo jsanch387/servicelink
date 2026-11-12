@@ -19,8 +19,10 @@ const DATA_SVG = (w = 600, h = 400, label = 'Image') =>
 interface ImageWithFallbackProps {
   src: string | undefined;
   alt: string;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
+  /** Fill a `position: relative` parent instead of using width/height layout. */
+  fill?: boolean;
   className?: string;
   fallbackLabel?: string;
   fallbackSize?: { w: number; h: number };
@@ -41,6 +43,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   alt,
   width,
   height,
+  fill = false,
   className,
   fallbackLabel,
   fallbackSize = { w: 600, h: 400 },
@@ -73,14 +76,17 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   const isExternal =
     imageSrc.startsWith('http://') || imageSrc.startsWith('https://');
 
+  const layoutProps = fill
+    ? { fill: true as const }
+    : { width: width ?? fallbackSize.w, height: height ?? fallbackSize.h };
+
   // If src is empty or null, use fallback immediately
   if (!src || src.trim() === '') {
     return (
       <Image
         src={fallbackSrc}
         alt={alt}
-        width={width}
-        height={height}
+        {...layoutProps}
         className={className}
         priority={priority}
         onLoad={onLoad}
@@ -92,8 +98,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     <Image
       src={imageSrc}
       alt={alt}
-      width={width}
-      height={height}
+      {...layoutProps}
       className={className}
       priority={priority}
       loading={priority ? 'eager' : 'lazy'}
