@@ -33,7 +33,7 @@ interface ServicesListProps {
    */
   publicOwnerHasProForPriceOptions?: boolean;
   /**
-   * Public profile: hide “Select” on service cards (e.g. free lifetime booking cap).
+   * Public profile: hide “Book” on service cards (e.g. free lifetime booking cap).
    */
   publicHideBookLinks?: boolean;
   /** Tighter top padding when a one-line notice sits directly above this list. */
@@ -41,6 +41,8 @@ interface ServicesListProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
   /** Live sale — shows struck-through prices on eligible service cards. */
   publicActiveSale?: PublicActiveSale | null;
+  /** Public Book opens the new booking flow for this business. */
+  useBookingV2?: boolean;
 }
 
 export const ServicesList: React.FC<ServicesListProps> = ({
@@ -54,6 +56,7 @@ export const ServicesList: React.FC<ServicesListProps> = ({
   compactTopPadding = false,
   bookingFlowLocale = 'en',
   publicActiveSale = null,
+  useBookingV2 = false,
 }) => {
   const router = useRouter();
   const ownerTestGuide = useOwnerTestGuidePhase() === 'public';
@@ -181,6 +184,7 @@ export const ServicesList: React.FC<ServicesListProps> = ({
                     hideBookLink={publicHideBookLinks}
                     bookingFlowLocale={bookingFlowLocale}
                     publicActiveSale={publicActiveSale}
+                    useBookingV2={useBookingV2}
                     guideSelect={guideThisService}
                     onSelectNavigate={
                       policyAgreement.required && !policyAgreement.hasAgreed

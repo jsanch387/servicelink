@@ -49,6 +49,8 @@ export interface BusinessProfileReadViewProps {
   coverageLabel?: string | null;
   showPublicFooter?: boolean;
   membershipCheckoutCanceled?: boolean;
+  /** Public Book opens the new booking flow for this business. */
+  useBookingV2?: boolean;
 }
 
 export const BusinessProfileReadView: React.FC<
@@ -71,6 +73,7 @@ export const BusinessProfileReadView: React.FC<
   coverageLabel = null,
   showPublicFooter = false,
   membershipCheckoutCanceled = false,
+  useBookingV2 = false,
 }) => {
   const showReviewsTab = Boolean(
     publicProfileSlug &&
@@ -270,6 +273,7 @@ export const BusinessProfileReadView: React.FC<
               compactTopPadding={isPublic && publicFreeBookingsCapReached}
               bookingFlowLocale={bookingFlowLocale}
               publicActiveSale={publicActiveSale}
+              useBookingV2={useBookingV2}
             />
           </>
         ) : activeTab === 'subscriptions' && showSubscriptionsTab ? (

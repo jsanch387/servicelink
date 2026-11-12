@@ -25,10 +25,18 @@ export function buildBookPageCheckoutReturnUrl(options: {
   checkout: 'cancel' | 'success';
   /** Raw query string (no leading `?`), e.g. from `URLSearchParams.toString()`. */
   resumeQuery?: string;
+  /** New booking flow returns to `/book/v2` instead of the legacy `/book` page. */
+  flow?: 'v2';
 }): string {
   const base = options.baseUrl.replace(/\/$/, '');
   const slug = encodeURIComponent(options.businessSlug);
-  const url = new URL(`${base}/${slug}/book`);
+  const page =
+    options.flow === 'v2'
+      ? options.checkout === 'success'
+        ? 'book/v2/booked'
+        : 'book/v2/review'
+      : 'book';
+  const url = new URL(`${base}/${slug}/${page}`);
   url.searchParams.set('checkout', options.checkout);
 
   const raw = options.resumeQuery?.trim();
