@@ -7,10 +7,10 @@
 export const PUBLIC_BOOKING_V2_ENABLED = true;
 
 /** Owner accounts allowed onto booking v2 during the limited rollout. */
-export const PUBLIC_BOOKING_V2_OWNER_EMAILS = [
+export const PUBLIC_BOOKING_V2_OWNER_EMAILS: readonly string[] = [
   'jesuss387@gmail.com',
   'urbanink.help@gmail.com',
-] as const;
+];
 
 export function isPublicBookingV2OwnerEmail(
   email: string | null | undefined

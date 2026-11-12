@@ -24,6 +24,7 @@ import {
   depositDueNowCents,
   onlineAmountDueNowCents,
   quotePublicBookingSalesTax,
+  type PublicBookingPaymentChoice,
 } from '@/features/availability/booking/utils/publicBookingSalesTax';
 import { isValidEmail } from '@/features/auth/utils/validation';
 import { bookingV2ColumnClass } from '@/features/booking-v2/bookingV2Column';
@@ -171,7 +172,9 @@ export function BookingReviewScreen({
   const paymentsOn =
     paymentSettings?.paymentsEnabled === true &&
     paymentSettings.checkoutMode != null;
-  const customerPaymentChoice = showCardPay ? 'pay_now' : 'pay_in_person';
+  const customerPaymentChoice: PublicBookingPaymentChoice = showCardPay
+    ? 'pay_now'
+    : 'pay_in_person';
   const depositBaseCents =
     tax.taxCents > 0 ? tax.totalCents : totals.originalCents;
   const configuredDepositCents = paymentSettings
