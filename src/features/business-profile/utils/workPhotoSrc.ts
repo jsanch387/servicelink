@@ -115,8 +115,11 @@ export function getProfileLogoDisplaySrc(src: string): string {
 }
 
 export function getWorkPhotoLightboxSrc(src: string): string {
+  // Width alone keeps the original height on Supabase renders, which slices
+  // landscape photos into a tall strip. Contain scales one edge and keeps aspect.
   return getSupabaseRenderedImageUrl(src, {
     width: LIGHTBOX_WIDTH,
+    resize: 'contain',
     quality: LIGHTBOX_QUALITY,
   });
 }
