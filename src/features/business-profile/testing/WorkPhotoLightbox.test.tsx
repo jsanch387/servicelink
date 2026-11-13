@@ -59,7 +59,7 @@ describe('WorkPhotoLightbox', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('fills the lightbox viewport instead of a fixed skinny frame', () => {
+  it('sizes each photo to the lightbox viewport instead of a fixed skinny frame', () => {
     render(
       <WorkPhotoLightbox photos={photos} openIndex={0} onClose={() => {}} />
     );
@@ -67,16 +67,25 @@ describe('WorkPhotoLightbox', () => {
     const img = document.querySelector('img');
     expect(img).toBeTruthy();
     expect(img?.className).toContain('object-contain');
-    expect(img?.getAttribute('style') ?? '').toMatch(/position:\s*absolute/i);
+    expect(img?.className).toContain('max-h-full');
+    expect(img?.className).toContain('max-w-full');
+    expect(img?.getAttribute('style') ?? '').not.toMatch(
+      /position:\s*absolute/i
+    );
 
     const slide = img?.closest('[class*="basis-full"]');
     expect(slide?.className).toContain('basis-full');
-    expect(slide?.className).toContain('shrink-0');
+    expect(slide?.className).toContain('h-full');
     expect(slide?.className).not.toContain('h-[min(70dvh,640px)]');
 
     const wrapper = img?.parentElement;
-    expect(wrapper?.className).toContain('absolute');
-    expect(wrapper?.className).toContain('inset-y-0');
+    expect(wrapper?.className).toContain('h-full');
+    expect(wrapper?.className).toContain('w-full');
+    expect(wrapper?.className).not.toContain('absolute');
     expect(wrapper?.className).not.toContain('max-w-3xl');
+
+    const scroller = slide?.parentElement;
+    expect(scroller?.className).toContain('h-full');
+    expect(scroller?.className).not.toContain('absolute');
   });
 });

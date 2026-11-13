@@ -125,14 +125,14 @@ export const WorkPhotoLightbox: React.FC<WorkPhotoLightboxProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[120] flex flex-col bg-black/95"
+      className="fixed inset-0 z-[120] bg-black/95"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/70 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-28 bg-gradient-to-b from-black/70 to-transparent" />
       <div
-        className="relative z-10 flex items-center justify-between gap-3 px-3 pt-3 sm:px-5 sm:pt-4"
+        className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-3 px-3 sm:px-5"
         style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
       >
         <p id={titleId} className="min-w-0 text-sm font-medium text-white/90">
@@ -149,67 +149,62 @@ export const WorkPhotoLightbox: React.FC<WorkPhotoLightboxProps> = ({
         </button>
       </div>
 
-      <div className="relative min-h-0 min-w-0 w-full flex-1">
-        {photos.length > 1 ? (
-          <>
-            <button
-              type="button"
-              onClick={() => scrollToIndex(activeIndex - 1, 'smooth')}
-              disabled={activeIndex === 0}
-              className="absolute left-2 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/15 transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-30 sm:inline-flex"
-              aria-label={ui.profile.lightboxPrevious}
-            >
-              <ChevronLeftIcon className="h-6 w-6" />
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToIndex(activeIndex + 1, 'smooth')}
-              disabled={activeIndex === photos.length - 1}
-              className="absolute right-2 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/15 transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-30 sm:inline-flex"
-              aria-label={ui.profile.lightboxNext}
-            >
-              <ChevronRightIcon className="h-6 w-6" />
-            </button>
-          </>
-        ) : null}
+      {photos.length > 1 ? (
+        <>
+          <button
+            type="button"
+            onClick={() => scrollToIndex(activeIndex - 1, 'smooth')}
+            disabled={activeIndex === 0}
+            className="absolute left-2 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/15 transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-30 sm:inline-flex"
+            aria-label={ui.profile.lightboxPrevious}
+          >
+            <ChevronLeftIcon className="h-6 w-6" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToIndex(activeIndex + 1, 'smooth')}
+            disabled={activeIndex === photos.length - 1}
+            className="absolute right-2 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/15 transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-30 sm:inline-flex"
+            aria-label={ui.profile.lightboxNext}
+          >
+            <ChevronRightIcon className="h-6 w-6" />
+          </button>
+        </>
+      ) : null}
 
-        <div
-          ref={scrollerRef}
-          onScroll={handleScroll}
-          className="absolute inset-0 flex min-w-0 snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {photos.map((photo, index) => (
-            <div
-              key={photo.id}
-              className="relative h-full w-full shrink-0 grow-0 basis-full snap-center"
-            >
-              {Math.abs(index - activeIndex) <= 1 ? (
-                <ProfileMediaImage
-                  src={photo.src}
-                  displaySrc={photo.lightboxSrc}
-                  alt={ui.profile.workPhotoAlt(
-                    altName,
-                    index + 1,
-                    photos.length
-                  )}
-                  fill
-                  wrapperClassName="absolute inset-y-0 inset-x-3 sm:inset-x-16"
-                  skeletonClassName="rounded-2xl"
-                  className="object-contain"
-                  fallbackLabel="WORK"
-                  fallbackSize={{ w: 1200, h: 1200 }}
-                  sizes="100vw"
-                  priority={index === activeIndex}
-                />
-              ) : null}
-            </div>
-          ))}
-        </div>
+      <div
+        ref={scrollerRef}
+        onScroll={handleScroll}
+        className="flex h-full w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {photos.map((photo, index) => (
+          <div
+            key={photo.id}
+            className="flex h-full w-full min-w-0 shrink-0 grow-0 basis-full snap-center items-center justify-center px-3 pb-16 pt-16 sm:px-16"
+          >
+            {Math.abs(index - activeIndex) <= 1 ? (
+              <ProfileMediaImage
+                src={photo.src}
+                displaySrc={photo.lightboxSrc}
+                alt={ui.profile.workPhotoAlt(altName, index + 1, photos.length)}
+                width={1200}
+                height={1200}
+                wrapperClassName="flex h-full w-full min-h-0 min-w-0 items-center justify-center"
+                skeletonClassName="rounded-2xl"
+                className="h-auto max-h-full w-auto max-w-full object-contain"
+                fallbackLabel="WORK"
+                fallbackSize={{ w: 1200, h: 1200 }}
+                sizes="100vw"
+                priority={index === activeIndex}
+              />
+            ) : null}
+          </div>
+        ))}
       </div>
 
       {photos.length > 1 ? (
         <div
-          className="relative z-10 flex justify-center gap-1.5 px-4 py-4"
+          className="absolute inset-x-0 bottom-0 z-10 flex justify-center gap-1.5 px-4 py-4"
           style={{
             paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
           }}
@@ -232,13 +227,7 @@ export const WorkPhotoLightbox: React.FC<WorkPhotoLightboxProps> = ({
             />
           ))}
         </div>
-      ) : (
-        <div
-          style={{
-            paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
-          }}
-        />
-      )}
+      ) : null}
     </div>,
     document.body
   );
