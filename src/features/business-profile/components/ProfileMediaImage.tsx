@@ -8,8 +8,9 @@ interface ProfileMediaImageProps {
   src: string;
   displaySrc: string;
   alt: string;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
+  fill?: boolean;
   className?: string;
   wrapperClassName?: string;
   skeletonClassName?: string;
@@ -30,6 +31,7 @@ export const ProfileMediaImage: React.FC<ProfileMediaImageProps> = ({
   alt,
   width,
   height,
+  fill = false,
   className,
   wrapperClassName,
   skeletonClassName,
@@ -57,6 +59,7 @@ export const ProfileMediaImage: React.FC<ProfileMediaImageProps> = ({
         alt={alt}
         width={width}
         height={height}
+        fill={fill}
         className={`${className ?? ''} transition-opacity duration-300 ease-out ${
           isLoaded ? 'opacity-100' : 'opacity-0'
         }`.trim()}
