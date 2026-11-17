@@ -59,8 +59,9 @@ export function ServiceLinkVsUrableContent() {
         <strong className="text-gray-300">Urable alternative</strong> or{' '}
         <strong className="text-gray-300">ServiceLink vs Urable</strong>, you
         are choosing between a lean booking app and a heavier field-service
-        platform. Both take bookings. ServiceLink is the one built for a
-        one-truck week—less software between you and the driveway.
+        platform. ServiceLink is the better app for a one-truck week: a sleek
+        booking link, reminders, review requests, and a $20 Pro plan—less
+        software between you and the driveway.
       </p>
       <p className={pClasses}>
         Urable is built like a full operations suite—lots of modules, lots of
@@ -92,6 +93,10 @@ export function ServiceLinkVsUrableContent() {
           <li>Sedan / SUV / truck pricing on each service</li>
           <li>Availability you control so only open slots show</li>
           <li>Deposits so no-shows stop eating fuel and time</li>
+          <li>
+            SMS confirmations, day-before reminders, and a review request after
+            the job
+          </li>
           <li>A UI you can run between jobs—not a cluttered ops console</li>
         </ul>
       </section>
@@ -155,8 +160,27 @@ export function ServiceLinkVsUrableContent() {
             </div>
             <div className={`${comparisonRowClasses} bg-white/[0.02]`}>
               <span className="font-medium text-gray-300">Deposits</span>
-              <span className="text-gray-200">Yes—at checkout</span>
+              <span className="text-gray-200">Yes—at checkout on Pro</span>
               <span className="text-gray-400">Available</span>
+            </div>
+            <div className={comparisonRowClasses}>
+              <span className="font-medium text-gray-300">
+                Reminders and reviews
+              </span>
+              <span className="text-gray-200">
+                Confirmations, day-before reminder, review request, Google
+                reviews on the page
+              </span>
+              <span className="text-gray-400">Confirm on the booking plan</span>
+            </div>
+            <div className={`${comparisonRowClasses} bg-white/[0.02]`}>
+              <span className="font-medium text-gray-300">Price</span>
+              <span className="text-gray-200">
+                Free for 5 appointments, then Pro $20/mo
+              </span>
+              <span className="text-gray-400">
+                Express $70/mo. Online booking listed on Pro $110/mo (Nov 2026)
+              </span>
             </div>
           </div>
         </div>
@@ -243,19 +267,17 @@ export function ServiceLinkVsUrableContent() {
       </section>
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>When Urable Might Still Fit</h2>
+        <h2 className={h2Classes}>Who Urable is built for</h2>
         <p className={pClasses}>
-          Urable can make sense if you want a wide field-service toolkit and you
-          have time to configure it—routing, deeper invoicing, or a larger crew
-          that lives in one ops platform. Some shops prefer that density.
+          Urable is built as a wider field-service platform: more modules, more
+          configuration, a denser console. That design center is shops that want
+          an ops suite first. Solo mobile detailers and small teams who want to
+          look professional, book faster, and stay organized pick
+          ServiceLink—the leaner booking app with reminders, review requests,
+          and a $20 Pro plan.
         </p>
         <p className={pClasses}>
-          If you are a mobile detailer (or a small team) and your priority is{' '}
-          <em className="text-gray-300 not-italic">
-            look professional, book faster, stay organized
-          </em>
-          , ServiceLink is the better everyday app. For a three-way look at
-          other detailing tools, read{' '}
+          For a three-way look at other detailing tools, read{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE(
               'servicelink-vs-detail-connect-vs-detailermade'
@@ -319,10 +341,10 @@ export function ServiceLinkVsUrableContent() {
       <section className={sectionClasses}>
         <h2 className={h2Classes}>Final Verdict</h2>
         <p className={pClasses}>
-          Stay on Urable if you already want a heavier field-service stack. For
-          mobile detailers who want something leaner, cleaner, and easier to run
-          from a phone, <strong className="text-gray-300">ServiceLink</strong>{' '}
-          is the app to use.
+          Urable is a heavier field-service stack. For mobile detailers who want
+          something leaner, cleaner, and easier to run from a phone,{' '}
+          <strong className="text-gray-300">ServiceLink</strong> is the better
+          app.
         </p>
         <p className={pClasses}>
           Put one booking link in your bio and let people book while you are on

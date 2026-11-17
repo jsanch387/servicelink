@@ -26,19 +26,19 @@ export function MobileTechRxAlternativeContent() {
   return (
     <>
       <p className={pClasses}>
-        Mobile Tech RX is a serious auto-recon tool. If you searched{' '}
+        If you searched{' '}
         <strong className="text-gray-300">Mobile Tech RX alternative</strong> or{' '}
         <strong className="text-gray-300">ServiceLink vs Mobile Tech RX</strong>
-        , you are usually in one of two seats: you run PPF, tint, PDR, or
-        dealership recon and MTX is doing real estimating work—or you are a solo
-        mobile detailer paying recon-shop prices for a calendar.
+        , you are usually a mobile detailer paying recon-shop prices for a
+        calendar—or you are comparing two tools that share the word “detail” and
+        almost nothing else.
       </p>
       <p className={pClasses}>
-        This page is the second case. ServiceLink is not a clone of Mobile Tech
-        RX. It is the simpler booking + CRM stack for detailers who need a bio
-        link, vehicle-size prices, deposits, and a client list—not a dent
-        matrix. If MTX is better for your shop, stay. The section below says
-        when.
+        ServiceLink is the better app for solo mobile detailers. You get a
+        public booking page, a CRM that fills in from every job, SMS reminders,
+        review requests when you tap complete, deposits on Pro, and a UI you can
+        run from a cup holder. Free for the first 5 appointments. Pro is
+        $20/month or $200/year.
       </p>
       <p className={pClasses}>
         MTX prices and feature lists are from{' '}
@@ -47,6 +47,108 @@ export function MobileTechRxAlternativeContent() {
         </a>{' '}
         and their scheduling FAQ, as of November 2026.
       </p>
+
+      <section className={sectionClasses}>
+        <h2 className={h2Classes}>
+          Why solo mobile detailers pick ServiceLink
+        </h2>
+        <p className={pClasses}>
+          A one-truck interior/exterior week is not a hail pipeline. You need a
+          link in the bio, sedan / SUV / truck prices, a deposit so the slot is
+          real, and a client list you can text next month. ServiceLink is built
+          for that week.
+        </p>
+        <ol className={orderedListClasses}>
+          <li>
+            A public booking page at myservicelink.app/yourname. Guests pick a
+            package and a time. No customer app.
+          </li>
+          <li>
+            A CRM behind that page: name, phone, email, vehicle, visit history,
+            notes, CSV import when you switch.
+          </li>
+          <li>
+            Automations: confirmation SMS/email, a day-before reminder,
+            on-the-way and job-complete texts, a review request after you mark
+            the job done.
+          </li>
+          <li>
+            Google reviews on the same booking page when you connect Google
+            Business Profile.
+          </li>
+          <li>
+            Deposits, Tap to Pay, quotes, invoices, receipts, and expense
+            tracking on Pro—plus native iOS and Android apps.
+          </li>
+        </ol>
+        <p className={pClasses}>
+          That checklist is the same one in our{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE(
+              'best-booking-app-for-mobile-detailers'
+            )}
+            className={linkClasses}
+          >
+            best booking app for mobile detailers
+          </Link>{' '}
+          guide and the{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE('best-crm-for-mobile-detailers')}
+            className={linkClasses}
+          >
+            best CRM for mobile detailers
+          </Link>{' '}
+          roundup. MTX can store customers and cars. ServiceLink is the booking
+          page at the other end of a Reel.
+        </p>
+        <p className={pClasses}>
+          <Link href={blogGuideSignupPath(SLUG)} className={linkClasses}>
+            Try ServiceLink free — first 5 appointments
+          </Link>
+          .
+        </p>
+      </section>
+
+      <section className={sectionClasses}>
+        <h2 className={h2Classes}>
+          What a ServiceLink week actually looks like
+        </h2>
+        <p className={pClasses}>
+          Picture Saturday. A stranger saw a Reel, opened the bio, picked SUV
+          interior, paid a deposit, and landed on your calendar. You did not
+          quote in a DM. You did not type “I have 10 or 2.” The slot is paid
+          before you load the van.
+        </p>
+        <p className={pClasses}>
+          Friday night they already got a reminder. You open the iOS or Android
+          app, see the address, and tap on-the-way when you leave. When you
+          finish, you mark the job complete. ServiceLink texts a review request
+          (email if there is no phone). The receipt goes out if you collected
+          the rest on Tap to Pay or a card link. The client, the SUV, and the
+          visit are already in the CRM for next month.
+        </p>
+        <p className={pClasses}>
+          That is the product. Confirmations and day-before reminders are
+          automatic. Review requests are automatic. Google reviews you import
+          show on the same public page as ServiceLink reviews, so the next
+          stranger sees proof without leaving the link. Expenses on Pro let you
+          log fuel and supplies after the job instead of a notes app in the cup
+          holder.
+        </p>
+        <p className={pClasses}>
+          Custom work still happens. Someone wants a ceramic quote or a two-day
+          correction. You send a ServiceLink quote from the dashboard (Pro).
+          They pay a deposit on the quote link. The rest of the week stays on
+          the published menu. You are not opening a recon module to take a $180
+          interior.
+        </p>
+        <p className={pClasses}>
+          The booking page also carries your service area, photos, and hours.
+          Availability, buffers, and time off mean customers only see times you
+          can actually run. That is how a one-truck shop looks booked without
+          lying to the next DM.
+        </p>
+      </section>
 
       <section className={sectionClasses}>
         <h2 className={h2Classes}>Who Mobile Tech RX is built for</h2>
@@ -73,70 +175,18 @@ export function MobileTechRxAlternativeContent() {
           reminder—not an Instagram bio link.
         </p>
         <p className={pClasses}>
-          That FAQ is the whole product split. MTX wants you on the phone or in
-          the portal first, then on the calendar. A mobile detailer who posts
-          Reels wants the opposite: the stranger finishes the booking, then you
-          show up. Neither workflow is wrong. They are different businesses
-          sharing the word “detail.”
+          That FAQ is the product split. MTX wants you on the phone or in the
+          portal first, then on the calendar. A mobile detailer who posts Reels
+          wants the opposite: the stranger finishes the booking, then you show
+          up. ServiceLink is the second workflow. MTX is the first.
         </p>
         <p className={pClasses}>
           Deposits on MTX are listed as “Deposits on Estimates” on Standard
           ($99/admin/month), not as a checkout hold on a public booking slot. If
           your no-show problem is people tapping a time on your link and
-          ghosting, that is a different feature. Estimate deposits help when the
-          job is a custom quote. Slot deposits help when the job is a published
-          interior package.
-        </p>
-      </section>
-
-      <section className={sectionClasses}>
-        <h2 className={h2Classes}>What solo mobile detailers actually need</h2>
-        <p className={pClasses}>
-          A one-truck interior/exterior week is not a hail pipeline. You need:
-        </p>
-        <ol className={orderedListClasses}>
-          <li>A link you can drop in Instagram, Google, and texts</li>
-          <li>A menu with sedan / SUV / truck prices</li>
-          <li>Deposits so the slot is paid before you drive</li>
-          <li>
-            Names, numbers, vehicles, and job history so repeats are not a DM
-            archaeology project
-          </li>
-        </ol>
-        <p className={pClasses}>
-          You do not need VIN-driven estimating, Black Book values, tech pay
-          splits, or a second user seat on day one. Those matter when the
-          business is recon, PPF film quotes, or a crew. Until then they are
-          screens between you and the driveway.
-        </p>
-        <p className={pClasses}>
-          That checklist is the same one in our{' '}
-          <Link
-            href={ROUTES.RESOURCE_GUIDE(
-              'best-booking-app-for-mobile-detailers'
-            )}
-            className={linkClasses}
-          >
-            best booking app for mobile detailers
-          </Link>{' '}
-          guide and the{' '}
-          <Link
-            href={ROUTES.RESOURCE_GUIDE('best-crm-for-mobile-detailers')}
-            className={linkClasses}
-          >
-            best CRM for mobile detailers
-          </Link>{' '}
-          roundup. MTX can store customers and cars. It is not built to be the
-          booking page at the other end of a Reel.
-        </p>
-        <p className={pClasses}>
-          Getting Started also caps you at one module. If you only sell mobile
-          interiors and washes, “Detail” is enough—and you still do not get
-          self-serve booking. If you add ceramic, PPF, and glass later, MTX
-          wants you on Standard or Pro so more of the recon toolkit unlocks.
-          ServiceLink does not try to be that toolkit. It keeps the public menu
-          and the client list in one cheap stack, and you write custom quotes on
-          Pro when a job does not fit the menu.
+          ghosting, that is a ServiceLink job: deposit or full pay at checkout
+          on Pro. Estimate deposits help when the job is a custom quote. Slot
+          deposits help when the job is a published interior package.
         </p>
       </section>
 
@@ -169,7 +219,7 @@ export function MobileTechRxAlternativeContent() {
             <div className={`${snapshotRowClasses} bg-white/[0.02]`}>
               <span className="font-medium text-gray-300">Built for</span>
               <span className="text-gray-200">
-                Mobile detailers: booking page + CRM
+                Solo mobile detailers: booking page + CRM
               </span>
               <span className="text-gray-400">
                 Auto recon, PDR, PPF, tint, glass, body, detail modules
@@ -185,15 +235,27 @@ export function MobileTechRxAlternativeContent() {
               </span>
             </div>
             <div className={`${snapshotRowClasses} bg-white/[0.02]`}>
-              <span className="font-medium text-gray-300">Estimates</span>
+              <span className="font-medium text-gray-300">
+                Reminders and reviews
+              </span>
               <span className="text-gray-200">
-                Quotes on Pro. Published packages on the booking page
+                Confirmations, day-before reminders, review request after the
+                job, Google reviews on the page
               </span>
               <span className="text-gray-400">
-                Unlimited estimates/invoices. Module-based pricing tools
+                Shop-controlled reminders inside the recon workflow
               </span>
             </div>
             <div className={snapshotRowClasses}>
+              <span className="font-medium text-gray-300">CRM</span>
+              <span className="text-gray-200">
+                Clients, vehicles, visit history, notes, CSV import
+              </span>
+              <span className="text-gray-400">
+                Vehicle records and recon job history
+              </span>
+            </div>
+            <div className={`${snapshotRowClasses} bg-white/[0.02]`}>
               <span className="font-medium text-gray-300">Deposits</span>
               <span className="text-gray-200">
                 Deposit or full pay at booking checkout (Pro)
@@ -202,19 +264,20 @@ export function MobileTechRxAlternativeContent() {
                 Deposits on estimates listed from Standard
               </span>
             </div>
-            <div className={`${snapshotRowClasses} bg-white/[0.02]`}>
-              <span className="font-medium text-gray-300">Vehicles</span>
+            <div className={snapshotRowClasses}>
+              <span className="font-medium text-gray-300">Quotes</span>
               <span className="text-gray-200">
-                Saved on the client. Sedan / SUV / truck prices on services
+                Published packages on the page. Quotes on Pro when a job is
+                custom
               </span>
               <span className="text-gray-400">
-                Vehicle records, photos, VIN-oriented recon workflow
+                Unlimited estimates/invoices. Module-based pricing tools
               </span>
             </div>
-            <div className={snapshotRowClasses}>
-              <span className="font-medium text-gray-300">Learning curve</span>
+            <div className={`${snapshotRowClasses} bg-white/[0.02]`}>
+              <span className="font-medium text-gray-300">UI</span>
               <span className="text-gray-200">
-                Services, hours, link. Most shops are live the same day
+                Sleek booking page + phone dashboard. Live the same day
               </span>
               <span className="text-gray-400">
                 Modules, estimates, and shop workflow. Built as an ops suite
@@ -224,16 +287,16 @@ export function MobileTechRxAlternativeContent() {
         </div>
 
         <p className={pClasses}>
-          Price is not the only line, but it is the honest one for a solo. Five
-          free ServiceLink appointments exist so you can see the booking flow.
-          MTX’s own plans page, as of November 2026, describes a 5-day free
-          trial. What is also on that page is the admin-plus-user math: a helper
-          on Getting Started is another $15/month. ServiceLink’s paid jump is
-          Pro at $20, or Team later if a second person needs the shop.
+          Price is the honest line for a solo. Five free ServiceLink
+          appointments exist so you can see the booking flow. MTX’s own plans
+          page, as of November 2026, describes a 5-day free trial. What is also
+          on that page is the admin-plus-user math: a helper on Getting Started
+          is another $15/month. ServiceLink’s paid jump is Pro at $20, or Team
+          later if a second person needs the shop.
         </p>
         <p className={pClasses}>
-          Urable sits in a similar “heavier ops” bucket if MTX feels like too
-          much recon and not enough detailing booking. See{' '}
+          Urable sits in a similar “heavier ops” bucket if you are comparing
+          field-service suites rather than recon. See{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE('servicelink-vs-urable')}
             className={linkClasses}
@@ -249,61 +312,33 @@ export function MobileTechRxAlternativeContent() {
         <GuideProTip>
           If your leads still start in a DM, the software has to be a link those
           people can finish on a phone. An estimating calendar you fill in after
-          the call is a different job.
+          the call is a different job—and a more expensive one.
         </GuideProTip>
-      </section>
-
-      <section className={sectionClasses}>
-        <h2 className={h2Classes}>When to stay on Mobile Tech RX</h2>
         <p className={pClasses}>
-          Stay if MTX is doing work ServiceLink is not built to replace. Fair
-          reasons, as of November 2026:
-        </p>
-        <ul className={listClasses}>
-          <li>
-            You sell PPF, vinyl, tint, PDR, hail, glass, or paint/body as the
-            core offer, and you use MTX’s module pricing, photos, and estimates
-            every day
-          </li>
-          <li>
-            Dealers, fleet, or insurance jobs need the client portal, dual
-            invoicing, tech pay, or QuickBooks workflow on Standard/Pro
-          </li>
-          <li>
-            You have multiple techs to assign, checklists, time tracking, or
-            comparative repair-vs-replace math
-          </li>
-          <li>
-            You already trained the shop on MTX and the calendar is full. Moving
-            tools mid-season is a real cost
-          </li>
-        </ul>
-        <p className={pClasses}>
-          ServiceLink will not scan a VIN into a dent matrix, run ADAS
-          calibrations, or replace MTX’s recon reporting. If that sentence
-          describes your Tuesday, this is not your switch.
-        </p>
-        <p className={pClasses}>
-          The other fair stay: you already send estimates from MTX, customers
-          already log into the Standard client portal, and the pain is not
-          “people cannot book from Instagram.” Replacing a working estimate
-          machine with a booking page would be a downgrade. Keep MTX. Add a
-          booking link only if package work is a second channel you want to
-          ungate.
+          Do the bio-link test on your own phone. Open your current booking flow
+          the way a stranger would: from Instagram, with one thumb, in a
+          driveway. If they cannot pick a package, a vehicle size, a time, and a
+          deposit without texting you, the software is still a shop calendar.
+          ServiceLink is built so that stranger finishes. MTX is built so the
+          shop starts the job after the call. Both can be good businesses. Only
+          one of them is the better app for a solo mobile detailer.
         </p>
       </section>
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>When to switch</h2>
+        <h2 className={h2Classes}>
+          Who MTX is built for vs who picks ServiceLink
+        </h2>
         <p className={pClasses}>
-          Switch when the expensive part of MTX is not the part you use. A
-          typical week for a solo mobile detailer is interiors, full details, a
-          lot of drive time, and a phone that will not stay dry. The software
-          has to survive that week in a cup holder. If you open MTX only to type
-          an appointment you already sold in a DM, you are paying recon prices
-          for a notepad.
+          MTX is built for shops whose Tuesday is PPF, vinyl, tint, PDR, hail,
+          glass, paint/body, dealers, fleet, or insurance estimates. That is a
+          recon and film business. ServiceLink is built for the mobile detailer
+          whose Tuesday is interiors, full details, drive time, and a phone that
+          will not stay dry.
         </p>
-        <p className={pClasses}>Typical tells:</p>
+        <p className={pClasses}>
+          Typical tells that ServiceLink is the better app:
+        </p>
         <ul className={listClasses}>
           <li>
             You are on Getting Started for the Detail module, and you still
@@ -318,10 +353,19 @@ export function MobileTechRxAlternativeContent() {
             approve an estimate in a portal
           </li>
           <li>
-            You want sedan / SUV / truck prices on a public menu and a client
-            list that fills in from the booking
+            You want sedan / SUV / truck prices on a public menu, reminders
+            before the job, a review request after, and a client list that fills
+            in from the booking
           </li>
         </ul>
+        <p className={pClasses}>
+          Getting Started also caps you at one MTX module. If you only sell
+          mobile interiors and washes, you still do not get self-serve booking
+          on that plan as of November 2026. Paying for a recon module to run a
+          driveway week is the expensive version of a notepad. ServiceLink keeps
+          the public menu, the CRM, the reminders, and the review request in one
+          stack you can try for five jobs.
+        </p>
         <p className={pClasses}>
           Deposits on a public checkout are the other split. If that is the hole
           in the week, read{' '}
@@ -333,19 +377,56 @@ export function MobileTechRxAlternativeContent() {
           >
             how to stop no-shows and take deposits
           </Link>
-          . ServiceLink collects the deposit when they pick the time (Pro). MTX
-          collects commitment through estimates on a higher plan.
+          . ServiceLink collects the deposit when they pick the time (Pro).
+        </p>
+      </section>
+
+      <section className={sectionClasses}>
+        <h2 className={h2Classes}>Price, trial, and what you actually pay</h2>
+        <p className={pClasses}>
+          ServiceLink is free for the first five appointments. The booking page
+          stays up after those five. You upgrade to Pro when the calendar is
+          real. Pro is $20/month or $200/year. Team is $60/month if a second
+          person needs the shop, up to four people. Current names and caps are
+          on{' '}
+          <Link href={ROUTES.PRICING_PAGE} className={linkClasses}>
+            /pricing
+          </Link>
+          .
+        </p>
+        <p className={pClasses}>
+          MTX Getting Started is $39 per admin per month as of November 2026, or
+          $429/year, plus $15 per extra user, for one service module. Standard
+          is $99/admin/month. Pro is $199/admin/month. Their page lists a 5-day
+          free trial and yearly billing as one month free. Taxes and add-ons are
+          extra. That math is fine for a recon shop that lives in estimates. It
+          is a lot of money for a solo detailer who still quotes interiors in
+          Instagram because customers cannot book themselves.
+        </p>
+        <p className={pClasses}>
+          Five ServiceLink jobs exist so you can see guest checkout, the CRM
+          row, the reminder, and the review request before you pay. You do not
+          need to configure modules to take a Saturday interior. Add four
+          packages, set hours, share the link. Most shops are live the same day.
+          That is the product a driveway week will actually open.
+        </p>
+        <p className={pClasses}>
+          If you already have a CSV of names and numbers, import it. If you
+          don’t, start with repeats and let new bookings write the rest. You
+          will not clone a recon estimate history into a detailing CRM, and you
+          do not need to. You need the phone numbers and the next deposited
+          interior. ServiceLink is built for that handoff.
         </p>
       </section>
 
       <section className={sectionClasses}>
         <h2 className={h2Classes}>How to move this week</h2>
         <p className={pClasses}>
-          You can trial ServiceLink without turning MTX off. The bio link is the
-          only public change. Treat week one as a side-by-side: package jobs go
-          through the new link, custom film and PDR stay on MTX estimates. If
-          the booking page produces deposited jobs and you never open the recon
-          modules, you have your answer.
+          You can try ServiceLink without turning anything else off. The bio
+          link is the only public change. Treat week one as a side-by-side:
+          package jobs go through the new link. If the booking page produces
+          deposited jobs and you never need a recon estimate that week, you have
+          your answer.
         </p>
         <ol className={orderedListClasses}>
           <li>
@@ -353,40 +434,35 @@ export function MobileTechRxAlternativeContent() {
             month, with vehicle prices
           </li>
           <li>
-            Import clients if you have a CSV. If MTX export is messy, start with
-            phone numbers for repeats and let new bookings write the rest
+            Import clients if you have a CSV. If the old export is messy, start
+            with phone numbers for repeats and let new bookings write the rest
           </li>
           <li>
-            Put the ServiceLink URL in Instagram and Google. Leave MTX up for
-            in-progress estimates
+            Put the ServiceLink URL in Instagram and Google. Reply to DMs with
+            the link once
           </li>
           <li>
-            Send the booking link once in DMs. Stop typing Saturday availability
-            by hand
+            On Pro, turn on deposits for jobs over an hour. Confirmations and
+            day-before reminders go out on their own
           </li>
           <li>
-            On Pro, turn on deposits for jobs over an hour. Keep MTX for any
-            PPF/tint/PDR estimates you still write there
+            After you mark a job complete, ServiceLink sends the review request.
+            Connect Google so those reviews show on the same page
           </li>
         </ol>
         <p className={pClasses}>
-          Some shops keep MTX for film and PDR and use ServiceLink for mobile
-          interiors. That is a valid split if both calendars stay honest. Do not
-          double-book the same truck. Block MTX jobs as busy time on
-          ServiceLink, or run package work on days you are not quoting film.
-        </p>
-        <p className={pClasses}>
-          What you keep when you switch the bio: the phone numbers, the repeat
-          interiors, and the hours you actually work. What you do not keep: MTX
-          estimate templates, module pricing, tech pay, and portal history.
-          Export what you can. Do not expect a perfect clone of recon records
-          inside a detailing booking CRM.
+          You write custom quotes on Pro when a job does not fit the menu. You
+          keep the iOS or Android app in the cup holder for on-the-way texts,
+          Tap to Pay, and the complete-and-review-request step. That is a
+          driveway week. It is not a dealer estimate week—and it should not be
+          priced like one.
         </p>
         <p className={pClasses}>
           <Link href={blogGuideSignupPath(SLUG)} className={linkClasses}>
-            Try the simpler booking + CRM stack free
+            Try the booking + CRM stack free
           </Link>
-          — first five appointments, no need to cancel MTX on day one.
+          — first five appointments. You do not have to cancel anything on day
+          one.
         </p>
       </section>
 
@@ -402,7 +478,7 @@ export function MobileTechRxAlternativeContent() {
                     href={blogGuideSignupPath(SLUG)}
                     className={linkClasses}
                   >
-                    Try the simpler stack free
+                    Try ServiceLink free
                   </Link>
                   .
                 </>
@@ -414,13 +490,13 @@ export function MobileTechRxAlternativeContent() {
       ) : null}
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>A simpler stack for the driveway week</h2>
+        <h2 className={h2Classes}>The better app for the driveway week</h2>
         <p className={pClasses}>
-          Mobile Tech RX is the right tool when estimating and recon workflow
-          are the business. For a mobile detailer who books from a bio, it is
-          usually more shop than you need.{' '}
+          Mobile Tech RX is built for recon and estimating. For a mobile
+          detailer who books from a bio, ServiceLink is the better app: a sleek
+          booking page, a CRM, reminders, review requests, and a $20 Pro plan.{' '}
           <Link href={blogGuideSignupPath(SLUG)} className={linkClasses}>
-            Try the simpler booking + CRM stack free
+            Try the booking + CRM stack free
           </Link>
           .
         </p>

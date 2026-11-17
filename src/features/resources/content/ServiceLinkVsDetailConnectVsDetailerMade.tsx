@@ -89,6 +89,7 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
           <li>Service menus with sedan / SUV / truck pricing</li>
           <li>Availability you control so customers only see open slots</li>
           <li>Deposits or payments so no-shows stop eating your day</li>
+          <li>Confirmations, reminders, and a review request after the job</li>
           <li>A UI you can manage between jobs—not a cluttered dashboard</li>
         </ul>
         <p className={pClasses}>
@@ -162,9 +163,28 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
             </div>
             <div className={`${comparisonRowClasses} bg-white/[0.02]`}>
               <span className="font-medium text-gray-300">Deposits</span>
-              <span className="text-gray-200">Yes—at checkout</span>
+              <span className="text-gray-200">Yes—at checkout on Pro</span>
               <span className="text-gray-400">Available</span>
               <span className="text-gray-400">Available</span>
+            </div>
+            <div className={comparisonRowClasses}>
+              <span className="font-medium text-gray-300">
+                Reminders and reviews
+              </span>
+              <span className="text-gray-200">
+                Confirmations, day-before reminder, review request, Google
+                reviews on the page
+              </span>
+              <span className="text-gray-400">Confirm on their site</span>
+              <span className="text-gray-400">Confirm on their site</span>
+            </div>
+            <div className={`${comparisonRowClasses} bg-white/[0.02]`}>
+              <span className="font-medium text-gray-300">Price</span>
+              <span className="text-gray-200">
+                Free for 5 appointments, then Pro $20/mo
+              </span>
+              <span className="text-gray-400">Confirm current plans</span>
+              <span className="text-gray-400">Confirm current plans</span>
             </div>
           </div>
         </div>
@@ -253,25 +273,25 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
 
       <section className={sectionClasses}>
         <h2 className={h2Classes}>
-          Detail Connect and DetailerMade: When They Might Fit
+          Who Detail Connect and DetailerMade are built for
         </h2>
         <p className={pClasses}>
-          <strong className="text-gray-300">Detail Connect</strong> can make
-          sense if you want a detailing-focused toolset and are ready to spend
-          more time configuring ops-heavy workflows. Some teams prefer deeper
-          operational knobs over a lighter daily experience.
+          <strong className="text-gray-300">Detail Connect</strong> is a
+          detailing-focused toolset with more operational knobs and more setup.
+          That design center is teams who want a denser console.
         </p>
         <p className={pClasses}>
-          <strong className="text-gray-300">DetailerMade</strong> may fit shops
-          that want a broader suite of modules and do not mind a denser
-          interface. Larger teams sometimes trade simplicity for more menus.
+          <strong className="text-gray-300">DetailerMade</strong> is built as a
+          broader module set. Larger shops that want more menus sometimes pick
+          that shape of product.
         </p>
         <p className={pClasses}>
           If you are a mobile detailer (or a small team) and your priority is{' '}
           <em className="text-gray-300 not-italic">
             look professional, book faster, stay organized
           </em>
-          , ServiceLink is the better everyday app.
+          , ServiceLink is the better everyday app: a sleek booking page,
+          reminders, review requests, and a dashboard you can run between jobs.
         </p>
       </section>
 
@@ -339,9 +359,10 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
         <p className={pClasses}>
           Detail Connect and DetailerMade are real options in the detailing
           software space. For mobile detailers who care about a simple workflow,
-          an organized calendar, and a sleek customer-facing page,{' '}
-          <strong className="text-gray-300">ServiceLink</strong> is the best fit
-          today.
+          an organized calendar, reminders, review requests, and a sleek
+          customer-facing page,{' '}
+          <strong className="text-gray-300">ServiceLink</strong> is the better
+          app.
         </p>
         <p className={pClasses}>
           Get your booking link live today, put it in your bio, and let

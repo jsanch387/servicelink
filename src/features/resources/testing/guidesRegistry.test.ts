@@ -24,4 +24,29 @@ describe('resources guides registry', () => {
       /best crm for (solo|mobile) detailers/
     );
   });
+
+  it('does not tell readers to stay on a competitor', () => {
+    const comparisonSlugs = [
+      'best-crm-for-mobile-detailers',
+      'mobile-tech-rx-alternative',
+      'servicelink-vs-detaildeck',
+      'jobber-alternative-mobile-detailers',
+      'servicelink-vs-urable',
+      'servicelink-vs-detail-connect-vs-detailermade',
+      'best-booking-app-for-mobile-detailers',
+    ];
+
+    for (const slug of comparisonSlugs) {
+      const guide = GUIDES.find(entry => entry.slug === slug);
+      expect(guide, slug).toBeTruthy();
+      const copy = [
+        ...(guide?.keyTakeaways ?? []),
+        ...(guide?.faqs ?? []).flatMap(faq => [faq.question, faq.answer]),
+      ]
+        .join(' ')
+        .toLowerCase();
+      expect(copy, slug).not.toMatch(/stay on /);
+      expect(copy, slug).not.toMatch(/servicelink does not/);
+    }
+  });
 });

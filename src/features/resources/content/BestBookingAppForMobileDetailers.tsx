@@ -147,13 +147,23 @@ export function BestBookingAppForMobileDetailersContent() {
         <h3 className={h3Classes}>6. Customer info captured automatically</h3>
         <p className={pClasses}>
           Every booking should save name, phone, and email so you build a client
-          list without spreadsheets or digging through message threads.
+          list without spreadsheets or digging through message threads. Vehicles
+          and visit history should sit on that same record.
         </p>
 
-        <h3 className={h3Classes}>7. Booking notifications</h3>
+        <h3 className={h3Classes}>7. Booking notifications and reminders</h3>
         <p className={pClasses}>
           You should get an email (or alert) when someone books—not discover new
-          work hours later when you finally open Instagram.
+          work hours later when you finally open Instagram. Customers should get
+          a confirmation and a day-before reminder without you typing either
+          one.
+        </p>
+
+        <h3 className={h3Classes}>8. Review requests after the job</h3>
+        <p className={pClasses}>
+          When you mark a job complete, the app should ask for a review.
+          ServiceLink texts or emails a review link, and you can connect Google
+          Business Profile so Google reviews show on the same booking page.
         </p>
       </section>
 
@@ -242,7 +252,23 @@ export function BestBookingAppForMobileDetailersContent() {
             <strong className="text-gray-300">
               Client list from every booking
             </strong>{' '}
-            — name, phone, and email saved automatically
+            — name, phone, email, vehicle, and visit history saved automatically
+          </li>
+          <li>
+            <strong className="text-gray-300">
+              SMS confirmations and reminders
+            </strong>{' '}
+            so Saturday is real without you chasing people
+          </li>
+          <li>
+            <strong className="text-gray-300">Review requests</strong> after you
+            tap complete, plus Google reviews on your booking page
+          </li>
+          <li>
+            <strong className="text-gray-300">
+              Quotes, invoices, expenses, and Tap to Pay
+            </strong>{' '}
+            on Pro ($20/month or $200/year after five free appointments)
           </li>
         </ul>
         <p className={pClasses}>
@@ -292,7 +318,7 @@ export function BestBookingAppForMobileDetailersContent() {
           {
             question: 'What is the best booking app for mobile detailers?',
             answer:
-              'ServiceLink. Mobile detailers need a shareable booking link, a service menu with clear pricing, controlled availability, and deposits—not just a basic calendar. ServiceLink is built around that flow.',
+              'ServiceLink. Mobile detailers need a shareable booking link, vehicle pricing, deposits, SMS reminders, review requests, and a client list—not just a basic calendar. ServiceLink is built around that flow.',
           },
           {
             question: 'Do my customers need to download an app to book?',
