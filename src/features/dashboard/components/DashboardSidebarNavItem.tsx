@@ -1,6 +1,5 @@
 'use client';
 
-import { BetaBadge, NewBadge } from '@/components/shared';
 import Link from 'next/link';
 import type { ComponentType, SVGProps } from 'react';
 
@@ -13,7 +12,6 @@ interface DashboardSidebarNavItemProps {
   onNavigate?: () => void;
   onClick?: () => void;
   disabled?: boolean;
-  badge?: 'beta' | 'new';
 }
 
 export function DashboardSidebarNavItem({
@@ -25,14 +23,7 @@ export function DashboardSidebarNavItem({
   onNavigate,
   onClick,
   disabled = false,
-  badge,
 }: DashboardSidebarNavItemProps) {
-  const label =
-    badge === 'beta'
-      ? `${name} (Beta)`
-      : badge === 'new'
-        ? `${name} (New)`
-        : name;
   const className = `group flex w-full items-center rounded-lg text-[15px] leading-5 font-medium tracking-tight transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
     collapsed
       ? 'gap-3.5 px-3 py-2.5 lg:justify-center lg:gap-0 lg:px-0 lg:py-2.5'
@@ -54,8 +45,6 @@ export function DashboardSidebarNavItem({
         className={`flex min-w-0 flex-1 items-center gap-2 ${collapsed ? 'lg:sr-only' : ''}`}
       >
         <span className="min-w-0 truncate">{name}</span>
-        {badge === 'beta' ? <BetaBadge className="ml-auto shrink-0" /> : null}
-        {badge === 'new' ? <NewBadge className="ml-auto shrink-0" /> : null}
       </span>
     </>
   );
@@ -66,8 +55,8 @@ export function DashboardSidebarNavItem({
         type="button"
         onClick={onClick}
         disabled={disabled}
-        title={collapsed ? label : undefined}
-        aria-label={label}
+        title={collapsed ? name : undefined}
+        aria-label={name}
         className={className}
       >
         {content}
@@ -79,9 +68,9 @@ export function DashboardSidebarNavItem({
     <Link
       href={href ?? '#'}
       onClick={onNavigate}
-      title={collapsed ? label : undefined}
+      title={collapsed ? name : undefined}
       aria-current={isActive ? 'page' : undefined}
-      aria-label={label}
+      aria-label={name}
       className={className}
     >
       {content}

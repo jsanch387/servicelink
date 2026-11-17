@@ -1,6 +1,7 @@
 /**
  * POST /api/memberships/plans
  * Owner: create a membership plan + cadence prices + Stripe Connect catalog sync.
+ * Cadences match the web picker: week/1, week/2, month/1, month/3, month/6.
  * Auth: web cookies or mobile `Authorization: Bearer <access_token>`.
  */
 

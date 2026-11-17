@@ -9,6 +9,7 @@ Read first, then writes in the order an owner typically uses them.
 | Doc                                                                                        | What it covers                                                             |
 | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
 | [mobile-subscriptions-phase1-data.md](./mobile-subscriptions-phase1-data.md)               | Plans + subscribers: tables, SELECT, mapped UI fields                      |
+| [mobile-subscriptions-plan-write.md](./mobile-subscriptions-plan-write.md)                 | Create or edit a plan, including every 3 months and every 6 months         |
 | [mobile-subscriptions-period-visit.md](./mobile-subscriptions-period-visit.md)             | `visitStatus` (needs visit / scheduled / complete)                         |
 | [mobile-subscriptions-owner-book-visit.md](./mobile-subscriptions-owner-book-visit.md)     | Owner books a covered visit (`POST /api/public/bookings` + `membershipId`) |
 | [mobile-subscriptions-send-schedule-link.md](./mobile-subscriptions-send-schedule-link.md) | Email/SMS the public schedule link                                         |

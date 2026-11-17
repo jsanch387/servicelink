@@ -1,5 +1,6 @@
 /**
  * PATCH /api/memberships/plans/[planId] — update plan + prices + Stripe sync.
+ * Cadences match create: week/1, week/2, month/1, month/3, month/6.
  * DELETE /api/memberships/plans/[planId] — soft-delete (no active subscribers) + archive Stripe catalog.
  * Auth: web cookies or mobile `Authorization: Bearer <access_token>`.
  */

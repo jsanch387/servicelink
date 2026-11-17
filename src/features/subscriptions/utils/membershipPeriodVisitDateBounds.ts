@@ -124,8 +124,8 @@ function lastVisitUsedCycle(args: {
 /**
  * Bookable days for the public period-visit calendar.
  *
- * Window length follows the membership cadence (weekly / every 2 weeks /
- * monthly), starting at the current Stripe period start. Stripe `period_end`
+ * Window length follows the membership cadence (weekly through every 6
+ * months), starting at the current Stripe period start. Stripe `period_end`
  * is only a fallback when period start is missing.
  *
  * Canceled visits do not count as used — the member can rebook remaining

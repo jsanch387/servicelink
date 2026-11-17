@@ -151,9 +151,6 @@ describe('getVisibleDashboardNavItems', () => {
       'Expenses',
       'Subscriptions',
     ]);
-    expect(money.items.find(item => item.name === 'Subscriptions')?.badge).toBe(
-      'beta'
-    );
     expect(topLevel).toEqual(['Dashboard', 'Quotes', 'Customers']);
     expect(
       entries.map(entry =>
@@ -219,7 +216,6 @@ describe('getVisibleDashboardNavItems', () => {
     expect(names).toContain('Team');
     expect(names.indexOf('Team')).toBe(names.indexOf('Bookings') + 1);
     expect(names).toContain('Customers');
-    expect(items.find(item => item.name === 'Team')?.badge).toBe('new');
   });
 
   it('hides Team when the rollout flag is off', () => {

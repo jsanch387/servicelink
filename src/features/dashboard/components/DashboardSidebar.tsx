@@ -134,7 +134,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                   isActive={isDashboardNavItemActive(pathname, entry.item)}
                   collapsed={collapsed}
                   onNavigate={() => setOpen(false)}
-                  badge={entry.item.badge}
                 />
               )
             )}

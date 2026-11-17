@@ -86,7 +86,7 @@ Validated by `parseMembershipPlanWriteBody`:
 
 - `name` required
 - `visitDurationMinutes` required: 30–630, multiples of 30 (defaults to 60 if omitted)
-- ≥1 cadence; `intervalUnit` ∈ week|month|year; `intervalCount` ≥ 1; `priceCents` > 0
+- ≥1 cadence; offered pairs only: week/1, week/2, month/1, month/3, month/6; `priceCents` > 0
 - No duplicate `(intervalUnit, intervalCount)` pairs
 
 ---

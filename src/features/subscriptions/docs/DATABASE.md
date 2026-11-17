@@ -126,7 +126,7 @@ Owner writes one textarea. On save, the full text goes into `membership_plans.de
 
 Mapper: `server/mapMembershipPlanRow.ts`.
 
-Cadence presets in the wizard (`OWNER_CADENCE_PRESETS`): weekly (`week`/1), every 2 weeks (`week`/2), monthly (`month`/1). DB also allows `year`.
+Cadence presets in the wizard (`OWNER_CADENCE_PRESETS`): weekly (`week`/1), every 2 weeks (`week`/2), monthly (`month`/1), every 3 months (`month`/3), every 6 months (`month`/6). DB also allows `year` and other counts, up to Stripe’s 3-year maximum.
 
 ---
 

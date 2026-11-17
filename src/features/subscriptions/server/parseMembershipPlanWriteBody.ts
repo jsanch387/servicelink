@@ -4,12 +4,19 @@ import {
 } from '@/features/availability/utils/timeOptions';
 import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
 import type { SubscriptionCadenceUnit } from '../types/customerSubscriptionPlan';
+import { OWNER_CADENCE_PRESETS } from '../types/ownerSubscriptionPlan';
 
 const CADENCE_UNITS = new Set<SubscriptionCadenceUnit>([
   'week',
   'month',
   'year',
 ]);
+
+function isOfferedCadence(unit: string, count: number): boolean {
+  return OWNER_CADENCE_PRESETS.some(
+    preset => preset.intervalUnit === unit && preset.intervalCount === count
+  );
+}
 
 type BodyCadence = {
   intervalUnit?: unknown;
@@ -92,6 +99,9 @@ export function parseMembershipPlanWriteBody(
     }
     if (typeof count !== 'number' || !Number.isInteger(count) || count < 1) {
       return { ok: false, error: 'Invalid schedule option.' };
+    }
+    if (!isOfferedCadence(unit, count)) {
+      return { ok: false, error: 'That schedule is not available.' };
     }
     if (typeof cents !== 'number' || !Number.isInteger(cents) || cents <= 0) {
       return { ok: false, error: 'Invalid price.' };
