@@ -25,9 +25,211 @@ export interface GuideMeta {
   dateModified?: string;
   /** Optional FAQ entries for FAQPage JSON-LD (plain-text answers). */
   faqs?: readonly { question: string; answer: string }[];
+  /** Other guide slugs shown in the shared “Related guides” block. */
+  relatedSlugs?: readonly string[];
 }
 
 export const GUIDES: GuideMeta[] = [
+  {
+    slug: 'best-crm-for-mobile-detailers',
+    title: 'Best CRM for Mobile Detailers (2026 Comparison)',
+    subheading:
+      'What a detailing CRM actually has to hold—clients, vehicles, job history, follow-up—and how ServiceLink compares with DetailDeck, Urable, QuoteIQ, Jobber, and Square.',
+    coverImage: MARKETING_IMAGES.resources.crm,
+    coverImageAlt:
+      'Mobile detailer checking a booking and client list on their phone next to a freshly detailed car',
+    keyTakeaways: [
+      'A detailing CRM is clients, vehicles, job history, and a way to rebook—not a generic sales pipeline.',
+      'Check the plan that includes a customer booking link. Cheap tiles often hide booking on a higher tier.',
+      'ServiceLink is free for the first 5 appointments, then Pro at $20/month or $200/year.',
+      'Stay on Jobber, Urable, QuoteIQ, or DetailDeck when you already use the heavier ops features they sell.',
+    ],
+    metaDescription:
+      'Compare the best CRM for mobile detailers. ServiceLink, DetailDeck, Urable, QuoteIQ, Jobber, and Square on price, booking, and deposits.',
+    keywords: [
+      'best CRM for mobile detailers',
+      'mobile detailing CRM',
+      'detailing CRM software',
+      'auto detailing CRM',
+      'best detailing CRM',
+      'free detailing CRM',
+      'ServiceLink',
+    ],
+    datePublished: '2026-11-17',
+    dateModified: '2026-11-17',
+    relatedSlugs: [
+      'servicelink-vs-detaildeck',
+      'servicelink-vs-urable',
+      'jobber-alternative-mobile-detailers',
+      'best-booking-app-for-mobile-detailers',
+      'stop-no-shows-deposits-mobile-detailing',
+    ],
+    faqs: [
+      {
+        question: 'What is the best CRM for mobile detailers?',
+        answer:
+          'For solo and small mobile shops that book from Instagram and Google, ServiceLink. You get a public booking page, a client list that fills in from every appointment, vehicles, visit history, and deposits on Pro. Stay on DetailDeck, Urable, Jobber, or QuoteIQ if you already rely on their extra ops modules.',
+      },
+      {
+        question: 'What should detailing CRM software actually do?',
+        answer:
+          'Hold the client, the vehicle, the job history, and a way to follow up or rebook. A calendar without a client record is not a CRM. A CRM without a booking link still leaves you quoting in DMs.',
+      },
+      {
+        question: 'Is ServiceLink a CRM or just a booking app?',
+        answer:
+          'Both. The booking page is the front door. Every booking saves name, phone, email, vehicle, and visit history. You can import a client CSV when you switch. Quotes, invoices, deposits, SMS reminders, and Tap to Pay are on Pro.',
+      },
+      {
+        question: 'Do I need Jobber or Urable if I am a solo detailer?',
+        answer:
+          'Usually no. Those tools are built as broader field-service suites. They fit crews, inventory, or shops that already live in that workflow. A one-truck operator typically needs a bio link, vehicle-size prices, deposits, and a client list.',
+      },
+      {
+        question: 'Can I try ServiceLink while I keep my current CRM?',
+        answer:
+          'Yes. Put ServiceLink in the bio, keep the old tool until you are sure, and import names and numbers when you are ready to switch.',
+      },
+      {
+        question: 'How do I try ServiceLink?',
+        answer:
+          'Create a booking page, add your services and availability, and share the link. The first 5 appointments are free. Pro is $20/month or $200/year.',
+      },
+    ],
+  },
+  {
+    slug: 'mobile-tech-rx-alternative',
+    title: 'Mobile Tech RX Alternative for Mobile Detailers',
+    subheading:
+      'MTX is built for auto recon and estimating. Solo mobile detailers usually need a bio booking link, deposits, and a client list—at a much lower price.',
+    coverImage: MARKETING_IMAGES.resources.mobileTechRx,
+    coverImageAlt:
+      'ServiceLink versus Mobile Tech RX — mobile detailing booking app comparison on a phone',
+    keyTakeaways: [
+      'Mobile Tech RX is an auto-recon suite: estimates, modules, shop scheduling. Customer self-booking is not offered yet.',
+      'Getting Started is $39/admin/month as of November 2026. Standard is $99. Pro is $199.',
+      'Stay on MTX for PPF, tint, PDR, dealers, or estimate-heavy workflow.',
+      'Switch if you are a mobile detailer who still books from DMs and wants a public booking page.',
+    ],
+    metaDescription:
+      'Mobile Tech RX alternative for mobile detailers. Compare ServiceLink and MTX on price, booking, estimates, and who each tool is built for.',
+    keywords: [
+      'Mobile Tech RX alternative',
+      'ServiceLink vs Mobile Tech RX',
+      'Mobile Tech RX vs ServiceLink',
+      'MTX alternative for detailers',
+      'mobile detailing booking software',
+      'ServiceLink',
+    ],
+    datePublished: '2026-11-17',
+    dateModified: '2026-11-17',
+    relatedSlugs: [
+      'best-crm-for-mobile-detailers',
+      'best-booking-app-for-mobile-detailers',
+      'servicelink-vs-urable',
+      'stop-no-shows-deposits-mobile-detailing',
+    ],
+    faqs: [
+      {
+        question: 'Is ServiceLink a Mobile Tech RX alternative?',
+        answer:
+          'For solo mobile detailers who need a booking page and CRM, yes. It is not a replacement for MTX estimating, PPF/tint modules, dealer invoicing, or recon workflow.',
+      },
+      {
+        question: 'Does Mobile Tech RX have a customer booking link?',
+        answer:
+          'Not as of November 2026. MTX scheduling is shop-controlled. Their scheduling FAQ says customer self-booking on a website is not available yet.',
+      },
+      {
+        question: 'When should I stay on Mobile Tech RX?',
+        answer:
+          'Stay if PPF, vinyl, tint, PDR, hail, glass, body, dealers, tech pay, or QuickBooks estimating is how you get paid, and MTX already runs that week.',
+      },
+      {
+        question:
+          'How much does Mobile Tech RX cost compared with ServiceLink?',
+        answer:
+          'As of November 2026, MTX Getting Started is $39/admin/month ($429/year), Standard $99, Pro $199, plus extra users. ServiceLink is free for the first 5 appointments, then Pro at $20/month or $200/year.',
+      },
+      {
+        question: 'Can I run both while I switch?',
+        answer:
+          'Yes. Keep MTX for in-progress estimates. Put ServiceLink in the bio for package bookings. Do not double-book the same truck.',
+      },
+      {
+        question: 'How do I try ServiceLink?',
+        answer:
+          'Create a booking page, add your top packages with vehicle prices, and share the link. First 5 appointments are free. You do not have to cancel MTX on day one.',
+      },
+    ],
+  },
+  {
+    slug: 'how-to-get-more-mobile-detailing-clients',
+    title: 'How to Get More Mobile Detailing Clients',
+    subheading:
+      'Stop living in DMs. Make booking obvious, post local proof, use Google, ask for referrals, and run small paid tests without turning on Advantage+.',
+    coverImage: MARKETING_IMAGES.resources.getClients,
+    coverImageAlt:
+      'Phone filming a foam-covered car during a mobile detailing job for local client content',
+    keyTakeaways: [
+      'DMs feel busy. A public menu, a booking link, and a deposit turn attention into jobs.',
+      'Put one booking URL in the bio, Google profile, and texts. Customers should not need an app.',
+      'Instagram and TikTok work when you name the city and show real jobs—not when you chase views in another state.',
+      'Skip Meta Advantage+. If you test ads, use a tight map, one offer, and a booking page.',
+    ],
+    metaDescription:
+      'How to get more mobile detailing clients: booking links, Instagram, Google, referrals, and a 30-day plan that does not live in your DMs.',
+    keywords: [
+      'how to get more mobile detailing clients',
+      'how to get more detailing clients',
+      'get more car detailing clients',
+      'mobile detailing marketing',
+      'how to get clients for a detailing business',
+      'ServiceLink',
+    ],
+    datePublished: '2026-11-17',
+    dateModified: '2026-11-17',
+    relatedSlugs: [
+      'how-mobile-detailers-get-clients-from-instagram',
+      'how-to-start-a-mobile-detailing-business',
+      'how-much-to-charge-for-mobile-detailing',
+      'stop-no-shows-deposits-mobile-detailing',
+      'best-booking-app-for-mobile-detailers',
+    ],
+    faqs: [
+      {
+        question: 'How do I get more mobile detailing clients?',
+        answer:
+          'Make booking obvious with one public link, post local before/after work, keep Google Business Profile and reviews current, ask for referrals, and rebook past clients. Ads are optional and should send people to the booking page, not into DMs.',
+      },
+      {
+        question: 'How do I get more detailing clients without ads?',
+        answer:
+          'A booking link in the bio, Google reviews, neighborhood posts, and asking every finished job for a referral. Most solos underuse repeats and Google before they need paid traffic.',
+      },
+      {
+        question: 'Should I put a booking link in my Instagram bio?',
+        answer:
+          'Yes. If someone has to DM for a price and a time, you will lose jobs while you are on a driveway. Use one link on Instagram, TikTok, Google, and texts.',
+      },
+      {
+        question:
+          'How important is Google Business Profile for mobile detailers?',
+        answer:
+          'It is how neighbors confirm you are real. Set it as a service-area business, add real job photos, put the booking link as the website, and ask for reviews the day you finish.',
+      },
+      {
+        question: 'Do deposits help me get more clients?',
+        answer:
+          'Deposits do not create leads. They turn maybe-bookings into slots that show up, so the calendar you filled is real. That is how you keep the clients you already got.',
+      },
+      {
+        question: 'How fast can I put a booking link in my bio?',
+        answer:
+          'Most detailers add services, set hours, and share a ServiceLink page the same day. The first 5 appointments are free.',
+      },
+    ],
+  },
   {
     slug: 'servicelink-vs-detaildeck',
     title: 'DetailDeck Alternative for Mobile Detailers',
@@ -48,7 +250,6 @@ export const GUIDES: GuideMeta[] = [
       'ServiceLink vs DetailDeck',
       'DetailDeck alternative for mobile detailers',
       'DetailDeck vs ServiceLink',
-      'best CRM for solo detailers',
       'booking app for mobile detailers',
       'ServiceLink',
     ],
@@ -128,9 +329,9 @@ export const GUIDES: GuideMeta[] = [
   },
   {
     slug: 'servicelink-vs-urable',
-    title: 'ServiceLink vs Urable',
+    title: 'Urable Alternative for Mobile Detailers',
     subheading:
-      'Compare ServiceLink and Urable for mobile detailing—why detailers pick the leaner, cleaner booking app over a heavier field-service suite.',
+      'Looking for an Urable alternative? Compare ServiceLink and Urable for mobile detailing—why detailers pick the leaner booking app over a heavier field-service suite.',
     coverImage: MARKETING_IMAGES.resources.comparisonUrable,
     coverImageAlt:
       'Detailer holding a phone with a clean booking dashboard while a luxury SUV is detailed in a driveway',
@@ -141,7 +342,7 @@ export const GUIDES: GuideMeta[] = [
       'Stay on Urable if you already run a dense ops suite. Everyone else will have an easier week on ServiceLink.',
     ],
     metaDescription:
-      'ServiceLink vs Urable for mobile detailers. Compare booking links, setup time, UI clutter, and which app stays lean day to day.',
+      'Looking for an Urable alternative? Compare ServiceLink and Urable for mobile detailers—booking links, setup time, and which app stays lean.',
     keywords: [
       'ServiceLink vs Urable',
       'Urable alternative',
@@ -154,7 +355,7 @@ export const GUIDES: GuideMeta[] = [
       'ServiceLink',
     ],
     datePublished: '2026-08-27',
-    dateModified: '2026-09-09',
+    dateModified: '2026-11-17',
     faqs: [
       {
         question: 'Is ServiceLink better than Urable for mobile detailers?',
@@ -417,6 +618,12 @@ export const GUIDES: GuideMeta[] = [
       'A simple 24-hour cancellation policy is enough if you enforce it every time.',
       'Deposits plus reminders are what get no-show rates near zero.',
     ],
+    relatedSlugs: [
+      'best-booking-app-for-mobile-detailers',
+      'best-crm-for-mobile-detailers',
+      'how-to-get-more-mobile-detailing-clients',
+      'jobber-alternative-mobile-detailers',
+    ],
     metaDescription:
       'Stop no-shows with mobile detailing deposits. Learn how much to charge, copy a cancellation policy, and collect deposits automatically with ServiceLink.',
     keywords: [
@@ -431,7 +638,7 @@ export const GUIDES: GuideMeta[] = [
       'ServiceLink',
     ],
     datePublished: '2026-07-19',
-    dateModified: '2026-09-09',
+    dateModified: '2026-11-17',
     faqs: [
       {
         question: 'Should mobile detailers require deposits?',
@@ -486,7 +693,35 @@ export const GUIDES: GuideMeta[] = [
       'ServiceLink',
     ],
     datePublished: '2026-01-15',
-    dateModified: '2026-09-09',
+    dateModified: '2026-11-17',
+    relatedSlugs: [
+      'how-to-get-more-mobile-detailing-clients',
+      'best-booking-app-for-mobile-detailers',
+      'stop-no-shows-deposits-mobile-detailing',
+    ],
+    faqs: [
+      {
+        question: 'How do mobile detailers get clients from Instagram?',
+        answer:
+          'Post local before-and-after videos, name your city in the audio and caption, and put a booking link in the bio so viewers can book without a DM. You do not need a huge following.',
+      },
+      {
+        question:
+          'Do I need a lot of followers to get detailing clients on Instagram?',
+        answer:
+          'No. Local transformation clips outperform a big out-of-area audience. People in your service area need to see the work and have a way to book.',
+      },
+      {
+        question: 'What should I put in my Instagram bio as a mobile detailer?',
+        answer:
+          'Service, city, and a booking link. Example: mobile detailing in your city, the packages you want, and a ServiceLink URL. Skip a long story in the bio.',
+      },
+      {
+        question: 'Should I answer every booking request in DMs?',
+        answer:
+          'Send the booking link once. DMs are for exceptions and custom quotes, not for repeating your menu and Saturday availability on every job.',
+      },
+    ],
   },
 ];
 

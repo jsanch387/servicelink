@@ -49,6 +49,13 @@ export const MARKETING_IMAGES = {
     startBusiness:
       '/marketing/resources/guide-start-mobile-detailing-cover.webp',
     pricing: '/marketing/resources/guide-mobile-detailing-pricing-cover.webp',
+    /** Placeholder until a unique CRM cover is shot. */
+    crm: '/marketing/resources/guide-booking-app-cover.webp',
+    /** Placeholder until a unique Mobile Tech RX cover is shot. */
+    mobileTechRx:
+      '/marketing/resources/guide-servicelink-vs-detailermade-cover.webp',
+    /** Placeholder until a unique get-clients cover is shot. */
+    getClients: '/marketing/resources/guide-instagram-cover.webp',
   },
   store: {
     googlePlay: '/store/google-play.png',

@@ -56,6 +56,7 @@ export function ServiceLinkVsUrableContent() {
     <>
       <p className={pClasses}>
         If you searched{' '}
+        <strong className="text-gray-300">Urable alternative</strong> or{' '}
         <strong className="text-gray-300">ServiceLink vs Urable</strong>, you
         are choosing between a lean booking app and a heavier field-service
         platform. Both take bookings. ServiceLink is the one built for a

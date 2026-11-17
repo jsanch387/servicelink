@@ -137,11 +137,17 @@ export async function GET() {
       process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
     const currentDate = new Date().toISOString();
 
+    const latestGuideDate = GUIDES.reduce((latest, guide) => {
+      const stamp = guide.dateModified || guide.datePublished;
+      if (!stamp) return latest;
+      return !latest || stamp > latest ? stamp : latest;
+    }, '');
+
     // Resources index and guide URLs for SEO
     const resourcesUrls = `
   <url>
     <loc>${baseUrl}/resources</loc>
-    <lastmod>${currentDate}</lastmod>
+    <lastmod>${latestGuideDate || currentDate}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -151,7 +157,7 @@ ${GUIDES.map(guide => {
     <loc>${baseUrl}/resources/${guide.slug}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>`;
 }).join('\n')}`;
 

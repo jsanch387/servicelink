@@ -1,3 +1,4 @@
+import { ROUTES } from '@/constants/routes';
 import { blogGuideSignupPath } from '@/features/marketing-attribution';
 import { GuideFaqAccordion } from '@/features/resources/components/GuideFaqAccordion';
 import { GuideProTip } from '@/features/resources/components/GuideCallouts';
@@ -249,6 +250,42 @@ export function StopNoShowsDepositsMobileDetailingContent() {
           </Link>{' '}
           and turn your policy into something customers actually see and follow
           — not just a paragraph they scroll past.
+        </p>
+        <p className={pClasses}>
+          Putting deposits on a public menu works better when the rest of the
+          booking path is clear. See the{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE(
+              'best-booking-app-for-mobile-detailers'
+            )}
+            className={linkClasses}
+          >
+            best booking app for mobile detailers
+          </Link>
+          , the{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE('best-crm-for-mobile-detailers')}
+            className={linkClasses}
+          >
+            best CRM for mobile detailers
+          </Link>
+          , and{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE(
+              'how-to-get-more-mobile-detailing-clients'
+            )}
+            className={linkClasses}
+          >
+            how to get more mobile detailing clients
+          </Link>
+          . Coming from Jobber’s heavier suite?{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE('jobber-alternative-mobile-detailers')}
+            className={linkClasses}
+          >
+            Jobber alternative for mobile detailers
+          </Link>
+          .
         </p>
       </section>
 
