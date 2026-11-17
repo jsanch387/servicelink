@@ -2,59 +2,69 @@
 
 **Audience:** anyone writing `/resources` guides, `/features` copy, or competitor comparisons.  
 **Rule:** claim only what this file marks as verified. If a feature is not here, do not invent it.  
-**Last audited in code:** 17 November 2026, branch `cursor/blog-seo-restart-e520`.
+**Last audited in code:** 17 November 2026.
 
-Pricing constants live in `src/features/pricing/types.ts`. Plan bullets live in `src/features/pricing/marketingPlanFeatures.ts` and `src/features/pricing/pricingComparisonRows.ts`. Dashboard nav lives in `src/features/dashboard/utils/dashboardNav.ts`.
+Pricing constants: `src/features/pricing/types.ts`. Plan bullets: `src/features/pricing/marketingPlanFeatures.ts`, `pricingComparisonRows.ts`. Dashboard nav: `src/features/dashboard/utils/dashboardNav.ts`. Team: `src/features/team/docs/TEAM_FEATURE.md`.
 
 ---
 
-## Positioning (required for comparison posts)
+## Positioning (required)
 
-ServiceLink is the better app for **solo and small mobile detailers**. Stay helpful and honest. Never write a “things competitors do that ServiceLink doesn’t” list. Never write a “stay on X” section.
+ServiceLink is a **full detailing CRM and booking system**. It is as good as or better than the other detailing tools on the jobs that fill a shop—and simpler to use. It works for one operator and for a growing team (Team plan: up to 4 people).
 
-Use this frame instead:
+Lead with **outcomes**: more bookings, fewer no-shows, more reviews, less admin.
 
-- **Who the other tool is built for** (bigger shops, PPF/tint/PDR estimating, multi-trade crews).
-- **Why solo mobile detailers pick ServiceLink** (booking link, automations, Google reviews on the page, sleek UI, free start then $20).
+Do **not** frame ServiceLink as a small, solo-only, or cheap-starter option. Do **not** write “built for solo.” Do **not** write “who X is built for” in a way that makes the competitor the grown-up choice. Do **not** list competitor extras we lack. Do **not** tell readers to stay on the other tool.
 
-Comparison tables should use **rows where ServiceLink is strong**. Do not pad tables with competitor extras we do not sell. Do not say a competitor lacks a feature unless you verified it on their current public site, and cite the month.
+**Clear verdict on every comparison:** ServiceLink is the pick.
+
+“Simple to use” is a **win** (ease of use), not a euphemism for “fewer features.” Price is **value** (full stack at $20 Pro / $60 Team), not “cheap because we’re small.”
+
+Stay truthful. Team is **up to 4 people**. Do not claim unlimited seats, per-person calendars, route optimization, or Jobber-style 12-tech dispatch.
 
 ---
 
 ## Plans and prices
 
-| Plan | List price                     | Caps / seats                                                                                                                | Source                                                                  |
-| ---- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Free | $0                             | 5 lifetime appointments, 5 services, 4 portfolio images, SMS/email on those 5 bookings, booking page stays up after the cap | `FREE_BOOKINGS_LIMIT`, `FREE_MAX_SERVICES`, `FREE_MAX_PORTFOLIO_IMAGES` |
-| Pro  | **$20/month** or **$200/year** | Unlimited bookings and services, 8 portfolio images, payments and Pro tools                                                 | `PLANS.pro`, `PRO_YEARLY_LIST_PRICE`                                    |
-| Team | **$60/month** or **$600/year** | Everything in Pro, up to **4** people on the shop                                                                           | `TEAM_*`, `TEAM_SEAT_LIMIT`                                             |
+| Plan | List price                     | What you get                                                                                         | Source                                                                  |
+| ---- | ------------------------------ | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Free | $0                             | 5 lifetime appointments, 5 services, 4 portfolio images, SMS/email on those 5, booking page stays up | `FREE_BOOKINGS_LIMIT`, `FREE_MAX_SERVICES`, `FREE_MAX_PORTFOLIO_IMAGES` |
+| Pro  | **$20/month** or **$200/year** | Unlimited bookings and services, 8 portfolio images, payments and the Pro CRM                        | `PLANS.pro`, `PRO_YEARLY_LIST_PRICE`                                    |
+| Team | **$60/month** or **$600/year** | Everything in Pro, **up to 4 people** on the shop, job assignment, teammates run jobs in the app     | `TEAM_*`, `TEAM_SEAT_LIMIT`                                             |
 
-There is no trial for new signups. Free is the try-it path. Team is a separate Stripe plan; Team shops still pass `isProAccess` for Pro feature gates.
+No trial for new signups. Free is how you start. Team shops still pass `isProAccess` for Pro gates. Grandfathered shops with `team_included` keep invites on their current price.
 
 ---
 
-## Blog-safe strengths (lead with these)
+## Lead with these strengths
 
-These are the claims comparison posts should open with. All are in the product.
+1. **Full detailing CRM + booking** — clients, vehicles, history, quotes, invoices, expenses, payments, reviews, marketing, in one app.
+2. **Simple to use** — change prices, hours, and jobs without a field-service maze. Customers finish guest checkout on a phone.
+3. **More bookings** — public booking page (`myservicelink.app/{slug}`), guest checkout, vehicle-size prices, sale banners, promo codes.
+4. **Fewer no-shows** — deposits or full pay at checkout (Pro), confirmation SMS/email, day-before reminders.
+5. **More reviews** — review request after every completed job (SMS first, email fallback); Google reviews imported onto the booking page.
+6. **Less admin** — CRM fills in from every booking; quotes, invoices, receipts, Tap to Pay, expenses, memberships.
+7. **Team-ready** — invite up to 4 people; Member / Coordinator / Manager roles; assign jobs; hires run the job in the iOS/Android app (on-the-way, pay, complete).
+8. **Value** — try 5 appointments free; Pro $20/mo or $200/yr; Team $60/mo or $600/yr. Not “cheap starter”—full stack at a better price than $70–$199 recon/ops suites.
 
-1. **Built for solo mobile detailers** — booking page, calendar, CRM, and payments in one lean app.
-2. **Free to start, then $20** — first 5 appointments free; Pro $20/mo or $200/yr.
-3. **Public booking / bio page** — `myservicelink.app/{slug}`, guest checkout, no customer app.
-4. **Sleek, simple UI** — phone-sized dashboard you can run between jobs.
-5. **CRM that fills in from bookings** — clients, vehicles, visit history, notes, CSV import.
-6. **Vehicle-size pricing (Pro)** — sedan / SUV / truck (or other options) on one service.
-7. **Deposits, card payments, Tap to Pay (Pro)** — checkout deposits plus Tap to Pay in the iOS/Android app.
-8. **Automations** — booking confirmation SMS/email, day-before reminders, on-the-way / job-started / finished / completed texts, quote reminders.
-9. **Review requests after every completed job** — SMS-first, email fallback, to the ServiceLink review page. Receipts can include the same ask.
-10. **Google reviews on the booking page** — connect Google Business Profile, import reviews, show them next to ServiceLink reviews.
-11. **Quotes, invoices, receipts (Pro)** — send quotes, collect on a public link, send invoices, branded receipts (`/r/` and `/b/` links).
-12. **Expense tracking (Pro)** — supplies, fuel, equipment, insurance, other. Month and year totals.
-13. **Sales and promo codes (Pro)** — one live sale banner; promo codes at booking.
-14. **Native iOS and Android apps** — owner apps (App Store / Play). Customers still book on the web link.
-15. **Service area** — city/state + radius on the public page.
-16. **Availability, buffers, time off** — customers only see open slots.
-17. **Subscriptions for repeat clients (Pro)** — membership plans on the public `/subscribe` page.
-18. **Team (Team plan)** — invite up to 4 people, assign jobs from the board.
+---
+
+## Team (verified)
+
+Evidence: `src/features/team/docs/TEAM_FEATURE.md`, `hasTeamAccess.ts`, `updateBookingAssignee.ts`, `notifyAssigneeForJobAssigned.ts`.
+
+| Capability             | Detail                                                                                                                                                                                                                  | Plan                |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| Seats                  | Up to **4** people on the shop, including the owner                                                                                                                                                                     | Team                |
+| Invite                 | Owner invites by email. 14-day token. Roles on the invite                                                                                                                                                               | Team                |
+| Roles                  | **Member** (run jobs, take pay, change assignee), **Coordinator** (+ create/reschedule/cancel), **Manager** (+ customers, quotes, invoices, expenses, reviews, shop). Owner keeps billing, Stripe, team, account delete | Team                |
+| Assignment             | `bookings.assigned_user_id`. Assign from the board. Filter “assigned to me.” Unassigned public bookings                                                                                                                 | Team                |
+| Assigned notifications | Email + in-app + push to the assignee                                                                                                                                                                                   | Team                |
+| Run the job            | On the way / started / finished / complete / Tap to Pay. Shop-wide `bookings.run` (not locked to assignee). Money lands on the owner’s Stripe                                                                           | Team + Pro payments |
+| Overlap                | Two jobs at the same time allowed. **No per-person calendars.** Time off is shop closed                                                                                                                                 | Team                |
+| Mobile                 | Teammates use the same iOS/Android app as the owner, with their role                                                                                                                                                    | Team                |
+
+Do not claim: unlimited users, personal calendars, PTO per hire, capacity = headcount, route dispatch.
 
 ---
 
@@ -62,142 +72,118 @@ These are the claims comparison posts should open with. All are in the product.
 
 ### Public presence
 
-| Feature                          | Plan                                    | Evidence                                                           | Blog note                                                      |
-| -------------------------------- | --------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------- |
-| Public business / booking page   | Free (live after onboarding)            | `src/app/[business-slug]/page.tsx`, `publicBusinessProfileLive.ts` | Call it the booking link or bio page                           |
-| Custom slug                      | Free                                    | Business profile                                                   | `myservicelink.app/yourname`                                   |
-| Service area (city/state/radius) | Free                                    | `business-profile/`                                                |                                                                |
-| Portfolio / cover photos         | Free 4 / Pro 8                          | `FREE_MAX_PORTFOLIO_IMAGES`, `PRO_MAX_PORTFOLIO_IMAGES`            |                                                                |
-| Verified badge                   | Pro                                     | `[business-slug]/page.tsx`                                         | Optional; not a headline                                       |
-| Active sale banner               | Pro                                     | `loadPublicActiveSale.ts`                                          |                                                                |
-| Link-view analytics              | Free: 24h. Pro: 7d / 30d                | `src/features/analytics/constants.ts`                              |                                                                |
-| App-download QR                  | Free (owner onboarding / get-app modal) | `GetAppModal.tsx`                                                  | This QR is for the **owner app**, not a booking-link generator |
+| Feature                        | Plan                   | Evidence                                  |
+| ------------------------------ | ---------------------- | ----------------------------------------- |
+| Public booking / business page | Free after onboarding  | `[business-slug]/page.tsx`                |
+| Custom slug                    | Free                   | Business profile                          |
+| Service area                   | Free                   | `business-profile/`                       |
+| Portfolio                      | Free 4 / Pro 8         | `FREE_MAX_PORTFOLIO_IMAGES`               |
+| Sale banner                    | Pro                    | `loadPublicActiveSale.ts`                 |
+| Link-view analytics            | Free 24h; Pro 7d / 30d | `analytics/constants.ts`                  |
+| Spanish on the booking page    | Free (owner setting)   | `DashboardProfileBookingLanguageCard.tsx` |
 
-### Services and scheduling
+### Scheduling and bookings
 
-| Feature                                        | Plan                                                        | Evidence                                          |
-| ---------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------- |
-| Service catalog, categories, add-ons, duration | Free (≤5 services)                                          | `src/features/services/`                          |
-| Multiple price options (vehicle size)          | **Pro**                                                     | `priceOptionsAccess.ts`, pricing comparison table |
-| Weekly availability                            | Free                                                        | `/dashboard/availability`                         |
-| Buffer time between jobs                       | Free                                                        | booking calendar                                  |
-| Time-off blocks                                | Free                                                        | booking calendar                                  |
-| Customer self-booking (V2)                     | Free until the 5-booking cap; deposits need a **Pro** owner | `book/v2/`, `booking-checkout`                    |
-| Owner-created appointments                     | Free (same cap)                                             | `/dashboard/bookings/new`                         |
-| Calendar (day / week / month / list)           | Free                                                        | bookings dashboard                                |
-| ICS calendar sync                              | **Pro**                                                     | `calendar-sync/`                                  |
-| Booking assignee                               | **Team**                                                    | `updateBookingAssignee.ts`                        |
+| Feature                            | Plan                                                  | Evidence                     |
+| ---------------------------------- | ----------------------------------------------------- | ---------------------------- |
+| Service catalog, add-ons, duration | Free (≤5 services)                                    | `src/features/services/`     |
+| Vehicle-size / multi price options | **Pro**                                               | `priceOptionsAccess.ts`      |
+| Availability, buffers, time off    | Free                                                  | `/dashboard/availability`    |
+| Customer self-booking              | Free until 5-booking cap; deposits need **Pro** owner | `book/v2/`, booking-checkout |
+| Calendar day/week/month/list       | Free                                                  | bookings dashboard           |
+| ICS calendar sync                  | **Pro**                                               | `calendar-sync/`             |
+| Job assignment                     | **Team**                                              | `BookingAssigneeField.tsx`   |
 
 ### CRM
 
-| Feature                                              | Plan | Evidence                                                                    |
-| ---------------------------------------------------- | ---- | --------------------------------------------------------------------------- |
-| Client list from bookings                            | Free | `src/features/customer-management/`                                         |
-| Vehicles per customer                                | Free | `/api/customers/.../vehicles`                                               |
-| Notes and visit history                              | Free | customer detail                                                             |
-| CSV import (names, numbers, vehicles)                | Free | `importCustomers.ts`                                                        |
-| Manual SMS templates, including a “win back” snippet | Free | `useCustomerManagement.ts` — **opens the phone SMS app**. Not an automation |
+| Feature                        | Plan | Evidence                                        |
+| ------------------------------ | ---- | ----------------------------------------------- |
+| Client list from bookings      | Free | `customer-management/`                          |
+| Vehicles, notes, visit history | Free | customer detail + vehicles API                  |
+| CSV import                     | Free | `importCustomers.ts`                            |
+| Manual SMS snippets            | Free | Opens the phone SMS app — **not** an automation |
 
-### Automations and messages
+### Automations
 
-| Feature                                                  | Plan                               | Evidence                                     |
-| -------------------------------------------------------- | ---------------------------------- | -------------------------------------------- |
-| Booking confirmation email + SMS                         | Free, on the 5 bookings            | `bookingSms.ts`, availability booking emails |
-| Day-before reminder (email + SMS + owner push)           | Free/Pro (volume follows bookings) | cron `booking-reminders`                     |
-| On the way / job started / work finished / completed SMS | Free/Pro                           | `bookingSms.ts` (mainly from the mobile app) |
-| Reschedule / cancel notices                              | Free/Pro                           | email + SMS templates                        |
-| Owner new-booking email                                  | Free/Pro                           | booking notification emails                  |
-| Quote customer reminders (2–3 days)                      | Pro shops sending quotes           | cron `quote-customer-reminders`              |
-| Quote-request owner follow-up                            | Pro                                | cron `quote-request-follow-ups`              |
-| Membership visit reminders                               | Pro + memberships                  | `buildMembershipVisitReminderSms`            |
+| Feature                                         | Plan              | Evidence                          |
+| ----------------------------------------------- | ----------------- | --------------------------------- |
+| Booking confirmation SMS + email                | Free, on the 5    | `bookingSms.ts`                   |
+| Day-before reminder (email + SMS + owner push)  | Follows bookings  | cron `booking-reminders`          |
+| On the way / started / finished / completed SMS | Free/Pro          | `bookingSms.ts` (mobile)          |
+| Reschedule / cancel notices                     | Free/Pro          | email + SMS                       |
+| Owner new-booking email                         | Free/Pro          | booking notification emails       |
+| Review request on complete                      | Not plan-gated    | `createReviewInviteIfEligible.ts` |
+| Quote customer reminders                        | Pro               | cron `quote-customer-reminders`   |
+| Membership visit reminders                      | Pro + memberships | `buildMembershipVisitReminderSms` |
 
-There is **no** drip campaign, abandoned-cart series, or automated win-back sequence. Do not call the manual SMS snippet a win-back automation.
+No drip, abandoned-cart, or automated win-back sequence.
 
 ### Reviews
 
-| Feature                                   | Plan                      | Evidence                                                   | Say this                                                      | Do not say this                                        |
-| ----------------------------------------- | ------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------ |
-| Review request after job complete         | Free/Pro (not plan-gated) | `createReviewInviteIfEligible.ts`, `buildReviewRequestSms` | “Review requests after every job” (SMS first, email fallback) | “We email them a Google review link”                   |
-| ServiceLink review page `/review/[token]` | Customer                  | public review submit                                       | Stars + comment on your ServiceLink page                      |                                                        |
-| Owner reviews inbox + reply               | Free                      | `/dashboard/reviews`                                       |                                                               |                                                        |
-| Connect Google Business Profile           | Free/Pro                  | `reviews/google-connect/`                                  | “Connect Google and show Google reviews on your booking page” | “ServiceLink posts or requests Google reviews for you” |
-| Import / display Google reviews           | Free/Pro                  | `google_reviews` table, public profile Reviews tab         |                                                               |                                                        |
+| Feature                         | Plan     | Say this                              | Do not say this                     |
+| ------------------------------- | -------- | ------------------------------------- | ----------------------------------- |
+| Review request after complete   | Free/Pro | “Review requests after every job”     | “We send a Google Maps review link” |
+| ServiceLink review page         | Customer | Stars + comment                       |                                     |
+| Inbox + owner reply             | Free     |                                       |                                     |
+| Connect Google + import/display | Free/Pro | “Google reviews on your booking page” | “We post Google reviews for you”    |
 
-Review invites go to **ServiceLink’s** review URL. Google reviews are **imported and displayed**. Those are two different products. Both are real. Do not merge them into “Google review request emails.”
+### Money
 
-### Payments, quotes, invoices, expenses
-
-| Feature                                                              | Plan                                                                      | Evidence                                                            |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Stripe Connect, deposits, full pay at booking                        | **Pro**                                                                   | `api/public/booking-checkout`                                       |
-| Payments / revenue dashboard                                         | **Pro**                                                                   | `/dashboard/payments`                                               |
-| Tap to Pay (booking and walk-up)                                     | **Pro** + mobile app                                                      | `api/payments/tap-to-pay/`, `docs/contracts/mobile-*-tap-to-pay.md` |
-| Walk-up payment link                                                 | **Pro**                                                                   | `payments/walk-up/`                                                 |
-| Quotes (create, send, `/q/` link)                                    | Market as **Pro**. Card collection and public quote **requests** are Pro. | `src/features/quotes/`                                              |
-| Invoices (create, send, PDF, `/b/` bill link)                        | **Pro**                                                                   | `requireInvoicePro.ts`                                              |
-| Branded receipts (`/r/` short links, job-complete receipt email/SMS) | **Pro** (tied to payments)                                                | `jobCompletedInvoiceTemplate.ts`                                    |
-| Expenses (CRUD, categories, month/year totals)                       | **Pro**                                                                   | `requireExpensePro.ts`, `/dashboard/expenses`                       |
-| Promo codes and sales                                                | **Pro** (public redemption checks Pro)                                    | `src/features/marketing/`                                           |
-| Customer memberships / subscriptions                                 | **Pro** + Connect                                                         | `src/features/subscriptions/`                                       |
-
-Expense categories in code: `supplies`, `fuel`, `equipment`, `insurance`, `other`. There is no receipt-image upload on an expense row.
+| Feature                         | Plan                 | Evidence                                                             |
+| ------------------------------- | -------------------- | -------------------------------------------------------------------- |
+| Deposits / full pay at booking  | **Pro**              | booking-checkout                                                     |
+| Revenue dashboard, transactions | **Pro**              | `/dashboard/payments`                                                |
+| Tap to Pay (booking + walk-up)  | **Pro** + mobile app | tap-to-pay APIs                                                      |
+| Walk-up payment link            | **Pro**              | `payments/walk-up/`                                                  |
+| Quotes + public `/q/` pay       | **Pro**              | `src/features/quotes/`                                               |
+| Invoices + `/b/` bills          | **Pro**              | `requireInvoicePro.ts`                                               |
+| Receipts `/r/`                  | **Pro**              | job-completed invoice templates                                      |
+| Expenses                        | **Pro**              | `requireExpensePro.ts` — supplies, fuel, equipment, insurance, other |
+| Promo codes and sales           | **Pro**              | `src/features/marketing/`                                            |
+| Customer memberships            | **Pro** + Connect    | `src/features/subscriptions/`                                        |
+| Check-in SMS                    | **Pro**              | `CheckInProTeaserModalBody.tsx`                                      |
 
 ### Mobile apps
 
-iOS: `https://apps.apple.com/us/app/servicelink-for-business/id6768877250`  
-Android: `https://play.google.com/store/apps/details?id=com.myservicelink.app`
-
-Customers book on the **web** booking link. The native apps are for the shop.
-
-### Team
-
-Team plan: up to 4 people, assign work, teammates run jobs in the app. Roles: Member / Coordinator / Manager. See `src/features/team/docs/TEAM_FEATURE.md`.
+Owner and teammates: iOS `id6768877250`, Android `com.myservicelink.app`. Customers book on the **web** link.
 
 ---
 
-## Do not claim (verified absent, or easy to overclaim)
+## Do not claim
 
-| Item                                                          | Why                                                |
-| ------------------------------------------------------------- | -------------------------------------------------- |
-| Route optimization / route sorting                            | Not in the app                                     |
-| Win-back **automations** / email drips / abandoned-cart flows | Manual SMS template only                           |
-| Conditional photo uploads on booking                          | Not in the booking flow                            |
-| Booking-link QR generator                                     | Only an **app-download** QR exists (`GetAppModal`) |
-| Automatic “leave us a Google review” texts that open Maps     | Review invites use the ServiceLink review URL      |
-| Inventory, dispatch suite, VIN/dent estimating, QuickBooks    | Not ServiceLink’s product                          |
-| PWA                                                           | No web app manifest                                |
-
-If a competitor sells one of those, **do not mention it** in a comparison. Talk about ServiceLink’s booking link, automations, reviews, UI, and price instead.
+| Item                                        | Why                       |
+| ------------------------------------------- | ------------------------- |
+| Route optimization                          | Not in the app            |
+| Win-back automations / drips                | Manual SMS snippet only   |
+| Conditional photo uploads on booking        | Not in the flow           |
+| Booking-link QR generator                   | App-download QR only      |
+| Google Maps review texts                    | Review URL is ServiceLink |
+| Unlimited team seats / per-person calendars | Cap 4; shop calendar only |
+| VIN/dent estimating, QuickBooks, inventory  | Not the product           |
 
 ---
 
-## Free vs Pro (short copy)
+## Comparison table rows (ServiceLink should win)
 
-**Free:** booking page, calendar, up to 5 services, client list, vehicles, review requests, Google review display, SMS/email on the first 5 appointments.
-
-**Pro ($20/mo or $200/yr):** unlimited bookings and services, vehicle-size prices, deposits, Tap to Pay, quotes, invoices, receipts, expenses, sales/promos, memberships, calendar sync, 7d/30d link views.
-
-**Team ($60/mo or $600/yr):** Pro plus up to 4 people and job assignment.
-
-Deposits, Tap to Pay, invoices, quote card collection, expenses, sales, and memberships require Pro. Do not imply a Free shop can take deposits.
-
----
-
-## How to use this in a comparison table
-
-Prefer rows like:
-
-- Price (Free 5, then $20)
-- Public booking / bio link
-- Vehicle-size pricing
-- Deposits + Tap to Pay
+- Ease of use
+- Customer booking / bio link
+- Automations (confirmations, reminders)
+- Review requests + Google reviews on the page
 - CRM (clients, vehicles, history)
-- SMS confirmations and reminders
-- Review requests
-- Google reviews on the page
-- Expenses
-- Quotes and invoices
-- Native mobile apps
-- Built for (solo mobile detailers vs recon shop vs field-service crew)
+- Deposits, Tap to Pay, quotes, invoices, expenses
+- Team (up to 4, roles, assignment, mobile)
+- Price / value (Free 5, Pro $20, Team $60)
 
-Skip rows whose only purpose is to show a competitor extra we do not ship.
+Skip rows whose only job is to showcase a competitor extra we do not ship.
+
+---
+
+## Short plan copy
+
+**Free:** booking page, calendar, CRM, review requests, Google reviews on the page, SMS/email on the first 5 appointments.
+
+**Pro ($20/mo or $200/yr):** unlimited bookings, vehicle-size prices, deposits, Tap to Pay, quotes, invoices, receipts, expenses, sales, memberships, 7d/30d link views.
+
+**Team ($60/mo or $600/yr):** Pro plus up to 4 people, roles, job assignment, teammates running jobs in the app.
+
+Deposits require Pro. Do not imply Free shops can take card deposits.

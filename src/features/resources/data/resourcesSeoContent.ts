@@ -19,7 +19,7 @@ export const RESOURCES_META_DESCRIPTION =
 export const RESOURCES_HERO = {
   title: 'ServiceLink guides for mobile detailers',
   subtitle:
-    'Practical guides for mobile detailers: CRM and booking software, how to get more clients, pricing, deposits, Instagram, and starting a business—written for owner-operators who want more confirmed jobs.',
+    'Practical guides for detailing shops: CRM and booking software, how to get more clients, pricing, deposits, Instagram, and starting a business—written for operators who want more confirmed jobs.',
 } as const;
 
 const RESOURCES_KEYWORDS = [

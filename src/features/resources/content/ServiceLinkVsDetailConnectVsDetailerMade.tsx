@@ -69,11 +69,9 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
         This guide compares{' '}
         <strong className="text-gray-300">
           ServiceLink vs Detail Connect vs DetailerMade
-        </strong>{' '}
-        for mobile detailing businesses that want a clean booking link, clear
-        pricing, and a calendar that stays organized. Spoiler: detailers pick
-        ServiceLink when they want something simple, sleek, and easy to run from
-        a phone.
+        </strong>
+        . ServiceLink is the detailing CRM: booking, automations, reviews, and
+        Team. It is simple to use. It is the pick.
       </p>
 
       <section className={sectionClasses}>
@@ -90,6 +88,7 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
           <li>Availability you control so customers only see open slots</li>
           <li>Deposits or payments so no-shows stop eating your day</li>
           <li>Confirmations, reminders, and a review request after the job</li>
+          <li>Roles and job assignment when you hire (Team, up to 4)</li>
           <li>A UI you can manage between jobs—not a cluttered dashboard</li>
         </ul>
         <p className={pClasses}>
@@ -104,9 +103,9 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
           ServiceLink vs Detail Connect vs DetailerMade Snapshot
         </h2>
         <p className={pClasses}>
-          Use this side-by-side as a starting point. Exact plans change over
-          time—what stays true is how each product feels for a solo or small
-          mobile detailing business.
+          Use this side-by-side as a starting point. Exact plans change. The
+          rows that matter are ease of use, booking, automations, reviews, team,
+          and value. ServiceLink leads those.
         </p>
 
         <div className="mb-6 overflow-x-auto rounded-xl border border-white/10">
@@ -152,14 +151,12 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
               <span className="text-gray-400">Broad toolkit</span>
             </div>
             <div className={comparisonRowClasses}>
-              <span className="font-medium text-gray-300">Best for</span>
+              <span className="font-medium text-gray-300">Team</span>
               <span className="text-gray-200">
-                Detailers who want simple + polished
+                Up to 4 people. Roles, job assignment, mobile app
               </span>
-              <span className="text-gray-400">
-                Teams wanting more ops depth
-              </span>
-              <span className="text-gray-400">Shops needing many modules</span>
+              <span className="text-gray-400">Confirm current seats</span>
+              <span className="text-gray-400">Confirm current seats</span>
             </div>
             <div className={`${comparisonRowClasses} bg-white/[0.02]`}>
               <span className="font-medium text-gray-300">Deposits</span>
@@ -179,9 +176,9 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
               <span className="text-gray-400">Confirm on their site</span>
             </div>
             <div className={`${comparisonRowClasses} bg-white/[0.02]`}>
-              <span className="font-medium text-gray-300">Price</span>
+              <span className="font-medium text-gray-300">Price / value</span>
               <span className="text-gray-200">
-                Free for 5 appointments, then Pro $20/mo
+                5 appointments free. Pro $20/mo. Team $60/mo
               </span>
               <span className="text-gray-400">Confirm current plans</span>
               <span className="text-gray-400">Confirm current plans</span>
@@ -273,25 +270,23 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
 
       <section className={sectionClasses}>
         <h2 className={h2Classes}>
-          Who Detail Connect and DetailerMade are built for
+          How Detail Connect and DetailerMade compare
         </h2>
         <p className={pClasses}>
-          <strong className="text-gray-300">Detail Connect</strong> is a
-          detailing-focused toolset with more operational knobs and more setup.
-          That design center is teams who want a denser console.
+          <strong className="text-gray-300">Detail Connect</strong> is another
+          detailing toolset with more operational knobs and more setup.
+          ServiceLink is simpler to run and still the full CRM: booking,
+          automations, reviews, expenses, Tap to Pay, and Team.
         </p>
         <p className={pClasses}>
-          <strong className="text-gray-300">DetailerMade</strong> is built as a
-          broader module set. Larger shops that want more menus sometimes pick
-          that shape of product.
+          <strong className="text-gray-300">DetailerMade</strong> is a broader
+          module set. ServiceLink is the everyday system shops open: a sleek
+          booking page, reminders, review requests, a CRM, and Team for up to
+          four people.
         </p>
         <p className={pClasses}>
-          If you are a mobile detailer (or a small team) and your priority is{' '}
-          <em className="text-gray-300 not-italic">
-            look professional, book faster, stay organized
-          </em>
-          , ServiceLink is the better everyday app: a sleek booking page,
-          reminders, review requests, and a dashboard you can run between jobs.
+          If your priority is more bookings, fewer no-shows, more reviews, and
+          less admin, ServiceLink is the pick.
         </p>
       </section>
 
@@ -314,9 +309,10 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
           </li>
         </ol>
         <p className={pClasses}>
-          Most detailers comparing ServiceLink vs Detail Connect vs DetailerMade
-          land on ServiceLink because setup is short and the UI stays clean. For
-          a broader checklist of must-have features, read{' '}
+          Most shops comparing ServiceLink vs Detail Connect vs DetailerMade
+          land on ServiceLink because setup is short, the UI stays clean, and
+          the CRM, automations, and Team are in the same stack. For a broader
+          checklist of must-have features, read{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE(
               'best-booking-app-for-mobile-detailers'
@@ -355,14 +351,13 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
       />
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>Final Verdict: Best App for Detailers</h2>
+        <h2 className={h2Classes}>Verdict: ServiceLink is the pick</h2>
         <p className={pClasses}>
           Detail Connect and DetailerMade are real options in the detailing
-          software space. For mobile detailers who care about a simple workflow,
-          an organized calendar, reminders, review requests, and a sleek
-          customer-facing page,{' '}
-          <strong className="text-gray-300">ServiceLink</strong> is the better
-          app.
+          software space. ServiceLink is the detailing CRM: a simple workflow,
+          an organized calendar, reminders, review requests, Team, and a sleek
+          customer-facing page.{' '}
+          <strong className="text-gray-300">ServiceLink</strong> is the pick.
         </p>
         <p className={pClasses}>
           Get your booking link live today, put it in your bio, and let

@@ -25,28 +25,28 @@ describe('resources guides registry', () => {
     );
   });
 
-  it('does not tell readers to stay on a competitor', () => {
-    const comparisonSlugs = [
-      'best-crm-for-mobile-detailers',
-      'mobile-tech-rx-alternative',
-      'servicelink-vs-detaildeck',
-      'jobber-alternative-mobile-detailers',
-      'servicelink-vs-urable',
-      'servicelink-vs-detail-connect-vs-detailermade',
-      'best-booking-app-for-mobile-detailers',
+  it('does not tell readers to stay on a competitor or frame ServiceLink as a cheap starter', () => {
+    const banned = [
+      /stay on /,
+      /servicelink does not/,
+      /why solo/,
+      /built for solo/,
+      /who .+ is built for/,
+      /cheaper start/,
+      /cheaper alternative/,
     ];
 
-    for (const slug of comparisonSlugs) {
-      const guide = GUIDES.find(entry => entry.slug === slug);
-      expect(guide, slug).toBeTruthy();
+    for (const guide of GUIDES) {
       const copy = [
-        ...(guide?.keyTakeaways ?? []),
-        ...(guide?.faqs ?? []).flatMap(faq => [faq.question, faq.answer]),
+        guide.subheading,
+        ...(guide.keyTakeaways ?? []),
+        ...(guide.faqs ?? []).flatMap(faq => [faq.question, faq.answer]),
       ]
         .join(' ')
         .toLowerCase();
-      expect(copy, slug).not.toMatch(/stay on /);
-      expect(copy, slug).not.toMatch(/servicelink does not/);
+      for (const pattern of banned) {
+        expect(copy, `${guide.slug} metadata`).not.toMatch(pattern);
+      }
     }
   });
 });

@@ -31,66 +31,55 @@ export function BestCrmForMobileDetailersContent() {
   return (
     <>
       <p className={pClasses}>
-        If you searched{' '}
+        The{' '}
         <strong className="text-gray-300">best CRM for mobile detailers</strong>{' '}
-        or <strong className="text-gray-300">detailing CRM software</strong>,
-        you are not looking for a consumer app that books a wash for you. You
-        are looking for the system you run the business on: who the customer is,
-        what they drive, what you already did, and how they book the next job
-        without a 14-message thread.
+        is the one that books the job, saves the client and the vehicle, takes
+        the deposit, reminds them, and asks for the review—without a 14-message
+        thread. That system is ServiceLink.
       </p>
       <p className={pClasses}>
-        For a solo mobile detailer, the best CRM is the one attached to a
-        booking page people actually finish. ServiceLink is that stack: a bio
-        link, a client list that fills in from every appointment, vehicle-size
-        prices, deposits, SMS reminders, review requests after the job, and a
-        dashboard you can run from a wet phone. Free for the first 5
-        appointments. Pro is $20/month or $200/year.
+        ServiceLink is a full detailing CRM and booking platform: public
+        booking, client and vehicle history, automations, Google reviews on the
+        page, quotes, invoices, expenses, Tap to Pay, and Team for up to four
+        people. It is simple to use. It is the pick against DetailDeck, Urable,
+        QuoteIQ, Jobber, and Square on the jobs that actually fill a shop.
       </p>
       <p className={pClasses}>
-        This guide compares ServiceLink with DetailDeck, Urable, QuoteIQ,
-        Jobber, and Square on the jobs that happen between driveways. Prices
-        below are from each company’s public site as of November 2026. They
-        change. Confirm on the vendor’s pricing page before you switch.
+        Prices below are from each company’s public site as of November 2026.
+        They change. Confirm on the vendor’s pricing page before you switch.
       </p>
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>What a detailing CRM actually has to do</h2>
+        <h2 className={h2Classes}>What a detailing CRM has to do</h2>
         <p className={pClasses}>
-          CRM here does not mean a sales pipeline with stages named “qualified
-          lead.” For a one-truck or two-truck shop, a{' '}
-          <strong className="text-gray-300">mobile detailing CRM</strong> has to
-          hold the record of the work:
+          CRM here does not mean a sales pipeline named “qualified lead.”{' '}
+          <strong className="text-gray-300">Detailing CRM software</strong> has
+          to run the shop:
         </p>
         <ul className={listClasses}>
           <li>
-            <strong className="text-gray-300">Clients</strong> — name, phone,
-            email, and a note you wrote after the last visit
+            <strong className="text-gray-300">More bookings</strong> — a public
+            page people finish from Instagram and Google, with sedan / SUV /
+            truck prices
           </li>
           <li>
-            <strong className="text-gray-300">Vehicles</strong> — sedan vs SUV
-            vs truck, and enough detail that you do not re-ask “what do you
-            drive?”
+            <strong className="text-gray-300">Fewer no-shows</strong> — deposits
+            at checkout, confirmations, day-before reminders
           </li>
           <li>
-            <strong className="text-gray-300">Job history</strong> — what they
-            booked, what they paid, when they were last there
+            <strong className="text-gray-300">More reviews</strong> — a review
+            request after every completed job, plus Google reviews on the same
+            page
           </li>
           <li>
-            <strong className="text-gray-300">Follow-up</strong> — reminders
-            before the job, a review request after, and a way to rebook from the
-            record instead of scrolling Instagram DMs
+            <strong className="text-gray-300">Less admin</strong> — clients,
+            vehicles, visit history, quotes, invoices, expenses, and a team that
+            can run the job from the phone
           </li>
         </ul>
         <p className={pClasses}>
-          A calendar alone is not a CRM. Neither is a notes app. If the booking
-          does not write the client, the vehicle, and the visit, you will
-          rebuild the same conversation next month.
-        </p>
-        <p className={pClasses}>
-          Booking still matters. Most of your new jobs will not start inside a
-          CRM screen. They start on Instagram, Google, or a text. The CRM has to
-          sit behind a public booking page so the record builds itself.{' '}
+          A calendar without a client record is not a CRM. A CRM without a
+          booking link still leaves you quoting in DMs.{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE(
               'best-booking-app-for-mobile-detailers'
@@ -99,11 +88,7 @@ export function BestCrmForMobileDetailersContent() {
           >
             Best booking app for mobile detailers
           </Link>{' '}
-          covers the booking-link side. This page is the client-record side of
-          the same problem.
-        </p>
-        <p className={pClasses}>
-          See the full ServiceLink feature list on{' '}
+          covers the link. This page is the full system. Feature list:{' '}
           <Link href={ROUTES.FEATURES_PAGE} className={linkClasses}>
             /features
           </Link>
@@ -112,100 +97,159 @@ export function BestCrmForMobileDetailersContent() {
       </section>
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>
-          Why solo mobile detailers pick ServiceLink
-        </h2>
+        <h2 className={h2Classes}>Why ServiceLink is the pick</h2>
         <p className={pClasses}>
-          We scored each product the way a solo mobile detailer actually uses
-          software on a Tuesday: can a stranger book from the bio, is the slot
-          paid, does the client land in a list you can find later, and will you
-          still open the app after a six-job Saturday.
-        </p>
-        <p className={pClasses}>
-          ServiceLink is built around that week. Claims in this article are
-          checked against the live product.
+          We scored each product the way a detailing shop actually uses
+          software: can a stranger book, is the slot paid, does the client land
+          in a list, do reminders and reviews fire, and can a hire run the job
+          from the app.
         </p>
         <ol className={orderedListClasses}>
           <li>
-            <strong className="text-gray-300">
-              A booking page that is the CRM front door.
-            </strong>{' '}
-            Customers open myservicelink.app/yourname, pick a service and a
-            time, and book as a guest. No customer app. Every booking writes
-            name, phone, email, vehicle, and visit history.
+            <strong className="text-gray-300">More bookings.</strong> Customers
+            open myservicelink.app/yourname, pick a service and a time, and book
+            as a guest. Vehicle-size prices sit on the menu (Pro). Every booking
+            writes name, phone, email, vehicle, and visit history.
           </li>
           <li>
-            <strong className="text-gray-300">
-              Automations you feel on the driveway.
-            </strong>{' '}
-            Confirmation SMS and email when they book. A day-before reminder so
-            Saturday is real. On-the-way and job-complete texts from the phone.
-            A review request after you mark the job done.
+            <strong className="text-gray-300">Fewer no-shows.</strong>{' '}
+            Confirmation SMS and email. A day-before reminder. Deposit or full
+            pay at checkout on Pro.{' '}
+            <Link
+              href={ROUTES.RESOURCE_GUIDE(
+                'stop-no-shows-deposits-mobile-detailing'
+              )}
+              className={linkClasses}
+            >
+              How to stop no-shows and take deposits
+            </Link>
+            .
           </li>
           <li>
-            <strong className="text-gray-300">
-              Google reviews on the same page.
-            </strong>{' '}
-            Connect Google Business Profile and show imported Google reviews
-            next to ServiceLink reviews on your booking page. Neighbors see
-            proof without leaving the link.
+            <strong className="text-gray-300">More reviews.</strong> When you
+            mark the job complete, ServiceLink sends a review request. Connect
+            Google Business Profile and imported Google reviews show on the same
+            booking page.
           </li>
           <li>
-            <strong className="text-gray-300">A sleek, simple UI.</strong>{' '}
-            Change a price, an hour, or a package between jobs. The dashboard is
-            built for a one-truck shop, not a 12-person dispatch board.
+            <strong className="text-gray-300">Less admin.</strong> Quotes,
+            invoices, receipts, expenses, sales, promo codes, Tap to Pay, and
+            memberships on Pro. Native iOS and Android apps for the shop.
           </li>
           <li>
-            <strong className="text-gray-300">
-              A price that matches a solo shop.
-            </strong>{' '}
-            First 5 appointments free. Pro is $20/month or $200/year for
-            unlimited bookings, vehicle-size prices, deposits, Tap to Pay,
-            quotes, invoices, expenses, and sales. Team is $60/month when a
-            second person needs the shop.
+            <strong className="text-gray-300">Team when you hire.</strong> Team
+            is $60/month or $600/year for up to four people. Member,
+            Coordinator, and Manager roles. Assign jobs from the board.
+            Teammates run on-the-way, Tap to Pay, and complete in the app.
+          </li>
+          <li>
+            <strong className="text-gray-300">Value.</strong> Five appointments
+            free. Pro $20/month or $200/year. That is the full stack—not a
+            teaser tile that hides booking on a $110 plan. See{' '}
+            <Link href={ROUTES.PRICING_PAGE} className={linkClasses}>
+              /pricing
+            </Link>
+            .
           </li>
         </ol>
         <p className={pClasses}>
+          Simple to use is how you get all of that without a field-service maze.
+          Change a price, an hour, or an assignee between jobs.
+        </p>
+        <p className={pClasses}>
           <Link href={blogGuideSignupPath(SLUG)} className={linkClasses}>
-            Start a free ServiceLink CRM and booking page — first 5 appointments
-            free
+            Start ServiceLink — first 5 appointments free
           </Link>
           .
         </p>
       </section>
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>What the CRM does after they book</h2>
+        <h2 className={h2Classes}>What a ServiceLink shop week looks like</h2>
         <p className={pClasses}>
-          The client record is useless if you still hunt DMs to rebook. On
-          ServiceLink the record is the job. Open a customer and you see the
-          vehicles, the last visit, and the note you left when the interior was
-          packed with dog hair. Next time you do not ask “what do you drive?”
+          Picture Saturday. A stranger saw a Reel, opened the bio, picked SUV
+          interior, paid a deposit, and landed on the calendar. Nobody quoted in
+          a DM. Nobody typed “I have 10 or 2.” The slot is paid before the van
+          leaves. If a hire is on the job, they were assigned from the board.
         </p>
         <p className={pClasses}>
-          Automations sit on that same record. Confirmation SMS and email go out
-          when they book. A day-before reminder goes out so Saturday is real.
-          From the phone you can send on-the-way and job-complete texts. When
-          you mark the booking done, ServiceLink sends a review request— SMS
-          first, email if there is no phone. Connect Google Business Profile and
-          imported Google reviews show on the public page next to ServiceLink
-          reviews.
+          Friday night that customer already got a reminder. The tech opens the
+          iOS or Android app, sees the address, and taps on-the-way. When the
+          job is complete, ServiceLink sends the review request. The receipt
+          goes out if the rest was collected on Tap to Pay or a card link. The
+          client, the SUV, and the visit are already in the CRM for next month.
         </p>
         <p className={pClasses}>
-          Pro adds the money layer on top of the CRM: vehicle-size prices on the
-          menu, deposits or full pay at checkout, Tap to Pay in the iOS and
-          Android apps, quotes for jobs that do not fit a package, invoices and
-          receipts, expense tracking for fuel and supplies, and sales or promo
-          codes when you want a slow Tuesday to move. Memberships exist when you
-          want repeat clients on a plan instead of a one-off text.
+          Custom work still happens. Someone wants a ceramic quote or a two-day
+          correction. You send a ServiceLink quote (Pro). They pay a deposit on
+          the quote link. The rest of the week stays on the published menu.
+          Expenses log fuel and supplies after the job instead of a notes app.
         </p>
         <p className={pClasses}>
-          Free is enough to see the flow: booking page, calendar, up to five
-          services, the client list, vehicles, review requests, and Google
-          reviews on the page. The first five appointments include SMS and
-          email. Then you upgrade. That is a cleaner try-it path than a
-          $29–$110/month suite you have to configure before the first stranger
-          can book.
+          That is more bookings, fewer no-shows, more reviews, and less admin.
+          It is the same stack whether you are the only one on the truck or you
+          have three people on Team.
+        </p>
+      </section>
+
+      <section className={sectionClasses}>
+        <h2 className={h2Classes}>Team, roles, and the phone in the van</h2>
+        <p className={pClasses}>
+          ServiceLink is not a one-person calendar that you outgrow. Team is
+          $60/month or $600/year for up to four people on the shop. The owner
+          invites by email. Roles are Member, Coordinator, and Manager.
+        </p>
+        <ul className={listClasses}>
+          <li>
+            <strong className="text-gray-300">Member</strong> — run assigned
+            jobs, take Tap to Pay, change assignee
+          </li>
+          <li>
+            <strong className="text-gray-300">Coordinator</strong> — plus
+            create, reschedule, and cancel
+          </li>
+          <li>
+            <strong className="text-gray-300">Manager</strong> — plus customers,
+            quotes, invoices, expenses, reviews, shop settings
+          </li>
+        </ul>
+        <p className={pClasses}>
+          Assign jobs from the board. Filter “assigned to me.” Teammates get
+          email, in-app, and push when a job lands on them. Money still lands on
+          the owner’s Stripe. The calendar is shop-wide—not twelve personal
+          calendars. That is the truthful cap: four people, roles, assignment,
+          the same mobile app. It is enough to run a growing detailing shop
+          without a field-service maze.
+        </p>
+      </section>
+
+      <section className={sectionClasses}>
+        <h2 className={h2Classes}>Reviews, Google, and the money stack</h2>
+        <p className={pClasses}>
+          More reviews is not a hope. When you mark a job complete, ServiceLink
+          sends a review request (SMS first, email if there is no phone). The
+          customer lands on a ServiceLink review page. Connect Google Business
+          Profile and imported Google reviews show on the same public booking
+          page as those ServiceLink reviews. The next stranger sees proof
+          without leaving the link.
+        </p>
+        <p className={pClasses}>
+          Do not confuse that with a Google Maps ask. We do not text a Maps
+          review URL. We do show Google reviews you already have, on the page
+          people book from. That is the truthful split.
+        </p>
+        <p className={pClasses}>
+          Pro is the money stack: deposits or full pay at checkout, Tap to Pay
+          on the phone, quotes with a pay link, invoices, receipts, expenses
+          (supplies, fuel, equipment, insurance, other), sales, promo codes, and
+          memberships. Five appointments free exist so you can see guest
+          checkout, the CRM row, the reminder, and the review request before you
+          pay $20. Team is $60 when a second person needs the shop.
+        </p>
+        <p className={pClasses}>
+          That is the full detailing CRM. It is simpler to use than a
+          field-service suite. It is the pick against DetailDeck, Urable,
+          QuoteIQ, Jobber, and Square on the jobs that fill a shop.
         </p>
       </section>
 
@@ -216,17 +260,17 @@ export function BestCrmForMobileDetailersContent() {
         <p className={pClasses}>
           Entry prices look similar until you ask which plan includes a customer
           booking link. QuoteIQ’s Essentials plan and Urable’s Express plan are
-          not the same product as a bio booking page with deposits. The table
-          uses the plan you actually need for that job, with the public list
-          price as of November 2026. Rows are the jobs ServiceLink is built to
-          win: booking, CRM, reminders, reviews, deposits, and price.
+          not a bio booking page with deposits. The table uses the plan you
+          actually need, with public list prices as of November 2026. Rows are
+          the jobs ServiceLink wins: ease of use, booking, automations, reviews,
+          team, and value.
         </p>
 
         <div className={tableWrapClasses}>
           <table className="min-w-[64rem] w-full text-left">
             <caption className="sr-only">
-              Comparison of mobile detailing CRM tools by price, booking,
-              reminders, reviews, deposits, and who each is built for
+              Comparison of mobile detailing CRM tools. ServiceLink leads on
+              ease of use, booking, automations, reviews, team, and value.
             </caption>
             <thead className="bg-white/[0.04] border-b border-white/10">
               <tr>
@@ -259,30 +303,16 @@ export function BestCrmForMobileDetailersContent() {
                   className={`${tdClasses} font-medium text-gray-300`}
                   scope="row"
                 >
-                  Price
-                  <span className="block font-normal text-gray-500 normal-case tracking-normal">
-                    Nov 2026 public list
-                  </span>
+                  Ease of use
                 </th>
                 <td className={tdStrongClasses}>
-                  Free for the first 5 appointments. Pro $20/mo or $200/yr
+                  Simple daily app. Live the same day
                 </td>
-                <td className={tdMutedClasses}>
-                  Solo Pro $29/mo (one published plan)
-                </td>
-                <td className={tdMutedClasses}>
-                  Express $70/mo. Pro $110/mo. Enterprise $183/mo
-                </td>
-                <td className={tdMutedClasses}>
-                  Essentials $29.99/mo. Self-booking starts on Elite $299.99/mo
-                </td>
-                <td className={tdMutedClasses}>
-                  Core from $29/mo billed annually, $49/mo with no commitment (1
-                  user)
-                </td>
-                <td className={tdMutedClasses}>
-                  Free plan $0/mo plus card processing. Plus $49/mo per location
-                </td>
+                <td className={tdMutedClasses}>Booking-link app</td>
+                <td className={tdMutedClasses}>Denser field-service suite</td>
+                <td className={tdMutedClasses}>Estimating-first</td>
+                <td className={tdMutedClasses}>Generic field-service suite</td>
+                <td className={tdMutedClasses}>Generic appointments</td>
               </tr>
               <tr className={`border-b border-white/10 ${rowAltClasses}`}>
                 <th
@@ -294,77 +324,53 @@ export function BestCrmForMobileDetailersContent() {
                 <td className={tdStrongClasses}>
                   Public booking link. Guest checkout. No customer app
                 </td>
-                <td className={tdMutedClasses}>
-                  Public booking link. No customer app
-                </td>
+                <td className={tdMutedClasses}>Public booking link</td>
                 <td className={tdMutedClasses}>
                   Online booking listed on Pro ($110/mo), not Express
                 </td>
                 <td className={tdMutedClasses}>
-                  InstaSchedule / customer self-booking is Elite and Max. Lower
-                  plans are internal scheduling
+                  Self-booking starts on Elite $299.99/mo
                 </td>
                 <td className={tdMutedClasses}>
-                  Online booking on Core. Heavier client hub / requests flow
+                  Online booking on Core. Heavier client hub
                 </td>
-                <td className={tdMutedClasses}>
-                  Booking site on the Free plan. Generic appointment tool
-                </td>
+                <td className={tdMutedClasses}>Generic booking site</td>
               </tr>
               <tr className="border-b border-white/10">
                 <th
                   className={`${tdClasses} font-medium text-gray-300`}
                   scope="row"
                 >
-                  Vehicle-size pricing
+                  Automations
                 </th>
                 <td className={tdStrongClasses}>
-                  Sedan / SUV / truck options on one service (Pro)
+                  Confirmations, day-before reminders, on-the-way texts
                 </td>
+                <td className={tdMutedClasses}>Confirm on their site</td>
                 <td className={tdMutedClasses}>
-                  Confirm current vehicle-price options on their site
+                  Confirm on the plan that includes booking
                 </td>
+                <td className={tdMutedClasses}>Confirm on Elite</td>
                 <td className={tdMutedClasses}>
-                  Custom services inside a broader ops suite
+                  Reminders on higher Jobber plans
                 </td>
-                <td className={tdMutedClasses}>
-                  Strong on custom estimates more than a published size menu
-                </td>
-                <td className={tdMutedClasses}>
-                  Generic line items. Detailing sizes are a workaround
-                </td>
-                <td className={tdMutedClasses}>
-                  Generic appointments. SUV vs sedan is on you
-                </td>
+                <td className={tdMutedClasses}>Appointment reminders</td>
               </tr>
               <tr className={`border-b border-white/10 ${rowAltClasses}`}>
                 <th
                   className={`${tdClasses} font-medium text-gray-300`}
                   scope="row"
                 >
-                  Deposits
+                  Reviews
                 </th>
                 <td className={tdStrongClasses}>
-                  Deposit or full pay at checkout on Pro
+                  Review request after every job. Google reviews on the page
                 </td>
-                <td className={tdMutedClasses}>
-                  Stripe deposits on the published plan
-                </td>
-                <td className={tdMutedClasses}>
-                  Payments via Stripe/Square. Confirm deposit rules on the plan
-                  you buy
-                </td>
-                <td className={tdMutedClasses}>
-                  Online payments on lower plans. Self-serve booking is still
-                  Elite
-                </td>
-                <td className={tdMutedClasses}>
-                  Payments on Core. Automatic collection is a higher-plan
-                  feature
-                </td>
-                <td className={tdMutedClasses}>
-                  Deposits and prepay listed on Free. No-show fees start on Plus
-                </td>
+                <td className={tdMutedClasses}>Confirm on their site</td>
+                <td className={tdMutedClasses}>Confirm on their site</td>
+                <td className={tdMutedClasses}>Confirm on their site</td>
+                <td className={tdMutedClasses}>Confirm on their site</td>
+                <td className={tdMutedClasses}>Confirm on their site</td>
               </tr>
               <tr className="border-b border-white/10">
                 <th
@@ -374,99 +380,77 @@ export function BestCrmForMobileDetailersContent() {
                   CRM
                 </th>
                 <td className={tdStrongClasses}>
-                  Client list, vehicles, visit history, notes, CSV import
+                  Clients, vehicles, visit history, notes, CSV import
                 </td>
-                <td className={tdMutedClasses}>
-                  Client CRM with vehicle history and notes
-                </td>
-                <td className={tdMutedClasses}>
-                  Broader field-service CRM inside a denser ops suite
-                </td>
-                <td className={tdMutedClasses}>
-                  Contacts, quotes, and invoices. Built for estimating
-                </td>
-                <td className={tdMutedClasses}>
-                  Full field-service CRM. Built for multi-trade crews
-                </td>
-                <td className={tdMutedClasses}>
-                  Client directory and appointment history
-                </td>
+                <td className={tdMutedClasses}>Client CRM with vehicles</td>
+                <td className={tdMutedClasses}>Field-service CRM</td>
+                <td className={tdMutedClasses}>Contacts and quotes</td>
+                <td className={tdMutedClasses}>Field-service CRM</td>
+                <td className={tdMutedClasses}>Client directory</td>
               </tr>
               <tr className={`border-b border-white/10 ${rowAltClasses}`}>
                 <th
                   className={`${tdClasses} font-medium text-gray-300`}
                   scope="row"
                 >
-                  Reminders and reviews
+                  Team
                 </th>
                 <td className={tdStrongClasses}>
-                  SMS/email confirmations, day-before reminders, review request
-                  after the job, Google reviews on the booking page
+                  Up to 4 people. Roles, job assignment, mobile app
                 </td>
+                <td className={tdMutedClasses}>Confirm current seats</td>
+                <td className={tdMutedClasses}>Unlimited users on Express</td>
+                <td className={tdMutedClasses}>Confirm current seats</td>
                 <td className={tdMutedClasses}>
-                  Confirm current reminder and review tools on their site
+                  Extra users on Connect / Grow
                 </td>
-                <td className={tdMutedClasses}>
-                  Confirm on the plan that includes booking
-                </td>
-                <td className={tdMutedClasses}>
-                  Confirm on Elite if customers must self-book
-                </td>
-                <td className={tdMutedClasses}>
-                  Reminders and automations on higher Jobber plans
-                </td>
-                <td className={tdMutedClasses}>
-                  Appointment reminders on Square’s appointment tools
-                </td>
+                <td className={tdMutedClasses}>Per-location plans</td>
               </tr>
               <tr className="border-b border-white/10">
                 <th
                   className={`${tdClasses} font-medium text-gray-300`}
                   scope="row"
                 >
-                  Expenses, quotes, Tap to Pay
+                  Deposits, Tap to Pay, expenses
                 </th>
                 <td className={tdStrongClasses}>
-                  Expenses, quotes, invoices, receipts, and Tap to Pay on Pro
+                  All on Pro, with receipts and invoices
                 </td>
                 <td className={tdMutedClasses}>
-                  Confirm current tools on the $29 plan
+                  Stripe deposits on the $29 plan
                 </td>
+                <td className={tdMutedClasses}>Payments in the ops suite</td>
                 <td className={tdMutedClasses}>
-                  Invoicing and ops tools in a heavier suite
+                  Strong quotes. Booking is Elite
                 </td>
-                <td className={tdMutedClasses}>
-                  Strong quotes and invoices. Booking is the expensive plan
-                </td>
-                <td className={tdMutedClasses}>
-                  Invoicing is a Jobber strength. Built for crews
-                </td>
-                <td className={tdMutedClasses}>
-                  Square payments. Not detailing-specific
-                </td>
+                <td className={tdMutedClasses}>Payments on Core</td>
+                <td className={tdMutedClasses}>Square payments</td>
               </tr>
               <tr>
                 <th
                   className={`${tdClasses} font-medium text-gray-300`}
                   scope="row"
                 >
-                  Built for
+                  Price / value
+                  <span className="block font-normal text-gray-500 normal-case tracking-normal">
+                    Nov 2026 public list
+                  </span>
                 </th>
                 <td className={tdStrongClasses}>
-                  Solo and small mobile detailers
+                  5 appointments free. Pro $20/mo or $200/yr. Team $60/mo
                 </td>
-                <td className={tdMutedClasses}>Solo mobile detailers</td>
+                <td className={tdMutedClasses}>Solo Pro $29/mo</td>
                 <td className={tdMutedClasses}>
-                  Shops that want a denser field-service suite
-                </td>
-                <td className={tdMutedClasses}>
-                  Operators who live in estimates and can pay Elite to self-book
+                  Express $70/mo. Booking on Pro $110/mo
                 </td>
                 <td className={tdMutedClasses}>
-                  Multi-trade crews and field-service teams
+                  Essentials $29.99/mo. Self-booking Elite $299.99/mo
                 </td>
                 <td className={tdMutedClasses}>
-                  Shops already in Square payments
+                  Core from $29/mo annual, $49/mo monthly (1 user)
+                </td>
+                <td className={tdMutedClasses}>
+                  Free + processing. Plus $49/mo per location
                 </td>
               </tr>
             </tbody>
@@ -489,8 +473,8 @@ export function BestCrmForMobileDetailersContent() {
           ,{' '}
           <a href="https://myquoteiq.com/pricing/" className={linkClasses}>
             myquoteiq.com/pricing
-          </a>{' '}
-          and QuoteIQ’s 2026 plan help article,{' '}
+          </a>
+          ,{' '}
           <a href="https://www.getjobber.com/pricing/" className={linkClasses}>
             getjobber.com/pricing
           </a>
@@ -504,54 +488,22 @@ export function BestCrmForMobileDetailersContent() {
           .
         </p>
         <GuideProTip>
-          Ignore the cheapest tile on a pricing page until you find online
-          booking and deposits. Urable Express and QuoteIQ Essentials are real
-          products. They are not a customer-facing booking link.
+          Ignore the cheapest tile until you find online booking, deposits, and
+          reminders. Urable Express and QuoteIQ Essentials are real products.
+          They are not a customer-facing booking link.
         </GuideProTip>
       </section>
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>Best for solo mobile detailers</h2>
-        <p className={pClasses}>
-          If you book from Instagram, Google, and texts, you want one place for
-          the link, the prices, the deposit, the client, the reminder, and the
-          review ask. That is the job. ServiceLink is the app built to do that
-          job without a field-service maze.
-        </p>
-        <h3 className={h3Classes}>ServiceLink</h3>
-        <p className={pClasses}>
-          Customers open your page, pick a service and a time, and book as a
-          guest. Every booking writes the client. Vehicles and visit history sit
-          on the profile so you can rebook without digging through chats.
-          Confirmations and day-before reminders go out without you typing them.
-          When you mark the job complete, ServiceLink asks for a review. Connect
-          Google and those reviews show on the same booking page.
-        </p>
-        <p className={pClasses}>
-          Pro is $20/month (or $200/year) for unlimited bookings, vehicle-size
-          prices, deposits, SMS, quotes, invoices, expense tracking, sales, and
-          Tap to Pay in the iOS and Android apps. Current limits are on{' '}
-          <Link href={ROUTES.PRICING_PAGE} className={linkClasses}>
-            /pricing
-          </Link>
-          .
-        </p>
-        <p className={pClasses}>
-          <Link href={blogGuideSignupPath(SLUG)} className={linkClasses}>
-            Start a free ServiceLink CRM and booking page — first 5 appointments
-            free
-          </Link>
-          .
-        </p>
-
+        <h2 className={h2Classes}>How the other tools compare</h2>
         <h3 className={h3Classes}>DetailDeck</h3>
         <p className={pClasses}>
-          DetailDeck is the closest like-for-like: another bio booking link for
-          solo mobile detailers, with deposits and a client CRM. As of November
-          2026 they publish one $29/month plan. ServiceLink is the better
-          everyday pick for the same shop—simpler to live in, automations after
-          the job, Google reviews on the page, expenses and Tap to Pay on Pro,
-          and a cheaper start (five free appointments, then $20). Full write-up:{' '}
+          DetailDeck is another bio booking link with deposits and a client CRM.
+          As of November 2026 they publish one $29/month plan. ServiceLink is
+          the better system for the same shop: automations after the job, Google
+          reviews on the page, expenses and Tap to Pay on Pro, Team for up to
+          four people, and a stronger start (five free appointments, then $20).
+          Full write-up:{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE('servicelink-vs-detaildeck')}
             className={linkClasses}
@@ -561,128 +513,77 @@ export function BestCrmForMobileDetailersContent() {
           .
         </p>
 
-        <h3 className={h3Classes}>Square</h3>
+        <h3 className={h3Classes}>Urable</h3>
         <p className={pClasses}>
-          Square’s Free appointments plan is a $0 booking option. Processing
-          fees still apply. It is a generic appointment tool: it will not care
-          that an SUV interior is a different job than a sedan. Fine if you
-          already take Square payments and your menu is simple. Move to
-          ServiceLink when you want vehicle sizes, a detailing booking page, and
-          a client list that is built for repeats.
-        </p>
-      </section>
-
-      <section className={sectionClasses}>
-        <h2 className={h2Classes}>Who the heavier tools are built for</h2>
-        <p className={pClasses}>
-          Some products in this search are not bad. They are built for a
-          different business than a one-truck mobile week. Solo detailers still
-          pick ServiceLink for the booking page and the CRM. Here is who the
-          other suites are aimed at.
-        </p>
-        <ul className={listClasses}>
-          <li>
-            <strong className="text-gray-300">Urable</strong> is a
-            detailing-adjacent field-service suite. Express at $70/month (as of
-            November 2026) is scheduling and invoicing with unlimited users.
-            Online booking is listed on Pro at $110/month. That density is for
-            shops that want a wide ops console. Comparison:{' '}
-            <Link
-              href={ROUTES.RESOURCE_GUIDE('servicelink-vs-urable')}
-              className={linkClasses}
-            >
-              Urable alternative for mobile detailers
-            </Link>
-            .
-          </li>
-          <li>
-            <strong className="text-gray-300">Jobber</strong> is built for
-            field-service teams. Core starts at $29/month billed annually for
-            one user on getjobber.com (as of November 2026). Connect and Grow
-            add more users and automations. A plumber crew is the design center.
-            A one-truck detailer needs a bio link.{' '}
-            <Link
-              href={ROUTES.RESOURCE_GUIDE(
-                'jobber-alternative-mobile-detailers'
-              )}
-              className={linkClasses}
-            >
-              Jobber alternative for mobile detailers
-            </Link>
-            .
-          </li>
-          <li>
-            <strong className="text-gray-300">QuoteIQ</strong> is strong at
-            estimates, invoices, and AI-assisted quoting. Public pricing starts
-            at $29.99/month for Essentials. Customer self-booking
-            (InstaSchedule) is documented as Elite ($299.99/month) and Max. That
-            is a quoting product first. ServiceLink is a booking page first,
-            with quotes on Pro when a job does not fit the menu.
-          </li>
-        </ul>
-        <p className={pClasses}>
-          ServiceLink’s Team plan exists when more than one person needs the
-          shop (up to four people, listed at $60/month or $600/year on{' '}
-          <Link href={ROUTES.PRICING_PAGE} className={linkClasses}>
-            /pricing
-          </Link>
-          ). It is still a detailing booking + CRM stack.
-        </p>
-        <p className={pClasses}>
-          If your “CRM” is a camera roll and a message thread, you do not need
-          more modules. You need a booking page that writes a client list,
-          deposits so Saturday is not a gamble, and a review request when you
-          finish. Deposits deep-dive:{' '}
+          Urable is a detailing-adjacent field-service suite. Express is
+          $70/month as of November 2026. Online booking is listed on Pro at
+          $110/month. ServiceLink includes booking from day one, plus the CRM,
+          automations, and Team, at Pro $20 or Team $60.{' '}
           <Link
-            href={ROUTES.RESOURCE_GUIDE(
-              'stop-no-shows-deposits-mobile-detailing'
-            )}
+            href={ROUTES.RESOURCE_GUIDE('servicelink-vs-urable')}
             className={linkClasses}
           >
-            how to stop no-shows and take deposits
+            Urable alternative for mobile detailers
           </Link>
           .
         </p>
+
+        <h3 className={h3Classes}>Jobber</h3>
+        <p className={pClasses}>
+          Jobber is generic field-service software. Core starts at $29/month
+          billed annually for one user (as of November 2026). ServiceLink is the
+          detailing CRM: vehicle-size prices, guest booking, review requests,
+          and Team with roles and assignment.{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE('jobber-alternative-mobile-detailers')}
+            className={linkClasses}
+          >
+            Jobber alternative for mobile detailers
+          </Link>
+          .
+        </p>
+
+        <h3 className={h3Classes}>QuoteIQ</h3>
+        <p className={pClasses}>
+          QuoteIQ is strong at estimates. Public pricing starts at $29.99/month
+          for Essentials. Customer self-booking (InstaSchedule) is documented as
+          Elite ($299.99/month) and Max. ServiceLink publishes packages on the
+          booking page and still has quotes on Pro when a job is custom.
+        </p>
+
+        <h3 className={h3Classes}>Square</h3>
+        <p className={pClasses}>
+          Square’s Free appointments plan is a $0 generic calendar. Processing
+          fees still apply. Move to ServiceLink when you want vehicle sizes, a
+          detailing booking page, automations, reviews, and a CRM built for
+          repeats.
+        </p>
       </section>
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>
-          How to switch without losing your client list
-        </h2>
-        <p className={pClasses}>
-          You do not have to delete the old tool on Monday. Run both for a week.
-          The new link goes in the bio. The old one stays up until you are sure.
-        </p>
+        <h2 className={h2Classes}>How to switch this week</h2>
         <ol className={orderedListClasses}>
           <li>
-            Export what you can. Most CRMs will give you a CSV of names, phones,
-            and emails. ServiceLink can import a client CSV, including vehicles
-            when the file has them.
+            Export a CSV of names, phones, and emails. ServiceLink can import
+            clients and vehicles.
           </li>
           <li>
-            Add your top four packages with sedan / SUV / truck prices. Leave
-            ceramic and paint correction off the public menu until the link is
-            live.
+            Add your packages with sedan / SUV / truck prices. Set hours you
+            will honor.
           </li>
           <li>
-            Set availability you will actually honor. Block drive time. Turn on
-            deposits for anything over an hour once you are on Pro.
+            Put the ServiceLink URL in Instagram, TikTok, Google, and texts.
+            Reply to DMs with the link once.
           </li>
           <li>
-            Put the ServiceLink URL in Instagram, TikTok, Google, and your text
-            snippets. Reply to DMs with the link once.
+            On Pro, turn on deposits. Reminders and review requests start on the
+            first real job. Connect Google so reviews show on the page.
           </li>
           <li>
-            After a week of real bookings, turn off the old public link. Keep
-            the old login until you have confirmed every repeat client is in the
-            new list.
+            When you hire, upgrade to Team. Invite them, pick a role, assign
+            jobs from the board.
           </li>
         </ol>
-        <p className={pClasses}>
-          You will not get a perfect history transfer from every competitor. Get
-          the phone numbers. The next visit writes the new history. Reminders
-          and review requests start on the first ServiceLink job.
-        </p>
       </section>
 
       {GUIDE_FAQS.length ? (
@@ -697,7 +598,7 @@ export function BestCrmForMobileDetailersContent() {
                     href={blogGuideSignupPath(SLUG)}
                     className={linkClasses}
                   >
-                    Start a free ServiceLink CRM
+                    Start ServiceLink
                   </Link>
                   .
                 </>
@@ -709,15 +610,13 @@ export function BestCrmForMobileDetailersContent() {
       ) : null}
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>Start the CRM that books itself</h2>
+        <h2 className={h2Classes}>Verdict: ServiceLink is the pick</h2>
         <p className={pClasses}>
-          The best detailing CRM is the one your customers will actually use and
-          you will actually open between jobs. For solo mobile detailers that is
-          ServiceLink: a booking page, a client list, reminders, review
-          requests, and a $20 Pro plan—not a field-service suite.{' '}
+          The best detailing CRM books the job, saves the client, takes the
+          deposit, reminds them, asks for the review, and lets a teammate run
+          the next one from the phone. That is ServiceLink.{' '}
           <Link href={blogGuideSignupPath(SLUG)} className={linkClasses}>
-            Start a free ServiceLink CRM and booking page — first 5 appointments
-            free
+            Start ServiceLink — first 5 appointments free
           </Link>
           .
         </p>

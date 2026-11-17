@@ -57,36 +57,34 @@ export function ServiceLinkVsUrableContent() {
       <p className={pClasses}>
         If you searched{' '}
         <strong className="text-gray-300">Urable alternative</strong> or{' '}
-        <strong className="text-gray-300">ServiceLink vs Urable</strong>, you
-        are choosing between a lean booking app and a heavier field-service
-        platform. ServiceLink is the better app for a one-truck week: a sleek
-        booking link, reminders, review requests, and a $20 Pro plan—less
-        software between you and the driveway.
+        <strong className="text-gray-300">ServiceLink vs Urable</strong>, pick
+        the detailing CRM. ServiceLink is the full booking and CRM system:
+        public booking, automations, review requests, Google reviews on the
+        page, expenses, Tap to Pay, and Team for up to four people. It is
+        simpler to use. It is the pick.
       </p>
       <p className={pClasses}>
-        Urable is built like a full operations suite—lots of modules, lots of
-        screens. ServiceLink is built for mobile detailers who want a clean
-        booking link, a simple calendar, and a dashboard that stays organized.
-        This guide is for owner-operators who want less bloat and a faster
-        day-to-day.
+        Urable is a denser field-service platform. Online booking is listed on
+        their Pro plan at $110/month as of November 2026. ServiceLink includes
+        booking from day one—Pro $20/month, Team $60/month. More bookings, fewer
+        no-shows, more reviews, less admin.
       </p>
 
       <section className={sectionClasses}>
         <h2 className={h2Classes}>
-          The Real Difference: Lean Booking vs Heavy Ops Software
+          The real difference: detailing CRM vs field-service suite
         </h2>
         <p className={pClasses}>
           Urable sits in the “field service CRM” category. Those products often
           include routing, estimates, invoicing, inventory, and team tools in
-          one place. That can help a larger shop. It can also mean more setup,
-          more menus, and a UI that feels busy when you only needed a customer
-          to book a Saturday interior.
+          one place. That can mean more setup, more menus, and a UI that feels
+          busy when a customer needed to book a Saturday interior.
         </p>
         <p className={pClasses}>
-          ServiceLink starts from the other end. Customers open your link, pick
-          a package, pick a time, and pay a deposit if you require one. You
-          manage services, availability, and today’s jobs from a phone-sized
-          dashboard. Less software between you and the driveway.
+          ServiceLink is the detailing CRM. Customers open your link, pick a
+          package, pick a time, and pay a deposit if you require one. You manage
+          services, availability, today’s jobs, and teammates from a phone-sized
+          dashboard. Simple to use is the win—not a smaller product.
         </p>
         <ul className={listClasses}>
           <li>One shareable booking page for Instagram, Google, and texts</li>
@@ -97,6 +95,7 @@ export function ServiceLinkVsUrableContent() {
             SMS confirmations, day-before reminders, and a review request after
             the job
           </li>
+          <li>Team for up to four people: roles, job assignment, mobile app</li>
           <li>A UI you can run between jobs—not a cluttered ops console</li>
         </ul>
       </section>
@@ -104,8 +103,9 @@ export function ServiceLinkVsUrableContent() {
       <section className={sectionClasses}>
         <h2 className={h2Classes}>ServiceLink vs Urable Snapshot</h2>
         <p className={pClasses}>
-          Plans and feature lists change. What stays true is how each product
-          feels for a solo or small mobile detailing business.
+          Plans and feature lists change. The rows that matter are ease of use,
+          booking, automations, reviews, team, and value. ServiceLink leads
+          those.
         </p>
 
         <div className="mb-6 overflow-x-auto rounded-xl border border-white/10">
@@ -116,9 +116,9 @@ export function ServiceLinkVsUrableContent() {
               <span>Urable</span>
             </div>
             <div className={comparisonRowClasses}>
-              <span className="font-medium text-gray-300">Feel</span>
+              <span className="font-medium text-gray-300">Ease of use</span>
               <span className="text-gray-200">
-                Lean, clean, built for daily use
+                Simple daily app. Live the same day
               </span>
               <span className="text-gray-400">Broader field-service suite</span>
             </div>
@@ -141,13 +141,11 @@ export function ServiceLinkVsUrableContent() {
               </span>
             </div>
             <div className={`${comparisonRowClasses} bg-white/[0.02]`}>
-              <span className="font-medium text-gray-300">Best for</span>
+              <span className="font-medium text-gray-300">Team</span>
               <span className="text-gray-200">
-                Solo detailers and small teams
+                Up to 4 people. Roles, job assignment, mobile app
               </span>
-              <span className="text-gray-400">
-                Shops that want a full ops stack
-              </span>
+              <span className="text-gray-400">Unlimited users on Express</span>
             </div>
             <div className={comparisonRowClasses}>
               <span className="font-medium text-gray-300">
@@ -174,9 +172,9 @@ export function ServiceLinkVsUrableContent() {
               <span className="text-gray-400">Confirm on the booking plan</span>
             </div>
             <div className={`${comparisonRowClasses} bg-white/[0.02]`}>
-              <span className="font-medium text-gray-300">Price</span>
+              <span className="font-medium text-gray-300">Price / value</span>
               <span className="text-gray-200">
-                Free for 5 appointments, then Pro $20/mo
+                5 appointments free. Pro $20/mo. Team $60/mo
               </span>
               <span className="text-gray-400">
                 Express $70/mo. Online booking listed on Pro $110/mo (Nov 2026)
@@ -186,8 +184,9 @@ export function ServiceLinkVsUrableContent() {
         </div>
 
         <GuideProTip>
-          If you open the app ten times a day, the lighter product wins. Feature
-          lists look impressive. Clutter is what you feel on a job.
+          If you open the app ten times a day, simple wins. Feature lists look
+          impressive. Clutter is what you feel on a job. ServiceLink is the full
+          CRM without the maze.
         </GuideProTip>
       </section>
 
@@ -207,10 +206,10 @@ export function ServiceLinkVsUrableContent() {
 
         <h3 className={h3Classes}>1. Less bloat, faster daily use</h3>
         <p className={pClasses}>
-          You do not need every field-service module to run a mobile detailing
-          route. ServiceLink keeps the path short: services, schedule, bookings,
-          payments. That is easier to learn and harder to lose track of when you
-          are already wet and behind.
+          You do not need every field-service module to run a detailing shop.
+          ServiceLink keeps the path short: services, schedule, bookings,
+          payments, CRM, Team. That is easier to learn and harder to lose track
+          of when you are already wet and behind.
         </p>
         <GuideFigure
           src={MARKETING_IMAGES.features.homeScreen}
@@ -267,14 +266,14 @@ export function ServiceLinkVsUrableContent() {
       </section>
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>Who Urable is built for</h2>
+        <h2 className={h2Classes}>How Urable compares</h2>
         <p className={pClasses}>
-          Urable is built as a wider field-service platform: more modules, more
-          configuration, a denser console. That design center is shops that want
-          an ops suite first. Solo mobile detailers and small teams who want to
-          look professional, book faster, and stay organized pick
-          ServiceLink—the leaner booking app with reminders, review requests,
-          and a $20 Pro plan.
+          Urable is a wider field-service platform: more modules, more
+          configuration, a denser console. ServiceLink is the detailing CRM
+          shops actually open: booking from day one, reminders, review requests,
+          expenses, Tap to Pay, and Team for up to four people. Online booking
+          on Urable is listed on Pro at $110/month as of November 2026.
+          ServiceLink is the pick.
         </p>
         <p className={pClasses}>
           For a three-way look at other detailing tools, read{' '}
@@ -306,8 +305,8 @@ export function ServiceLinkVsUrableContent() {
           </li>
         </ol>
         <p className={pClasses}>
-          Most detailers comparing ServiceLink vs Urable land on ServiceLink
-          because it stays lean. For a broader checklist, see the{' '}
+          Most shops comparing ServiceLink vs Urable land on ServiceLink because
+          it is simpler and still the full CRM. For a broader checklist, see the{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE(
               'best-booking-app-for-mobile-detailers'
@@ -339,12 +338,11 @@ export function ServiceLinkVsUrableContent() {
       />
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>Final Verdict</h2>
+        <h2 className={h2Classes}>Verdict: ServiceLink is the pick</h2>
         <p className={pClasses}>
-          Urable is a heavier field-service stack. For mobile detailers who want
-          something leaner, cleaner, and easier to run from a phone,{' '}
-          <strong className="text-gray-300">ServiceLink</strong> is the better
-          app.
+          Urable is a heavier field-service stack. ServiceLink is the detailing
+          CRM: booking, automations, reviews, Team, and a $20 Pro plan.{' '}
+          <strong className="text-gray-300">ServiceLink</strong> is the pick.
         </p>
         <p className={pClasses}>
           Put one booking link in your bio and let people book while you are on

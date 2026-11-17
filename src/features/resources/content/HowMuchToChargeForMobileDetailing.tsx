@@ -71,9 +71,9 @@ export function HowMuchToChargeForMobileDetailingContent() {
       <section className={sectionClasses}>
         <h2 className={h2Classes}>Typical Mobile Detailing Prices</h2>
         <p className={pClasses}>
-          These are common ranges for a solo mobile operator in a mid-cost U.S.
-          market. Coastal cities and luxury suburbs sit higher. Small towns sit
-          lower. If you are booked two weeks out on the cheap package, raise it.
+          These are common ranges for a mobile shop in a mid-cost U.S. market.
+          Coastal cities and luxury suburbs sit higher. Small towns sit lower.
+          If you are booked two weeks out on the cheap package, raise it.
         </p>
 
         <div className="mb-6 overflow-x-auto rounded-xl border border-white/10">
@@ -219,9 +219,10 @@ export function HowMuchToChargeForMobileDetailingContent() {
           <Link href="/" className={linkClasses}>
             ServiceLink
           </Link>{' '}
-          is built for that. Add packages, set vehicle pricing, require a
-          deposit, and drop one link in your bio, Google profile, and texts.
-          Most detailers can do this the same day.
+          is the detailing CRM for that. Add packages, set vehicle pricing,
+          require a deposit, turn on reminders and review requests, and drop one
+          link in your bio, Google profile, and texts. Most shops can do this
+          the same day. Team is there when you hire.
         </p>
         <p className={pClasses}>
           Comparing software while you build the menu? Read{' '}

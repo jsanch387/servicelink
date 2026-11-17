@@ -33,9 +33,10 @@ export function HowToGetMoreMobileDetailingClientsContent() {
       </p>
       <p className={pClasses}>
         This is the umbrella playbook: booking, Instagram and TikTok, Google
-        Business Profile, referrals, and small paid tests. It is not a promise
-        of a full calendar in 30 days, and it does not invent average earnings.
-        It is the sequence that turns attention into appointments you can run.
+        Business Profile, referrals, and small paid tests. ServiceLink is the
+        detailing CRM that turns that attention into deposited, reminded,
+        reviewed jobs—for one operator or a growing team. It is not a promise of
+        a full calendar in 30 days, and it does not invent average earnings.
       </p>
       <p className={pClasses}>
         Instagram-only tactics live in{' '}
@@ -78,8 +79,7 @@ export function HowToGetMoreMobileDetailingClientsContent() {
           None of this requires a huge following. A local who needs an interior
           this week does not care that a clip did well in another state. They
           care whether you work their zip, what it costs, and whether they can
-          pick a time without waiting on you. Fix that path
-          first. Then post.
+          pick a time without waiting on you. Fix that path first. Then post.
         </p>
         <p className={pClasses}>
           If you do not have a menu yet, price packages before you chase more
@@ -122,11 +122,11 @@ export function HowToGetMoreMobileDetailingClientsContent() {
           time, and confirm.
         </p>
         <p className={pClasses}>
-          ServiceLink is built for that flow: a page at
-          myservicelink.app/yourname, guest checkout, and a client list that
-          fills in from the booking. Free covers the first five appointments.
-          Pro is $20/month or $200/year for unlimited bookings, deposits, SMS
-          reminders, and the rest of the paid tools. Plan names live on{' '}
+          ServiceLink is the detailing CRM for that flow: a page at
+          myservicelink.app/yourname, guest checkout, a client list that fills
+          in from the booking, reminders, review requests, and Team when you
+          hire. Five appointments free. Pro is $20/month or $200/year. Team is
+          $60/month for up to four people. Plan names live on{' '}
           <Link href={ROUTES.PRICING_PAGE} className={linkClasses}>
             /pricing
           </Link>
@@ -362,7 +362,7 @@ export function HowToGetMoreMobileDetailingClientsContent() {
         <p className={pClasses}>
           Google ads can work later for “mobile detailing” plus your city. They
           are optional. The free Google Business Profile does more for most
-          solos than a search campaign you will not watch.
+          shops than a search campaign you will not watch.
         </p>
       </section>
 
@@ -463,9 +463,11 @@ export function HowToGetMoreMobileDetailingClientsContent() {
         <h2 className={h2Classes}>Book the next job from the bio</h2>
         <p className={pClasses}>
           Getting more mobile detailing clients is mostly unglamorous: a clear
-          menu, a public link, local proof, and the nerve to stop living in DMs.{' '}
+          menu, a public link, local proof, and the nerve to stop living in DMs.
+          ServiceLink is the CRM that turns that traffic into deposited,
+          reminded, reviewed jobs.{' '}
           <Link href={blogGuideSignupPath(SLUG)} className={linkClasses}>
-            Put a booking link in your bio this week — free to start
+            Start ServiceLink — first 5 appointments free
           </Link>
           .
         </p>
