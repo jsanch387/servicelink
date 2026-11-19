@@ -37,7 +37,7 @@ export const GUIDES: GuideMeta[] = [
       'ServiceLink is the detailing CRM that books, reminds, collects, and asks for the review—then beats DetailDeck, Urable, QuoteIQ, Jobber, and Square on the jobs that fill a shop.',
     coverImage: MARKETING_IMAGES.resources.crm,
     coverImageAlt:
-      'Mobile detailer checking a booking and client list on their phone next to a freshly detailed car',
+      'Detailer holding a phone with a client list in front of a closed silver sedan',
     keyTakeaways: [
       'The best detailing CRM books the job, saves the client and vehicle, reminds them, takes the deposit, and asks for the review.',
       'ServiceLink is the pick: full CRM + booking, automations, Google reviews on the page, expenses, Tap to Pay, and Team for up to 4 people.',
@@ -104,7 +104,7 @@ export const GUIDES: GuideMeta[] = [
       'ServiceLink is the detailing CRM and booking system. Mobile Tech RX is recon estimating software. If you sell details, ServiceLink is the pick.',
     coverImage: MARKETING_IMAGES.resources.mobileTechRx,
     coverImageAlt:
-      'ServiceLink versus Mobile Tech RX — mobile detailing booking app comparison on a phone',
+      'Phone on a wet driveway beside a wash bucket, in front of a dark green SUV',
     keyTakeaways: [
       'ServiceLink is the pick for detailing shops: public booking, CRM, deposits, reminders, review requests, and Team.',
       'As of November 2026, MTX does not offer customer self-booking. Getting Started is $39/admin/month.',
@@ -122,7 +122,7 @@ export const GUIDES: GuideMeta[] = [
       'ServiceLink',
     ],
     datePublished: '2026-11-17',
-    dateModified: '2026-11-17',
+    dateModified: '2026-11-18',
     relatedSlugs: [
       'best-crm-for-mobile-detailers',
       'best-booking-app-for-mobile-detailers',
@@ -133,7 +133,7 @@ export const GUIDES: GuideMeta[] = [
       {
         question: 'Is ServiceLink a Mobile Tech RX alternative?',
         answer:
-          'Yes if you run a detailing business. ServiceLink is the CRM and booking system: public booking, deposits, reminders, review requests, expenses, Tap to Pay, and Team. MTX is recon estimating software.',
+          'Yes. ServiceLink is the Mobile Tech RX alternative for detailing shops: public booking, deposits, reminders, review requests, expenses, Tap to Pay, and Team. MTX is recon estimating software.',
       },
       {
         question: 'Does Mobile Tech RX have a customer booking link?',
@@ -152,14 +152,14 @@ export const GUIDES: GuideMeta[] = [
           'As of November 2026, MTX Getting Started is $39/admin/month ($429/year), Standard $99, Pro $199, plus extra users. ServiceLink is 5 appointments free, then Pro $20/month or $200/year, or Team $60/month for up to 4 people.',
       },
       {
-        question: 'Can I run both while I switch?',
+        question: 'What if I already have jobs in Mobile Tech RX?',
         answer:
-          'Yes. Keep MTX for in-progress estimates. Put ServiceLink in the bio for package bookings. Do not double-book the same truck.',
+          'Finish recon estimates that are already open. Run new detailing bookings on ServiceLink. Put the ServiceLink link in the bio, Google, and texts, and do not double-book the same truck.',
       },
       {
         question: 'How do I try ServiceLink?',
         answer:
-          'Create a booking page, add your top packages with vehicle prices, and share the link. First 5 appointments are free. You do not have to cancel MTX on day one.',
+          'Create a booking page, add your top packages with vehicle prices, and share the ServiceLink link in your bio, Google, and texts. The first 5 appointments are free.',
       },
     ],
   },
@@ -167,18 +167,18 @@ export const GUIDES: GuideMeta[] = [
     slug: 'how-to-get-more-mobile-detailing-clients',
     title: 'How to Get More Mobile Detailing Clients',
     subheading:
-      'Stop living in DMs. Make booking obvious, post local proof, use Google, ask for referrals, and run small paid tests without turning on Advantage+.',
+      'Stop living in DMs. Put a ServiceLink booking link in the bio, post local proof, use Google, and ask for referrals.',
     coverImage: MARKETING_IMAGES.resources.getClients,
     coverImageAlt:
-      'Phone filming a foam-covered car during a mobile detailing job for local client content',
+      'Hands holding a phone in front of a freshly beaded black sedan in a driveway',
     keyTakeaways: [
-      'More bookings come from a public menu and a link people can finish—not from living in DMs.',
+      'More bookings come from a ServiceLink page people can finish, instead of living in DMs.',
       'Put one ServiceLink URL in the bio, Google, and texts. Deposits and reminders keep the calendar real.',
       'Instagram and TikTok work when you name the city and show real jobs.',
-      'Skip Meta Advantage+. If you test ads, send them to the booking page, not into DMs.',
+      'Skip Meta Advantage+. If you test ads, send them to your ServiceLink booking page.',
     ],
     metaDescription:
-      'How to get more mobile detailing clients: booking links, Instagram, Google, referrals, and a 30-day plan that does not live in your DMs.',
+      'How to get more mobile detailing clients with a ServiceLink booking link, Instagram, Google, referrals, and a 30-day plan.',
     keywords: [
       'how to get more mobile detailing clients',
       'how to get more detailing clients',
@@ -188,7 +188,7 @@ export const GUIDES: GuideMeta[] = [
       'ServiceLink',
     ],
     datePublished: '2026-11-17',
-    dateModified: '2026-11-17',
+    dateModified: '2026-11-18',
     relatedSlugs: [
       'how-mobile-detailers-get-clients-from-instagram',
       'how-to-start-a-mobile-detailing-business',
@@ -200,7 +200,7 @@ export const GUIDES: GuideMeta[] = [
       {
         question: 'How do I get more mobile detailing clients?',
         answer:
-          'Make booking obvious with one public link, post local before/after work, keep Google Business Profile and reviews current, ask for referrals, and rebook past clients. Ads are optional and should send people to the booking page, not into DMs.',
+          'Put one ServiceLink booking link in the bio, Google, and texts. Post local before/after work, keep Google Business Profile current, ask for referrals, and rebook past clients from ServiceLink visit history. Ads should send people to that ServiceLink page.',
       },
       {
         question: 'How do I get more detailing clients without ads?',
@@ -210,18 +210,18 @@ export const GUIDES: GuideMeta[] = [
       {
         question: 'Should I put a booking link in my Instagram bio?',
         answer:
-          'Yes. If someone has to DM for a price and a time, you will lose jobs while you are on a driveway. Use one link on Instagram, TikTok, Google, and texts.',
+          'Yes. Put your ServiceLink link on Instagram, TikTok, Google, and texts. If someone has to DM for a price and a time, you will lose jobs while you are on a driveway.',
       },
       {
         question:
           'How important is Google Business Profile for mobile detailers?',
         answer:
-          'It is how neighbors confirm you are real. Set it as a service-area business, add real job photos, put the booking link as the website, and ask for reviews the day you finish.',
+          'It is how neighbors confirm you are real. Set it as a service-area business, add real job photos, and use your ServiceLink link as the website. ServiceLink sends a review request when you mark the job complete, and connected Google reviews show on the booking page.',
       },
       {
         question: 'Do deposits help me get more clients?',
         answer:
-          'Deposits do not create leads. They turn maybe-bookings into slots that show up, so the calendar you filled is real. That is how you keep the clients you already got.',
+          'Deposits turn maybe-bookings into slots that show up. On ServiceLink Pro, the deposit is collected when they book, so the calendar you filled is real.',
       },
       {
         question: 'How fast can I put a booking link in my bio?',

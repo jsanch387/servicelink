@@ -26,12 +26,12 @@ export function MobileTechRxAlternativeContent() {
   return (
     <>
       <p className={pClasses}>
-        If you searched{' '}
-        <strong className="text-gray-300">Mobile Tech RX alternative</strong> or{' '}
+        ServiceLink is the{' '}
+        <strong className="text-gray-300">Mobile Tech RX alternative</strong>{' '}
+        for mobile detailers. If you searched{' '}
         <strong className="text-gray-300">ServiceLink vs Mobile Tech RX</strong>
-        , pick the tool that matches the shop. ServiceLink is the detailing CRM
-        and booking system. MTX is recon estimating software. If you sell
-        details, ServiceLink is the pick.
+        , ServiceLink is the detailing CRM and booking system. MTX is recon
+        estimating software. If you sell details, ServiceLink is the pick.
       </p>
       <p className={pClasses}>
         You get a public booking page, a CRM that fills in from every job, SMS
@@ -164,8 +164,9 @@ export function MobileTechRxAlternativeContent() {
           Higher plans add the recon-shop stack: QuickBooks, a client portal for
           estimate approval and payment, tech pay, subcontracting, deposits on
           estimates, OEM parts, ADAS, checklists, comparative pricing, workflow,
-          and time tracking. That is a real product for shops that write
-          estimates all day and bill dealers or insurance.
+          and time tracking. That stack is for recon shops that write estimates
+          all day and bill dealers or insurance. A detailing shop that sells
+          packages from a bio link should run ServiceLink.
         </p>
         <p className={pClasses}>
           What MTX does not claim, as of November 2026: a public page where a
@@ -385,11 +386,11 @@ export function MobileTechRxAlternativeContent() {
       <section className={sectionClasses}>
         <h2 className={h2Classes}>How to move this week</h2>
         <p className={pClasses}>
-          You can try ServiceLink without turning anything else off. The bio
-          link is the only public change. Treat week one as a side-by-side:
-          package jobs go through the new link. If the booking page produces
-          deposited jobs and you never need a recon estimate that week, you have
-          your answer.
+          Move package bookings to ServiceLink this week. Put the ServiceLink
+          link in Instagram, Google, and texts. New interiors, washes, and full
+          details book there, with a deposit, a reminder, and a review request.
+          Finish any recon estimate that is already open, then keep the
+          detailing calendar on ServiceLink.
         </p>
         <ol className={orderedListClasses}>
           <li>
@@ -421,7 +422,7 @@ export function MobileTechRxAlternativeContent() {
           <Link href={blogGuideSignupPath(SLUG)} className={linkClasses}>
             Start ServiceLink — first 5 appointments free
           </Link>
-          . You do not have to cancel anything on day one.
+          . Put that link in the bio the same day.
         </p>
       </section>
 

@@ -32,11 +32,10 @@ export function HowToGetMoreMobileDetailingClientsContent() {
         look.
       </p>
       <p className={pClasses}>
-        This is the umbrella playbook: booking, Instagram and TikTok, Google
-        Business Profile, referrals, and small paid tests. ServiceLink is the
-        detailing CRM that turns that attention into deposited, reminded,
-        reviewed jobs—for one operator or a growing team. It is not a promise of
-        a full calendar in 30 days, and it does not invent average earnings.
+        ServiceLink is the detailing CRM for that path: one booking page,
+        deposits, reminders, review requests, and a client list for the next
+        visit. Pair it with Instagram, TikTok, Google Business Profile,
+        referrals, and small paid tests.
       </p>
       <p className={pClasses}>
         Instagram-only tactics live in{' '}
@@ -114,7 +113,7 @@ export function HowToGetMoreMobileDetailingClientsContent() {
           15-second clip and cannot book in one tap, the content is unpaid
           advertising for a business they cannot hire.
         </p>
-        <h3 className={h3Classes}>One booking link, everywhere</h3>
+        <h3 className={h3Classes}>One ServiceLink booking link, everywhere</h3>
         <p className={pClasses}>
           Use one URL. Instagram bio, TikTok bio, Google profile, text snippets,
           email signature, and the Link sticker on Reels. Customers should not
@@ -143,11 +142,12 @@ export function HowToGetMoreMobileDetailingClientsContent() {
         </p>
         <h3 className={h3Classes}>Google Business Profile is not optional</h3>
         <p className={pClasses}>
-          Set the profile up as a service-area business. Put the same booking
+          Set the profile up as a service-area business. Put your ServiceLink
           link in the website field. Use the real service area, not a fake
           storefront address. Categories and photos should match what you
-          actually sell. Ask every finished job for a Google review the same
-          day—text the link while the car is still shiny.
+          actually sell. When you mark the job complete in ServiceLink, it sends
+          the review request. Connect Google Business Profile and those Google
+          reviews show on the same booking page.
         </p>
         <h3 className={h3Classes}>Deposits make the lead real</h3>
         <p className={pClasses}>
@@ -185,7 +185,7 @@ export function HowToGetMoreMobileDetailingClientsContent() {
         <p className={pClasses}>
           Views in another state do not wash cars on your street. Local jobs
           come from videos that name the city, show a transformation, and point
-          at the same booking link.
+          at the same ServiceLink booking link.
         </p>
         <p className={pClasses}>Post what you already do on the job:</p>
         <ul className={listClasses}>
@@ -202,10 +202,10 @@ export function HowToGetMoreMobileDetailingClientsContent() {
           you will not drive to.
         </p>
         <p className={pClasses}>
-          Bio formula that is enough: service + city + booking link. Example:
-          “Mobile detailing in Austin. Interiors, full details, ceramic. Book
-          here →”. Captions can be short. The video does the selling. The link
-          does the booking.
+          Bio formula that is enough: service + city + your ServiceLink link.
+          Example: “Mobile detailing in Austin. Interiors, full details,
+          ceramic. Book here →”. Captions can be short. The video does the
+          selling. The link does the booking.
         </p>
         <p className={pClasses}>
           Consistency beats a content calendar you will not keep. Three or four
@@ -249,16 +249,18 @@ export function HowToGetMoreMobileDetailingClientsContent() {
           <li>
             Photos of real jobs—exteriors, interiors, your setup—not stock foam
           </li>
-          <li>The booking link as the website</li>
+          <li>Your ServiceLink link as the website</li>
           <li>
             A short description that names mobile detailing, your city, and the
             packages you want
           </li>
         </ul>
         <p className={pClasses}>
-          Reviews are the proof. Ask after every job. Make it easy: a text with
-          the Google review link, sent when you send the after photos. Reply to
-          every review. Do not buy reviews. Do not fake a storefront.
+          Reviews are the proof. Mark the job complete and ServiceLink sends the
+          review request. Connect Google Business Profile so the Google reviews
+          you already have show on the booking page, next to ServiceLink
+          reviews. Reply to every review. Do not buy reviews. Do not fake a
+          storefront.
         </p>
         <p className={pClasses}>
           Nextdoor, neighborhood Facebook groups, and apartment community boards
@@ -288,7 +290,7 @@ export function HowToGetMoreMobileDetailingClientsContent() {
         <ul className={listClasses}>
           <li>
             After a full detail, text: “If someone on the street asks, send them
-            this link.” Attach the booking URL
+            this link.” Attach your ServiceLink URL
           </li>
           <li>
             Offer a small, written thank-you on the next visit when a referral
@@ -314,9 +316,9 @@ export function HowToGetMoreMobileDetailingClientsContent() {
         <p className={pClasses}>
           A usable follow-up text is one screen long: name, last service, link.
           “Hey Jordan—your Civic interior was in March. If you want the same
-          before summer, here is the booking page.” That is the CRM doing its
-          job. If those names still live only in Instagram, you will not send
-          it.
+          before summer, here is the ServiceLink page.” Visit history in
+          ServiceLink is what makes that text possible. If those names still
+          live only in Instagram, you will not send it.
         </p>
       </section>
 
@@ -340,8 +342,8 @@ export function HowToGetMoreMobileDetailingClientsContent() {
             everything else
           </li>
           <li>
-            One offer, one booking link, one creative (a real before/after). No
-            five-ad science fair
+            One offer, one ServiceLink booking link, one creative (a real
+            before/after). No five-ad science fair
           </li>
           <li>
             Optimize for people who finish the booking, not for “messages” or
@@ -350,9 +352,9 @@ export function HowToGetMoreMobileDetailingClientsContent() {
         </ul>
         <p className={pClasses}>
           Boosting a Reel to the whole metro is not a test. A test has a zip
-          list, a booking URL, and a stop date. If you want a walkthrough of
-          local Meta ads that send people to a booking page, ServiceLink still
-          offers a free ads workshop at{' '}
+          list, your ServiceLink URL, and a stop date. If you want a walkthrough
+          of local Meta ads that send people to that page, ServiceLink offers a
+          free ads workshop at{' '}
           <Link href={ROUTES.WORKSHOP} className={linkClasses}>
             /workshop
           </Link>
@@ -367,7 +369,9 @@ export function HowToGetMoreMobileDetailingClientsContent() {
       </section>
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>A 30-day client-getting plan</h2>
+        <h2 className={h2Classes}>
+          A 30-day plan to get more mobile detailing clients
+        </h2>
         <p className={pClasses}>
           Use this as a checklist, not a guarantee. Adjust for weather, your
           current book of work, and how many hours you can film without skipping
@@ -392,7 +396,10 @@ export function HowToGetMoreMobileDetailingClientsContent() {
         <h3 className={h3Classes}>Days 4–14: proof</h3>
         <ol className={orderedListClasses}>
           <li>Finish Google Business Profile photos, area, and description</li>
-          <li>Ask the next five customers for a Google review the same day</li>
+          <li>
+            Mark finished jobs complete so ServiceLink sends the review request,
+            and connect Google so those reviews show on the booking page
+          </li>
           <li>
             Post three or four job clips a week. City in the audio. Link in the
             bio
@@ -407,8 +414,8 @@ export function HowToGetMoreMobileDetailingClientsContent() {
           </li>
           <li>Ask two happy customers to refer a neighbor</li>
           <li>
-            Optional: run a two-week local paid test to the booking page, with a
-            tight map and no Advantage+
+            Optional: run a two-week local paid test to your ServiceLink page,
+            with a tight map and no Advantage+
           </li>
           <li>
             Kill anything that does not produce booked, deposited jobs. Keep

@@ -105,7 +105,7 @@ export const RESOURCES_MEGA_SECTIONS: readonly ResourcesMegaSection[] = [
       href: ROUTES.RESOURCE_GUIDE('best-crm-for-mobile-detailers'),
       image: MARKETING_IMAGES.resources.crm,
       imageAlt:
-        'Mobile detailer checking a booking and client list on their phone next to a freshly detailed car',
+        'Detailer holding a phone with a client list in front of a closed silver sedan',
       cta: 'Read guide',
     },
   },
