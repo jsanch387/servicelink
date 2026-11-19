@@ -73,7 +73,7 @@ const GUIDE_LINKS = [
     icon: 'compare',
   },
   {
-    label: 'ServiceLink vs Urable',
+    label: 'Urable Alternative for Mobile Detailers',
     href: ROUTES.RESOURCE_GUIDE('servicelink-vs-urable'),
     description: 'Lean booking vs a heavier ops suite',
     icon: 'briefcase',
@@ -99,12 +99,13 @@ export const RESOURCES_MEGA_SECTIONS: readonly ResourcesMegaSection[] = [
     links: GUIDE_LINKS,
     featured: {
       eyebrow: 'Featured guide',
-      title: 'Best Booking App for Mobile Detailers',
-      description: 'What to look for and how to turn your link into more jobs.',
-      href: ROUTES.RESOURCE_GUIDE('best-booking-app-for-mobile-detailers'),
-      image: MARKETING_IMAGES.resources.bookingApp,
+      title: 'Best CRM for Mobile Detailers',
+      description:
+        'Booking, deposits, and client lists compared—without a field-service suite.',
+      href: ROUTES.RESOURCE_GUIDE('best-crm-for-mobile-detailers'),
+      image: MARKETING_IMAGES.resources.crm,
       imageAlt:
-        'Detailer checking a booking app on their phone next to a freshly detailed car',
+        'Detailer holding a phone with a client list in front of a closed silver sedan',
       cta: 'Read guide',
     },
   },

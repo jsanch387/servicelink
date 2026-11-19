@@ -1,10 +1,13 @@
 import React from 'react';
 import { BestBookingAppForMobileDetailersContent } from './BestBookingAppForMobileDetailers';
+import { BestCrmForMobileDetailersContent } from './BestCrmForMobileDetailers';
 import { DetailDeckAlternativeMobileDetailersContent } from './DetailDeckAlternativeMobileDetailers';
 import { HowMobileDetailersGetClientsInstagramContent } from './HowMobileDetailersGetClientsInstagram';
 import { HowMuchToChargeForMobileDetailingContent } from './HowMuchToChargeForMobileDetailing';
+import { HowToGetMoreMobileDetailingClientsContent } from './HowToGetMoreMobileDetailingClients';
 import { HowToStartMobileDetailingBusinessContent } from './HowToStartMobileDetailingBusiness';
 import { JobberAlternativeMobileDetailersContent } from './JobberAlternativeMobileDetailers';
+import { MobileTechRxAlternativeContent } from './MobileTechRxAlternative';
 import { ServiceLinkVsDetailConnectVsDetailerMadeContent } from './ServiceLinkVsDetailConnectVsDetailerMade';
 import { ServiceLinkVsUrableContent } from './ServiceLinkVsUrable';
 import { StopNoShowsDepositsMobileDetailingContent } from './StopNoShowsDepositsMobileDetailing';
@@ -12,6 +15,10 @@ import { StopNoShowsDepositsMobileDetailingContent } from './StopNoShowsDeposits
 /** Map of guide slug to content component. Add new guides here. */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export const GUIDE_CONTENT: Record<string, React.ComponentType<{}>> = {
+  'best-crm-for-mobile-detailers': BestCrmForMobileDetailersContent,
+  'mobile-tech-rx-alternative': MobileTechRxAlternativeContent,
+  'how-to-get-more-mobile-detailing-clients':
+    HowToGetMoreMobileDetailingClientsContent,
   'servicelink-vs-detaildeck': DetailDeckAlternativeMobileDetailersContent,
   'jobber-alternative-mobile-detailers':
     JobberAlternativeMobileDetailersContent,

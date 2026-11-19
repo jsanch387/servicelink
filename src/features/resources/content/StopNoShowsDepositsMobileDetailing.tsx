@@ -1,3 +1,4 @@
+import { ROUTES } from '@/constants/routes';
 import { blogGuideSignupPath } from '@/features/marketing-attribution';
 import { GuideFaqAccordion } from '@/features/resources/components/GuideFaqAccordion';
 import { GuideProTip } from '@/features/resources/components/GuideCallouts';
@@ -120,7 +121,7 @@ export function StopNoShowsDepositsMobileDetailingContent() {
           20-50% of the total price, applied toward the final bill at checkout.
         </p>
         <p className={pClasses}>
-          A simple rule that works for most solo detailers:{' '}
+          A simple rule that works for most shops:{' '}
           <strong className="text-gray-300">
             charge more deposit on higher-ticket jobs.
           </strong>{' '}
@@ -250,6 +251,42 @@ export function StopNoShowsDepositsMobileDetailingContent() {
           and turn your policy into something customers actually see and follow
           — not just a paragraph they scroll past.
         </p>
+        <p className={pClasses}>
+          Putting deposits on a public menu works better when the rest of the
+          booking path is clear. See the{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE(
+              'best-booking-app-for-mobile-detailers'
+            )}
+            className={linkClasses}
+          >
+            best booking app for mobile detailers
+          </Link>
+          , the{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE('best-crm-for-mobile-detailers')}
+            className={linkClasses}
+          >
+            best CRM for mobile detailers
+          </Link>
+          , and{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE(
+              'how-to-get-more-mobile-detailing-clients'
+            )}
+            className={linkClasses}
+          >
+            how to get more mobile detailing clients
+          </Link>
+          . Coming from Jobber’s heavier suite?{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE('jobber-alternative-mobile-detailers')}
+            className={linkClasses}
+          >
+            Jobber alternative for mobile detailers
+          </Link>
+          .
+        </p>
       </section>
 
       {GUIDE_FAQS.length ? (
@@ -262,11 +299,13 @@ export function StopNoShowsDepositsMobileDetailingContent() {
       ) : null}
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>Final Thoughts</h2>
+        <h2 className={h2Classes}>Fewer no-shows, more real jobs</h2>
         <p className={pClasses}>
-          No-shows aren’t bad luck — they’re a policy gap. The detailers who
-          stay booked solid aren’t the ones with better customers. They’re the
-          ones who made it slightly harder to blow off an appointment for free.
+          No-shows aren’t bad luck — they’re a policy gap. Shops that stay
+          booked aren’t the ones with better customers. They’re the ones who
+          made it slightly harder to blow off an appointment for free.
+          ServiceLink collects the deposit at checkout, sends the reminder, and
+          asks for the review when you tap complete.
         </p>
         <p className={pClasses}>
           Write your policy, put a real deposit on it, and let your booking link
@@ -277,7 +316,7 @@ export function StopNoShowsDepositsMobileDetailingContent() {
             )}
             className={linkClasses}
           >
-            Get your free ServiceLink booking page
+            Start ServiceLink — first 5 appointments free
           </Link>{' '}
           and stop losing afternoons to people who were never going to show up.
         </p>

@@ -6,8 +6,11 @@ import { getGuideBySlug } from '@/features/resources/data/guides';
 import Link from 'next/link';
 
 import {
+  comparisonHeaderClasses,
+  comparisonRowClasses,
   h2Classes,
   linkClasses,
+  orderedListClasses,
   pClasses,
   sectionClasses,
 } from './guideContentStyles';
@@ -15,21 +18,41 @@ import {
 const SLUG = 'servicelink-vs-detaildeck';
 const GUIDE_FAQS = getGuideBySlug(SLUG)?.faqs ?? [];
 
-const orderedListClasses =
-  'list-decimal list-outside space-y-2.5 text-gray-400 mb-5 ml-5 marker:text-gray-500';
-const comparisonHeaderClasses =
-  'grid grid-cols-3 gap-2 sm:gap-3 px-3 sm:px-5 py-3 bg-white/[0.04] border-b border-white/10 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400';
-const comparisonRowClasses =
-  'grid grid-cols-3 gap-2 sm:gap-3 px-3 sm:px-5 py-3.5 border-b border-white/10 last:border-b-0 text-xs sm:text-sm';
+const tableHeaderClasses = `${comparisonHeaderClasses} grid-cols-3`;
+const tableRowClasses = `${comparisonRowClasses} grid-cols-3`;
 
 const TABLE_ROWS = [
-  ['Built for', 'Solo mobile detailers', 'Solo mobile detailers'],
-  ['Customer books from', 'One bio link', 'Booking link'],
-  ['Sedan / SUV / truck pricing', 'Built in', 'Not clearly listed'],
-  ['Deposits', 'Yes', 'Yes'],
-  ['Tap to Pay on iPhone', 'Yes', 'Not advertised'],
-  ['Ease of use', 'Simple to use and adjust', 'More setup, more taps'],
-  ['Day-to-day feel', 'Lean, built for the driveway', 'Generic booking app'],
+  [
+    'Ease of use',
+    'Simple daily app. Live the same day',
+    'Booking-link app. More taps',
+  ],
+  ['Customer booking', 'One bio link, guest checkout', 'Booking link'],
+  [
+    'Automations',
+    'Confirmations, day-before reminder, on-the-way texts',
+    'Confirm on their site',
+  ],
+  [
+    'Reviews',
+    'Review request after every job. Google reviews on the page',
+    'Confirm on their site',
+  ],
+  [
+    'Team',
+    'Up to 4 people. Roles, job assignment, mobile app',
+    'Confirm current seats',
+  ],
+  [
+    'Deposits, Tap to Pay, expenses',
+    'All on Pro, with quotes and invoices',
+    'Stripe deposits. Confirm extras',
+  ],
+  [
+    'Price / value (Nov 2026)',
+    '5 appointments free. Pro $20/mo. Team $60/mo',
+    '$29/mo Solo Pro',
+  ],
 ] as const;
 
 export function DetailDeckAlternativeMobileDetailersContent() {
@@ -38,16 +61,23 @@ export function DetailDeckAlternativeMobileDetailersContent() {
       <section className={sectionClasses}>
         <h2 className={h2Classes}>What you actually need</h2>
         <p className={pClasses}>
-          You don’t need another generic SaaS dashboard. You need four things:
+          You need a booking link, sedan / SUV / truck prices, deposits when
+          no-shows start hurting, a client list from every job, reminders before
+          the visit, a review request when you finish, and a team that can run
+          the next job from the phone. ServiceLink is that CRM.
         </p>
         <ol className={orderedListClasses}>
-          <li>A link for your Instagram bio</li>
+          <li>A link for Instagram, Google, and texts</li>
           <li>Sedan / SUV / truck prices on the menu</li>
           <li>Deposits when no-shows start hurting</li>
           <li>Names and numbers from every booking so you can rebook</li>
+          <li>
+            Reminders and a review ask that go out without you typing them
+          </li>
+          <li>Roles and job assignment when you hire (Team, up to 4)</li>
         </ol>
         <p className={pClasses}>
-          That’s it. Deposits deep-dive:{' '}
+          Deposits deep-dive:{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE(
               'stop-no-shows-deposits-mobile-detailing'
@@ -70,24 +100,30 @@ export function DetailDeckAlternativeMobileDetailersContent() {
       </section>
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>ServiceLink vs DetailDeck</h2>
+        <h2 className={h2Classes}>Why ServiceLink is the pick</h2>
         <p className={pClasses}>
           <Link href="/" className={linkClasses}>
             ServiceLink
           </Link>{' '}
-          is built for owner-operators who book from Instagram. Customers open
-          myservicelink.app/yourname, pick a service and time, done — no
-          customer app. You can change a price, an hour, or a service between
-          jobs without hunting through menus. Detailers who have tried the other
-          options keep saying the same thing in reviews and feedback: it is just
-          easier. That is the better everyday setup for a one-truck shop.
+          is the full detailing CRM. Customers open myservicelink.app/yourname,
+          pick a service and time, done — no customer app. You can change a
+          price, an hour, or an assignee between jobs. Confirmations, day-before
+          reminders, and a review request after the job run in the background.
+          Connect Google and those reviews show on the same booking page.
         </p>
         <p className={pClasses}>
-          <strong className="text-gray-300">DetailDeck</strong> is also
-          mobile-first booking for solos: a link, deposits, no customer app
-          (confirm the latest on mydetaildeck.com). Fine tool. It just feels
-          like a lot of other AI-era booking apps — clean, generic, same
-          playbook. Vehicle-size prices and Tap to Pay are not clearly listed.
+          Five appointments free. Pro is $20/month or $200/year for unlimited
+          bookings, vehicle-size prices, deposits, Tap to Pay, quotes, invoices,
+          and expenses. Team is $60/month or $600/year for up to four people
+          with Member, Coordinator, and Manager roles.
+        </p>
+        <p className={pClasses}>
+          <strong className="text-gray-300">DetailDeck</strong> is another bio
+          booking link with deposits and a client CRM (confirm the latest on
+          mydetaildeck.com). As of November 2026 they publish one $29/month
+          plan. ServiceLink is the better everyday system: automations, Google
+          reviews on the page, expenses and Tap to Pay on Pro, Team, and a
+          stronger start.
         </p>
         <p className={pClasses}>
           Urable and QuoteIQ are heavier stacks (
@@ -97,14 +133,13 @@ export function DetailDeckAlternativeMobileDetailersContent() {
           >
             vs Urable
           </Link>
-          ). This page is the close fight: two bio-link tools for one-truck
-          shops. ServiceLink is the one we would run — simpler to live in,
-          simpler to tweak.
+          ). This page is two booking-link tools. ServiceLink is the CRM: more
+          automations, reviews on the page, Team, and a stronger start.
         </p>
 
         <div className="mb-6 overflow-x-auto rounded-xl border border-white/10">
           <div className="min-w-[28rem]">
-            <div className={comparisonHeaderClasses}>
+            <div className={tableHeaderClasses}>
               <span>Category</span>
               <span className="text-white">ServiceLink</span>
               <span>DetailDeck</span>
@@ -112,7 +147,7 @@ export function DetailDeckAlternativeMobileDetailersContent() {
             {TABLE_ROWS.map(([category, serviceLink, detailDeck], index) => (
               <div
                 key={category}
-                className={`${comparisonRowClasses}${
+                className={`${tableRowClasses}${
                   index % 2 === 1 ? ' bg-white/[0.02]' : ''
                 }`}
               >
@@ -125,34 +160,34 @@ export function DetailDeckAlternativeMobileDetailersContent() {
         </div>
         <GuideProTip>
           If you open the app ten times a day, simple wins. Feature lists look
-          the same. Reviews keep pointing at how easy ServiceLink is to use and
-          adjust compared with the other booking apps.
+          the same on paper. ServiceLink is the one you can adjust on the
+          driveway—and the one that asks for the review when you tap complete.
         </GuideProTip>
       </section>
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>When to stay on DetailDeck</h2>
+        <h2 className={h2Classes}>How DetailDeck compares</h2>
         <p className={pClasses}>
-          Stay if you already like their flow and the calendar works. Switching
-          tools mid-season for sport is dumb.
-        </p>
-      </section>
-
-      <section className={sectionClasses}>
-        <h2 className={h2Classes}>When to switch (most solos)</h2>
-        <p className={pClasses}>
-          Switch if the other app feels like work just to change a price or move
-          a slot. Switch if you want something you can adjust on the driveway
-          without thinking. Switch if you want the tool detailers keep calling
-          easier than the rest.
+          DetailDeck sells a booking link. ServiceLink sells the shop: booking,
+          CRM, automations, reviews, expenses, Tap to Pay, and Team. The
+          difference is the week you actually live—and whether reminders, review
+          requests, and a hire on the phone sit in the same $20 Pro / $60 Team
+          stack.
         </p>
         <p className={pClasses}>
-          Coming from Jobber-sized bloat instead?{' '}
+          Coming from Jobber-sized field-service software instead?{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE('jobber-alternative-mobile-detailers')}
             className={linkClasses}
           >
             Jobber alternative for mobile detailers
+          </Link>
+          . CRM roundup:{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE('best-crm-for-mobile-detailers')}
+            className={linkClasses}
+          >
+            best CRM for mobile detailers
           </Link>
           .
         </p>
@@ -165,16 +200,23 @@ export function DetailDeckAlternativeMobileDetailersContent() {
             Create ServiceLink and add your top 4 services with vehicle prices
           </li>
           <li>
-            Drop the link in your Instagram bio (leave DetailDeck up a week if
+            Drop the link in your Instagram bio (leave the old link up a week if
             you want)
           </li>
           <li>Reply to DMs with the link once — stop typing availability</li>
-          <li>Turn on deposits if no-shows start eating your Saturday</li>
+          <li>
+            Turn on deposits if no-shows start eating your Saturday. Reminders
+            and review requests start on the first real job
+          </li>
+          <li>
+            When you hire, upgrade to Team. Invite them, pick a role, assign
+            jobs from the board
+          </li>
         </ol>
         <p className={pClasses}>
-          Most detailers are live in under 10 minutes.{' '}
+          Most shops are live in under 10 minutes.{' '}
           <Link href={blogGuideSignupPath(SLUG)} className={linkClasses}>
-            Get your booking link
+            Start ServiceLink
           </Link>
           .
         </p>
@@ -192,7 +234,7 @@ export function DetailDeckAlternativeMobileDetailersContent() {
                     href={blogGuideSignupPath(SLUG)}
                     className={linkClasses}
                   >
-                    Get your booking link
+                    Start ServiceLink
                   </Link>
                   .
                 </>
@@ -204,12 +246,13 @@ export function DetailDeckAlternativeMobileDetailersContent() {
       ) : null}
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>Ready to book from one link?</h2>
+        <h2 className={h2Classes}>Verdict: ServiceLink is the pick</h2>
         <p className={pClasses}>
           Put ServiceLink in your bio. Customers pick a service and a time. You
-          detail.{' '}
+          get the client, the reminder, the review ask, and a team that can run
+          the next job.{' '}
           <Link href={blogGuideSignupPath(SLUG)} className={linkClasses}>
-            Get your booking link
+            Start ServiceLink
           </Link>
           .
         </p>

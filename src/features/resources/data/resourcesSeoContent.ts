@@ -9,25 +9,29 @@ export const RESOURCES_CANONICAL_URL = `${SITE_URL}${RESOURCES_PAGE_PATH}`;
 
 /** Browser tab + Open Graph title (layout template adds "| ServiceLink"). */
 export const RESOURCES_PAGE_SEO_TITLE =
-  'Mobile Detailer Guides: Pricing, Booking Apps & Instagram';
+  'Mobile Detailer Guides: CRM, Booking Apps & Getting Clients';
 
 /** Meta description — keep under ~160 characters. */
 export const RESOURCES_META_DESCRIPTION =
-  'Free guides for mobile detailers: DetailDeck and Jobber alternatives, how much to charge, ServiceLink vs Urable, booking apps, deposits, and starting a business.';
+  'Free guides for mobile detailers: CRM software, Mobile Tech RX and Urable alternatives, getting clients, pricing, deposits, and booking apps.';
 
 /** Visible page header — keyword-rich but scannable. */
 export const RESOURCES_HERO = {
   title: 'ServiceLink guides for mobile detailers',
   subtitle:
-    'Articles on DetailDeck and Jobber alternatives, mobile detailing prices, booking apps, ServiceLink vs Urable, deposits, Instagram marketing, and starting a business—written for owner-operators who want more confirmed jobs.',
+    'Practical guides for detailing shops: CRM and booking software, how to get more clients, pricing, deposits, Instagram, and starting a business—written for operators who want more confirmed jobs.',
 } as const;
 
 const RESOURCES_KEYWORDS = [
   'mobile detailer marketing resources',
+  'best CRM for mobile detailers',
+  'Mobile Tech RX alternative',
+  'how to get more mobile detailing clients',
   'Jobber alternative for mobile detailers',
   'DetailDeck alternative for mobile detailers',
   'ServiceLink vs DetailDeck',
   'how to start a mobile detailing business',
+  'Urable alternative',
   'ServiceLink vs Urable',
   'how much to charge for mobile detailing',
   'ServiceLink vs Detail Connect vs DetailerMade',

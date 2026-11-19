@@ -1,6 +1,7 @@
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { ROUTES } from '@/constants/routes';
 import { GuideKeyTakeaways } from '@/features/resources/components/GuideCallouts';
+import { GuideRelatedLinks } from '@/features/resources/components/GuideRelatedLinks';
 import { GUIDES, getGuideBySlug } from '@/features/resources';
 import { getGuideContentComponent } from '@/features/resources/content';
 import { MarketingFooter } from '@/features/landing-page/components/MarketingFooter';
@@ -293,6 +294,10 @@ export default async function ResourceGuidePage({
               you’re ready.
             </p>
           )}
+
+          {guide.relatedSlugs?.length ? (
+            <GuideRelatedLinks slugs={guide.relatedSlugs} />
+          ) : null}
         </article>
       </main>
       <MarketingFooter />

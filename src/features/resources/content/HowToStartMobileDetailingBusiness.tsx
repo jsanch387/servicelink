@@ -32,9 +32,9 @@ export function HowToStartMobileDetailingBusinessContent() {
         people to book you without a 20-message text thread.
       </p>
       <p className={pClasses}>
-        This playbook is for solo operators. It covers startup costs, equipment,
-        licenses, pricing, and how to get your first clients—then turn those
-        jobs into a calendar you can actually run.
+        This playbook covers startup costs, equipment, licenses, pricing, and
+        how to get your first clients—then put them on a CRM you will still run
+        when you hire. ServiceLink is that system.
       </p>
 
       <section className={sectionClasses}>
@@ -72,7 +72,7 @@ export function HowToStartMobileDetailingBusinessContent() {
           operators who stay profitable treat those as real costs, not
           afterthoughts.
         </p>
-        <p className={pClasses}>A realistic solo picture looks like this:</p>
+        <p className={pClasses}>A realistic launch picture looks like this:</p>
         <ul className={listClasses}>
           <li>
             Average ticket often lands in the $150–$300 range once you sell full
@@ -229,7 +229,7 @@ export function HowToStartMobileDetailingBusinessContent() {
           packages by vehicle size, then add for condition.
         </p>
         <p className={pClasses}>
-          A simple starter menu many solo operators can defend:
+          A simple starter menu many new shops can defend:
         </p>
         <ul className={listClasses}>
           <li>Exterior wash: $60–$120 sedan, more for SUVs and trucks</li>
@@ -275,9 +275,10 @@ export function HowToStartMobileDetailingBusinessContent() {
           <Link href="/" className={linkClasses}>
             ServiceLink
           </Link>{' '}
-          is built for that flow. You get a shareable booking link, a service
-          menu, availability you control, and optional deposits—without asking
-          customers to download an app.
+          is the detailing CRM you grow on. You get a shareable booking link, a
+          service menu, availability you control, deposits, reminders, review
+          requests, and Team when you hire—without asking customers to download
+          an app.
         </p>
         <ul className={listClasses}>
           <li>Add your packages and vehicle-based prices</li>
@@ -441,7 +442,7 @@ export function HowToStartMobileDetailingBusinessContent() {
           Get the legal basics done, put your packages on a page, and share that
           link everywhere people already find you.{' '}
           <Link href={blogGuideSignupPath(SLUG)} className={linkClasses}>
-            Get your free ServiceLink booking page
+            Start ServiceLink — first 5 appointments free
           </Link>{' '}
           and take the first booking before you buy another machine.
         </p>

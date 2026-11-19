@@ -7,5 +7,11 @@ export const pClasses =
   'text-gray-400 text-base sm:text-[1.05rem] leading-relaxed mb-5';
 export const listClasses =
   'list-disc list-outside space-y-2.5 text-gray-400 mb-5 ml-5 marker:text-gray-500';
+export const orderedListClasses =
+  'list-decimal list-outside space-y-2.5 text-gray-400 mb-5 ml-5 marker:text-gray-500';
 export const linkClasses =
   'text-gray-300 underline underline-offset-2 hover:text-white transition-colors cursor-pointer';
+export const comparisonHeaderClasses =
+  'grid gap-2 sm:gap-3 px-3 sm:px-5 py-3 bg-white/[0.04] border-b border-white/10 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400';
+export const comparisonRowClasses =
+  'grid gap-2 sm:gap-3 px-3 sm:px-5 py-3.5 border-b border-white/10 last:border-b-0 text-xs sm:text-sm';

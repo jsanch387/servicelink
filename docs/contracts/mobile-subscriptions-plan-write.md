@@ -25,13 +25,13 @@ The shop is the owned business. Optional `businessId` must match that shop or th
 
 Send `intervalUnit` and `intervalCount`. These are the only pairs the endpoint accepts. Every 3 months and every 6 months are included.
 
-| Label           | `intervalUnit` | `intervalCount` |
-| --------------- | -------------- | --------------- |
-| Weekly          | `week`         | `1`             |
-| Every 2 weeks   | `week`         | `2`             |
-| Monthly         | `month`        | `1`             |
-| Every 3 months  | `month`        | `3`             |
-| Every 6 months  | `month`        | `6`             |
+| Label          | `intervalUnit` | `intervalCount` |
+| -------------- | -------------- | --------------- |
+| Weekly         | `week`         | `1`             |
+| Every 2 weeks  | `week`         | `2`             |
+| Monthly        | `month`        | `1`             |
+| Every 3 months | `month`        | `3`             |
+| Every 6 months | `month`        | `6`             |
 
 One visit per billing period. A 3-month option bills once every 3 months and covers one visit in that period. Same for 6 months. Do not send `year`, `quarter`, or any other count.
 
@@ -57,7 +57,7 @@ A plan can include more than one of these. The same pair cannot appear twice.
 | Field                  | Type   | Required | Notes                                                                 |
 | ---------------------- | ------ | -------- | --------------------------------------------------------------------- |
 | `name`                 | string | Yes      | Trimmed. Empty is rejected.                                           |
-| `description`          | string | No       | Customers see this on the booking link. Omit or send `""`.           |
+| `description`          | string | No       | Customers see this on the booking link. Omit or send `""`.            |
 | `visitDurationMinutes` | int    | No       | 30–630, multiple of 30. Omitted becomes 60.                           |
 | `cadenceOptions`       | array  | Yes      | At least one. `priceCents` is a positive integer (cents, before tax). |
 
@@ -79,9 +79,9 @@ Edit sends the full `cadenceOptions` list. Options left out are removed. Removin
 
 ## Errors
 
-| Status | When                                                                 |
-| ------ | -------------------------------------------------------------------- |
+| Status | When                                                                                                                                                                                            |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `400`  | Missing name, bad duration, empty cadences, unknown schedule, bad price, or duplicate pair. Body: `{ "success": false, "error": "..." }`. Unknown schedule: `"That schedule is not available."` |
-| `401`  | Missing or invalid session.                                          |
-| `403`  | Not allowed to manage billing, or subscriptions are not ready for this shop. |
-| `404`  | Edit target plan is missing.                                         |
+| `401`  | Missing or invalid session.                                                                                                                                                                     |
+| `403`  | Not allowed to manage billing, or subscriptions are not ready for this shop.                                                                                                                    |
+| `404`  | Edit target plan is missing.                                                                                                                                                                    |
