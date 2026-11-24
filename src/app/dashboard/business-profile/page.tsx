@@ -3,6 +3,7 @@ import { SHOP_ADDRESS_FOCUS_QUERY } from '@/features/business-profile/constants/
 import { BusinessProfileApi } from '@/features/business-profile/services/businessProfileApi';
 import { isOnboardingCompleted } from '@/features/business-profile/utils/businessProfileHelpers';
 import { parseEditProfileTab } from '@/features/business-profile/utils/editProfileTab';
+import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { loadPrimaryServiceArea } from '@/features/business-profile/server/loadPrimaryServiceArea';
 import { OnboardingCheckoutReturnGate } from '@/features/onboarding-v2/components/OnboardingCheckoutReturnGate';
 import {
@@ -13,6 +14,7 @@ import {
   loadPublicReviewSummary,
   publicReviewSummaryFromLoadResult,
 } from '@/features/reviews';
+import { countPublicGoogleReviews } from '@/features/reviews/google-connect/server/loadGoogleReviews';
 import { loadPublicActiveSale } from '@/features/marketing/server/loadPublicActiveSale';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
@@ -20,7 +22,6 @@ import {
   resolvePublicBookingFlowLocale,
 } from '@/libs/bookingFlowLocale';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
@@ -52,61 +53,45 @@ export default async function BusinessProfilePage({
   const params = await searchParams;
   const onboardingComplete = params.onboarding === 'complete';
 
-  // Create server client for SSR
-  const supabase = await createSupabaseServerClient();
+  const { supabase, context } =
+    await requireDashboardPageAccess('profile.write');
 
-  // Get current user
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  let welcomeSeen = true;
+  if (context.isOwner) {
+    const { data: userProfileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('onboarding_status, profile_welcome_modal_seen')
+      .eq('user_id', context.userId)
+      .single();
 
-  if (userError || !user) {
-    redirect('/login');
-  }
+    const userProfile = userProfileData as {
+      onboarding_status: 'not_started' | 'in_progress' | 'completed';
+      profile_welcome_modal_seen?: boolean | null;
+    } | null;
 
-  // Get user profile to check onboarding status and subscription tier
-  const { data: userProfileData, error: profileError } = await supabase
-    .from('profiles')
-    .select(
-      'onboarding_status, user_id, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, profile_welcome_modal_seen'
-    )
-    .eq('user_id', user.id)
-    .single();
-
-  const userProfile = userProfileData as {
-    onboarding_status: 'not_started' | 'in_progress' | 'completed';
-    user_id: string;
-    subscription_tier?: string | null;
-    subscription_current_period_end?: string | null;
-    subscription_status?: string | null;
-    stripe_subscription_id?: string | null;
-    stripe_customer_id?: string | null;
-    profile_welcome_modal_seen?: boolean | null;
-  } | null;
-
-  if (profileError || !userProfile) {
-    redirect('/login');
-  }
-
-  // Check if onboarding is completed
-  if (!isOnboardingCompleted(userProfile.onboarding_status)) {
-    if (onboardingComplete) {
-      return <OnboardingCheckoutReturnGate />;
+    if (profileError || !userProfile) {
+      redirect('/login');
     }
-    redirect('/dashboard');
+
+    if (!isOnboardingCompleted(userProfile.onboarding_status)) {
+      if (onboardingComplete) {
+        return <OnboardingCheckoutReturnGate />;
+      }
+      redirect('/dashboard');
+    }
+    welcomeSeen = userProfile.profile_welcome_modal_seen === true;
   }
 
-  // Get business profile by profile_id (including slug data)
   const { data: businessProfileRow, error: businessProfileError } =
     await supabase
       .from('business_profiles')
-      .select('id, business_slug, business_link')
-      .eq('profile_id', userProfile.user_id)
+      .select('id, profile_id, business_slug, business_link')
+      .eq('id', context.businessId)
       .single();
 
   const businessProfileData = businessProfileRow as {
     id: string;
+    profile_id: string;
     business_slug: string | null;
     business_link: string | null;
   } | null;
@@ -155,34 +140,49 @@ export default async function BusinessProfilePage({
   // Determine initial edit mode from URL parameters
   const initialMode = params.mode === 'edit' ? 'edit' : 'view';
 
+  const admin = createSupabaseAdminClient();
+  const { data: ownerProfileRow } = await admin
+    .from('profiles')
+    .select(
+      'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+    )
+    .eq('user_id', businessProfileData.profile_id)
+    .maybeSingle();
+  const ownerProfile = ownerProfileRow as {
+    subscription_tier?: string | null;
+    subscription_current_period_end?: string | null;
+    subscription_status?: string | null;
+    stripe_subscription_id?: string | null;
+    stripe_customer_id?: string | null;
+  } | null;
+
   const hasProAccess = isProAccess(
-    userProfile?.subscription_tier,
-    userProfile?.subscription_current_period_end,
-    userProfile?.subscription_status,
-    userProfile?.stripe_subscription_id,
-    userProfile?.stripe_customer_id
+    ownerProfile?.subscription_tier,
+    ownerProfile?.subscription_current_period_end,
+    ownerProfile?.subscription_status,
+    ownerProfile?.stripe_subscription_id,
+    ownerProfile?.stripe_customer_id
   );
   const isFreeTier = !hasProAccess;
   const showVerifiedBadge = hasProAccess;
   const showRequestQuoteCta =
     isProAccessForPublicQuoteRequests(
-      userProfile?.subscription_tier,
-      userProfile?.subscription_current_period_end,
-      userProfile?.subscription_status,
-      userProfile?.stripe_subscription_id,
-      userProfile?.stripe_customer_id
+      ownerProfile?.subscription_tier,
+      ownerProfile?.subscription_current_period_end,
+      ownerProfile?.subscription_status,
+      ownerProfile?.stripe_subscription_id,
+      ownerProfile?.stripe_customer_id
     ) && businessProfile.accept_quote_req === true;
-  // After step 5, free users see Try Pro first, then this welcome (client-sequence).
-  const showProfileWelcomeModalOnLoad =
-    onboardingComplete && userProfile?.profile_welcome_modal_seen !== true;
-
-  const admin = createSupabaseAdminClient();
+  const showProfileWelcomeModalOnLoad = onboardingComplete && !welcomeSeen;
   const publicReviewSummaryResult = await loadPublicReviewSummary(
     admin,
     businessProfileData.id
   );
   const publicReviewSummary = publicReviewSummaryFromLoadResult(
     publicReviewSummaryResult
+  );
+  const publicGoogleReviewCount = await countPublicGoogleReviews(
+    businessProfileData.id
   );
   const publicProfileSlug =
     businessProfileData.business_slug?.trim() || undefined;
@@ -211,6 +211,7 @@ export default async function BusinessProfilePage({
         showRequestQuoteCta={showRequestQuoteCta}
         bookingFlowLocale={bookingFlowLocale}
         publicReviewSummary={publicReviewSummary}
+        publicGoogleReviewCount={publicGoogleReviewCount}
         publicProfileSlug={publicProfileSlug}
         publicActiveSale={publicActiveSale}
         primaryServiceArea={primaryServiceArea}

@@ -1,6 +1,7 @@
 'use client';
 
 import { GlassCard } from '@/components/shared';
+import { OwnerTestReturnLink } from '@/features/onboarding-v3/components/OwnerTestReturnLink';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { ROUTES } from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
@@ -28,10 +29,14 @@ interface BookingSuccessProps {
   saleSubtotalCents?: number;
   saleEstimatedTotalCents?: number;
   saleAppliesLine?: string | null;
+  salesTaxCents?: number;
+  salesTaxLabel?: string | null;
   customer: CustomerFormData;
   date: string;
   time: string;
   isOwnerManualBooking?: boolean;
+  /** Public customer asked for a time the business still has to approve. */
+  isAppointmentRequest?: boolean;
   bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
@@ -71,10 +76,13 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
   saleSubtotalCents,
   saleEstimatedTotalCents,
   saleAppliesLine,
+  salesTaxCents,
+  salesTaxLabel,
   customer,
   date,
   time,
   isOwnerManualBooking = false,
+  isAppointmentRequest = false,
   bookingFlowLocale = 'en',
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
@@ -96,6 +104,14 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
     saleSubtotalCents > 0 &&
     saleEstimatedTotalCents != null &&
     saleEstimatedTotalCents < saleSubtotalCents;
+  const showSalesTax =
+    salesTaxCents != null && salesTaxCents > 0 && Boolean(salesTaxLabel);
+  const totalLabel = isAppointmentRequest
+    ? ui.common.estimatedTotal
+    : ui.common.total;
+  const successTotalCents =
+    (showSalePricing ? saleEstimatedTotalCents! : (totalPriceCents ?? 0)) +
+    (showSalesTax ? salesTaxCents! : 0);
 
   return (
     <div className="flex flex-col w-full min-h-[55vh] max-w-2xl mx-auto px-4 sm:px-6 py-10 pb-16 sm:pb-24">
@@ -106,7 +122,9 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
       <h2 className="text-2xl font-bold text-white mb-2 text-center">
         {isOwnerManualBooking
           ? ui.bookingSuccess.titleOwner
-          : ui.bookingSuccess.title}
+          : isAppointmentRequest
+            ? ui.bookingSuccess.requestTitle
+            : ui.bookingSuccess.title}
       </h2>
       <p className="self-center text-gray-400 text-sm mb-8 max-w-sm text-center">
         {isOwnerManualBooking ? (
@@ -115,6 +133,12 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
               ? ui.bookingSuccess.subtitleOwner
               : ui.bookingSuccess.subtitleOwnerNoCustomerEmail}
           </>
+        ) : isAppointmentRequest ? (
+          customer.email.trim() ? (
+            ui.bookingSuccess.requestSubtitleCustomer(businessName)
+          ) : (
+            ui.bookingSuccess.requestSubtitleCustomerNoEmail(businessName)
+          )
         ) : customer.email.trim() ? (
           <>{ui.bookingSuccess.subtitleCustomer(businessName)}</>
         ) : (
@@ -127,13 +151,15 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
         rounded="rounded-2xl"
         blurColor="bg-emerald-500"
         showBlur={true}
-        className="w-full mb-8"
+        className="w-full"
       >
         <div className="px-4 py-3 border-b border-white/10">
           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
             {isOwnerManualBooking
               ? ui.bookingSuccess.cardHeaderOwner
-              : ui.bookingSuccess.cardHeaderCustomer}
+              : isAppointmentRequest
+                ? ui.bookingSuccess.requestCardHeader
+                : ui.bookingSuccess.cardHeaderCustomer}
           </p>
         </div>
         <div className="p-4 sm:p-6 space-y-4">
@@ -194,9 +220,17 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
               {saleAppliesLine ? (
                 <div className="space-y-2">
                   <BookingSaleAppliesNotice line={saleAppliesLine} />
+                  {showSalesTax ? (
+                    <div className="flex justify-between items-center gap-3 text-sm">
+                      <p className="text-zinc-400">{salesTaxLabel}</p>
+                      <p className="tabular-nums text-zinc-300">
+                        {formatPrice(salesTaxCents!)}
+                      </p>
+                    </div>
+                  ) : null}
                   <div className="flex justify-between items-center gap-3">
                     <p className="text-sm font-medium text-white">
-                      {ui.common.total}
+                      {totalLabel}
                     </p>
                     {showSalePricing ? (
                       <div className="flex items-baseline gap-2">
@@ -204,24 +238,38 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
                           {formatPrice(saleSubtotalCents!)}
                         </p>
                         <p className="text-lg font-semibold text-white tabular-nums">
-                          {formatPrice(saleEstimatedTotalCents!)}
+                          {formatPrice(successTotalCents)}
                         </p>
                       </div>
                     ) : (
                       <p className="text-lg font-semibold text-white">
-                        {formatPrice(totalPriceCents)}
+                        {formatPrice(
+                          showSalesTax ? successTotalCents : totalPriceCents!
+                        )}
                       </p>
                     )}
                   </div>
                 </div>
               ) : (
-                <div className="flex justify-between items-center">
-                  <p className="text-sm font-medium text-white">
-                    {ui.common.total}
-                  </p>
-                  <p className="text-lg font-semibold text-white">
-                    {formatPrice(totalPriceCents)}
-                  </p>
+                <div className="space-y-2">
+                  {showSalesTax ? (
+                    <div className="flex justify-between items-center gap-3 text-sm">
+                      <p className="text-zinc-400">{salesTaxLabel}</p>
+                      <p className="tabular-nums text-zinc-300">
+                        {formatPrice(salesTaxCents!)}
+                      </p>
+                    </div>
+                  ) : null}
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm font-medium text-white">
+                      {totalLabel}
+                    </p>
+                    <p className="text-lg font-semibold text-white">
+                      {formatPrice(
+                        showSalesTax ? successTotalCents : totalPriceCents!
+                      )}
+                    </p>
+                  </div>
                 </div>
               )}
             </>
@@ -259,24 +307,31 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
         </div>
       </GlassCard>
 
-      <p className="self-center text-xs text-gray-500 text-center mb-6 max-w-sm">
-        {isOwnerManualBooking ? (
-          <>{ui.bookingSuccess.ownerPaymentNote}</>
-        ) : (
-          <>{ui.bookingSuccess.customerPaymentNote}</>
-        )}
-      </p>
+      <div className="mt-6 w-full">
+        <OwnerTestReturnLink
+          label={ui.nav.backToDashboard}
+          fallback={
+            <Link
+              href={
+                isOwnerManualBooking
+                  ? ROUTES.DASHBOARD.BOOKINGS
+                  : `/${businessSlug}`
+              }
+              className="flex min-h-[48px] w-full cursor-pointer items-center justify-center rounded-xl bg-white px-6 text-sm font-semibold text-black transition-colors hover:bg-gray-100"
+            >
+              {isOwnerManualBooking
+                ? ui.bookingSuccess.goToBookings
+                : ui.bookingSuccess.backToProfile}
+            </Link>
+          }
+        />
+      </div>
 
-      <Link
-        href={
-          isOwnerManualBooking ? ROUTES.DASHBOARD.BOOKINGS : `/${businessSlug}`
-        }
-        className="w-full flex items-center justify-center min-h-[48px] px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-100 transition-colors cursor-pointer"
-      >
-        {isOwnerManualBooking
-          ? ui.bookingSuccess.goToBookings
-          : ui.bookingSuccess.backToProfile}
-      </Link>
+      {isOwnerManualBooking ? (
+        <p className="mt-6 max-w-sm self-center text-center text-xs text-gray-500">
+          {ui.bookingSuccess.ownerPaymentNote}
+        </p>
+      ) : null}
     </div>
   );
 };

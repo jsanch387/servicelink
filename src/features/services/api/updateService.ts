@@ -11,6 +11,11 @@ import type {
   UpdateServiceResult,
 } from '../types/services';
 
+function optionalServiceCopy(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? '';
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 /**
  * Updates a service by id, scoped to the given business.
  * Returns the updated row or an error (e.g. not found, RLS, DB error).
@@ -27,6 +32,12 @@ export async function updateService(
     const updatePayload: TableUpdate = {
       name: payload.name,
       description: payload.description || null,
+      ...(payload.name_es !== undefined
+        ? { name_es: optionalServiceCopy(payload.name_es) }
+        : {}),
+      ...(payload.description_es !== undefined
+        ? { description_es: optionalServiceCopy(payload.description_es) }
+        : {}),
       price_cents: payload.price_cents,
       duration_minutes: payload.duration_minutes,
       ...(payload.price_options_enabled != null

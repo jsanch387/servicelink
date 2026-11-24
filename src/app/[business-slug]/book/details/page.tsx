@@ -9,6 +9,7 @@ import {
   OWNER_MANUAL_BOOKING_FOR,
   getBusinessBookPath,
   getBusinessBookScheduleUrl,
+  getPublicBusinessProfilePath,
   parseBookServiceLocationTypeQuery,
 } from '@/constants/routes';
 import {
@@ -187,7 +188,8 @@ export default async function ServiceDetailsPage({
 
   const result = await getServiceWithAddOnsForBooking(
     businessId,
-    serviceId.trim()
+    serviceId.trim(),
+    bookingFlowLocale
   );
 
   if (!result) notFound();
@@ -215,6 +217,11 @@ export default async function ServiceDetailsPage({
           })}
         />
       );
+    }
+    // Back from the date step has nowhere to land on this page.
+    // Sending them through here used to bounce into the contact form.
+    if (editingVisitJob && !addingAnotherJob) {
+      redirect(getPublicBusinessProfilePath(slug, { lang: bookingFlowLocale }));
     }
     return (
       <CommitPublicJobAndRedirect

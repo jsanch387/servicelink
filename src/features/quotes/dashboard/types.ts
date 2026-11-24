@@ -31,7 +31,10 @@ export interface DashboardQuote {
   customerEmail: string;
   customerPhone: string | null;
   serviceName: string;
+  /** Quoted price before tax. */
   totalCents: number;
+  taxCents?: number;
+  taxRateBps?: number;
   /** Service duration from `quotes.duration_minutes` (for edit + display). */
   durationMinutes: number;
   /** Best “activity” timestamp for list sorting (ISO). */

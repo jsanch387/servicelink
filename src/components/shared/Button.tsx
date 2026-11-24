@@ -47,19 +47,19 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   // Modern rectangular rounded buttons — consistent across the app
   const baseClasses =
-    'inline-flex items-center justify-center gap-2 rounded-[10px] font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f0f] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer select-none';
+    'inline-flex items-center justify-center gap-1.5 font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f0f] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer select-none';
 
   const variantClasses = {
     primary:
-      'bg-white text-black hover:bg-gray-100 shadow-sm focus-visible:ring-white/40',
+      'bg-white text-black hover:bg-gray-100 focus-visible:ring-white/40',
     secondary:
-      'bg-white/10 text-white hover:bg-white/15 focus-visible:ring-white/40',
+      'bg-[#2c2c2c] text-white shadow-[0_0_0_1px_rgba(255,255,255,0.28)] hover:bg-[#343434] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.38)] focus-visible:ring-white/40',
     outline:
       'border border-white/20 text-white bg-transparent hover:bg-white/10 hover:border-white/30 focus-visible:ring-white/40',
     ghost:
       'text-gray-300 hover:text-white hover:bg-white/5 focus-visible:ring-neutral-500',
     inverse:
-      'bg-white text-black hover:bg-gray-100 shadow-sm focus-visible:ring-white/40',
+      'bg-white text-black hover:bg-gray-100 focus-visible:ring-white/40',
     danger:
       'border border-red-400/30 bg-red-500/12 text-red-200 hover:bg-red-500/18 hover:border-red-400/45 focus-visible:ring-red-400/40 backdrop-blur-sm',
     success:
@@ -68,12 +68,12 @@ export const Button: React.FC<ButtonProps> = ({
       'bg-amber-500 hover:bg-amber-600 text-black shadow-sm focus-visible:ring-amber-500',
   };
 
-  // Generous touch targets, clear hierarchy
+  // `sm` is the standard control. `md` and `lg` stay for marketing and standout actions.
   const sizeClasses = {
-    xs: 'px-3 py-1.5 text-xs min-h-[36px]',
-    sm: 'px-4 py-2 text-sm min-h-[42px]',
-    md: 'px-5 py-2.5 text-sm min-h-[48px]',
-    lg: 'px-6 py-3.5 text-base min-h-[52px]',
+    xs: 'h-7 min-h-7 rounded-lg px-2.5 text-sm',
+    sm: 'h-9 min-h-9 rounded-lg px-3.5 text-sm',
+    md: 'min-h-[48px] rounded-[10px] px-5 py-2.5 text-sm',
+    lg: 'min-h-[52px] rounded-[10px] px-6 py-3.5 text-base',
   };
 
   const iconSizeClasses = {

@@ -21,6 +21,7 @@ import {
   type QuoteRespondStructuredAddress,
 } from '@/features/quotes/public-view/quoteRespondAddress';
 import { normalizeQuoteAddonDetails } from '@/features/quotes/shared/quoteServiceSnapshot';
+import { quoteSalesTaxLabel } from '@/features/quotes/shared/quoteSalesTax';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -59,6 +60,8 @@ function rowToQuotePayload(
     service_address: (row.service_address as string | null) ?? null,
     service_name: (row.service_name as string | null) ?? null,
     price_cents: (row.price_cents as number | null) ?? null,
+    tax_cents: (row.tax_cents as number | null) ?? null,
+    tax_rate_bps: (row.tax_rate_bps as number | null) ?? null,
     duration_minutes: (row.duration_minutes as number | null) ?? null,
     scheduled_date: (row.scheduled_date as string | null) ?? null,
     scheduled_start_time: (row.scheduled_start_time as string | null) ?? null,
@@ -90,6 +93,12 @@ function buildEmailPayload(
   durationMinutes: number
 ): AvailabilityBookingNotificationPayload {
   const total = quote.price_cents ?? 0;
+  const taxCents =
+    typeof quote.tax_cents === 'number' && quote.tax_cents > 0
+      ? quote.tax_cents
+      : 0;
+  const taxRateBps =
+    typeof quote.tax_rate_bps === 'number' ? quote.tax_rate_bps : 0;
   const addOns = normalizeQuoteAddonDetails(quote.addon_details) ?? [];
   const basePrice =
     quote.service_price_cents != null &&
@@ -116,6 +125,14 @@ function buildEmailPayload(
     servicePriceCents: basePrice,
     selectedAddOns: addOns,
     totalPriceCents: total,
+    ...(taxCents > 0
+      ? {
+          salesTax: {
+            label: quoteSalesTaxLabel(taxRateBps),
+            taxCents,
+          },
+        }
+      : {}),
     customerNotes: bookingNotes || undefined,
     serviceLocation: buildAvailabilityBookingEmailServiceLocation({
       effectiveType: 'mobile',

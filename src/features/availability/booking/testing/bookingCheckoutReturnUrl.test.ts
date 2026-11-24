@@ -71,4 +71,28 @@ describe('buildBookPageCheckoutReturnUrl', () => {
     expect(url).toContain('lang=es');
     expect(url).toContain('serviceId=svc-1');
   });
+
+  it('sends the new booking flow back to its own screens', () => {
+    const success = buildBookPageCheckoutReturnUrl({
+      baseUrl: 'https://app.example.com',
+      businessSlug: 'acme-auto',
+      checkout: 'success',
+      flow: 'v2',
+      resumeQuery: 'lang=es',
+    });
+    expect(success).toContain('/acme-auto/book/v2/booked?');
+    expect(success).toContain('checkout=success');
+    expect(success).toContain('lang=es');
+    expect(success).toContain('session_id={CHECKOUT_SESSION_ID}');
+
+    const cancel = buildBookPageCheckoutReturnUrl({
+      baseUrl: 'https://app.example.com',
+      businessSlug: 'acme-auto',
+      checkout: 'cancel',
+      flow: 'v2',
+    });
+    expect(cancel).toContain('/acme-auto/book/v2/review?');
+    expect(cancel).toContain('checkout=cancel');
+    expect(cancel).not.toContain('session_id');
+  });
 });

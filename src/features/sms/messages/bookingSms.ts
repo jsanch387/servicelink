@@ -56,6 +56,42 @@ export function buildBookingConfirmedSms(ctx: BookingSmsContext): string {
   );
 }
 
+/** Sent when a customer submits a public appointment request. */
+export function buildBookingRequestReceivedSms(ctx: BookingSmsContext): string {
+  const { date, time } = formatDateAndTime(ctx);
+  const name = smsBusinessName(ctx.businessName);
+  return withOptOut(
+    `We received your appointment request with ${name} for ${date} at ${time}. We'll text you when it's confirmed.`
+  );
+}
+
+/** Sent when a request's day passes without the business confirming it. */
+export function buildBookingRequestExpiredSms(ctx: BookingSmsContext): string {
+  const { date, time } = formatDateAndTime(ctx);
+  const name = smsBusinessName(ctx.businessName);
+  return withOptOut(
+    `Your appointment request with ${name} for ${date} at ${time} expired because it wasn't confirmed.`
+  );
+}
+
+/** Sent when the business approves a public appointment request. */
+export function buildBookingRequestApprovedSms(ctx: BookingSmsContext): string {
+  const { date, time } = formatDateAndTime(ctx);
+  const name = smsBusinessName(ctx.businessName);
+  return withOptOut(
+    `Your appointment with ${name} was confirmed for ${date} at ${time}.`
+  );
+}
+
+/** Sent when the business denies a public appointment request. */
+export function buildBookingRequestDeniedSms(ctx: BookingSmsContext): string {
+  const { date, time } = formatDateAndTime(ctx);
+  const name = smsBusinessName(ctx.businessName);
+  return withOptOut(
+    `Your appointment request with ${name} for ${date} at ${time} was not confirmed. That time is no longer held.`
+  );
+}
+
 export function buildBookingReminderSms(ctx: BookingSmsContext): string {
   const { date, time } = formatDateAndTime(ctx);
   const name = smsBusinessName(ctx.businessName);

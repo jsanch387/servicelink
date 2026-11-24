@@ -23,15 +23,23 @@ function customerFixture(overrides?: Partial<CustomerRecord>): CustomerRecord {
 }
 
 describe('[Core] customer search matching', () => {
-  it('matches only by customer name (case-insensitive)', () => {
-    // Core behavior: search input filters by name only.
+  it('matches by customer name (case-insensitive)', () => {
     const customer = customerFixture({ name: 'Maria Rodriguez' });
     expect(matchesCustomerQuery(customer, 'maria')).toBe(true);
     expect(matchesCustomerQuery(customer, 'RODRIGUEZ')).toBe(true);
   });
 
-  it('does not match by non-name fields (email/phone/service/note)', () => {
-    // Guardrail: keep search scope aligned with what is shown in the UI list.
+  it('matches a phone number by digits, ignoring punctuation', () => {
+    const customer = customerFixture({
+      name: 'Maria Rodriguez',
+      phone: '+1 (555) 333-4444',
+    });
+    expect(matchesCustomerQuery(customer, '333-4444')).toBe(true);
+    expect(matchesCustomerQuery(customer, '5553334444')).toBe(true);
+    expect(matchesCustomerQuery(customer, '(555) 333')).toBe(true);
+  });
+
+  it('does not match email, service, or notes', () => {
     const customer = customerFixture({
       name: 'Maria Rodriguez',
       email: 'owner+vip@example.com',
@@ -41,7 +49,6 @@ describe('[Core] customer search matching', () => {
     });
 
     expect(matchesCustomerQuery(customer, 'vip@example.com')).toBe(false);
-    expect(matchesCustomerQuery(customer, '333-4444')).toBe(false);
     expect(matchesCustomerQuery(customer, 'Premium Wash')).toBe(false);
     expect(matchesCustomerQuery(customer, 'early appointments')).toBe(false);
   });

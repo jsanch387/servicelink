@@ -2,7 +2,9 @@ import { loadDashboardQuoteById } from '@/features/quotes/dashboard/server/loadD
 import { isDashboardQuoteEditableByOwner } from '@/features/quotes/dashboard/utils/isDashboardQuoteEditableByOwner';
 import { mergeQuoteAssetsPreservingExtra } from '@/features/quotes/shared/quoteAssets';
 import { validateUpdateQuoteBody } from '@/features/quotes/edit/validateUpdateQuoteBody';
+import { loadQuoteSalesTax } from '@/features/quotes/server/loadQuoteSalesTax';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextResponse } from 'next/server';
@@ -115,6 +117,11 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     }
 
     const p = parsed.data;
+    const salesTax = await loadQuoteSalesTax(
+      createSupabaseAdminClient(),
+      resolved.businessId,
+      p.priceCents
+    );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase as any)
       .from('quotes')
@@ -132,6 +139,8 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         }),
         service_name: p.serviceName,
         price_cents: p.priceCents,
+        tax_rate_bps: salesTax.rateBps,
+        tax_cents: salesTax.taxCents,
         duration_minutes: p.durationMinutes,
         note: p.note,
         scheduled_date: p.scheduledDate,

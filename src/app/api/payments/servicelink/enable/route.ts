@@ -11,8 +11,8 @@
 import { getHasProAccessForPayments } from '@/features/payments/server/getHasProAccessForPayments';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextResponse } from 'next/server';
 
 const DEFAULT_DEPOSIT_TYPE = 'percent';
@@ -33,19 +33,22 @@ export async function POST() {
       );
     }
 
+    const businessResolved = await requireBusinessPermission(
+      supabase,
+      'payments.manage'
+    );
+    if (!businessResolved.ok) {
+      return NextResponse.json(
+        { success: false, error: businessResolved.error },
+        { status: businessResolved.status }
+      );
+    }
+
     const hasPro = await getHasProAccessForPayments(supabase, user.id);
     if (!hasPro) {
       return NextResponse.json(
         { success: false, error: 'Pro subscription required' },
         { status: 403 }
-      );
-    }
-
-    const businessResolved = await resolveCurrentBusinessId(supabase);
-    if (!businessResolved.ok) {
-      return NextResponse.json(
-        { success: false, error: businessResolved.error },
-        { status: businessResolved.status }
       );
     }
 

@@ -35,13 +35,10 @@ import type {
   SubscriptionCadenceOption,
 } from '../types/customerSubscriptionPlan';
 import {
-  formatCadencePriceSuffix,
-  formatSubscriptionPriceCents,
-} from '../utils/formatSubscriptionPrice';
-import {
   isMembershipContactComplete,
   isMembershipServiceDetailsComplete,
 } from '../utils/membershipServiceDetailsComplete';
+import { MembershipSubscribeReview } from './MembershipSubscribeReview';
 import {
   EMPTY_MEMBERSHIP_SERVICE_DETAILS,
   MembershipServiceDetailsFields,
@@ -64,7 +61,12 @@ interface PublicMembershipSubscribePageProps {
   serviceLocationMode?: ServiceLocationMode;
 }
 
-type SubscribeStep = 'howItWorks' | 'contact' | 'serviceDetails' | 'firstVisit';
+type SubscribeStep =
+  | 'howItWorks'
+  | 'contact'
+  | 'serviceDetails'
+  | 'firstVisit'
+  | 'review';
 
 const HOW_IT_WORKS_ICONS = [
   CheckBadgeIcon,
@@ -133,15 +135,6 @@ export const PublicMembershipSubscribePage: React.FC<
     setFirstVisitTime(null);
   }, [firstVisitDate]);
 
-  const price = formatSubscriptionPriceCents(
-    cadenceOption.priceCents,
-    bookingFlowLocale
-  );
-  const priceSuffix = formatCadencePriceSuffix(
-    cadenceOption,
-    bookingFlowLocale
-  );
-
   const profileSubscriptionsHref = (() => {
     const base = getPublicBusinessProfilePath(businessSlug, {
       lang: bookingFlowLocale,
@@ -150,15 +143,13 @@ export const PublicMembershipSubscribePage: React.FC<
     return `${base}${join}tab=subscriptions`;
   })();
 
-  const stepIndex = useMemo(() => {
-    const order: SubscribeStep[] = [
-      'howItWorks',
-      'contact',
-      'serviceDetails',
-      'firstVisit',
-    ];
-    return order.indexOf(step);
-  }, [step]);
+  const steps = useMemo(() => {
+    const order: SubscribeStep[] = ['howItWorks', 'contact'];
+    if (needsAddress || needsVehicle) order.push('serviceDetails');
+    order.push('firstVisit', 'review');
+    return order;
+  }, [needsAddress, needsVehicle]);
+  const stepIndex = steps.indexOf(step);
 
   const lookupAndAdvanceFromContact = async () => {
     if (!isMembershipContactComplete(details)) {
@@ -310,6 +301,10 @@ export const PublicMembershipSubscribePage: React.FC<
   };
 
   const goBack = () => {
+    if (step === 'review') {
+      setStep('firstVisit');
+      return;
+    }
     if (step === 'firstVisit') {
       setStep(needsAddress || needsVehicle ? 'serviceDetails' : 'contact');
       return;
@@ -354,11 +349,11 @@ export const PublicMembershipSubscribePage: React.FC<
       <main className="mx-auto w-full max-w-2xl px-4 pb-32 pt-6 sm:px-6 sm:pt-8">
         <div
           className="mb-6 flex items-center gap-2"
-          aria-label={`${stepIndex + 1} of 4`}
+          aria-label={`${stepIndex + 1} of ${steps.length}`}
         >
-          {[0, 1, 2, 3].map(i => (
+          {steps.map((stepId, i) => (
             <span
-              key={i}
+              key={stepId}
               className={`h-1.5 flex-1 rounded-full transition-colors ${
                 i <= stepIndex ? 'bg-white' : 'bg-white/25'
               }`}
@@ -506,6 +501,28 @@ export const PublicMembershipSubscribePage: React.FC<
             </div>
           </section>
         ) : null}
+
+        {step === 'review' && firstVisitDate && firstVisitTime ? (
+          <section
+            aria-labelledby="subscribe-review-heading"
+            className="space-y-6"
+          >
+            <PublicMembershipStepHeading
+              id="subscribe-review-heading"
+              title={ui.subscriptions.reviewTitle}
+            />
+            <MembershipSubscribeReview
+              plan={plan}
+              cadenceOption={cadenceOption}
+              details={details}
+              firstVisitDate={firstVisitDate}
+              firstVisitTime={firstVisitTime}
+              visitDurationMinutes={visitDurationMinutes}
+              needsAddress={needsAddress}
+              bookingFlowLocale={bookingFlowLocale}
+            />
+          </section>
+        ) : null}
       </main>
 
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 px-4 py-3 backdrop-blur-sm sm:px-6 lg:py-4">
@@ -561,29 +578,30 @@ export const PublicMembershipSubscribePage: React.FC<
           ) : null}
 
           {step === 'firstVisit' ? (
-            <>
-              <p className="mb-2 text-center text-xs tabular-nums text-zinc-500 lg:mb-2.5 lg:text-sm">
-                <span className="text-zinc-400">{plan.name}</span>
-                <span className="mx-1.5 text-zinc-600" aria-hidden>
-                  ·
-                </span>
-                <span className="text-zinc-300">
-                  {price}
-                  {priceSuffix}
-                </span>
-              </p>
-              <Button
-                type="button"
-                variant="inverse"
-                fullWidth
-                size={isLargeScreen ? 'lg' : 'sm'}
-                loading={isContinuing}
-                disabled={isContinuing || !canPay}
-                onClick={() => void handleCheckout()}
-              >
-                {ui.subscriptions.continueToCheckoutCta}
-              </Button>
-            </>
+            <Button
+              type="button"
+              variant="inverse"
+              fullWidth
+              size={isLargeScreen ? 'lg' : 'sm'}
+              disabled={!canPay}
+              onClick={() => setStep('review')}
+            >
+              {ui.common.continue}
+            </Button>
+          ) : null}
+
+          {step === 'review' ? (
+            <Button
+              type="button"
+              variant="inverse"
+              fullWidth
+              size={isLargeScreen ? 'lg' : 'sm'}
+              loading={isContinuing}
+              disabled={isContinuing || !canPay}
+              onClick={() => void handleCheckout()}
+            >
+              {ui.subscriptions.continueToCheckoutCta}
+            </Button>
           ) : null}
         </div>
       </div>

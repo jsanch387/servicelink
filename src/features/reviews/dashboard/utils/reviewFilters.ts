@@ -1,6 +1,7 @@
 import type { DashboardReview, ReviewsDashboardFilterId } from '../types';
 
 export function reviewNeedsReply(review: DashboardReview): boolean {
+  if (review.source === 'google') return false;
   return !review.ownerReply?.body?.trim();
 }
 

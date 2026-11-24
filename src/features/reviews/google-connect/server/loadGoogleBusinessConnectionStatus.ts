@@ -1,0 +1,45 @@
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
+
+export type GoogleBusinessConnectionStatus = {
+  connected: boolean;
+  locationTitle: string | null;
+  lastSyncedAt: string | null;
+};
+
+export async function loadGoogleBusinessConnectionStatus(
+  businessId: string
+): Promise<
+  | { ok: true; status: GoogleBusinessConnectionStatus }
+  | { ok: false; error: string }
+> {
+  const trimmed = businessId.trim();
+  if (!trimmed) {
+    return { ok: false, error: 'businessId is required' };
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { data: row, error } = await admin
+    .from('google_business_connections')
+    .select('id, google_location_title, last_synced_at')
+    .eq('business_id', trimmed)
+    .maybeSingle();
+  const data = row as {
+    id: string;
+    google_location_title: string | null;
+    last_synced_at: string | null;
+  } | null;
+
+  if (error) {
+    console.error('[reviews:google-connect] status load failed', error);
+    return { ok: false, error: 'Could not load Google connection.' };
+  }
+
+  return {
+    ok: true,
+    status: {
+      connected: Boolean(data?.id),
+      locationTitle: data?.google_location_title ?? null,
+      lastSyncedAt: data?.last_synced_at ?? null,
+    },
+  };
+}

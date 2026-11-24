@@ -3,15 +3,16 @@
  * Owner toggles `business_profiles.accept_quote_req` (public Request quote + intake).
  */
 
-import { isProAccess } from '@/features/pricing';
+import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function PATCH(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
 
-  const resolved = await resolveCurrentBusinessId(supabase);
+  const resolved = await requireBusinessPermission(supabase, 'profile.write');
   if (!resolved.ok) {
     return NextResponse.json(
       { success: false, error: resolved.error },
@@ -43,50 +44,11 @@ export async function PATCH(request: NextRequest) {
   const acceptQuoteRequests = raw.acceptQuoteRequests;
 
   if (acceptQuoteRequests) {
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profileRow } = await (supabase as any)
-      .from('profiles')
-      .select(
-        'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
-      )
-      .eq('user_id', user.id)
-      .maybeSingle();
-    const tier = profileRow?.subscription_tier as string | null | undefined;
-    const periodEnd = profileRow?.subscription_current_period_end as
-      | string
-      | null
-      | undefined;
-    const subscriptionStatus = profileRow?.subscription_status as
-      | string
-      | null
-      | undefined;
-    const stripeSubscriptionId = profileRow?.stripe_subscription_id as
-      | string
-      | null
-      | undefined;
-    const stripeCustomerId = profileRow?.stripe_customer_id as
-      | string
-      | null
-      | undefined;
-    if (
-      !isProAccess(
-        tier,
-        periodEnd,
-        subscriptionStatus,
-        stripeSubscriptionId,
-        stripeCustomerId
-      )
-    ) {
+    const hasPro = await ownerHasProAccessForBusiness(
+      createSupabaseAdminClient(),
+      resolved.businessId
+    );
+    if (!hasPro) {
       return NextResponse.json(
         {
           success: false,

@@ -42,8 +42,10 @@ import {
 } from '@/features/availability/booking/utils/ownerManualBookingJobs';
 import { appointmentMoneyFieldsFromJobs } from '@/features/availability/booking/utils/resolveBookingLineSubtotalCents';
 import { PUBLIC_BOOKING_MAX_JOBS } from '@/features/availability/booking/constants/publicBookingJobs';
+import { salesTaxEmailLine } from '@/features/availability/booking/utils/publicBookingSalesTax';
 import { createBooking } from '@/features/availability/services/bookingService';
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
+import { businessHasAnyBooking } from '@/features/onboarding-v3/server/businessHasTestBooking';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
 import {
   buildPublicBookingServiceLocation,
@@ -78,6 +80,7 @@ import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/
 import { applyCustomerInvoiceCheckoutCompleted } from '@/features/invoices/server/applyCustomerInvoiceCheckoutCompleted';
 import { applyWalkUpPaymentCheckoutCompleted } from '@/features/payments/walk-up/applyWalkUpPaymentCheckoutCompleted';
 import { applyWalkUpPaymentCheckoutExpired } from '@/features/payments/walk-up/applyWalkUpPaymentCheckoutExpired';
+import { recordBookingTapToPayStripeFeeFromWebhook } from '@/features/availability/booking/server/storeBookingTapToPayStripeFee';
 import { applyWalkUpTapToPayPaymentIntent } from '@/features/payments/walk-up/applyWalkUpTapToPayPaymentIntent';
 import { WALKUP_PAYMENT_TAP_TO_PAY_KIND } from '@/features/payments/walk-up/constants';
 import { applyMembershipCheckoutSessionCompleted } from '@/features/subscriptions/server/applyMembershipCheckoutSessionCompleted';
@@ -171,6 +174,9 @@ type StoredBookingCheckoutPayload = {
   };
   totalPriceCents: number;
   requiredOnlineAmountCents: number;
+  /** Frozen at checkout. Zero when the business was not collecting tax. */
+  taxRateBps?: number;
+  taxCents?: number;
   paymentMethodSelected: 'pay_now' | 'pay_in_person' | 'none';
   depositType?: 'fixed' | 'percent' | null;
   depositValue?: number | null;
@@ -181,6 +187,8 @@ type StoredBookingCheckoutPayload = {
   jobs?: CreateBookingJobItem[];
   /** Public SMS opt-in from contact checkbox (default true when omitted). */
   agreedToNotifications?: boolean;
+  /** Set by checkout when a signed-in shop user started the payment. */
+  createdByUserId?: string;
 };
 
 function customerFormFromCheckoutStored(
@@ -321,6 +329,14 @@ function parseStoredBookingCheckoutPayload(
     },
     totalPriceCents,
     requiredOnlineAmountCents,
+    taxRateBps:
+      typeof p.taxRateBps === 'number' && Number.isFinite(p.taxRateBps)
+        ? Math.max(0, Math.round(p.taxRateBps))
+        : 0,
+    taxCents:
+      typeof p.taxCents === 'number' && Number.isFinite(p.taxCents)
+        ? Math.max(0, Math.round(p.taxCents))
+        : 0,
     paymentMethodSelected: method,
     depositType:
       p.depositType === 'fixed' || p.depositType === 'percent'
@@ -346,6 +362,12 @@ function parseStoredBookingCheckoutPayload(
         : p.agreedToNotifications === true
           ? true
           : undefined,
+    ...(typeof p.createdByUserId === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      p.createdByUserId.trim()
+    )
+      ? { createdByUserId: p.createdByUserId.trim() }
+      : {}),
   };
 }
 
@@ -597,26 +619,32 @@ export async function POST(request: NextRequest) {
         shop_zip: string | null;
       };
 
-      const freeTierCap = await enforceFreeTierBookingCapBeforeCreate(
+      const practiceBooking = !(await businessHasAnyBooking(
         supabase,
-        capProfile
-      );
-      if (!freeTierCap.ok) {
-        logBookingCheckoutStage('free_tier_booking_cap', {
-          eventId: event.id,
-          sessionId: session.id,
-          checkoutSessionRowId: String(checkoutSessionRow.id),
-        });
-        console.warn('[booking-checkout:webhook] free tier cap', {
-          businessId: bookingPayload.businessId,
-          sessionId: session.id,
-        });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any)
-          .from('booking_checkout_sessions')
-          .update({ status: 'failed' })
-          .eq('id', checkoutSessionRow.id);
-        return NextResponse.json({ received: true }, { status: 200 });
+        capProfile.id
+      ));
+      if (!practiceBooking) {
+        const freeTierCap = await enforceFreeTierBookingCapBeforeCreate(
+          supabase,
+          capProfile
+        );
+        if (!freeTierCap.ok) {
+          logBookingCheckoutStage('free_tier_booking_cap', {
+            eventId: event.id,
+            sessionId: session.id,
+            checkoutSessionRowId: String(checkoutSessionRow.id),
+          });
+          console.warn('[booking-checkout:webhook] free tier cap', {
+            businessId: bookingPayload.businessId,
+            sessionId: session.id,
+          });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('booking_checkout_sessions')
+            .update({ status: 'failed' })
+            .eq('id', checkoutSessionRow.id);
+          return NextResponse.json({ received: true }, { status: 200 });
+        }
       }
 
       const optionLabel = bookingPayload.servicePriceOptionLabel?.trim();
@@ -748,6 +776,8 @@ export async function POST(request: NextRequest) {
         }),
         discountSnapshot,
         smsOptIn: checkoutSmsOptIn,
+        createdByUserId: bookingPayload.createdByUserId ?? null,
+        isTest: practiceBooking,
         ...(jobDetails
           ? {
               jobDetails,
@@ -761,10 +791,9 @@ export async function POST(request: NextRequest) {
         checkoutSessionRowId: String(checkoutSessionRow.id),
         bookingId: createdBooking.id,
       });
-      const remainingCents = Math.max(
-        bookingPayload.totalPriceCents - amountPaidCents,
-        0
-      );
+      const taxCents = bookingPayload.taxCents ?? 0;
+      const jobTotalCents = bookingPayload.totalPriceCents + taxCents;
+      const remainingCents = Math.max(jobTotalCents - amountPaidCents, 0);
       const paymentStatus = remainingCents > 0 ? 'deposit_paid' : 'paid_full';
       const currencyCode =
         typeof session.currency === 'string' && session.currency.trim()
@@ -838,11 +867,19 @@ export async function POST(request: NextRequest) {
               },
             }
           : {}),
+        ...(salesTaxEmailLine(bookingPayload.taxRateBps ?? 0, taxCents)
+          ? {
+              salesTax: salesTaxEmailLine(
+                bookingPayload.taxRateBps ?? 0,
+                taxCents
+              )!,
+            }
+          : {}),
         paymentSummary: buildStripeCheckoutPaymentSummary({
           paymentStatus,
           amountPaidCents,
           remainingCents,
-          totalPriceCents: bookingPayload.totalPriceCents,
+          totalPriceCents: jobTotalCents,
           currency: currencyCode,
           hasPriceLineItems,
         }),
@@ -857,10 +894,12 @@ export async function POST(request: NextRequest) {
         payment_status: paymentStatus,
         payment_method_selected: bookingPayload.paymentMethodSelected,
         currency: currencyCode,
-        total_amount_cents: bookingPayload.totalPriceCents,
+        total_amount_cents: jobTotalCents,
         required_online_amount_cents: bookingPayload.requiredOnlineAmountCents,
         paid_online_amount_cents: amountPaidCents,
         remaining_amount_cents: remainingCents,
+        tax_rate_bps: bookingPayload.taxRateBps ?? 0,
+        tax_cents: taxCents,
         deposit_type: bookingPayload.depositType,
         deposit_value: bookingPayload.depositValue,
         last_checkout_session_id: session.id,
@@ -1265,6 +1304,70 @@ export async function POST(request: NextRequest) {
       if ('retry' in applyResult && applyResult.retry) {
         return NextResponse.json(
           { error: 'Walk-up Tap to Pay apply failed' },
+          { status: 500 }
+        );
+      }
+    }
+    if (
+      event.type === 'payment_intent.succeeded' &&
+      paymentIntent.metadata?.kind === 'booking_tap_to_pay'
+    ) {
+      const connectedAccountId =
+        typeof event.account === 'string' ? event.account.trim() : '';
+      if (connectedAccountId && paymentIntent.id) {
+        try {
+          await recordBookingTapToPayStripeFeeFromWebhook({
+            admin: supabase,
+            stripeAccountId: connectedAccountId,
+            paymentIntentId: paymentIntent.id,
+          });
+        } catch (feeError) {
+          console.error('[tap-to-pay] stripe fee webhook failed', feeError);
+          return NextResponse.json(
+            { error: 'Tap to Pay fee was not stored' },
+            { status: 500 }
+          );
+        }
+      }
+    }
+    return NextResponse.json({ received: true }, { status: 200 });
+  }
+
+  if (event.type === 'charge.updated') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: insertError } = await (supabase as any)
+      .from('stripe_webhook_events')
+      .insert({
+        event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+      });
+    if (insertError && insertError.code !== '23505') {
+      console.error('Stripe webhook idempotency insert error:', insertError);
+      return NextResponse.json(
+        { error: 'Idempotency check failed' },
+        { status: 500 }
+      );
+    }
+
+    const charge = event.data.object as Stripe.Charge;
+    const paymentIntentId =
+      typeof charge.payment_intent === 'string'
+        ? charge.payment_intent
+        : charge.payment_intent?.id;
+    const connectedAccountId =
+      typeof event.account === 'string' ? event.account.trim() : '';
+    if (paymentIntentId && connectedAccountId) {
+      try {
+        await recordBookingTapToPayStripeFeeFromWebhook({
+          admin: supabase,
+          stripeAccountId: connectedAccountId,
+          paymentIntentId,
+        });
+      } catch (feeError) {
+        console.error('[tap-to-pay] stripe fee webhook failed', feeError);
+        return NextResponse.json(
+          { error: 'Tap to Pay fee was not stored' },
           { status: 500 }
         );
       }

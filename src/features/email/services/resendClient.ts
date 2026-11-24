@@ -27,3 +27,7 @@ export const DEFAULT_FROM_EMAIL = 'Bookings <onboarding@resend.dev>';
 export function getFromEmail(): string {
   return process.env.RESEND_FROM_EMAIL?.trim() || DEFAULT_FROM_EMAIL;
 }
+
+/** Founder notes. Booking and customer mail stay on `getFromEmail()`. */
+export const MARK_FROM_EMAIL =
+  'Mark from ServiceLink <mark@team.myservicelink.app>';

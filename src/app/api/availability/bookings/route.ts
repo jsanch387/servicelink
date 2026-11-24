@@ -7,7 +7,12 @@
 
 import { listBookingsForOwner } from '@/features/availability/booking/server/listBookingsForOwner';
 import { parseListBookingsQuery } from '@/features/availability/booking/server/parseListBookingsQuery';
+import {
+  appointmentRequestExpiryDate,
+  expirePastAppointmentRequests,
+} from '@/features/availability/services/expirePastAppointmentRequests';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -34,6 +39,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const asOf =
+      parsed.query.kind === 'page'
+        ? parsed.query.asOf
+        : appointmentRequestExpiryDate();
+    try {
+      await expirePastAppointmentRequests(createSupabaseAdminClient(), {
+        asOf,
+        businessId: authResult.businessId,
+      });
+    } catch (expireError) {
+      console.error(
+        '[API] GET /api/availability/bookings expire requests:',
+        expireError
+      );
+    }
+
     const page = await listBookingsForOwner(
       supabase,
       authResult.businessId,
@@ -43,11 +64,23 @@ export async function GET(request: NextRequest) {
         : undefined
     );
 
+    let totalCount: number | null = null;
+    // bookings is not in the hand-written Database type.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count, error: countError } = await (supabase as any)
+      .from('bookings')
+      .select('id', { count: 'exact', head: true })
+      .eq('business_id', authResult.businessId);
+    if (!countError && typeof count === 'number') {
+      totalCount = count;
+    }
+
     return NextResponse.json({
       success: true,
       data: page.bookings,
       hasMore: page.hasMore,
       nextCursor: page.nextCursor,
+      totalCount,
     });
   } catch (err) {
     console.error('[API] GET /api/availability/bookings:', err);

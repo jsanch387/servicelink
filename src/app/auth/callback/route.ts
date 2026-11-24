@@ -7,6 +7,8 @@ import {
 } from '@/features/account/server/resolveAccountEmailChangeRedirectTo';
 import { applyMarketingAttributionCookieFromUrl } from '@/features/marketing-attribution/server/applyMarketingAttributionCookie';
 import { ensureSignupAttributionPlaceholder } from '@/features/marketing-attribution/server/ensureSignupAttributionPlaceholder';
+import { onboardingFlowForEmail } from '@/features/onboarding-v3/config/onboardingV3Allowlist';
+import { stampOnboardingFlowForNewProfile } from '@/features/onboarding-v3/server/stampOnboardingFlowForNewProfile';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextResponse } from 'next/server';
@@ -179,10 +181,14 @@ export async function GET(request: Request) {
       .insert({
         user_id: user.id,
         full_name: name,
+        onboarding_flow: onboardingFlowForEmail(user.email),
+        signup_platform: 'web',
       });
     if (insertError) {
       console.error('[auth/callback] profile insert failed:', insertError);
     }
+  } else {
+    await stampOnboardingFlowForNewProfile(supabase, user.id, user.email);
   }
 
   // Row exists even if the browser never POSTs UTMs. Channel stays `unknown`

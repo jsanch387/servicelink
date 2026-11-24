@@ -123,7 +123,7 @@ export function BusinessLocationRequiredModal({
               Where do you serve?
             </h2>
             <p className="mt-1 text-sm leading-4 text-zinc-400">
-              Set your base and travel distance.
+              Set your service area and how far you travel.
             </p>
           </div>
         </div>
@@ -131,7 +131,7 @@ export function BusinessLocationRequiredModal({
         <div className="mt-7 space-y-5">
           <LocationAutocomplete
             id="required-business-location"
-            label="Base location"
+            label="Service area"
             value={locationQuery}
             onChange={value => {
               setLocationQuery(value);

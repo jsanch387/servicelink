@@ -29,6 +29,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { quotePublicBookingSalesTax } from '@/features/availability/booking/utils/publicBookingSalesTax';
 import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
 import type { SubscriptionCadenceOption } from '../types/customerSubscriptionPlan';
 import {
@@ -43,6 +44,7 @@ import {
   formatSubscriptionPriceCents,
 } from '../utils/formatSubscriptionPrice';
 import { planDescriptionForDisplay } from '../utils/planDescription';
+import { MembershipTaxCaption } from './MembershipTaxCaption';
 import { SubscriptionPlanReadySuccess } from './SubscriptionPlanReadySuccess';
 
 const CREATE_STEP_META: Record<
@@ -96,11 +98,19 @@ function hydrateOptions(
 interface CreateSubscriptionPlanPageProps {
   mode?: 'create' | 'edit';
   initialPlan?: OwnerSubscriptionPlan;
+  /** Live shop rate so the preview updates as the price is typed. Save recomputes. */
+  salesTaxEnabled?: boolean;
+  salesTaxRateBps?: number;
 }
 
 export const CreateSubscriptionPlanPage: React.FC<
   CreateSubscriptionPlanPageProps
-> = ({ mode = 'create', initialPlan }) => {
+> = ({
+  mode = 'create',
+  initialPlan,
+  salesTaxEnabled = false,
+  salesTaxRateBps = 0,
+}) => {
   const router = useRouter();
   const isEdit = mode === 'edit' && Boolean(initialPlan);
   const backHref = isEdit
@@ -392,7 +402,7 @@ export const CreateSubscriptionPlanPage: React.FC<
                       type="button"
                       variant="secondary"
                       size="sm"
-                      className="h-12 shrink-0"
+                      className="shrink-0"
                       icon={<PlusIcon className="h-4 w-4" aria-hidden />}
                       onClick={handleAddOption}
                     >
@@ -407,41 +417,67 @@ export const CreateSubscriptionPlanPage: React.FC<
                   ) : null}
 
                   <div>
-                    <p className="mb-2 text-sm font-medium text-gray-200">
+                    <p className="mb-3 text-sm font-medium text-gray-200">
                       Plan options
                     </p>
                     {options.length === 0 ? (
-                      <p className="rounded-xl border border-dashed border-white/10 px-4 py-5 text-center text-sm text-gray-500">
+                      <p className="rounded-xl border border-dashed border-white/10 px-4 py-6 text-center text-sm text-gray-500">
                         Add at least one schedule option.
                       </p>
                     ) : (
-                      <ul className="space-y-2">
-                        {options.map(option => (
-                          <li
-                            key={option.id}
-                            className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-3"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-white">
-                                {formatCadenceOptionLabel(option)}
-                              </p>
-                              <p className="text-xs text-zinc-500">
-                                {formatSubscriptionPriceCents(
-                                  option.priceCents
-                                )}
-                                {formatCadencePriceSuffix(option)}
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveOption(option.id)}
-                              className="cursor-pointer rounded-lg p-2 text-zinc-500 transition-colors hover:bg-white/5 hover:text-white"
-                              aria-label="Remove option"
+                      <ul className="space-y-3">
+                        {options.map(option => {
+                          const taxCents = quotePublicBookingSalesTax({
+                            priceAfterDiscountCents: option.priceCents,
+                            taxEnabled: salesTaxEnabled,
+                            taxRateBps: salesTaxRateBps,
+                          }).taxCents;
+                          return (
+                            <li
+                              key={option.id}
+                              className="rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-4"
                             >
-                              <TrashIcon className="h-4 w-4" aria-hidden />
-                            </button>
-                          </li>
-                        ))}
+                              <div className="flex items-start justify-between gap-4">
+                                <p className="min-w-0 text-base font-medium tracking-tight text-white">
+                                  {formatCadenceOptionLabel(option)}
+                                </p>
+                                <p className="shrink-0 text-sm font-medium tabular-nums text-white">
+                                  {formatSubscriptionPriceCents(
+                                    option.priceCents
+                                  )}
+                                  <span className="ml-1 font-normal text-white/50">
+                                    {formatCadencePriceSuffix(option)}
+                                  </span>
+                                </p>
+                              </div>
+                              <div className="mt-3 flex items-end justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  {taxCents > 0 ? (
+                                    <MembershipTaxCaption
+                                      priceCents={option.priceCents}
+                                      taxCents={taxCents}
+                                      taxRateBps={salesTaxRateBps}
+                                      align="start"
+                                    />
+                                  ) : null}
+                                </div>
+                                <IconButton
+                                  variant="ghost"
+                                  size="md"
+                                  className="-mb-2 -mr-2 shrink-0"
+                                  aria-label={`Remove ${formatCadenceOptionLabel(option)}`}
+                                  icon={
+                                    <TrashIcon
+                                      className="h-5 w-5"
+                                      aria-hidden
+                                    />
+                                  }
+                                  onClick={() => handleRemoveOption(option.id)}
+                                />
+                              </div>
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </div>

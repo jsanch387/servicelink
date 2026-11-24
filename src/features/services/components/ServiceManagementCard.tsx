@@ -1,6 +1,7 @@
 'use client';
 
-import { GlassCard, Switch } from '@/components/shared';
+import { Button, GlassCard, Switch } from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
 import {
   serviceListingNameClassName,
   serviceListingPriceClassName,
@@ -16,7 +17,6 @@ import {
   PencilSquareIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
-import Link from 'next/link';
 import React from 'react';
 
 function formatPrice(priceCents: number | null): string {
@@ -186,23 +186,30 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
           {!isReorderMode && (
             <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-white/[0.06]">
               <div className="flex gap-2 w-auto sm:w-full sm:max-w-[240px]">
-                <Link
-                  href={`/dashboard/services/${service.id}`}
-                  className="flex items-center justify-center gap-2 min-w-[80px] sm:min-w-0 px-4 py-2 sm:px-5 sm:py-2.5 sm:flex-1 text-white text-sm font-medium rounded-xl sm:rounded-2xl border border-white/20 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all active:scale-95 cursor-pointer"
+                <Button
+                  href={ROUTES.DASHBOARD.SERVICE_EDIT.replace(
+                    ':serviceId',
+                    encodeURIComponent(service.id)
+                  )}
+                  variant="outline"
+                  icon={
+                    <PencilSquareIcon className="h-4 w-4 text-emerald-500" />
+                  }
                   aria-label="Edit service"
+                  className="min-w-[80px] hover:!border-emerald-500/50 hover:!bg-emerald-500/5 sm:min-w-0 sm:flex-1"
                 >
-                  <PencilSquareIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-emerald-500 flex-shrink-0" />
                   <span className="hidden sm:inline">Edit</span>
-                </Link>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => onDelete?.(service.id)}
-                  className="flex items-center justify-center gap-2 min-w-[80px] sm:min-w-0 px-4 py-2 sm:px-5 sm:py-2.5 sm:flex-1 text-white text-sm font-medium rounded-xl sm:rounded-2xl border border-white/20 hover:border-red-500/40 hover:bg-red-500/5 hover:text-red-400 transition-all active:scale-95 cursor-pointer"
+                  icon={<TrashIcon className="h-4 w-4 text-red-500" />}
                   aria-label="Delete service"
+                  className="min-w-[80px] hover:!border-red-500/40 hover:!bg-red-500/5 hover:!text-red-400 sm:min-w-0 sm:flex-1"
                 >
-                  <TrashIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-red-500 flex-shrink-0" />
                   <span className="hidden sm:inline">Delete</span>
-                </button>
+                </Button>
               </div>
               <Switch
                 size="md"

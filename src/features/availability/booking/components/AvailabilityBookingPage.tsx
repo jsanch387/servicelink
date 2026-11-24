@@ -20,6 +20,10 @@ import {
   PublicFlowStickyBackHeader,
   publicFlowBackNavClassName,
 } from '@/components/shared';
+import {
+  setOwnerTestGuide,
+  useOwnerTestGuidePhase,
+} from '@/features/onboarding-v3/ownerTestGuide';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -44,6 +48,12 @@ import {
   publicMultiJobCheckoutTotals,
 } from '../utils/buildPublicMultiJobBookingBody';
 import { clientBookingTimeZone } from '../utils/clientBookingTimeZone';
+import {
+  depositDueNowCents,
+  onlineAmountDueNowCents,
+  quotePublicBookingSalesTax,
+} from '../utils/publicBookingSalesTax';
+import { formatSalesTaxRateLabel } from '@/features/payments/utils/salesTaxRate';
 import {
   loadPublicBookingJobsCart,
   persistPublicBookingJobsCartJobs,
@@ -150,12 +160,12 @@ function getDepositDueNowCents(
   paymentSettings: PublicBookingPaymentSettings,
   totalPriceCents: number
 ): number {
-  if (!paymentSettings.depositsEnabled) return totalPriceCents;
-  if (paymentSettings.depositType === 'fixed') {
-    return Math.min(totalPriceCents, Math.max(0, paymentSettings.depositValue));
-  }
-  const percent = Math.min(100, Math.max(0, paymentSettings.depositValue));
-  return Math.round((totalPriceCents * percent) / 100);
+  return depositDueNowCents({
+    depositsEnabled: paymentSettings.depositsEnabled,
+    depositType: paymentSettings.depositType,
+    depositValue: paymentSettings.depositValue,
+    totalCents: totalPriceCents,
+  });
 }
 
 /** Card amount due now (full pay path vs deposit path). Single source for CTA + checkout. */
@@ -165,20 +175,16 @@ function computeOnlineAmountDueNowCents(
   customerPaymentChoice: PaymentChoice | null,
   totalPriceCents: number
 ): number {
-  if (!paymentSettingsEnabled || !paymentSettings) return 0;
-  const safeTotal = Number.isFinite(totalPriceCents)
-    ? Math.max(0, totalPriceCents)
-    : 0;
-  const configuredDeposit = getDepositDueNowCents(paymentSettings, safeTotal);
-  const requiresDepositNow =
-    paymentSettings.depositsEnabled === true && configuredDeposit > 0;
-  const requiresPayNow =
-    paymentSettings.checkoutMode === 'in_app' ||
-    (paymentSettings.checkoutMode === 'customer_choice' &&
-      customerPaymentChoice === 'pay_now');
-  if (requiresPayNow) return safeTotal;
-  if (requiresDepositNow) return configuredDeposit;
-  return 0;
+  if (!paymentSettings) return 0;
+  return onlineAmountDueNowCents({
+    paymentsEnabled: paymentSettingsEnabled,
+    checkoutMode: paymentSettings.checkoutMode,
+    depositsEnabled: paymentSettings.depositsEnabled,
+    depositType: paymentSettings.depositType,
+    depositValue: paymentSettings.depositValue,
+    customerPaymentChoice,
+    totalCents: totalPriceCents,
+  });
 }
 
 /** Frontend checkout debug logs disabled in production/local builds (server logs only). */
@@ -264,6 +270,7 @@ export function AvailabilityBookingPage({
   bufferTime = 'none',
   existingBookings: existingBookingsProp,
   isOwnerManualBooking = false,
+  requireBookingApproval = false,
   paymentSettings = null,
   exitCalendarFlowHref,
   exitCalendarFlowLabel,
@@ -283,6 +290,11 @@ export function AvailabilityBookingPage({
     () => publicBookingUi(bookingFlowLocale),
     [bookingFlowLocale]
   );
+  const appointmentRequest =
+    requireBookingApproval === true && !isOwnerManualBooking;
+  const confirmCtaLabel = appointmentRequest
+    ? ui.calendar.requestAppointment
+    : ui.calendar.confirmBooking;
   const isMultiJobVisit =
     Array.isArray(bookingJobsProp) && bookingJobsProp.length >= 1;
   const [visitJobs, setVisitJobs] = useState<PublicBookingJobDraft[]>(
@@ -432,6 +444,14 @@ export function AvailabilityBookingPage({
     gateOnMount: !isOwnerManualBooking,
   });
   const router = useRouter();
+  const ownerTestGuide = useOwnerTestGuidePhase() === 'public';
+  const ownerTestStep = (copy: string) =>
+    ownerTestGuide
+      ? {
+          'data-owner-test-guide': 'step',
+          'data-owner-test-copy': copy,
+        }
+      : {};
 
   useEffect(() => {
     if (policyAgreement.hasAgreed) {
@@ -819,6 +839,8 @@ export function AvailabilityBookingPage({
     paidOnlineAmountCents: number;
     remainingAmountCents: number;
     totalAmountCents: number;
+    taxCents: number;
+    taxRateBps: number;
     serviceName: string;
     scheduledDate: string;
     startTime: string;
@@ -862,11 +884,38 @@ export function AvailabilityBookingPage({
    * Fallback behavior: if owner didn't finish payment setup (no checkout mode
    * selected), skip payment step and use normal confirm-booking flow.
    * Deposits can be off while checkout is still fully valid.
+   * Appointment requests skip payment until the owner confirms.
    */
   const shouldShowPaymentStep =
-    paymentSettingsEnabled && hasCheckoutModeConfigured;
+    paymentSettingsEnabled && hasCheckoutModeConfigured && !appointmentRequest;
+  const requiresPayNow =
+    paymentSettings?.checkoutMode === 'in_app' ||
+    (paymentSettings?.checkoutMode === 'customer_choice' &&
+      customerPaymentChoice === 'pay_now');
+  /** Discount-adjusted total for display + pay-in-full; deposits stay on pre-discount. */
+  const bookingDisplayTotalCents = bookingDiscountPricing.applies
+    ? bookingDiscountPricing.estimatedTotalCents
+    : totalPriceCents;
+  const salesTaxQuote = quotePublicBookingSalesTax({
+    priceAfterDiscountCents: bookingDisplayTotalCents,
+    taxEnabled: paymentSettings?.taxEnabled === true,
+    taxRateBps: paymentSettings?.taxRateBps ?? 0,
+  });
+  const salesTaxApplies = (salesTaxQuote?.taxCents ?? 0) > 0;
+  const salesTaxLabel =
+    salesTaxApplies && salesTaxQuote
+      ? ui.common.salesTax(formatSalesTaxRateLabel(salesTaxQuote.rateBps))
+      : null;
+  /** Job total the customer owes. Tax on means this includes tax. */
+  const bookingChargeTotalCents =
+    salesTaxApplies && salesTaxQuote
+      ? salesTaxQuote.totalCents
+      : bookingDisplayTotalCents;
   const configuredDepositCents = paymentSettings
-    ? getDepositDueNowCents(paymentSettings, totalPriceCents)
+    ? getDepositDueNowCents(
+        paymentSettings,
+        salesTaxApplies ? bookingChargeTotalCents : totalPriceCents
+      )
     : 0;
   const requiresDepositNow =
     paymentSettingsEnabled &&
@@ -878,15 +927,15 @@ export function AvailabilityBookingPage({
     depositIsPercent && paymentSettings
       ? Math.min(100, Math.max(0, Math.round(paymentSettings.depositValue)))
       : null;
-  const requiresPayNow =
-    paymentSettings?.checkoutMode === 'in_app' ||
-    (paymentSettings?.checkoutMode === 'customer_choice' &&
-      customerPaymentChoice === 'pay_now');
-  /** Discount-adjusted total for display + pay-in-full; deposits stay on pre-discount. */
-  const bookingDisplayTotalCents = bookingDiscountPricing.applies
-    ? bookingDiscountPricing.estimatedTotalCents
-    : totalPriceCents;
   const amountDueNowCents = (() => {
+    if (salesTaxApplies) {
+      return computeOnlineAmountDueNowCents(
+        paymentSettings,
+        paymentSettingsEnabled,
+        customerPaymentChoice,
+        bookingChargeTotalCents
+      );
+    }
     const base = computeOnlineAmountDueNowCents(
       paymentSettings,
       paymentSettingsEnabled,
@@ -900,7 +949,7 @@ export function AvailabilityBookingPage({
   })();
   const amountDueLaterCents = Math.max(
     0,
-    bookingDisplayTotalCents - amountDueNowCents
+    bookingChargeTotalCents - amountDueNowCents
   );
 
   const paymentCurrency = paymentSettings?.currency ?? 'usd';
@@ -915,7 +964,7 @@ export function AvailabilityBookingPage({
     ) {
       return ui.calendar.chooseHowToPay;
     }
-    if (amountDueNowCents <= 0) return ui.calendar.confirmBooking;
+    if (amountDueNowCents <= 0) return confirmCtaLabel;
     const amt = formatPrice(
       amountDueNowCents,
       paymentCurrency,
@@ -938,6 +987,7 @@ export function AvailabilityBookingPage({
     customerPaymentChoice,
     ui,
     bookingFlowLocale,
+    confirmCtaLabel,
   ]);
 
   /** Shown with the spinner while the payment CTA is working (no ellipsis). */
@@ -945,8 +995,10 @@ export function AvailabilityBookingPage({
     if (amountDueNowCents > 0) {
       return ui.calendar.goingToCheckout;
     }
-    return ui.calendar.confirmingBooking;
-  }, [amountDueNowCents, ui]);
+    return appointmentRequest
+      ? ui.calendar.requestingAppointment
+      : ui.calendar.confirmingBooking;
+  }, [amountDueNowCents, appointmentRequest, ui]);
 
   const canContinueFromSchedule = Boolean(selectedDate && selectedTime);
   const canContinueFromLocation = isCustomerServiceLocationChoiceValid(
@@ -1078,6 +1130,8 @@ export function AvailabilityBookingPage({
                 paidOnlineAmountCents: number;
                 remainingAmountCents: number;
                 totalAmountCents: number;
+                taxCents?: number;
+                taxRateBps?: number;
                 booking: {
                   serviceName: string;
                   scheduledDate: string;
@@ -1099,6 +1153,14 @@ export function AvailabilityBookingPage({
                 paidOnlineAmountCents: json.data.paidOnlineAmountCents,
                 remainingAmountCents: json.data.remainingAmountCents,
                 totalAmountCents: json.data.totalAmountCents,
+                taxCents:
+                  typeof json.data.taxCents === 'number'
+                    ? json.data.taxCents
+                    : 0,
+                taxRateBps:
+                  typeof json.data.taxRateBps === 'number'
+                    ? json.data.taxRateBps
+                    : 0,
                 serviceName: json.data.booking.serviceName,
                 scheduledDate: json.data.booking.scheduledDate,
                 startTime: json.data.booking.startTime,
@@ -1315,7 +1377,7 @@ export function AvailabilityBookingPage({
               customerServiceLocation:
                 customerServiceLocationPayload ?? undefined,
               paymentMethodSelected: customerPaymentChoice ?? 'none',
-              promoCode: appliedPromo?.code,
+              promoCode: appointmentRequest ? undefined : appliedPromo?.code,
               ...(!isOwnerManualBooking
                 ? {
                     agreedToNotifications: agreedToPublicNotifications,
@@ -1383,7 +1445,9 @@ export function AvailabilityBookingPage({
               depositValue: requiresDepositNow
                 ? (paymentSettings?.depositValue ?? null)
                 : null,
-              ...(appliedPromo?.code ? { promoCode: appliedPromo.code } : {}),
+              ...(!appointmentRequest && appliedPromo?.code
+                ? { promoCode: appliedPromo.code }
+                : {}),
               ...(!isOwnerManualBooking
                 ? {
                     agreedToNotifications: agreedToPublicNotifications,
@@ -1475,25 +1539,28 @@ export function AvailabilityBookingPage({
           : ('none' as const);
 
       const body = isMultiJobVisit
-        ? buildPublicMultiJobBookingBody({
-            businessId,
-            businessSlug,
-            jobs: visitJobs,
-            scheduledDate,
-            startTime: selectedTime,
-            timeZone: clientBookingTimeZone(),
-            customer: customerForSubmit,
-            customerServiceLocation:
-              customerServiceLocationPayload ?? undefined,
-            paymentMethodSelected: paymentMethodForPublicCreate,
-            promoCode: appliedPromo?.code,
-            ...(!isOwnerManualBooking
-              ? {
-                  agreedToNotifications: agreedToPublicNotifications,
-                  agreedToPolicy: agreedToBookingPolicy,
-                }
-              : {}),
-          })
+        ? {
+            ...buildPublicMultiJobBookingBody({
+              businessId,
+              businessSlug,
+              jobs: visitJobs,
+              scheduledDate,
+              startTime: selectedTime,
+              timeZone: clientBookingTimeZone(),
+              customer: customerForSubmit,
+              customerServiceLocation:
+                customerServiceLocationPayload ?? undefined,
+              paymentMethodSelected: paymentMethodForPublicCreate,
+              promoCode: appointmentRequest ? undefined : appliedPromo?.code,
+              ...(!isOwnerManualBooking
+                ? {
+                    agreedToNotifications: agreedToPublicNotifications,
+                    agreedToPolicy: agreedToBookingPolicy,
+                  }
+                : {}),
+            }),
+            ...(ownerTestGuide ? { ownerTest: true } : {}),
+          }
         : {
             businessSlug,
             businessId,
@@ -1524,7 +1591,10 @@ export function AvailabilityBookingPage({
               : {}),
             paymentMethodSelected: paymentMethodForPublicCreate,
             ...(isOwnerManualBooking ? { ownerManualBooking: true } : {}),
-            ...(!isOwnerManualBooking && appliedPromo?.code
+            ...(ownerTestGuide ? { ownerTest: true } : {}),
+            ...(!isOwnerManualBooking &&
+            !appointmentRequest &&
+            appliedPromo?.code
               ? { promoCode: appliedPromo.code }
               : {}),
             ...(!isOwnerManualBooking
@@ -1560,6 +1630,7 @@ export function AvailabilityBookingPage({
         customer: customerForSubmit,
         selectedAddOns,
       });
+      if (ownerTestGuide) setOwnerTestGuide('nav');
       setShowSuccess(true);
     } catch {
       setSubmitError('Something went wrong. Please try again.');
@@ -1593,10 +1664,13 @@ export function AvailabilityBookingPage({
             : undefined
         }
         saleAppliesLine={saleAppliesLine}
+        salesTaxCents={salesTaxApplies ? salesTaxQuote?.taxCents : undefined}
+        salesTaxLabel={salesTaxLabel}
         customer={submittedData.customer}
         date={submittedData.date}
         time={submittedData.time}
         isOwnerManualBooking={isOwnerManualBooking}
+        isAppointmentRequest={appointmentRequest}
         bookingFlowLocale={bookingFlowLocale}
       />
     );
@@ -1636,6 +1710,8 @@ export function AvailabilityBookingPage({
         remainingAmountCents={paymentSuccessData.remainingAmountCents}
         paymentStatus={paymentSuccessData.paymentStatus}
         totalAmountCents={paymentSuccessData.totalAmountCents}
+        taxCents={paymentSuccessData.taxCents}
+        taxRateBps={paymentSuccessData.taxRateBps}
         durationMinutes={paymentSuccessData.durationMinutes}
         servicePriceCents={paymentSuccessData.servicePriceCents}
         selectedAddOns={paymentSuccessData.selectedAddOns}
@@ -1648,6 +1724,11 @@ export function AvailabilityBookingPage({
   }
 
   const headerClassName = publicFlowBackNavClassName;
+  const quickScheduleVisible =
+    step === 'schedule' &&
+    !isOwnerManualBooking &&
+    !showFullCalendar &&
+    earliestAvailableSlot != null;
 
   const trackerStage: PublicBookingTrackerStage =
     step === 'details'
@@ -1752,7 +1833,7 @@ export function AvailabilityBookingPage({
       </PublicFlowStickyBackHeader>
 
       <div className="flex flex-col min-h-[60vh] max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pb-24 w-full">
-        <div className="flex-1 pb-28">
+        <div className={`flex-1 ${quickScheduleVisible ? 'pb-8' : 'pb-28'}`}>
           {!isOwnerManualBooking ? (
             <PublicBookingStepTracker
               currentStage={trackerStage}
@@ -1840,6 +1921,11 @@ export function AvailabilityBookingPage({
                   onBookThisTime={handleQuickBookEarliest}
                   onChooseDifferentTime={() => setShowFullCalendar(true)}
                   labels={ui.quickSchedule}
+                  guideCopy={
+                    ownerTestGuide
+                      ? 'Book this time, or choose a different time.'
+                      : undefined
+                  }
                 />
               ) : (
                 <>
@@ -2355,6 +2441,10 @@ export function AvailabilityBookingPage({
                         : undefined
                     }
                     saleAppliesLine={saleAppliesLine}
+                    salesTaxCents={
+                      salesTaxApplies ? salesTaxQuote?.taxCents : undefined
+                    }
+                    salesTaxLabel={salesTaxLabel}
                     canAddAnotherJob={
                       Boolean(addAnotherJobHref) &&
                       visitJobs.length < PUBLIC_BOOKING_MAX_JOBS
@@ -2368,8 +2458,11 @@ export function AvailabilityBookingPage({
                     canRemoveJob={visitJobs.length > 1}
                     onRemoveJob={removeVisitJob}
                     removeLabel={ui.multiJob.remove}
+                    estimateTotal={appointmentRequest}
                   />
-                  {!shouldShowPaymentStep && !isOwnerManualBooking
+                  {!shouldShowPaymentStep &&
+                  !isOwnerManualBooking &&
+                  !appointmentRequest
                     ? promoCodeField
                     : null}
                   {requiresBookingPolicy && bookingPolicy ? (
@@ -2407,6 +2500,10 @@ export function AvailabilityBookingPage({
                         : undefined
                     }
                     saleAppliesLine={saleAppliesLine}
+                    salesTaxCents={
+                      salesTaxApplies ? salesTaxQuote?.taxCents : undefined
+                    }
+                    salesTaxLabel={salesTaxLabel}
                     date={serviceDateYmd ?? ''}
                     startTimeHhmm={selectedTime}
                     customer={customerForSubmit}
@@ -2423,8 +2520,11 @@ export function AvailabilityBookingPage({
                         customerServiceChoice
                       )
                     }
+                    estimateTotal={appointmentRequest}
                   />
-                  {!shouldShowPaymentStep && !isOwnerManualBooking
+                  {!shouldShowPaymentStep &&
+                  !isOwnerManualBooking &&
+                  !appointmentRequest
                     ? promoCodeField
                     : null}
                   {requiresBookingPolicy && bookingPolicy ? (
@@ -2565,104 +2665,114 @@ export function AvailabilityBookingPage({
                   )}
 
                   <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
-                    <p className="text-sm font-semibold text-white tracking-tight pb-3 border-b border-white/10">
+                    <p className="text-sm font-semibold text-white tracking-tight">
                       {ui.common.summary}
                     </p>
-                    <div className="flex flex-col gap-3.5 pt-4">
+                    <div className="mt-4 flex flex-col gap-2">
                       <div className="flex items-center justify-between gap-4 text-sm">
-                        <span className="text-gray-300 shrink-0">
+                        <span
+                          className={
+                            salesTaxApplies
+                              ? 'text-white/60'
+                              : 'font-semibold text-white'
+                          }
+                        >
                           {ui.common.bookingTotal}
                         </span>
-                        {bookingDiscountPricing.applies ? (
-                          <div className="flex items-baseline justify-end gap-2">
-                            <span className="text-zinc-500 line-through decoration-zinc-500/70 tabular-nums">
+                        <span
+                          className={`flex items-baseline gap-2 tabular-nums text-white ${
+                            salesTaxApplies ? '' : 'font-semibold'
+                          }`}
+                        >
+                          {bookingDiscountPricing.applies ? (
+                            <span className="text-xs text-zinc-500 line-through decoration-zinc-500/70">
                               {formatPrice(
                                 bookingDiscountPricing.subtotalCents,
                                 paymentCurrency,
                                 bookingFlowLocale
                               )}
                             </span>
-                            <span className="text-white font-semibold text-right tabular-nums">
-                              {formatPrice(
-                                bookingDisplayTotalCents,
-                                paymentCurrency,
-                                bookingFlowLocale
-                              )}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-white font-semibold text-right tabular-nums">
-                            {formatPrice(
-                              totalPriceCents,
-                              paymentCurrency,
-                              bookingFlowLocale
-                            )}
-                          </span>
-                        )}
-                      </div>
-                      {saleAppliesLine ? (
-                        <div className="space-y-1.5">
-                          <BookingSaleAppliesNotice line={saleAppliesLine} />
-                          {bookingDiscountPricing.discountCents > 0 ? (
-                            <p className="text-sm font-medium text-emerald-300/90">
-                              {ui.common.youSave(
-                                formatPrice(
-                                  bookingDiscountPricing.discountCents,
-                                  paymentCurrency,
-                                  bookingFlowLocale
-                                )
-                              )}
-                            </p>
                           ) : null}
-                        </div>
-                      ) : null}
-                      {requiresDepositNow && (
-                        <div className="flex items-center justify-between gap-4 text-sm">
-                          <span className="text-gray-300 shrink-0">
-                            {depositIsPercent && depositPercentWhole != null
-                              ? ui.common.depositPercentOfTotal(
-                                  depositPercentWhole
-                                )
-                              : ui.common.deposit}
-                          </span>
-                          <span className="text-white font-semibold text-right tabular-nums">
-                            {formatPrice(
-                              configuredDepositCents,
-                              paymentCurrency,
-                              bookingFlowLocale
-                            )}
-                          </span>
-                        </div>
-                      )}
-                      {(requiresPayNow || requiresDepositNow) && (
+                          {formatPrice(
+                            bookingDisplayTotalCents,
+                            paymentCurrency,
+                            bookingFlowLocale
+                          )}
+                        </span>
+                      </div>
+                      {salesTaxApplies && salesTaxLabel && salesTaxQuote ? (
                         <>
                           <div className="flex items-center justify-between gap-4 text-sm">
-                            <span className="text-gray-300 shrink-0">
-                              {ui.common.dueNow}
+                            <span className="text-white/60">
+                              {salesTaxLabel}
                             </span>
-                            <span className="text-white font-semibold text-right tabular-nums">
+                            <span className="tabular-nums text-white">
                               {formatPrice(
-                                amountDueNowCents,
+                                salesTaxQuote.taxCents,
                                 paymentCurrency,
                                 bookingFlowLocale
                               )}
                             </span>
                           </div>
                           <div className="flex items-center justify-between gap-4 text-sm">
-                            <span className="text-gray-300 shrink-0">
-                              {ui.common.remaining}
+                            <span className="font-semibold text-white">
+                              {ui.common.total}
                             </span>
-                            <span className="text-white font-semibold text-right tabular-nums">
+                            <span className="font-semibold tabular-nums text-white">
                               {formatPrice(
-                                amountDueLaterCents,
+                                bookingChargeTotalCents,
                                 paymentCurrency,
                                 bookingFlowLocale
                               )}
                             </span>
                           </div>
                         </>
-                      )}
+                      ) : null}
                     </div>
+                    {saleAppliesLine ? (
+                      <div className="mt-3 space-y-1.5">
+                        <BookingSaleAppliesNotice line={saleAppliesLine} />
+                        {bookingDiscountPricing.discountCents > 0 ? (
+                          <p className="text-sm font-medium text-emerald-300/90">
+                            {ui.common.youSave(
+                              formatPrice(
+                                bookingDiscountPricing.discountCents,
+                                paymentCurrency,
+                                bookingFlowLocale
+                              )
+                            )}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {amountDueNowCents > 0 && amountDueLaterCents > 0 ? (
+                      <div className="mt-4 flex flex-col gap-2 border-t border-white/[0.08] pt-4">
+                        <div className="flex items-center justify-between gap-4 text-sm">
+                          <span className="text-white/60">
+                            {ui.common.dueNow}
+                          </span>
+                          <span className="tabular-nums text-white">
+                            {formatPrice(
+                              amountDueNowCents,
+                              paymentCurrency,
+                              bookingFlowLocale
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-4 text-sm">
+                          <span className="text-white/60">
+                            {ui.common.remaining}
+                          </span>
+                          <span className="tabular-nums text-white">
+                            {formatPrice(
+                              amountDueLaterCents,
+                              paymentCurrency,
+                              bookingFlowLocale
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
 
                   {amountDueNowCents > 0 && (
@@ -2677,37 +2787,17 @@ export function AvailabilityBookingPage({
         </div>
 
         {/* Sticky bottom CTA — high z-index + touch-manipulation avoid taps being eaten on mobile */}
-        <div
-          className="fixed bottom-0 left-0 right-0 z-[100] border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm p-4 safe-area-pb touch-manipulation"
-          style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
-        >
+        {!quickScheduleVisible ? (
           <div
-            className={`max-w-2xl mx-auto ${
-              isOwnerManualBooking ? 'grid grid-cols-2 gap-3' : ''
-            }`}
+            className="fixed bottom-0 left-0 right-0 z-[100] border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm p-4 safe-area-pb touch-manipulation"
+            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
-            {isOwnerManualBooking && step === 'location' ? (
-              <Button
-                href={exitCalendarFlowHref}
-                variant="secondary"
-                fullWidth
-                className="font-semibold"
-              >
-                {ui.common.back}
-              </Button>
-            ) : null}
-            {isOwnerManualBooking && step === 'schedule' ? (
-              needsInlineLocationStep ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  fullWidth
-                  className="font-semibold"
-                  onClick={() => setStep('location')}
-                >
-                  {ui.common.back}
-                </Button>
-              ) : (
+            <div
+              className={`max-w-2xl mx-auto ${
+                isOwnerManualBooking ? 'grid grid-cols-2 gap-3' : ''
+              }`}
+            >
+              {isOwnerManualBooking && step === 'location' ? (
                 <Button
                   href={exitCalendarFlowHref}
                   variant="secondary"
@@ -2716,137 +2806,180 @@ export function AvailabilityBookingPage({
                 >
                   {ui.common.back}
                 </Button>
-              )
-            ) : null}
-            {isOwnerManualBooking && step === 'details' ? (
-              <Button
-                type="button"
-                variant="secondary"
-                fullWidth
-                className="font-semibold"
-                onClick={handleDetailsBack}
-              >
-                {ui.common.back}
-              </Button>
-            ) : null}
-            {isOwnerManualBooking && step === 'review' ? (
-              <Button
-                type="button"
-                variant="secondary"
-                fullWidth
-                className="font-semibold"
-                onClick={openDetailsFromReview}
-              >
-                {ui.common.back}
-              </Button>
-            ) : null}
-            {isOwnerManualBooking && step === 'payment' ? (
-              <Button
-                type="button"
-                variant="secondary"
-                fullWidth
-                className="font-semibold"
-                onClick={() => setStep('review')}
-              >
-                {ui.common.back}
-              </Button>
-            ) : null}
-            {step === 'location' && (
-              <Button
-                type="button"
-                variant="inverse"
-                fullWidth
-                className="font-semibold"
-                disabled={!canContinueFromLocation}
-                onClick={openScheduleFromLocation}
-              >
-                {ui.common.continue}
-              </Button>
-            )}
-            {step === 'schedule' && (
-              <Button
-                type="button"
-                variant="inverse"
-                fullWidth
-                className="font-semibold"
-                disabled={!canContinueFromSchedule}
-                onClick={continueFromSchedule}
-              >
-                {ui.common.continue}
-              </Button>
-            )}
-            {step === 'details' && (
-              <Button
-                key={`details-form-${detailsSubStep}`}
-                // When vehicles are incomplete, stay clickable as a button so we
-                // can toast the next step instead of a silent disabled state.
-                type={multiJobAssetsIncomplete ? 'button' : 'submit'}
-                form={CUSTOMER_FORM_ID}
-                variant="inverse"
-                fullWidth
-                className="font-semibold"
-                disabled={!detailsFormValid}
-                onClick={
-                  multiJobAssetsIncomplete
-                    ? toastMultiJobAssetRequired
-                    : undefined
-                }
-              >
-                {detailsPrimaryCtaLabel}
-              </Button>
-            )}
-            {step === 'review' && (
-              <Button
-                type="button"
-                variant="inverse"
-                fullWidth
-                className="font-semibold"
-                disabled={
-                  isSubmitting ||
-                  (requiresBookingPolicy && !agreedToBookingPolicy)
-                }
-                onClick={() => {
-                  if (requiresBookingPolicy && !agreedToBookingPolicy) return;
-                  if (shouldShowPaymentStep) setStep('payment');
-                  else void handleConfirmBooking();
-                }}
-              >
-                {shouldShowPaymentStep
-                  ? ui.calendar.continueToPayment
-                  : ui.calendar.confirmBooking}
-              </Button>
-            )}
-            {step === 'payment' && (
-              <Button
-                type="button"
-                variant="inverse"
-                fullWidth
-                className="font-semibold touch-manipulation min-h-[52px]"
-                disabled={!canContinueFromPayment}
-                loading={isSubmitting}
-                onClick={() => {
-                  const cents = amountDueNowCents;
-                  logBookingCheckoutDev('payment primary CTA clicked', {
-                    cents,
-                    action:
-                      cents > 0 ? 'stripe_checkout' : 'confirm_booking_only',
-                    ctaLabel: paymentStepCtaLabel,
-                  });
-                  if (cents > 0) void handleStartCheckout(cents);
-                  else {
-                    logBookingCheckoutDev(
-                      'payment CTA: no online amount due — creating booking without checkout',
-                      { cents }
-                    );
-                    void handleConfirmBooking();
-                  }
-                }}
-              >
-                {isSubmitting ? paymentPrimaryBusyLabel : paymentStepCtaLabel}
-              </Button>
-            )}
+              ) : null}
+              {isOwnerManualBooking && step === 'schedule' ? (
+                needsInlineLocationStep ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    fullWidth
+                    className="font-semibold"
+                    onClick={() => setStep('location')}
+                  >
+                    {ui.common.back}
+                  </Button>
+                ) : (
+                  <Button
+                    href={exitCalendarFlowHref}
+                    variant="secondary"
+                    fullWidth
+                    className="font-semibold"
+                  >
+                    {ui.common.back}
+                  </Button>
+                )
+              ) : null}
+              {isOwnerManualBooking && step === 'details' ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  className="font-semibold"
+                  onClick={handleDetailsBack}
+                >
+                  {ui.common.back}
+                </Button>
+              ) : null}
+              {isOwnerManualBooking && step === 'review' ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  className="font-semibold"
+                  onClick={openDetailsFromReview}
+                >
+                  {ui.common.back}
+                </Button>
+              ) : null}
+              {isOwnerManualBooking && step === 'payment' ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  className="font-semibold"
+                  onClick={() => setStep('review')}
+                >
+                  {ui.common.back}
+                </Button>
+              ) : null}
+              {step === 'location' && (
+                <Button
+                  type="button"
+                  variant="inverse"
+                  fullWidth
+                  className="font-semibold"
+                  disabled={!canContinueFromLocation}
+                  onClick={openScheduleFromLocation}
+                >
+                  {ui.common.continue}
+                </Button>
+              )}
+              {step === 'schedule' && (
+                <div
+                  className="w-full"
+                  {...ownerTestStep('Pick a day and time, then continue.')}
+                >
+                  <Button
+                    type="button"
+                    variant="inverse"
+                    fullWidth
+                    className="font-semibold"
+                    disabled={!canContinueFromSchedule}
+                    onClick={continueFromSchedule}
+                  >
+                    {ui.common.continue}
+                  </Button>
+                </div>
+              )}
+              {step === 'details' && (
+                <div
+                  className="w-full"
+                  {...ownerTestStep('Fill in your details, then continue.')}
+                >
+                  <Button
+                    key={`details-form-${detailsSubStep}`}
+                    // When vehicles are incomplete, stay clickable as a button so we
+                    // can toast the next step instead of a silent disabled state.
+                    type={multiJobAssetsIncomplete ? 'button' : 'submit'}
+                    form={CUSTOMER_FORM_ID}
+                    variant="inverse"
+                    fullWidth
+                    className="font-semibold"
+                    disabled={!detailsFormValid}
+                    onClick={
+                      multiJobAssetsIncomplete
+                        ? toastMultiJobAssetRequired
+                        : undefined
+                    }
+                  >
+                    {detailsPrimaryCtaLabel}
+                  </Button>
+                </div>
+              )}
+              {step === 'review' && (
+                <div
+                  className="w-full"
+                  {...ownerTestStep('Confirm the test appointment.')}
+                >
+                  {appointmentRequest ? (
+                    <p className="mb-3 text-center text-sm text-gray-400">
+                      {ui.calendar.requestAppointmentNote(businessName)}
+                    </p>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="inverse"
+                    fullWidth
+                    className="font-semibold"
+                    disabled={
+                      isSubmitting ||
+                      (requiresBookingPolicy && !agreedToBookingPolicy)
+                    }
+                    onClick={() => {
+                      if (requiresBookingPolicy && !agreedToBookingPolicy)
+                        return;
+                      if (shouldShowPaymentStep) setStep('payment');
+                      else void handleConfirmBooking();
+                    }}
+                  >
+                    {shouldShowPaymentStep
+                      ? ui.calendar.continueToPayment
+                      : confirmCtaLabel}
+                  </Button>
+                </div>
+              )}
+              {step === 'payment' && (
+                <Button
+                  type="button"
+                  variant="inverse"
+                  fullWidth
+                  className="font-semibold touch-manipulation min-h-[52px]"
+                  disabled={!canContinueFromPayment}
+                  loading={isSubmitting}
+                  onClick={() => {
+                    const cents = amountDueNowCents;
+                    logBookingCheckoutDev('payment primary CTA clicked', {
+                      cents,
+                      action:
+                        cents > 0 ? 'stripe_checkout' : 'confirm_booking_only',
+                      ctaLabel: paymentStepCtaLabel,
+                    });
+                    if (cents > 0) void handleStartCheckout(cents);
+                    else {
+                      logBookingCheckoutDev(
+                        'payment CTA: no online amount due — creating booking without checkout',
+                        { cents }
+                      );
+                      void handleConfirmBooking();
+                    }
+                  }}
+                >
+                  {isSubmitting ? paymentPrimaryBusyLabel : paymentStepCtaLabel}
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
       <PublicBookingPolicyAgreeDialog
         isOpen={policyAgreement.modalOpen}

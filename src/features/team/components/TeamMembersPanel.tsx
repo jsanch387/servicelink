@@ -3,6 +3,7 @@
 import { toast } from '@/components/shared';
 import { API_ROUTES } from '@/constants/routes';
 import React, { useCallback, useEffect, useState } from 'react';
+import type { AssignableTeamRole } from '../constants/teamRoles';
 import type { TeamMemberUi } from '../types/teamMemberUi';
 import { InviteTeamMemberModal } from './InviteTeamMemberModal';
 import { RemoveTeamMemberModal } from './RemoveTeamMemberModal';
@@ -74,11 +75,15 @@ export const TeamMembersPanel: React.FC<TeamMembersPanelProps> = ({
     };
   }, [loadMembers]);
 
-  const handleInvite = async (email: string, name: string) => {
+  const handleInvite = async (
+    email: string,
+    name: string,
+    role: AssignableTeamRole
+  ) => {
     const response = await fetch(API_ROUTES.TEAM_INVITES, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, name }),
+      body: JSON.stringify({ email, name, role }),
     });
     const result = (await response.json().catch(() => null)) as {
       ok?: boolean;
@@ -100,7 +105,10 @@ export const TeamMembersPanel: React.FC<TeamMembersPanelProps> = ({
     return { ok: true as const };
   };
 
-  const handleSaveName = async (member: TeamMemberUi, name: string) => {
+  const handleSave = async (
+    member: TeamMemberUi,
+    changes: { name?: string; role?: AssignableTeamRole }
+  ) => {
     setSavingName(true);
     try {
       const response = await fetch(API_ROUTES.TEAM_MEMBERS, {
@@ -109,32 +117,40 @@ export const TeamMembersPanel: React.FC<TeamMembersPanelProps> = ({
         body: JSON.stringify({
           id: member.id,
           source: member.source,
-          name,
+          ...changes,
         }),
       });
       const result = (await response.json().catch(() => null)) as {
         success?: boolean;
         name?: string;
+        role?: AssignableTeamRole;
         error?: string;
       } | null;
-      if (!response.ok || !result?.success || !result.name) {
+      if (!response.ok || !result?.success) {
         return {
           ok: false as const,
-          error: result?.error || 'Could not update name',
+          error: result?.error || 'Could not update',
         };
       }
 
-      const nextName = result.name;
+      const next = {
+        ...(result.name ? { name: result.name } : {}),
+        ...(result.role ? { role: result.role } : {}),
+      };
       setMembers(current =>
-        current.map(row =>
-          row.id === member.id ? { ...row, name: nextName } : row
-        )
+        current.map(row => (row.id === member.id ? { ...row, ...next } : row))
       );
       setSelectedMember(current =>
-        current?.id === member.id ? { ...current, name: nextName } : current
+        current?.id === member.id ? { ...current, ...next } : current
       );
-      toast.success('Name updated');
-      return { ok: true as const, name: nextName };
+      toast.success(
+        changes.name && changes.role
+          ? 'Saved'
+          : changes.role
+            ? 'Role updated'
+            : 'Name updated'
+      );
+      return { ok: true as const, ...next };
     } finally {
       setSavingName(false);
     }
@@ -187,7 +203,7 @@ export const TeamMembersPanel: React.FC<TeamMembersPanelProps> = ({
         <TeamMemberDetailPanel
           member={selectedMember}
           onClose={() => setSelectedMember(null)}
-          onSaveName={handleSaveName}
+          onSave={handleSave}
           onRemove={setMemberToRemove}
           isSaving={savingName}
         />

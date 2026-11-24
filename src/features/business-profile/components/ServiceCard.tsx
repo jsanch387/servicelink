@@ -7,12 +7,15 @@ import {
   serviceListingStartingAtClassName,
 } from '@/components/shared/serviceListingTypography';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
-import { getBusinessBookDetailsPath } from '@/constants/routes';
+import {
+  getBusinessBookDetailsPath,
+  getBusinessBookV2SetupUrl,
+} from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
 import { getServiceSalePriceCents } from '@/features/marketing/utils/getServiceSalePriceCents';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
-import { ChevronRightIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { ClockIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React, { useState } from 'react';
 import { ServiceDescriptionFormatted } from './ServiceDescriptionFormatted';
@@ -48,17 +51,24 @@ interface ServiceCardProps {
   hideDescription?: boolean;
   /**
    * When set, forwarded to `/book/details` as `?lang=` (booking funnel only).
-   * When true on a public card, do not show the booking “Select” link.
+   * When true on a public card, do not show the booking “Book” button.
    */
   hideBookLink?: boolean;
   bookingFlowLocale?: PublicBookingFlowLocale;
   /** When set on public cards, show struck-through base price + sale price. */
   publicActiveSale?: PublicActiveSale | null;
   /**
-   * When set, Select does not navigate immediately — parent opens the policy
+   * When set, Book does not navigate immediately — parent opens the policy
    * modal (or pushes the same href after they have already agreed).
    */
   onSelectNavigate?: (href: string) => void;
+  /** Owner test walkthrough: Book is the step to tap. */
+  guideSelect?: boolean;
+  /**
+   * Public Book opens the new booking flow. Computed on the server from the
+   * rollout flag and the owner allowlist.
+   */
+  useBookingV2?: boolean;
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({
@@ -74,6 +84,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   bookingFlowLocale = 'en',
   publicActiveSale = null,
   onSelectNavigate,
+  guideSelect = false,
+  useBookingV2 = false,
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -128,10 +140,15 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
   const selectHref =
     isPublic && !hideBookLink && !isEditable && businessSlug && service.id
-      ? getBusinessBookDetailsPath(businessSlug, service.id, {
-          forOwner: manualBookingForCustomer,
-          lang: bookingFlowLocale,
-        })
+      ? useBookingV2 && !manualBookingForCustomer
+        ? getBusinessBookV2SetupUrl(businessSlug, {
+            serviceId: service.id,
+            lang: bookingFlowLocale,
+          })
+        : getBusinessBookDetailsPath(businessSlug, service.id, {
+            forOwner: manualBookingForCustomer,
+            lang: bookingFlowLocale,
+          })
       : null;
 
   return (
@@ -205,8 +222,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         </div>
       ) : null}
 
-      {/* Footer: duration left, Select right */}
-      <div className="mt-4 flex items-center justify-between sm:mt-5">
+      {/* Footer: duration left, Book right */}
+      <div className="mt-4 flex items-center justify-between gap-3 sm:mt-5">
         {effectiveDurationMinutes ? (
           <div className="flex items-center gap-1.5 text-zinc-500">
             <ClockIcon className="h-3.5 w-3.5 flex-shrink-0 sm:h-3 sm:w-3" />
@@ -232,10 +249,13 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                   }
                 : undefined
             }
-            className="inline-flex items-center gap-1 text-white text-[15px] font-semibold hover:text-zinc-200 transition-colors cursor-pointer sm:text-sm"
+            data-owner-test-guide={guideSelect ? 'step' : undefined}
+            data-owner-test-copy={
+              guideSelect ? 'Tap Book to choose your service.' : undefined
+            }
+            className="inline-flex shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-full bg-white px-3.5 py-2 text-sm font-medium text-neutral-950 transition-colors hover:bg-gray-100"
           >
-            {ui.common.select}
-            <ChevronRightIcon className="h-3.5 w-3.5" />
+            {ui.serviceCard.book}
           </Link>
         ) : null}
       </div>

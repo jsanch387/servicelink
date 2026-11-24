@@ -20,13 +20,15 @@ function applyListFilter(
   asOf: string
 ) {
   if (filter === 'upcoming') {
-    return request.eq('status', 'confirmed').gte('scheduled_date', asOf);
+    return request
+      .in('status', ['requested', 'confirmed'])
+      .gte('scheduled_date', asOf);
   }
   if (filter === 'cancelled') {
     return request.eq('status', 'cancelled');
   }
   return request.or(
-    `status.eq.completed,and(status.eq.confirmed,scheduled_date.lt.${asOf})`
+    `status.eq.expired,status.eq.completed,and(status.eq.confirmed,scheduled_date.lt.${asOf})`
   );
 }
 

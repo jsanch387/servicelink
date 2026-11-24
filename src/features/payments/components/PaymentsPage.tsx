@@ -16,8 +16,7 @@ import {
 import type { PaymentSettingsDashboardInitial } from '../types/paymentSettingsDashboard';
 import { PaymentsAcceptPaymentsCard } from './PaymentsAcceptPaymentsCard';
 import { PaymentsBalanceAndStripeSection } from './PaymentsBalanceAndStripeSection';
-import { PaymentsCheckoutOptionsCard } from './PaymentsCheckoutOptionsCard';
-import { PaymentsDepositSettingsCard } from './PaymentsDepositSettingsCard';
+import { PaymentsSettingsForm } from './PaymentsSettingsForm';
 import { PaymentsPageHeader } from './PaymentsPageHeader';
 
 export interface PaymentsPageProps {
@@ -38,6 +37,8 @@ export interface PaymentsPageProps {
   stripeExpressAccountId?: string | null;
   /** Had Connect and/or `payment_settings` before losing Pro (churned / downgraded). */
   priorPaymentsSetup?: boolean;
+  /** Shows the sales tax settings card. */
+  showSalesTaxCard?: boolean;
 }
 
 export const PaymentsPage: React.FC<PaymentsPageProps> = ({
@@ -49,6 +50,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
   paymentSettings = null,
   stripeExpressAccountId = null,
   priorPaymentsSetup = false,
+  showSalesTaxCard = false,
 }) => {
   const showProPaymentsDashboard =
     hasProAccess && stripeConnectReady && paymentSettings != null;
@@ -69,6 +71,8 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
       depositType: 'percent',
       depositValue: 0,
       currency: 'usd',
+      taxEnabled: false,
+      taxRateBps: 0,
     };
 
   return (
@@ -89,7 +93,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
               />
             </div>
             <div
-              className={`mt-8 sm:mt-10 space-y-8 sm:space-y-10 transition-opacity duration-200 ${
+              className={`mt-6 sm:mt-8 space-y-4 sm:space-y-5 transition-opacity duration-200 ${
                 servicelinkPaymentsEnabled
                   ? 'opacity-100'
                   : 'opacity-40 sm:opacity-[0.44]'
@@ -101,25 +105,23 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
                   below; changes apply when payments are on.
                 </p>
               ) : null}
-              <PaymentsCheckoutOptionsCard
-                initialCheckoutMode={dashboardSettings.checkoutMode}
-              />
-              <PaymentsDepositSettingsCard
-                initialDepositsEnabled={dashboardSettings.depositsEnabled}
-                initialDepositType={dashboardSettings.depositType}
-                initialDepositValue={dashboardSettings.depositValue}
+              <PaymentsSettingsForm
+                settings={dashboardSettings}
+                showSalesTaxCard={showSalesTaxCard}
               />
             </div>
           </>
         ) : showServicelinkGate ? (
-          <ProServicelinkPaymentsGate />
+          <ProServicelinkPaymentsGate showSalesTaxCard={showSalesTaxCard} />
         ) : showStripeConnectSetup ? (
           <ProPaymentsSetupExperience
             resumeConnect={stripeConnectResume}
             stripeRestricted={stripeConnectRestricted}
+            showSalesTaxCard={showSalesTaxCard}
           />
         ) : (
           <FreePaymentPreview
+            showSalesTaxCard={showSalesTaxCard}
             upsellTitle={
               priorPaymentsSetup
                 ? FREE_PAYMENTS_UPSELL_TITLE_RESTORE

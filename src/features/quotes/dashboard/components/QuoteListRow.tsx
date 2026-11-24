@@ -11,6 +11,7 @@ import { formatQuoteAssetsCardLine } from '@/features/quotes/shared/quoteAssets'
 import { formatQuoteRequestWaitingLabel } from '../utils/formatQuoteRequestWaitingLabel';
 import { parsePublicQuoteRequestNote } from '../utils/parsePublicQuoteRequestNote';
 import { isPendingCustomerQuoteRequest } from '../utils/pendingCustomerQuoteRequests';
+import { quoteAmountDueCents } from '@/features/quotes/shared/quoteSalesTax';
 import {
   formatQuoteCurrency,
   formatQuoteListCreatedAt,
@@ -49,7 +50,11 @@ export const QuoteListRow: React.FC<QuoteListRowProps> = ({
   const extraVehicleCount = isRequest ? (vehicleCard?.extraCount ?? 0) : 0;
 
   const priceLine =
-    quote.totalCents > 0 ? formatQuoteCurrency(quote.totalCents) : 'Price TBD';
+    quote.totalCents > 0
+      ? formatQuoteCurrency(
+          quoteAmountDueCents(quote.totalCents, quote.taxCents ?? 0)
+        )
+      : 'Price TBD';
 
   const createdAtLabel = formatQuoteListCreatedAt(quote.createdAt);
   const createdLabel = isRequest

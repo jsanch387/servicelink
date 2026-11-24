@@ -6,6 +6,9 @@ export interface RevenueBookingPayment {
   paid_online_amount_cents?: number | null;
   session_fees_total_cents?: number | null;
   session_payment_amount_cents?: number | null;
+  /** Included in the Tap to Pay capture. Not job earnings. */
+  tip_cents?: number | null;
+  tax_cents?: number | null;
 }
 
 export interface RevenueBookingRow {
@@ -20,8 +23,11 @@ export interface RevenueBookingRow {
 }
 
 export interface BookingEarningsCents {
+  /** Job price after discounts and fees. Sales tax is not included. */
   collectedCents: number;
   potentialCents: number;
+  /** Tax the customer paid on this job. Owed to the state, not earnings. */
+  taxCollectedCents: number;
   scheduledYmd: string;
 }
 
@@ -83,14 +89,24 @@ export function computeBookingEarningsCents(
     hasPaymentTotal && !needsCorrection
       ? Math.round(paymentTotal)
       : computedTotal;
-  const paid =
-    asCents(payment?.paid_online_amount_cents) +
-    asCents(payment?.session_payment_amount_cents);
-  const potentialCents = Math.max(resolvedTotal, paid);
+  const sessionCollected = Math.max(
+    0,
+    asCents(payment?.session_payment_amount_cents) - asCents(payment?.tip_cents)
+  );
+  const paid = asCents(payment?.paid_online_amount_cents) + sessionCollected;
+  const taxCollectedCents = asCents(payment?.tax_cents);
+  const chargedCents = Math.max(resolvedTotal, paid);
+  const chargedIncludesTax =
+    (hasPaymentTotal && !needsCorrection) ||
+    (taxCollectedCents > 0 && paid > computedTotal);
+  const earningsCents = chargedIncludesTax
+    ? Math.max(0, chargedCents - Math.min(taxCollectedCents, chargedCents))
+    : chargedCents;
 
   return {
-    collectedCents: potentialCents,
-    potentialCents,
+    collectedCents: earningsCents,
+    potentialCents: earningsCents,
+    taxCollectedCents,
     scheduledYmd,
   };
 }

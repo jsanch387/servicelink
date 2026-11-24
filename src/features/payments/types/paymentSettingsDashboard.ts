@@ -8,4 +8,7 @@ export interface PaymentSettingsDashboardInitial {
   /** Cents when `depositType === 'fixed'`, whole percent 0–100 when `percent`. */
   depositValue: number;
   currency: string;
+  taxEnabled: boolean;
+  /** Hundredths of a percent. `825` is 8.25%. `0` when no rate is stored. */
+  taxRateBps: number;
 }

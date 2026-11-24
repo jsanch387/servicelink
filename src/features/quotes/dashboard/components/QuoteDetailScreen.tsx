@@ -5,6 +5,7 @@ import { ROUTES } from '@/constants/routes';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
 import { QuoteNotesConversation } from '@/features/quotes/shared/components/QuoteNotesConversation';
 import { QuoteServiceSummaryCard } from '@/features/quotes/shared/components/QuoteServiceSummaryCard';
+import { QuoteTaxTotal } from '@/features/quotes/shared/components/QuoteTaxTotal';
 import { resolveCustomerRequestRawText } from '@/features/quotes/shared/resolveCustomerRequestRawText';
 import {
   extraQuoteAssetHeading,
@@ -50,7 +51,6 @@ import {
   formatQuoteDetailTime12,
 } from '../utils/quoteDetailFormat';
 import {
-  formatQuoteCurrency,
   getQuoteOutcomeDotClass,
   getQuoteStatusBlurClass,
   getQuoteStatusLabel,
@@ -377,14 +377,13 @@ export function QuoteDetailContent({
                   </div>
                 ) : null}
 
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-white/[0.07] bg-white/[0.04] px-4 py-3.5">
-                  <p className="text-sm font-medium text-gray-300">Total</p>
-                  <p className="text-right text-2xl font-bold tabular-nums text-white sm:text-3xl">
-                    {quote.totalCents > 0
-                      ? formatQuoteCurrency(quote.totalCents)
-                      : 'TBD'}
-                  </p>
-                </div>
+                <QuoteTaxTotal
+                  priceCents={quote.totalCents}
+                  taxCents={quote.taxCents ?? 0}
+                  taxRateBps={quote.taxRateBps ?? 0}
+                  emptyLabel="TBD"
+                  prominent
+                />
               </div>
             </GlassCard>
           </section>

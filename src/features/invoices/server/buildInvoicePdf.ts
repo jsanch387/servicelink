@@ -13,6 +13,7 @@ import {
   formatInvoiceCents,
   formatInvoiceDueDate,
 } from '../utils/invoiceDraft';
+import { invoiceSalesTaxLabel } from '../utils/invoiceSalesTax';
 
 const PAGE_WIDTH = 612;
 const PAGE_HEIGHT = 792;
@@ -365,8 +366,15 @@ export async function buildInvoicePdf(
     });
   }
 
+  const taxCents = invoice.taxCents ?? 0;
+  const subtotalCents =
+    invoice.subtotalCents ?? Math.max(0, invoice.totalCents - taxCents);
+  const subtotal = pdfSafe(formatInvoiceCents(subtotalCents));
   const total = pdfSafe(formatInvoiceCents(invoice.totalCents));
-  need(64);
+  const taxLabel =
+    taxCents > 0 ? pdfSafe(invoiceSalesTaxLabel(invoice.taxRateBps ?? 0)) : '';
+  const taxAmount = taxLabel ? pdfSafe(formatInvoiceCents(taxCents)) : '';
+  need(taxLabel ? 82 : 64);
   y -= 16;
   const totalsX = MARGIN + width - 220;
   page.drawText('Subtotal', {
@@ -376,13 +384,30 @@ export async function buildInvoicePdf(
     font: regular,
     color: SOFT,
   });
-  page.drawText(total, {
-    x: amountRight - 8 - regular.widthOfTextAtSize(total, 11),
+  page.drawText(subtotal, {
+    x: amountRight - 8 - regular.widthOfTextAtSize(subtotal, 11),
     y,
     size: 11,
     font: regular,
     color: INK,
   });
+  if (taxLabel) {
+    y -= 16;
+    page.drawText(taxLabel, {
+      x: totalsX,
+      y,
+      size: 11,
+      font: regular,
+      color: SOFT,
+    });
+    page.drawText(taxAmount, {
+      x: amountRight - 8 - regular.widthOfTextAtSize(taxAmount, 11),
+      y,
+      size: 11,
+      font: regular,
+      color: INK,
+    });
+  }
   y -= 10;
   page.drawLine({
     start: { x: totalsX, y },

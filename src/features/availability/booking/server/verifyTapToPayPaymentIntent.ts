@@ -7,8 +7,26 @@ import { getStripeConnectClient } from '@/libs/stripe';
 import { mapStripePaymentIntentStatus } from './mapStripePaymentIntentStatus';
 
 export type VerifyTapToPayPaymentIntentResult =
-  | { ok: true; paymentIntentId: string; amountCents: number }
+  | {
+      ok: true;
+      paymentIntentId: string;
+      amountCents: number;
+      /** Customer tip included in `amountCents`. 0 when the intent has no tip. */
+      tipCents: number;
+    }
   | { ok: false; error: string; httpStatus: number };
+
+/** Tip written onto the PaymentIntent at create time. Missing means no tip. */
+export function tipCentsFromTapToPayMetadata(
+  metadata: { tipCents?: string | null } | null | undefined
+): number | null {
+  const raw = metadata?.tipCents;
+  if (raw == null || raw === '') return 0;
+  if (!/^\d+$/.test(raw)) return null;
+  const tipCents = Number(raw);
+  if (!Number.isInteger(tipCents) || tipCents < 0) return null;
+  return tipCents;
+}
 
 interface TapToPayIntentRow {
   booking_id?: string;
@@ -132,6 +150,15 @@ export async function verifyTapToPayPaymentIntent(opts: {
     };
   }
 
+  const tipCents = tipCentsFromTapToPayMetadata(paymentIntent.metadata);
+  if (tipCents === null || tipCents > paymentIntent.amount) {
+    return {
+      ok: false,
+      httpStatus: 400,
+      error: 'Payment amount does not match.',
+    };
+  }
+
   const metadata = paymentIntent.metadata ?? {};
   if (metadata.kind !== 'booking_tap_to_pay') {
     return {
@@ -171,6 +198,7 @@ export async function verifyTapToPayPaymentIntent(opts: {
     ok: true,
     paymentIntentId,
     amountCents: paymentIntent.amount,
+    tipCents,
   };
 }
 

@@ -20,7 +20,20 @@ export type CustomerInvoiceEmailPayload = {
   invoiceUrl: string;
   /** The appointment was already paid, so this bill is a paid record. */
   paid?: boolean;
+  /** Set only when this bill added tax. `totalCents` already includes it. */
+  salesTax?: {
+    label: string;
+    taxCents: number;
+  } | null;
 };
+
+function chargedTax(
+  payload: CustomerInvoiceEmailPayload
+): { label: string; taxCents: number } | null {
+  const tax = payload.salesTax;
+  if (!tax || tax.taxCents <= 0) return null;
+  return tax;
+}
 
 const PROMO_WORDS =
   /\b(sale|discount|offer|deal|unsubscribe|act now|%\s*off)\b/i;
@@ -40,13 +53,21 @@ export function buildCustomerInvoiceEmailText(
   const due = formatInvoiceDueDate(payload.dueOn ?? '');
   const amount = formatInvoiceCents(payload.totalCents);
   const amountLabel = payload.paid ? 'Amount paid' : 'Amount due';
+  const tax = chargedTax(payload);
+  const moneyLines = tax
+    ? [
+        `Subtotal: ${formatInvoiceCents(payload.totalCents - tax.taxCents)}`,
+        `${tax.label}: ${formatInvoiceCents(tax.taxCents)}`,
+        `${amountLabel}: ${amount}`,
+      ]
+    : [`${amountLabel}: ${amount}`];
 
   return [
     `${business} sent you invoice ${payload.invoiceNumber}.`,
     '',
     `Hi ${customer},`,
     '',
-    `${amountLabel}: ${amount}`,
+    ...moneyLines,
     `Due: ${due}`,
     '',
     'View your invoice:',
@@ -65,10 +86,23 @@ export function buildCustomerInvoiceEmailHtml(
   const amount = formatInvoiceCents(payload.totalCents);
   const amountLabel = payload.paid ? 'Amount paid' : 'Amount due';
   const subject = customerInvoiceEmailSubject(payload);
+  const tax = chargedTax(payload);
 
   const details = [
     serviceLinkEmailDetailRow('From', business),
     serviceLinkEmailDetailRow('Invoice', String(payload.invoiceNumber)),
+    ...(tax
+      ? [
+          serviceLinkEmailDetailRow(
+            'Subtotal',
+            formatInvoiceCents(payload.totalCents - tax.taxCents)
+          ),
+          serviceLinkEmailDetailRow(
+            tax.label,
+            formatInvoiceCents(tax.taxCents)
+          ),
+        ]
+      : []),
     serviceLinkEmailDetailRow(amountLabel, amount),
     serviceLinkEmailDetailRow('Due', due, { isLast: true }),
   ].join('');

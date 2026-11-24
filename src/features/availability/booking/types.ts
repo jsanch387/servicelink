@@ -69,6 +69,10 @@ export interface PublicBookingPaymentSettings {
   depositType: 'fixed' | 'percent';
   depositValue: number;
   currency: string;
+  /** Sales tax switch from payment settings. */
+  taxEnabled: boolean;
+  /** Hundredths of a percent. 8.25% is 825. */
+  taxRateBps: number;
 }
 
 export interface AvailabilityBookingPageProps {
@@ -109,6 +113,11 @@ export interface AvailabilityBookingPageProps {
   existingBookings?: ExistingBooking[];
   /** Dashboard owner flow (`for=owner`); changes confirmation copy and CTA. */
   isOwnerManualBooking?: boolean;
+  /**
+   * Public link only. When true, the last step says request appointment.
+   * Owner manual bookings ignore this.
+   */
+  requireBookingApproval?: boolean;
   /** Public funnel locale (`?lang=` + cookie). UI chrome only — not service copy. */
   bookingFlowLocale?: PublicBookingFlowLocale;
   /** Public payment behavior configured by business owner. */
@@ -193,6 +202,11 @@ export type PublicBookingJobDraft = {
   durationMinutes: number;
   vehicle: PublicBookingJobVehicleDraft;
   pet?: PublicBookingJobPetDraft;
+  /**
+   * True when the customer saw price options, add-ons, or a location choice
+   * before the calendar. False when Select skipped straight to the date.
+   */
+  hasServiceDetails?: boolean;
 };
 
 /** Per-job vehicle for owner multi-job visits (`jobs[]`). */
@@ -276,6 +290,11 @@ export interface CreateBookingRequest {
    * authenticated session for this business; customer email may be omitted.
    */
   ownerManualBooking?: boolean;
+  /**
+   * Set only while the owner is in the onboarding test-appointment walkthrough.
+   * The server ignores it unless the signed-in user owns this business.
+   */
+  ownerTest?: boolean;
   /**
    * Multi-job appointment (1…N). When present, creates **one** booking row with
    * jobs stored in `job_details`. Appointment duration = sum of job durations.

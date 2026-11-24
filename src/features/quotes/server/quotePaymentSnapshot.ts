@@ -145,8 +145,7 @@ export async function resolveQuotePaymentSnapshot(
   }
 
   const total = Math.max(0, Math.round(args.priceCents));
-  const needsDeposit =
-    args.requested === 'deposit' || args.requested === 'customer_choice';
+  const needsDeposit = args.requested === 'deposit';
   if (needsDeposit && !ready.depositsEnabled) {
     return {
       ok: false,
@@ -166,10 +165,7 @@ export async function resolveQuotePaymentSnapshot(
         'Set a deposit of at least $0.50 in Payments before sending this quote.',
     };
   }
-  if (
-    (args.requested === 'full' || args.requested === 'customer_choice') &&
-    total < QUOTE_CARD_MIN_CENTS
-  ) {
+  if (args.requested === 'full' && total < QUOTE_CARD_MIN_CENTS) {
     return {
       ok: false,
       status: 400,
@@ -189,6 +185,21 @@ export async function resolveQuotePaymentSnapshot(
     };
   }
 
+  if (args.requested === 'customer_choice') {
+    const due = ready.depositsEnabled
+      ? depositDueCents(total, ready.depositType, ready.depositValue)
+      : 0;
+    const includeDeposit = ready.depositsEnabled && due >= QUOTE_CARD_MIN_CENTS;
+    return {
+      ok: true,
+      snapshot: {
+        payment_collection: 'customer_choice',
+        deposit_type: includeDeposit ? ready.depositType : null,
+        deposit_value: includeDeposit ? Math.round(ready.depositValue) : null,
+      },
+    };
+  }
+
   return {
     ok: true,
     snapshot: {
@@ -204,6 +215,7 @@ export async function loadQuoteCustomerPayment(
   quote: {
     business_id: string;
     price_cents: number | null;
+    tax_cents?: number | null;
     payment_collection?: string | null;
     deposit_type?: string | null;
     deposit_value?: number | null;
@@ -225,9 +237,14 @@ export async function loadQuoteCustomerPayment(
       ? null
       : await loadQuoteCardReadiness(supabase, quote.business_id);
 
+  const taxCents =
+    typeof quote.tax_cents === 'number' && quote.tax_cents > 0
+      ? quote.tax_cents
+      : 0;
+
   return quoteCustomerPayment({
     collection: parsed,
-    priceCents: quote.price_cents ?? 0,
+    priceCents: (quote.price_cents ?? 0) + taxCents,
     depositType,
     depositValue:
       quote.deposit_value == null ? null : Number(quote.deposit_value),

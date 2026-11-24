@@ -9,6 +9,7 @@
  */
 
 import { SlugService } from '@/features/business-profile/services/slugService';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -43,12 +44,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify user owns this business profile
+    const permitted = await requireBusinessPermission(
+      supabase,
+      'profile.write'
+    );
+    if (!permitted.ok) {
+      return NextResponse.json(
+        { success: false, error: permitted.error },
+        { status: permitted.status }
+      );
+    }
+    if (String(businessProfileId) !== permitted.businessId) {
+      return NextResponse.json(
+        { success: false, error: 'Business profile not found' },
+        { status: 404 }
+      );
+    }
+
     const { data: profile, error: profileError } = await supabase
       .from('business_profiles')
       .select('id, business_name')
-      .eq('id', businessProfileId)
-      .eq('profile_id', user.id)
+      .eq('id', permitted.businessId)
       .single();
 
     if (profileError || !profile) {
@@ -137,12 +153,27 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Verify user owns this business profile
+    const permitted = await requireBusinessPermission(
+      supabase,
+      'profile.write'
+    );
+    if (!permitted.ok) {
+      return NextResponse.json(
+        { success: false, error: permitted.error },
+        { status: permitted.status }
+      );
+    }
+    if (businessProfileId !== permitted.businessId) {
+      return NextResponse.json(
+        { success: false, error: 'Business profile not found' },
+        { status: 404 }
+      );
+    }
+
     const { data: profile, error: profileError } = await (supabase as any)
       .from('business_profiles')
       .select('id, business_name, business_slug, business_link')
-      .eq('id', businessProfileId)
-      .eq('profile_id', user.id)
+      .eq('id', permitted.businessId)
       .single();
 
     if (profileError || !profile) {

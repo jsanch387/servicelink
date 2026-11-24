@@ -44,6 +44,8 @@ Owner must own the booking’s business (`business_profiles.profile_id = auth.ui
 
 Do **not** send `scheduledDate` / `startTime` in the same request (those are reschedule-only).
 
+If the row is still `requested`, this same body is a **deny**, not this cancel. The customer gets “your appointment request was not confirmed,” not the canceled-appointment email. See [`mobile-booking-request-deny.md`](./mobile-booking-request-deny.md). The steps below apply when the visit was already confirmed.
+
 ---
 
 ## What the server does (in order)

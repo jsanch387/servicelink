@@ -36,6 +36,19 @@ export async function completeOnboardingV2(
     return { success: false, error: error.message };
   }
 
+  const { error: stampError } = await supabase
+    .from('profiles')
+    .update({ onboarding_completed_at: new Date().toISOString() })
+    .eq('user_id', profileId)
+    .is('onboarding_completed_at', null);
+
+  if (stampError && stampError.code !== '42703') {
+    console.error('[onboarding] could not stamp onboarding_completed_at', {
+      profileId,
+      message: stampError.message,
+    });
+  }
+
   return { success: true };
 }
 

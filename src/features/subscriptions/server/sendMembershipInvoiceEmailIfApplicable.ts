@@ -17,6 +17,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatCadenceOptionLabel } from '../utils/formatSubscriptionPrice';
 import type { SubscriptionCadenceUnit } from '../types/customerSubscriptionPlan';
 import { signMembershipManageToken } from './membershipManageToken';
+import { membershipTaxLabel } from './membershipSalesTax';
 import {
   logMemberships,
   shortIdForLog,
@@ -26,6 +27,7 @@ import {
 import {
   customerMembershipsOf,
   membershipInvoicesOf,
+  membershipPlanPricesOf,
   membershipPlansOf,
 } from './membershipTablesQuery';
 
@@ -80,7 +82,7 @@ export async function sendMembershipInvoiceEmailIfApplicable(
     admin
   )
     .select(
-      'id, business_id, plan_id, customer_name, customer_email, interval_unit, interval_count, amount_cents'
+      'id, business_id, plan_id, plan_price_id, customer_name, customer_email, interval_unit, interval_count, amount_cents'
     )
     .eq('id', membershipId)
     .maybeSingle();
@@ -146,6 +148,30 @@ export async function sendMembershipInvoiceEmailIfApplicable(
       ? args.amountCents
       : Math.max(0, Math.round(Number(membership.amount_cents ?? 0)));
 
+  let salesTax: { label: string; taxCents: number } | undefined;
+  const planPriceId =
+    typeof membership.plan_price_id === 'string'
+      ? membership.plan_price_id.trim()
+      : '';
+  if (planPriceId) {
+    const { data: planPrice } = await membershipPlanPricesOf(admin)
+      .select('price_cents, tax_cents, tax_rate_bps')
+      .eq('id', planPriceId)
+      .maybeSingle();
+    const priceCents = Math.max(
+      0,
+      Math.round(Number(planPrice?.price_cents ?? 0))
+    );
+    const taxCents = Math.max(0, Math.round(Number(planPrice?.tax_cents ?? 0)));
+    const rateBps = Math.max(
+      0,
+      Math.round(Number(planPrice?.tax_rate_bps ?? 0))
+    );
+    if (taxCents > 0 && amountCents === priceCents + taxCents) {
+      salesTax = { label: membershipTaxLabel(rateBps), taxCents };
+    }
+  }
+
   const token = signMembershipManageToken(membershipId);
   const manageUrl = `${getAppBaseUrl(args.request)}${API_ROUTES.PUBLIC_MEMBERSHIPS_PORTAL}?token=${encodeURIComponent(token)}`;
 
@@ -160,6 +186,7 @@ export async function sendMembershipInvoiceEmailIfApplicable(
       args.eventAtIso || new Date().toISOString()
     ),
     manageUrl,
+    salesTax,
   };
 
   const result =

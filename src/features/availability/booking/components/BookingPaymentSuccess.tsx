@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, GlassCard } from '@/components/shared';
+import { OwnerTestReturnLink } from '@/features/onboarding-v3/components/OwnerTestReturnLink';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { formatBookingWallTime } from '@/features/availability/booking/utils/formatBookingWallTime';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
@@ -8,6 +9,7 @@ import {
   bcp47ForBookingLocale,
   publicBookingUi,
 } from '@/libs/i18n/publicBookingUi';
+import { formatSalesTaxRateLabel } from '@/features/payments/utils/salesTaxRate';
 import { SubscriptionSuccessCheckmark } from '@/features/subscriptions/components/SubscriptionSuccessCheckmark';
 import type { AddOnDisplay } from '../types';
 
@@ -85,6 +87,8 @@ export function BookingPaymentSuccess({
   totalAmountCents,
   durationMinutes,
   servicePriceCents,
+  taxCents = 0,
+  taxRateBps = 0,
   selectedAddOns = [],
   customerVehicleYear,
   customerVehicleMake,
@@ -103,6 +107,9 @@ export function BookingPaymentSuccess({
   totalAmountCents: number;
   durationMinutes: number | null;
   servicePriceCents: number | null;
+  /** Frozen tax on this charge. Zero hides the tax line. */
+  taxCents?: number | null;
+  taxRateBps?: number | null;
   selectedAddOns?: AddOnDisplay[];
   customerVehicleYear?: string | null;
   customerVehicleMake?: string | null;
@@ -132,6 +139,17 @@ export function BookingPaymentSuccess({
     Number.isFinite(totalAmountCents) && totalAmountCents > 0
       ? totalAmountCents
       : null;
+  const safeTaxCents =
+    typeof taxCents === 'number' && Number.isFinite(taxCents) && taxCents > 0
+      ? Math.round(taxCents)
+      : 0;
+  const taxRateLabel = formatSalesTaxRateLabel(taxRateBps ?? 0);
+  const taxLabel =
+    safeTaxCents > 0
+      ? taxRateLabel
+        ? ui.common.salesTax(taxRateLabel)
+        : null
+      : null;
 
   return (
     <div className="flex flex-col w-full min-h-[55vh] max-w-2xl mx-auto px-4 sm:px-6 py-10 pb-16 sm:pb-24">
@@ -142,7 +160,7 @@ export function BookingPaymentSuccess({
       <h2 className="text-2xl font-bold text-white mb-2 text-center">
         {paidTitle}
       </h2>
-      <p className="self-center text-gray-400 text-sm mb-8 max-w-md text-center px-2">
+      <p className="mb-8 max-w-md self-center px-2 text-center text-sm text-gray-400">
         {heroSubtitle}
       </p>
 
@@ -151,7 +169,7 @@ export function BookingPaymentSuccess({
         rounded="rounded-2xl"
         blurColor="bg-emerald-500"
         showBlur={true}
-        className="w-full mb-8"
+        className="w-full"
       >
         <div className="p-4 sm:p-6 space-y-4">
           <div>
@@ -208,6 +226,14 @@ export function BookingPaymentSuccess({
           {safeTotal != null && (
             <>
               <div className="h-px bg-white/10" />
+              {taxLabel ? (
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <p className="text-gray-400">{taxLabel}</p>
+                  <p className="tabular-nums text-gray-300">
+                    {formatMoney(safeTaxCents, currency, bookingFlowLocale)}
+                  </p>
+                </div>
+              ) : null}
               <div className="flex justify-between items-center">
                 <p className="text-sm font-medium text-white">
                   {ui.common.total}
@@ -280,11 +306,18 @@ export function BookingPaymentSuccess({
         </div>
       </GlassCard>
 
-      <Button href={`/${businessSlug}`} variant="inverse" size="lg" fullWidth>
-        {ui.bookingPaymentSuccess.backToProfile}
-      </Button>
+      <div className="mt-6 w-full">
+        <OwnerTestReturnLink
+          label={ui.nav.backToDashboard}
+          fallback={
+            <Button href={`/${businessSlug}`} variant="inverse" fullWidth>
+              {ui.bookingPaymentSuccess.backToProfile}
+            </Button>
+          }
+        />
+      </div>
 
-      <p className="text-sm text-gray-400 text-center mt-4">
+      <p className="mt-6 text-center text-sm text-gray-400">
         {ui.bookingPaymentSuccess.confirmationNote}
       </p>
     </div>

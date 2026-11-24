@@ -1,11 +1,20 @@
 import type { CustomerRecord } from '@/features/customer-management/types';
-import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
 import { formatCustomerCurrency } from '@/features/customer-management/utils/customerFormatting';
-import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
-import { formatNextAppointmentRelativeDay } from '@/features/customer-management/utils/formatNextInDays';
-import { EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
+import { customerListSchedule } from '@/features/customer-management/utils/customerListPresentation';
 import React from 'react';
-import { CustomerStatusBadge } from './CustomerStatusBadge';
+import { CustomerListStatus } from './CustomerStatusBadge';
+
+function CustomerScheduleCell({ customer }: { customer: CustomerRecord }) {
+  const schedule = customerListSchedule(customer);
+
+  return (
+    <p
+      className={`truncate text-sm ${schedule ? 'text-white' : 'text-white/60'}`}
+    >
+      {schedule ?? '—'}
+    </p>
+  );
+}
 
 type CustomerRowAction = (_customer: CustomerRecord) => void;
 
@@ -21,95 +30,66 @@ export const CustomerDesktopTable: React.FC<CustomerDesktopTableProps> = ({
   const noPastVisits = (c: (typeof customers)[number]) => c.totalVisits === 0;
 
   return (
-    <div className="hidden md:block overflow-x-auto rounded-lg border border-white/10 bg-white/[0.02]">
-      <table className="min-w-full">
+    <div className="hidden overflow-x-auto rounded-2xl border border-white/[0.08] bg-white/[0.03] md:block">
+      <table className="w-full table-fixed">
+        <colgroup>
+          <col span={5} />
+        </colgroup>
         <thead>
-          <tr className="border-b border-white/10">
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
+          <tr className="border-b border-white/[0.08]">
+            <th className="px-5 py-3.5 text-left text-sm font-medium text-white/60">
               Customer
             </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
-              Schedule
+            <th className="px-5 py-3.5 text-left text-sm font-medium text-white/60">
+              Visit
             </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
+            <th className="px-5 py-3.5 text-left text-sm font-medium text-white/60">
               Completed
             </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
+            <th className="px-5 py-3.5 text-left text-sm font-medium text-white/60">
               Total spent
             </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
-              Tag
+            <th className="px-5 py-3.5 text-left text-sm font-medium text-white/60">
+              Status
             </th>
-            <th className="w-10 px-3 py-3" aria-hidden />
           </tr>
         </thead>
         <tbody>
           {customers.map(customer => (
             <tr
               key={customer.id}
-              className="border-b border-white/5 last:border-0 cursor-pointer hover:bg-white/[0.03] transition-colors"
+              className="cursor-pointer border-b border-white/[0.06] transition-colors last:border-0 hover:bg-white/[0.04]"
               onClick={() => onRowClick(customer)}
             >
-              <td className="px-4 py-3 align-middle">
-                <p className="text-base font-semibold text-white tracking-tight">
+              <td className="px-5 py-4 align-middle">
+                <p
+                  className="truncate text-base font-semibold tracking-tight text-white"
+                  title={customer.name}
+                >
                   {customer.name}
                 </p>
               </td>
-              <td className="px-4 py-3 align-middle min-w-[12rem]">
-                {customer.nextAppointmentDate ? (
-                  <div>
-                    <p className="text-sm text-gray-200">
-                      Next appointment{' '}
-                      {formatLastBookedDate(customer.nextAppointmentDate)}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {formatNextAppointmentRelativeDay(
-                        customer.nextAppointmentDate,
-                        customer.nextAppointmentDaysUntil
-                      )}
-                    </p>
-                  </div>
-                ) : customer.lastVisitDate ? (
-                  <div>
-                    <p className="text-sm text-gray-200">
-                      Last visit {formatLastBookedDate(customer.lastVisitDate)}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {customer.lastVisitDaysAgo}{' '}
-                      {customer.lastVisitDaysAgo === 1 ? 'day' : 'days'} ago
-                    </p>
-                  </div>
+              <td className="px-5 py-4 align-middle">
+                <CustomerScheduleCell customer={customer} />
+              </td>
+              <td className="px-5 py-4 text-sm align-middle tabular-nums">
+                {noPastVisits(customer) ? (
+                  <span className="text-white/60">—</span>
                 ) : (
-                  <p className="text-sm text-gray-500">—</p>
+                  <span className="text-white">{customer.totalVisits}</span>
                 )}
               </td>
-              <td className="px-4 py-3 text-sm align-middle tabular-nums">
+              <td className="px-5 py-4 text-sm align-middle font-medium tabular-nums">
                 {noPastVisits(customer) ? (
-                  <span className="text-gray-500">None yet</span>
+                  <span className="text-white/60">—</span>
                 ) : (
-                  <span className="text-gray-200">
-                    {customer.totalVisits}{' '}
-                    {customer.totalVisits === 1 ? 'visit' : 'visits'}
-                  </span>
-                )}
-              </td>
-              <td className="px-4 py-3 text-sm align-middle tabular-nums font-medium">
-                {noPastVisits(customer) ? (
-                  <span className="text-gray-500">—</span>
-                ) : (
-                  <span className="text-gray-200">
+                  <span className="text-white">
                     {formatCustomerCurrency(customer.totalSpent)}
                   </span>
                 )}
               </td>
-              <td className="px-4 py-3 align-middle">
-                <CustomerStatusBadge
-                  status={customer.status}
-                  needsAttention={isCustomerNeedsAttention(customer)}
-                />
-              </td>
-              <td className="px-3 py-3 align-middle text-right">
-                <EllipsisHorizontalIcon className="h-4 w-4 text-gray-500" />
+              <td className="px-5 py-4 align-middle">
+                <CustomerListStatus customer={customer} />
               </td>
             </tr>
           ))}

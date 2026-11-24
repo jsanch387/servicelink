@@ -12,6 +12,8 @@ interface QuickScheduleCardProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
   onBookThisTime: () => void;
   onChooseDifferentTime: () => void;
+  /** Owner test walkthrough copy. Points at Book this time. */
+  guideCopy?: string;
   labels: {
     nextAvailableLabel: string;
     bookThisTime: string;
@@ -30,6 +32,7 @@ export function QuickScheduleCard({
   onBookThisTime,
   onChooseDifferentTime,
   labels,
+  guideCopy,
 }: QuickScheduleCardProps) {
   const dateFormatted = date.toLocaleDateString(
     bcp47ForBookingLocale(bookingFlowLocale),
@@ -58,15 +61,20 @@ export function QuickScheduleCard({
       </div>
 
       <div className="mt-5 space-y-2.5">
-        <Button
-          type="button"
-          variant="inverse"
-          fullWidth
-          className="font-semibold"
-          onClick={onBookThisTime}
+        <div
+          data-owner-test-guide={guideCopy ? 'step' : undefined}
+          data-owner-test-copy={guideCopy}
         >
-          {labels.bookThisTime}
-        </Button>
+          <Button
+            type="button"
+            variant="inverse"
+            fullWidth
+            className="font-semibold"
+            onClick={onBookThisTime}
+          >
+            {labels.bookThisTime}
+          </Button>
+        </div>
         <button
           type="button"
           onClick={onChooseDifferentTime}

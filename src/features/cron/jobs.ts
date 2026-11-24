@@ -1,6 +1,6 @@
 import { API_ROUTES } from '@/constants/routes';
 
-/** Jobs share this slot so Vercel fires them together. */
+/** Daily jobs share this slot so Vercel fires them together. */
 export const CRON_DAILY_14_UTC = '0 14 * * *';
 
 /**
@@ -10,6 +10,15 @@ export const CRON_DAILY_14_UTC = '0 14 * * *';
  * Job *work* stays in the owning feature. This list is the index.
  */
 export const CRON_JOBS = [
+  {
+    id: 'appointment-request-expirations',
+    path: API_ROUTES.INTERNAL_CRON_APPOINTMENT_REQUEST_EXPIRATIONS,
+    schedule: CRON_DAILY_14_UTC,
+    maxDurationSeconds: 300,
+    work: 'src/features/availability/services/expirePastAppointmentRequests.ts',
+    description:
+      'Appointment requests whose calendar day has ended: mark expired and tell the customer once.',
+  },
   {
     id: 'booking-reminders',
     path: API_ROUTES.INTERNAL_CRON_BOOKING_REMINDERS,
@@ -36,6 +45,24 @@ export const CRON_JOBS = [
     work: 'src/features/quotes/server/reminders',
     description:
       'Sent quotes still open 2–3 days later: one customer email + SMS with the /q/ link.',
+  },
+  {
+    id: 'google-review-pulls',
+    path: API_ROUTES.INTERNAL_CRON_GOOGLE_REVIEW_PULLS,
+    schedule: CRON_DAILY_14_UTC,
+    maxDurationSeconds: 300,
+    work: 'src/features/reviews/google-connect/server/runScheduledGoogleReviewPulls.ts',
+    description:
+      'Connected Google listings: pull reviews so owners do not have to refresh.',
+  },
+  {
+    id: 'onboarding-emails',
+    path: API_ROUTES.INTERNAL_CRON_ONBOARDING_EMAILS,
+    schedule: CRON_DAILY_14_UTC,
+    maxDurationSeconds: 300,
+    work: 'src/features/onboarding-emails/server/runOnboardingEmails.ts',
+    description:
+      'New-setup (v3) owners only: unfinished notes, a first-appointment note, one receipt-and-review note if they still have no bookings, then one app QR note the morning after the first booking. Forty sends per run.',
   },
 ] as const;
 

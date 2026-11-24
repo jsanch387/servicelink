@@ -23,6 +23,8 @@ export interface TapToPayBookingContext {
   addonDetails: unknown;
   jobDetails?: unknown;
   paidOnlineAmountCents: number;
+  taxCents: number;
+  taxRateBps: number;
   currency: string;
   stripeAccountId: string;
   discount: {
@@ -109,12 +111,14 @@ export async function resolveTapToPayBookingContext(opts: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: paymentsData } = await (opts.supabase as any)
     .from('booking_payments')
-    .select('paid_online_amount_cents, currency')
+    .select('paid_online_amount_cents, currency, tax_cents, tax_rate_bps')
     .eq('booking_id', opts.bookingId)
     .maybeSingle();
 
   const payments = paymentsData as {
     paid_online_amount_cents?: number | null;
+    tax_cents?: number | null;
+    tax_rate_bps?: number | null;
     currency?: string | null;
   } | null;
 
@@ -150,6 +154,10 @@ export async function resolveTapToPayBookingContext(opts: {
       addonDetails: booking.addon_details,
       jobDetails: booking.job_details,
       paidOnlineAmountCents: payments?.paid_online_amount_cents ?? 0,
+      taxCents:
+        typeof payments?.tax_cents === 'number' ? payments.tax_cents : 0,
+      taxRateBps:
+        typeof payments?.tax_rate_bps === 'number' ? payments.tax_rate_bps : 0,
       currency: payments?.currency?.trim()?.toLowerCase() || 'usd',
       stripeAccountId,
       discount: {
@@ -174,5 +182,7 @@ export function computeTapToPayAmountDue(
     paidOnlineAmountCents: ctx.paidOnlineAmountCents,
     sessionPayment: undefined,
     discount: ctx.discount,
+    taxCents: ctx.taxCents,
+    taxRateBps: ctx.taxRateBps,
   });
 }

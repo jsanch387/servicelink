@@ -5,6 +5,7 @@ import { BookFlowAdvancingOverlay } from '@/features/availability/booking/compon
 import { PublicBookingPolicyAgreeDialog } from '@/features/availability/booking/components/BookingPolicyAgreeModal';
 import { usePublicBookingPolicyAgreement } from '@/features/availability/booking/hooks/usePublicBookingPolicyAgreement';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
+import { useOwnerTestGuidePhase } from '@/features/onboarding-v3/ownerTestGuide';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { useRouter } from 'next/navigation';
 import {
@@ -12,6 +13,7 @@ import {
   shouldShowPublicServiceCategoryFilters,
 } from '@/features/services/categories/utils/buildPublicServiceCategoryOptions';
 import { filterServicesByCategoryFilter } from '@/features/services/categories/utils/filterServicesByCategoryFilter';
+import { localizedServiceCopy } from '@/features/services/utils/localizedServiceCopy';
 import React, { useEffect, useMemo, useState } from 'react';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
 import { resolvePublicBookingPolicy } from '../utils/bookingPolicy';
@@ -31,7 +33,7 @@ interface ServicesListProps {
    */
   publicOwnerHasProForPriceOptions?: boolean;
   /**
-   * Public profile: hide “Select” on service cards (e.g. free lifetime booking cap).
+   * Public profile: hide “Book” on service cards (e.g. free lifetime booking cap).
    */
   publicHideBookLinks?: boolean;
   /** Tighter top padding when a one-line notice sits directly above this list. */
@@ -39,6 +41,8 @@ interface ServicesListProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
   /** Live sale — shows struck-through prices on eligible service cards. */
   publicActiveSale?: PublicActiveSale | null;
+  /** Public Book opens the new booking flow for this business. */
+  useBookingV2?: boolean;
 }
 
 export const ServicesList: React.FC<ServicesListProps> = ({
@@ -52,8 +56,10 @@ export const ServicesList: React.FC<ServicesListProps> = ({
   compactTopPadding = false,
   bookingFlowLocale = 'en',
   publicActiveSale = null,
+  useBookingV2 = false,
 }) => {
   const router = useRouter();
+  const ownerTestGuide = useOwnerTestGuidePhase() === 'public';
   const bookingUi = publicBookingUi(bookingFlowLocale);
   const services = useMemo(
     () => businessProfile.services || [],
@@ -147,38 +153,57 @@ export const ServicesList: React.FC<ServicesListProps> = ({
                 showCategoryFilters ? 'mt-3' : ''
               }`}
             >
-              {displayServices.map(service => (
-                <ServiceCard
-                  key={service.id}
-                  service={{
-                    id: service.id,
-                    name: service.name,
-                    description: service.description || '',
-                    price: service.price_cents || 0,
-                    hours_to_complete: service.hours_to_complete || null,
-                    duration_minutes: service.duration_minutes ?? null,
-                    priceOptionsEnabled:
-                      service.price_options_enabled === true &&
-                      allowPriceOptionSignals,
-                  }}
-                  isEditable={false}
-                  isPublic={isPublic}
-                  businessSlug={businessSlug}
-                  hideBookLink={publicHideBookLinks}
-                  bookingFlowLocale={bookingFlowLocale}
-                  publicActiveSale={publicActiveSale}
-                  onSelectNavigate={
-                    policyAgreement.required && !policyAgreement.hasAgreed
-                      ? href => {
-                          void router.prefetch(href);
-                          policyAgreement.runAfterAgreement(() =>
-                            router.push(href)
-                          );
-                        }
-                      : undefined
-                  }
-                />
-              ))}
+              {displayServices.map((service, index) => {
+                const copy = isPublic
+                  ? localizedServiceCopy(bookingFlowLocale, service)
+                  : {
+                      name: service.name,
+                      description: service.description,
+                    };
+                const guideThisService =
+                  isPublic &&
+                  ownerTestGuide &&
+                  !publicHideBookLinks &&
+                  index === 0;
+                const card = (
+                  <ServiceCard
+                    service={{
+                      id: service.id,
+                      name: copy.name,
+                      description: copy.description || '',
+                      price: service.price_cents || 0,
+                      hours_to_complete: service.hours_to_complete || null,
+                      duration_minutes: service.duration_minutes ?? null,
+                      priceOptionsEnabled:
+                        service.price_options_enabled === true &&
+                        allowPriceOptionSignals,
+                    }}
+                    isEditable={false}
+                    isPublic={isPublic}
+                    businessSlug={businessSlug}
+                    hideBookLink={publicHideBookLinks}
+                    bookingFlowLocale={bookingFlowLocale}
+                    publicActiveSale={publicActiveSale}
+                    useBookingV2={useBookingV2}
+                    guideSelect={guideThisService}
+                    onSelectNavigate={
+                      policyAgreement.required && !policyAgreement.hasAgreed
+                        ? href => {
+                            void router.prefetch(href);
+                            policyAgreement.runAfterAgreement(() =>
+                              router.push(href)
+                            );
+                          }
+                        : undefined
+                    }
+                  />
+                );
+                return (
+                  <div key={service.id} className="min-w-0">
+                    {card}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm text-zinc-500 text-center py-8">

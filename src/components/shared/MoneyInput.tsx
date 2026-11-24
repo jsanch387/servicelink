@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import { fieldBoxClassName, fieldLabelClassName } from './fieldStyles';
 
 export interface MoneyInputProps {
+  id?: string;
   label?: string;
   placeholder?: string;
   /** Dollar amount as digits, optional single `.` and up to two decimal places (no commas). */
@@ -55,6 +57,7 @@ function formatBlurredDisplay(raw: string): string {
 }
 
 export const MoneyInput: React.FC<MoneyInputProps> = ({
+  id,
   label,
   placeholder = '0.00',
   value,
@@ -84,19 +87,20 @@ export const MoneyInput: React.FC<MoneyInputProps> = ({
   return (
     <div className={`w-full ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-gray-300 mb-1.5">
+        <label className={fieldLabelClassName}>
           {label}
-          {required && <span className="text-red-400 ml-1">*</span>}
+          {required && <span className="ml-1 text-red-400">*</span>}
         </label>
       )}
       <div className="relative">
         <span
-          className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-base sm:text-sm tabular-nums"
+          className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sm tabular-nums text-white/40"
           aria-hidden
         >
           $
         </span>
         <input
+          id={id}
           type="text"
           inputMode="decimal"
           enterKeyHint="done"
@@ -110,17 +114,21 @@ export const MoneyInput: React.FC<MoneyInputProps> = ({
           placeholder={placeholder}
           required={required}
           disabled={disabled}
-          aria-label={ariaLabel ?? label ?? 'Amount'}
+          aria-label={ariaLabel ?? (id || label ? undefined : 'Amount')}
           className={`
-            w-full py-2.5 pl-7 pr-3.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-base sm:text-sm font-normal tabular-nums
-            focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 focus:bg-white/8
-            transition-all duration-200 touch-manipulation
-            ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/10'}
-            ${disabled ? 'opacity-60 cursor-not-allowed bg-white/3' : 'cursor-text hover:border-white/20 active:bg-white/8'}
+            w-full text-base text-white placeholder:text-white/40 sm:text-sm tabular-nums touch-manipulation
+            ${fieldBoxClassName}
+            !pl-7
+            ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/15'}
+            ${
+              disabled
+                ? 'cursor-not-allowed opacity-60'
+                : 'cursor-text hover:border-white/25'
+            }
           `}
         />
       </div>
-      {error && <p className="mt-1 text-sm text-red-400">{error}</p>}
+      {error && <p className="mt-1.5 text-sm text-red-400">{error}</p>}
     </div>
   );
 };

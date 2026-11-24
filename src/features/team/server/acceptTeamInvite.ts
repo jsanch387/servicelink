@@ -1,6 +1,9 @@
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { ACTIVE_TEAM_MEMBER_STATUS } from '../constants/teamRoles';
+import {
+  ACTIVE_TEAM_MEMBER_STATUS,
+  membershipRoleFromInvite,
+} from '../constants/teamRoles';
 import { normalizeTeamInviteEmail } from '../utils/normalizeTeamInviteEmail';
 import { loadBusinessTeamAccess } from './loadBusinessTeamAccess';
 import { loadTeamInviteByToken } from './loadTeamInviteByToken';
@@ -82,21 +85,26 @@ export async function acceptTeamInvite(
     .eq('user_id', params.userId)
     .maybeSingle();
 
+  const role = membershipRoleFromInvite(loaded.invite.role);
+
   if (existingRow?.id) {
-    if (existingRow.status !== ACTIVE_TEAM_MEMBER_STATUS) {
-      const { error: reactivateError } = await db
-        .from('business_members')
-        .update({ status: ACTIVE_TEAM_MEMBER_STATUS })
-        .eq('id', existingRow.id);
-      if (reactivateError) {
-        return { ok: false, error: 'Could not join the team', status: 500 };
-      }
+    const { error: reactivateError } = await db
+      .from('business_members')
+      .update({
+        role,
+        ...(existingRow.status !== ACTIVE_TEAM_MEMBER_STATUS
+          ? { status: ACTIVE_TEAM_MEMBER_STATUS }
+          : {}),
+      })
+      .eq('id', existingRow.id);
+    if (reactivateError) {
+      return { ok: false, error: 'Could not join the team', status: 500 };
     }
   } else {
     const { error: insertError } = await db.from('business_members').insert({
       business_id: loaded.invite.business_id,
       user_id: params.userId,
-      role: 'member',
+      role,
       status: ACTIVE_TEAM_MEMBER_STATUS,
     });
     if (insertError) {

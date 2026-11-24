@@ -15,6 +15,10 @@ export type {
 
 export {
   buildBookingConfirmedSms,
+  buildBookingRequestApprovedSms,
+  buildBookingRequestDeniedSms,
+  buildBookingRequestExpiredSms,
+  buildBookingRequestReceivedSms,
   buildBookingReminderSms,
   buildBookingRescheduledSms,
   buildJobCompletedSms,

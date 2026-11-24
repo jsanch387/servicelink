@@ -86,7 +86,7 @@ Validated by `parseMembershipPlanWriteBody`:
 
 - `name` required
 - `visitDurationMinutes` required: 30–630, multiples of 30 (defaults to 60 if omitted)
-- ≥1 cadence; `intervalUnit` ∈ week|month|year; `intervalCount` ≥ 1; `priceCents` > 0
+- ≥1 cadence; offered pairs only: week/1, week/2, month/1, month/3, month/6; `priceCents` > 0
 - No duplicate `(intervalUnit, intervalCount)` pairs
 
 ---
@@ -323,13 +323,13 @@ On create/edit (`syncMembershipPlanStripeCatalog` via `getStripeConnectClient`):
 
 1. Resolve Connect account from `payment_accounts`
 2. Create or update Stripe **Product** → `membership_plans.stripe_product_id`
-3. Create Stripe **Price** per cadence (or new Price if amount/interval changed) → `membership_plan_prices.stripe_price_id`
+3. Create Stripe **Price** per cadence (or a new Price if the pre-tax amount, tax, or interval changed). `unit_amount` is `price_cents + tax_cents`. Existing subscriptions keep their old Price. → `membership_plan_prices.stripe_price_id`
 4. Removed cadences: archive old Stripe Price (`active: false`) best-effort, then hard-delete DB row
 
 ## Checkout + Connect webhook (live)
 
 1. Public Continue → `createPublicMembershipCheckoutSession` (validates first-visit slot)
-2. Checkout Session `mode: 'subscription'`, stored `stripe_price_id`, `{ stripeAccount }`
+2. Checkout Session `mode: 'subscription'`. Before the session, the price is resynced when the shop tax no longer matches, then charged on that `stripe_price_id`, `{ stripeAccount }`
 3. Metadata `kind: membership_checkout` (+ plan/price/business ids + `firstVisitDate` / `firstVisitTime` / `visitDurationMinutes`) on session + subscription
 4. Connect webhook (`checkout.session.completed`) → upsert `customer_memberships` + `checkout_completed` event → `ensureMembershipInitialBooking` → membership confirm email + appointment confirm email
 5. `customer.subscription.updated` / `deleted` → sync status / cancel fields

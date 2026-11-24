@@ -59,7 +59,7 @@ export const LinkViewsPeriodPicker: React.FC<LinkViewsPeriodPickerProps> = ({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`cursor-pointer inline-flex h-8 min-h-8 items-center justify-center gap-1 rounded-md px-2.5 text-xs font-medium ${dashboardCardButtonClass}`}
+        className={`cursor-pointer inline-flex h-9 min-h-9 items-center justify-center gap-1 rounded-md px-3 text-xs font-medium ${dashboardCardButtonClass}`}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={`Time range: ${ANALYTICS_PERIOD_LABELS[period]}. Tap to change.`}

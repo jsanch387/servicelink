@@ -36,6 +36,7 @@ export const ProfileReviewCard: React.FC<ProfileReviewCardProps> = ({
         createdAt={review.createdAt}
         rating={review.rating}
         locale={locale}
+        source={review.source}
       />
 
       {hasVisibleReviewBody(review.body) ? (

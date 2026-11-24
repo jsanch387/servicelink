@@ -71,14 +71,15 @@ Same formula as [`mobile-booking-job-completed.md`](./mobile-booking-job-complet
 subtotalCents =
   service_price_cents
   + sum(addon_details[].priceCents)
-  + sum(sessionFees[].amountCents)
+  + sum(sessionFees where kind is fee)
 
 amountDueCents =
   subtotalCents
   - booking_payments.paid_online_amount_cents
+  - sum(sessionFees where kind is discount)
 ```
 
-For **intent creation**, there is no `sessionPayment` yet — the intent amount is **`amountDueCents`**.
+For **intent creation**, there is no `sessionPayment` yet — the intent amount is **`amountDueCents`**, plus `tipCents` when the phone sends a tip. A discount is not added to the charge.
 
 For **`job_completed`**, mobile sends `sessionPayment.amountCents` equal to the succeeded tap amount (must match the verified PaymentIntent amount and bring amount due to **0**).
 
@@ -177,13 +178,15 @@ If Connect is not ready, return **422** with a message the app can show inline (
 
 ```json
 {
-  "sessionFees": [{ "label": "Pet hair removal", "amountCents": 2500 }]
+  "sessionFees": [{ "label": "Pet hair removal", "amountCents": 2500 }],
+  "tipCents": 500
 }
 ```
 
-| Field         | Required | Rules                                                                               |
-| ------------- | -------- | ----------------------------------------------------------------------------------- |
-| `sessionFees` | No       | Default `[]`. Same shape as `job_completed`. Must match Complete sheet at tap time. |
+| Field         | Required | Rules                                                                                                                                                                                                                                                                                                                        |
+| ------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sessionFees` | No       | Default `[]`. Each item is `{ kind?, label, amountCents }`. `kind` is `fee` or `discount`. Omitted kind means `fee`. `amountCents` is a whole number from 1 to 999999. `label` is 1–120 characters. A discount reduces the amount still due. It is not added to the charge. Order is kept. A line labeled `Tip` stays a fee. |
+| `tipCents`    | No       | Customer tip in cents. Default `0`. Whole number, zero or more. Added on top of the job balance. Not a fee and not taxed. The phone does not calculate the Stripe fee.                                                                                                                                                       |
 
 **Success (200):**
 
@@ -192,7 +195,8 @@ If Connect is not ready, return **422** with a message the app can show inline (
   "success": true,
   "paymentIntentId": "pi_…",
   "clientSecret": "pi_…_secret_…",
-  "amountCents": 12000,
+  "amountCents": 12500,
+  "tipCents": 500,
   "currency": "usd",
   "terminalLocationId": "tml_…",
   "stripeAccountId": "acct_…",
@@ -204,7 +208,8 @@ If Connect is not ready, return **422** with a message the app can show inline (
 | --------------------- | ---------------------------------------------------------------------------------------- |
 | `paymentIntentId`     | Store for `job_completed.sessionPayment.stripePaymentIntentId`                           |
 | `clientSecret`        | Pass to Terminal SDK to collect + confirm                                                |
-| `amountCents`         | Server-computed amount due; display in UI before tap                                     |
+| `amountCents`         | Amount the card will be charged: job balance plus `tipCents`                             |
+| `tipCents`            | Tip included in `amountCents`. `0` when there is no tip                                  |
 | `currency`            | Lowercase ISO-4217 from `booking_payments`                                               |
 | `terminalLocationId`  | Stripe Terminal Location on the connected account (`tml_…`); required for SDK collection |
 | `stripeAccountId`     | Connect account id (`acct_…`); for connection-token alignment and logging only           |
@@ -221,7 +226,7 @@ If Connect is not ready, return **422** with a message the app can show inline (
 
    ```text
    connectClient.paymentIntents.create({
-     amount: amountDueCents,
+     amount: amountDueCents + tipCents,
      currency,
      payment_method_types: ['card_present'],
      capture_method: 'automatic',
@@ -229,6 +234,7 @@ If Connect is not ready, return **422** with a message the app can show inline (
        kind: 'booking_tap_to_pay',
        bookingId,
        businessId,
+       tipCents,
      },
    })
    ```
@@ -306,7 +312,9 @@ Before persist, retrieve PaymentIntent from Stripe on the **same connected accou
 **Persist (existing Phase 1):**
 
 - `booking_payments.session_payment_method = 'tap_to_pay'`
-- `booking_payments.session_payment_amount_cents`
+- `booking_payments.session_payment_amount_cents` — captured PaymentIntent amount, **including the tip**
+- `booking_payments.tip_cents` — the customer tip only. Not added to `total_amount_cents` or `session_fees_total_cents`
+- `booking_payments.session_stripe_fee_cents` — left null here. Written later only after Stripe reports the balance-transaction fee. The phone does not send it
 - `booking_payments.session_payment_stripe_payment_intent_id = pi_…`
 - `booking_payments.provider` → set to `'stripe'` when method is `tap_to_pay` (server implementation detail)
 - Fee lines, invoice snapshot, customer notification — unchanged.

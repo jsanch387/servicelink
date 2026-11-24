@@ -60,6 +60,11 @@ export interface AvailabilityBookingNotificationPayload {
     discountCents: number;
     estimatedTotalCents: number;
   };
+  /** Sales tax on the price after discounts. The email total includes this. */
+  salesTax?: {
+    label: string;
+    taxCents: number;
+  } | null;
   /**
    * Multi-job visit: one entry per job. When present (length ≥ 1), the template
    * lists each job instead of the single top-level service section.
@@ -73,6 +78,8 @@ export interface AvailabilityBookingNotificationPayload {
   customerNotes?: string;
   /** Owner scheduled this appointment from the dashboard (not a public self-booking). */
   createdByOwner?: boolean;
+  /** Public customer asked for a time the business still has to approve. */
+  appointmentRequest?: boolean;
 }
 
 /** One job line in a multi-job visit confirmation email. */

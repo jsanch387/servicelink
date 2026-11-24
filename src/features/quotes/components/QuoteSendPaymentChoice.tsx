@@ -7,8 +7,9 @@ import {
   type QuotePaymentCollection,
   type QuoteSendPaymentOffer,
 } from '@/features/quotes/shared/quotePaymentCollection';
+import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
-import React, { useEffect, useId } from 'react';
+import React, { useEffect } from 'react';
 
 export type { QuoteSendPaymentOffer };
 
@@ -46,55 +47,79 @@ const OPTIONS: Array<{
   },
 ];
 
+function paymentGates(offer: QuoteSendPaymentOffer, totalCents: number) {
+  const due = offer.depositsEnabled
+    ? depositDueCents(totalCents, offer.depositType, offer.depositValue)
+    : 0;
+  const depositOk = offer.depositsEnabled && due >= QUOTE_CARD_MIN_CENTS;
+  const fullOk = totalCents >= QUOTE_CARD_MIN_CENTS;
+  return { due, depositOk, fullOk };
+}
+
+export function quotePaymentCollectionSummary(
+  offer: QuoteSendPaymentOffer,
+  totalCents: number,
+  value: QuotePaymentCollection
+): { label: string; detail: string } {
+  const option = OPTIONS.find(row => row.id === value) ?? OPTIONS[0];
+  const { due, depositOk, fullOk } = paymentGates(offer, totalCents);
+  if (option.id === 'deposit' && depositOk) {
+    return {
+      label: option.label,
+      detail: `${formatUsdFromCents(due)} due to book`,
+    };
+  }
+  if (option.id === 'full' && fullOk) {
+    return {
+      label: option.label,
+      detail: `${formatUsdFromCents(totalCents)} due to book`,
+    };
+  }
+  if (option.id === 'customer_choice' && !offer.depositsEnabled) {
+    return {
+      label: option.label,
+      detail: 'Full payment or pay in person',
+    };
+  }
+  return { label: option.label, detail: option.detail };
+}
+
 export const QuoteSendPaymentChoice: React.FC<QuoteSendPaymentChoiceProps> = ({
   offer,
   totalCents,
   value,
   onChange,
 }) => {
-  const due = offer.depositsEnabled
-    ? depositDueCents(totalCents, offer.depositType, offer.depositValue)
-    : 0;
-  const depositOk = offer.depositsEnabled && due >= QUOTE_CARD_MIN_CENTS;
-  const fullOk = totalCents >= QUOTE_CARD_MIN_CENTS;
-  const choiceOk = depositOk && fullOk;
+  const { depositOk, fullOk } = paymentGates(offer, totalCents);
 
   useEffect(() => {
     if (value === 'deposit' && !depositOk) onChange('none');
     if (value === 'full' && !fullOk) onChange('none');
-    if (value === 'customer_choice' && !choiceOk) onChange('none');
-  }, [choiceOk, depositOk, fullOk, onChange, value]);
-
-  const labelId = useId();
+  }, [depositOk, fullOk, onChange, value]);
 
   if (!offer.available) return null;
 
   const disabledFor = (id: QuotePaymentCollection) => {
     if (id === 'deposit') return !depositOk;
     if (id === 'full') return !fullOk;
-    if (id === 'customer_choice') return !choiceOk;
     return false;
-  };
-
-  const detailFor = (id: QuotePaymentCollection, detail: string) => {
-    if (id === 'deposit' && depositOk) {
-      return `${formatUsdFromCents(due)} due to book`;
-    }
-    if (id === 'full' && fullOk) {
-      return `${formatUsdFromCents(totalCents)} due to book`;
-    }
-    return detail;
   };
 
   return (
     <div>
-      <p className="mb-2 text-sm font-medium text-gray-500" id={labelId}>
-        Payment to accept
-      </p>
-      <div className="space-y-2" role="radiogroup" aria-labelledby={labelId}>
-        {OPTIONS.map(option => {
+      <div
+        className="overflow-hidden rounded-[10px] border border-white/[0.08] bg-white/[0.03]"
+        role="radiogroup"
+        aria-label="Payment to accept"
+      >
+        {OPTIONS.map((option, index) => {
           const disabled = disabledFor(option.id);
           const selected = value === option.id;
+          const summary = quotePaymentCollectionSummary(
+            offer,
+            totalCents,
+            option.id
+          );
           return (
             <button
               key={option.id}
@@ -103,30 +128,25 @@ export const QuoteSendPaymentChoice: React.FC<QuoteSendPaymentChoiceProps> = ({
               aria-checked={selected}
               disabled={disabled}
               onClick={() => onChange(option.id)}
-              className={`flex w-full min-h-[52px] cursor-pointer touch-manipulation items-center justify-between gap-3 rounded-xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+              className={`flex w-full min-h-11 cursor-pointer touch-manipulation items-center justify-between gap-3 px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                index > 0 ? 'border-t border-white/[0.08]' : ''
+              } ${
                 selected
-                  ? 'border-white/30 bg-white/10 text-white'
-                  : 'border-white/10 bg-white/[0.04] text-zinc-300 hover:border-white/20 hover:bg-white/[0.06] disabled:hover:border-white/10 disabled:hover:bg-white/[0.04]'
+                  ? 'bg-white/[0.06] text-white'
+                  : 'text-zinc-300 hover:bg-white/[0.04] disabled:hover:bg-transparent'
               }`}
             >
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium text-white">
-                  {option.label}
+                  {summary.label}
                 </span>
-                <span className="mt-0.5 block text-sm text-gray-400">
-                  {detailFor(option.id, option.detail)}
+                <span className="mt-0.5 block text-sm text-white/60">
+                  {summary.detail}
                 </span>
               </span>
-              <span
-                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${
-                  selected
-                    ? 'border-white/40 bg-white/20'
-                    : 'border-white/20 bg-transparent'
-                }`}
-                aria-hidden
-              >
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
                 {selected ? (
-                  <CheckIcon className="h-3.5 w-3.5 text-white" />
+                  <CheckIcon className="h-5 w-5 text-white" aria-hidden />
                 ) : null}
               </span>
             </button>
@@ -134,9 +154,12 @@ export const QuoteSendPaymentChoice: React.FC<QuoteSendPaymentChoiceProps> = ({
         })}
       </div>
       {!offer.depositsEnabled ? (
-        <p className="mt-2 text-sm text-gray-400">
-          Turn on deposits in Payments to require a deposit or let the customer
-          choose.
+        <p className="mt-3 flex items-start gap-2 text-sm text-white/60">
+          <InformationCircleIcon
+            className="mt-0.5 h-4 w-4 shrink-0 text-white/60"
+            aria-hidden
+          />
+          <span>Turn on deposits in Payments to require a deposit.</span>
         </p>
       ) : null}
     </div>

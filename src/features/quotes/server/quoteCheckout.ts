@@ -22,6 +22,8 @@ export type QuoteCheckoutAcceptPayload = {
   scheduledDate: string;
   scheduledStartTimeForDb: string;
   totalCents: number;
+  taxCents: number;
+  taxRateBps: number;
   depositType: 'fixed' | 'percent' | null;
   depositValue: number | null;
   previousStatus: 'sent' | 'viewed';
@@ -74,6 +76,8 @@ function parseAcceptPayload(raw: unknown): QuoteCheckoutAcceptPayload | null {
     scheduledDate,
     scheduledStartTimeForDb,
     totalCents: Math.max(0, Math.round(Number(body.totalCents ?? 0))),
+    taxCents: Math.max(0, Math.round(Number(body.taxCents ?? 0))),
+    taxRateBps: Math.max(0, Math.round(Number(body.taxRateBps ?? 0))),
     depositType,
     depositValue:
       body.depositValue == null ? null : Math.round(Number(body.depositValue)),
@@ -195,7 +199,13 @@ export async function startQuoteCheckout(
 
 export async function insertQuotePayInPersonPayment(
   supabase: SupabaseClient<Database>,
-  args: { bookingId: string; businessId: string; totalCents: number }
+  args: {
+    bookingId: string;
+    businessId: string;
+    totalCents: number;
+    taxCents?: number;
+    taxRateBps?: number;
+  }
 ): Promise<void> {
   const ready = await loadQuoteCardReadiness(supabase, args.businessId);
   await insertBookingPaymentsRowForNoCheckoutPublicBooking(supabase, {
@@ -205,6 +215,8 @@ export async function insertQuotePayInPersonPayment(
     currency: ready.currency,
     paymentsEnabled: true,
     checkoutMode: 'in_person',
+    taxRateBps: args.taxRateBps,
+    taxCents: args.taxCents,
   });
 }
 
@@ -213,6 +225,8 @@ type QuoteCardPaymentWrite = {
   businessId: string;
   amountPaid: number;
   totalCents: number;
+  taxCents: number;
+  taxRateBps: number;
   paymentChoice: Extract<QuotePaymentChoice, 'deposit' | 'full'>;
   depositType: 'fixed' | 'percent' | null;
   depositValue: number | null;
@@ -246,6 +260,8 @@ async function recordQuoteCardPayment(
     deposit_value: args.paymentChoice === 'deposit' ? args.depositValue : null,
     last_checkout_session_id: args.sessionId,
     paid_at: args.paidAt,
+    tax_rate_bps: Math.max(0, Math.round(args.taxRateBps)),
+    tax_cents: Math.max(0, Math.round(args.taxCents)),
   };
 
   const { error: paymentError } = await db.from('booking_payments').insert({
@@ -344,6 +360,8 @@ export async function applyQuoteCheckoutCompleted(
       businessId: String(checkoutRow.business_id ?? ''),
       amountPaid,
       totalCents: payload.totalCents,
+      taxCents: payload.taxCents,
+      taxRateBps: payload.taxRateBps,
       paymentChoice: payload.paymentChoice,
       depositType: payload.depositType,
       depositValue: payload.depositValue,
@@ -437,6 +455,8 @@ export async function applyQuoteCheckoutCompleted(
     businessId: String(working.business_id),
     amountPaid,
     totalCents: payload.totalCents,
+    taxCents: payload.taxCents,
+    taxRateBps: payload.taxRateBps,
     paymentChoice: payload.paymentChoice,
     depositType: payload.depositType,
     depositValue: payload.depositValue,

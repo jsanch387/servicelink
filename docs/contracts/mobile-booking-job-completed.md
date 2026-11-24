@@ -54,14 +54,14 @@ After opening **Complete** from a confirmed booking, mobile shows the Complete s
 }
 ```
 
-| Field                                  | Required             | Rules                                                                           |
-| -------------------------------------- | -------------------- | ------------------------------------------------------------------------------- |
-| `action`                               | Yes                  | `"job_completed"`                                                               |
-| `sessionFees`                          | No                   | Default `[]`. Each: non-empty `label`, integer `amountCents` ≥ 0                |
-| `sessionPayment`                       | No                   | Omit when customer already paid in full online                                  |
-| `sessionPayment.method`                | When payment present | `cash` \| `payment_app` \| `other` \| `tap_to_pay`                              |
-| `sessionPayment.amountCents`           | When payment present | Integer ≥ 0                                                                     |
-| `sessionPayment.stripePaymentIntentId` | `tap_to_pay` only    | Required — see [`mobile-booking-tap-to-pay.md`](./mobile-booking-tap-to-pay.md) |
+| Field                                  | Required             | Rules                                                                                                                                                                                                                                                           |
+| -------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `action`                               | Yes                  | `"job_completed"`                                                                                                                                                                                                                                               |
+| `sessionFees`                          | No                   | Default `[]`. Each: `{ kind?, label, amountCents }`. Omitted `kind` is `fee`. `kind` is `fee` or `discount`. `label` is 1–120 characters. `amountCents` is a whole number from 1 to 999999. A discount reduces the amount still due and is not stored as a fee. |
+| `sessionPayment`                       | No                   | Omit when customer already paid in full online                                                                                                                                                                                                                  |
+| `sessionPayment.method`                | When payment present | `cash` \| `payment_app` \| `other` \| `tap_to_pay`                                                                                                                                                                                                              |
+| `sessionPayment.amountCents`           | When payment present | Integer ≥ 0                                                                                                                                                                                                                                                     |
+| `sessionPayment.stripePaymentIntentId` | `tap_to_pay` only    | Required — see [`mobile-booking-tap-to-pay.md`](./mobile-booking-tap-to-pay.md)                                                                                                                                                                                 |
 
 ### Preconditions (server enforces)
 
@@ -77,13 +77,16 @@ After opening **Complete** from a confirmed booking, mobile shows the Complete s
 subtotalCents =
   service_price_cents
   + sum(addon_details[].priceCents)
-  + sum(sessionFees[].amountCents)
+  + sum(sessionFees where kind is fee)
 
 amountDueCents =
   subtotalCents
   - booking_payments.paid_online_amount_cents
+  - sum(sessionFees where kind is discount)
   - sessionPayment.amountCents   // 0 if omitted
 ```
+
+A payment-time discount does not change the booked service price. Fees still follow the existing total. Discounts are subtracted once from the amount still due.
 
 Server rejects with **400** `"Payment is still due on this booking."` when `amountDueCents > 0`.
 

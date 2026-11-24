@@ -15,6 +15,7 @@ import { parsePublicQuoteRequestNote } from '@/features/quotes/dashboard/utils/p
 import { PublicQuoteRespondActions } from '@/features/quotes/public-view/components/PublicQuoteRespondActions';
 import { QuoteNotesConversation } from '@/features/quotes/shared/components/QuoteNotesConversation';
 import { QuoteServiceSummaryCard } from '@/features/quotes/shared/components/QuoteServiceSummaryCard';
+import { QuoteTaxTotal } from '@/features/quotes/shared/components/QuoteTaxTotal';
 import { loadQuoteCustomerPayment } from '@/features/quotes/server/quotePaymentSnapshot';
 import { normalizeQuoteAddonDetails } from '@/features/quotes/shared/quoteServiceSnapshot';
 import { resolveQuoteTokenHash } from '@/features/quotes/shared/utils/resolveQuoteTokenHash';
@@ -26,14 +27,6 @@ import { notFound } from 'next/navigation';
 interface PublicQuoteViewPageProps {
   params: Promise<{ token: string }>;
   searchParams: Promise<{ checkout?: string; session_id?: string }>;
-}
-
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
 }
 
 function formatDateLong(dateStr: string): string {
@@ -106,7 +99,7 @@ export default async function PublicQuoteViewPage({
   const { data: quoteRow } = await db
     .from('quotes')
     .select(
-      'id, business_id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status, addon_details, service_id, service_price_option_id, service_price_cents, payment_collection, deposit_type, deposit_value'
+      'id, business_id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, tax_cents, tax_rate_bps, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status, addon_details, service_id, service_price_option_id, service_price_cents, payment_collection, deposit_type, deposit_value'
     )
     .eq('id', link.quote_id)
     .maybeSingle();
@@ -125,6 +118,8 @@ export default async function PublicQuoteViewPage({
     vehicle_model: string | null;
     service_name: string;
     price_cents: number;
+    tax_cents: number | null;
+    tax_rate_bps: number | null;
     duration_minutes: number;
     note: string | null;
     request_message: string | null;
@@ -169,7 +164,7 @@ export default async function PublicQuoteViewPage({
   const { data: quoteFresh } = await db
     .from('quotes')
     .select(
-      'id, business_id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status, addon_details, service_id, service_price_option_id, service_price_cents, payment_collection, deposit_type, deposit_value'
+      'id, business_id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, tax_cents, tax_rate_bps, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status, addon_details, service_id, service_price_option_id, service_price_cents, payment_collection, deposit_type, deposit_value'
     )
     .eq('id', quote.id)
     .maybeSingle();
@@ -180,6 +175,7 @@ export default async function PublicQuoteViewPage({
   const customerPayment = await loadQuoteCustomerPayment(supabase, {
     business_id: displayQuote.business_id,
     price_cents: displayQuote.price_cents,
+    tax_cents: displayQuote.tax_cents,
     payment_collection: displayQuote.payment_collection,
     deposit_type: displayQuote.deposit_type,
     deposit_value: displayQuote.deposit_value,
@@ -395,12 +391,19 @@ export default async function PublicQuoteViewPage({
               </>
             ) : null}
             <div className="h-px bg-white/10" />
-            <div className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2">
-              <p className="text-sm font-medium text-gray-300">Total</p>
-              <p className="text-lg font-bold text-white">
-                {formatPrice(displayQuote.price_cents)}
-              </p>
-            </div>
+            <QuoteTaxTotal
+              priceCents={displayQuote.price_cents}
+              taxCents={
+                typeof displayQuote.tax_cents === 'number'
+                  ? displayQuote.tax_cents
+                  : 0
+              }
+              taxRateBps={
+                typeof displayQuote.tax_rate_bps === 'number'
+                  ? displayQuote.tax_rate_bps
+                  : 0
+              }
+            />
           </div>
         </GlassCard>
 

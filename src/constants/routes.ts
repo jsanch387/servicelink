@@ -122,6 +122,8 @@ export const ROUTES = {
     EXPENSES: '/dashboard/expenses',
     AVAILABILITY: '/dashboard/availability',
     CUSTOMERS: '/dashboard/customers',
+    CUSTOMER: (customerId: string) =>
+      `/dashboard/customers/${encodeURIComponent(customerId.trim())}`,
     /** Owner: add and manage teammates. */
     TEAM: '/dashboard/team',
     PAYMENTS: '/dashboard/payments',
@@ -164,6 +166,14 @@ export const API_ROUTES = {
    * Web: cookies. Mobile: `Authorization: Bearer`. See `docs/contracts/mobile-onboarding-complete.md`.
    */
   ONBOARDING_V2_COMPLETE: '/api/onboarding-v2/complete',
+  /** 2-step onboarding: save industry and trades. */
+  ONBOARDING_V3_STEP1: '/api/onboarding-v3/step1',
+  /** 2-step onboarding: name, link, phone, sample services, default hours. */
+  ONBOARDING_V3_FINISH: '/api/onboarding-v3/finish',
+  /** Owner closed the get-the-app pitch. */
+  MARK_APP_PITCH_DISMISSED: '/api/profile/mark-app-pitch-dismissed',
+  /** Live booking-link availability check. */
+  BUSINESS_SLUG_CHECK: '/api/business-profile/slug/check',
   /** Authenticated: Stripe Checkout session URL for Pro (web upgrade / billing). */
   STRIPE_CREATE_CHECKOUT_SESSION: '/api/stripe/create-checkout-session',
   /** Authenticated: Stripe Customer Portal session URL (manage subscription / payment method). */
@@ -200,6 +210,15 @@ export const API_ROUTES = {
    */
   PAYMENTS_REVENUE: '/api/payments/revenue',
   CUSTOMERS: '/api/customers',
+  CUSTOMERS_IMPORT: '/api/customers/import',
+  /** Completed visits for one customer, newest first. */
+  customerVisits: (customerId: string) =>
+    `/api/customers/${encodeURIComponent(customerId.trim())}/visits`,
+  /** Saved vehicles for one customer. Vehicle shops only. */
+  customerVehicles: (customerId: string) =>
+    `/api/customers/${encodeURIComponent(customerId.trim())}/vehicles`,
+  customerVehicle: (customerId: string, vehicleId: string) =>
+    `/api/customers/${encodeURIComponent(customerId.trim())}/vehicles/${encodeURIComponent(vehicleId.trim())}`,
   /**
    * Owner/manager: Assistant action items for today (reviews + check-ins).
    * Auth: Bearer (mobile) or cookie (web). Requires customers.read.
@@ -299,6 +318,8 @@ export const API_ROUTES = {
   PUBLIC_BOOKING_CHECKOUT_SUMMARY: '/api/public/booking-checkout-summary',
   /** Public: returning-customer saved vehicles/pets for the book flow. */
   PUBLIC_CUSTOMER_ASSETS: '/api/public/customer-assets',
+  /** Public: fill booking contact from a phone that already booked here. */
+  PUBLIC_BOOKING_RETURNING_CUSTOMER: '/api/public/bookings/returning-customer',
   /** Public: validate a promo code for booking checkout preview. */
   PUBLIC_PROMO_CODE_VALIDATE: '/api/public/promo-codes/validate',
   /** Public: subscribed ICS feed for a business (path includes signed token). */
@@ -329,12 +350,29 @@ export const API_ROUTES = {
     '/api/internal/attribution/paid-conversions',
   /** Vercel Cron: day-before owner appointment reminder. */
   INTERNAL_CRON_BOOKING_REMINDERS: '/api/internal/cron/booking-reminders',
+  /** Vercel Cron: expire appointment requests whose day has passed. */
+  INTERNAL_CRON_APPOINTMENT_REQUEST_EXPIRATIONS:
+    '/api/internal/cron/appointment-request-expirations',
+  /** Owner: start Google Business Profile OAuth (reviews connect). */
+  REVIEWS_GOOGLE_CONNECT: '/api/reviews/google/connect',
+  /** Google OAuth redirect target for Business Profile connect. */
+  REVIEWS_GOOGLE_CALLBACK: '/api/reviews/google/callback',
+  /** Owner: whether this business has a Google Business connection. */
+  REVIEWS_GOOGLE_STATUS: '/api/reviews/google/status',
+  /** Owner: find/save the Google listing on an existing connection. */
+  REVIEWS_GOOGLE_SYNC: '/api/reviews/google/sync',
+  /** Owner: import Google reviews for the connected listing. */
+  REVIEWS_GOOGLE_PULL: '/api/reviews/google/pull',
   /** Vercel Cron: unanswered quote requests in the 3-day follow-up window. */
   INTERNAL_CRON_QUOTE_REQUEST_FOLLOW_UPS:
     '/api/internal/cron/quote-request-follow-ups',
   /** Vercel Cron: unanswered sent quotes — one customer email + SMS after 2–3 days. */
   INTERNAL_CRON_QUOTE_CUSTOMER_REMINDERS:
     '/api/internal/cron/quote-customer-reminders',
+  /** Vercel Cron: refresh Google reviews for connected businesses. */
+  INTERNAL_CRON_GOOGLE_REVIEW_PULLS: '/api/internal/cron/google-review-pulls',
+  /** Vercel Cron: setup emails for owners who have not finished onboarding. */
+  INTERNAL_CRON_ONBOARDING_EMAILS: '/api/internal/cron/onboarding-emails',
 } as const;
 
 export const PUBLIC_ROUTES = [
@@ -493,6 +531,128 @@ export function getBusinessBookDetailsPath(
     addJob: options?.addJob,
     editVisit: options?.editVisit,
   });
+}
+
+/**
+ * Booking v2 service setup. Legacy `/book/details` stays in place.
+ * Flip `PUBLIC_BOOKING_V2_ENABLED` to send customers back to the current flow.
+ */
+export function getBusinessBookV2SetupUrl(
+  businessSlug: string,
+  params: {
+    serviceId: string;
+    lang?: PublicBookingFlowLocale | null;
+    /** Append this service to the current visit instead of starting a new one. */
+    add?: boolean;
+    /** Replace this cart item when saving. */
+    editIndex?: number;
+  }
+): string {
+  const slug = businessSlug.trim();
+  const sid = params.serviceId.trim();
+  if (!slug || !sid) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams({ serviceId: sid });
+  if (params.add) q.set('add', '1');
+  if (
+    params.editIndex != null &&
+    Number.isInteger(params.editIndex) &&
+    params.editIndex >= 0
+  ) {
+    q.set('edit', String(params.editIndex));
+  }
+  appendPublicBookingFlowLang(q, params.lang);
+  const qs = q.toString();
+  return `/${encodeURIComponent(slug)}/book/v2?${qs}`;
+}
+
+/** Booking v2 services list for adding another service. Cancel returns to the cart. */
+export function getBusinessBookV2ServicesUrl(
+  businessSlug: string,
+  params?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const slug = businessSlug.trim();
+  if (!slug) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams({ add: '1' });
+  appendPublicBookingFlowLang(q, params?.lang);
+  return `/${encodeURIComponent(slug)}/book/v2?${q.toString()}`;
+}
+
+/** Booking v2 confirmation after review. */
+export function getBusinessBookV2BookedUrl(
+  businessSlug: string,
+  params?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const slug = businessSlug.trim();
+  if (!slug) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams();
+  appendPublicBookingFlowLang(q, params?.lang);
+  const qs = q.toString();
+  return `/${encodeURIComponent(slug)}/book/v2/booked${qs ? `?${qs}` : ''}`;
+}
+
+/** Booking v2 review and pay step. */
+export function getBusinessBookV2ReviewUrl(
+  businessSlug: string,
+  params?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const slug = businessSlug.trim();
+  if (!slug) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams();
+  appendPublicBookingFlowLang(q, params?.lang);
+  const qs = q.toString();
+  return `/${encodeURIComponent(slug)}/book/v2/review${qs ? `?${qs}` : ''}`;
+}
+
+/** Booking v2 customer details step. */
+export function getBusinessBookV2DetailsUrl(
+  businessSlug: string,
+  params?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const slug = businessSlug.trim();
+  if (!slug) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams();
+  appendPublicBookingFlowLang(q, params?.lang);
+  const qs = q.toString();
+  return `/${encodeURIComponent(slug)}/book/v2/details${qs ? `?${qs}` : ''}`;
+}
+
+/** Booking v2 place step. Only used when the business offers shop and mobile. */
+export function getBusinessBookV2PlaceUrl(
+  businessSlug: string,
+  params?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const slug = businessSlug.trim();
+  if (!slug) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams();
+  appendPublicBookingFlowLang(q, params?.lang);
+  const qs = q.toString();
+  return `/${encodeURIComponent(slug)}/book/v2/place${qs ? `?${qs}` : ''}`;
+}
+
+/** Booking v2 pick-a-time step. */
+export function getBusinessBookV2TimeUrl(
+  businessSlug: string,
+  params?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const slug = businessSlug.trim();
+  if (!slug) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams();
+  appendPublicBookingFlowLang(q, params?.lang);
+  const qs = q.toString();
+  return `/${encodeURIComponent(slug)}/book/v2/time${qs ? `?${qs}` : ''}`;
+}
+
+/** Booking v2 cart. */
+export function getBusinessBookV2CartUrl(
+  businessSlug: string,
+  params?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const slug = businessSlug.trim();
+  if (!slug) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams();
+  appendPublicBookingFlowLang(q, params?.lang);
+  const qs = q.toString();
+  return `/${encodeURIComponent(slug)}/book/v2/cart${qs ? `?${qs}` : ''}`;
 }
 
 export type BookDetailsStepQuery = 'price' | 'addons' | 'location';
@@ -829,5 +989,16 @@ export function getOwnerCreateAppointmentPath(args: {
     'durationMinutes',
     String(Math.max(30, Math.round(args.visitDurationMinutes)))
   );
+  return `${ROUTES.DASHBOARD.BOOKINGS_NEW}?${q.toString()}`;
+}
+
+/** Owner New booking wizard with a customer profile prefilled. */
+export function getOwnerCreateAppointmentForCustomerPath(
+  customerId: string
+): string {
+  const id = customerId.trim();
+  if (!id) return ROUTES.DASHBOARD.BOOKINGS_NEW;
+  const q = new URLSearchParams();
+  q.set('customerId', id);
   return `${ROUTES.DASHBOARD.BOOKINGS_NEW}?${q.toString()}`;
 }

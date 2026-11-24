@@ -8,6 +8,8 @@ export const DASHBOARD_QUOTE_SELECT = `
           customer_phone,
           service_name,
           price_cents,
+          tax_cents,
+          tax_rate_bps,
           duration_minutes,
           created_at,
           updated_at,

@@ -21,6 +21,8 @@ Only a `sent` invoice can be marked paid or voided. Delete removes any status. T
 
 `payment_method` is `cash`, `payment_app`, `other`, or `card`, or null. Mark paid sets the first three. A linked appointment that is already settled can set `card` or one of the manual methods. Customer card checkout sets `status` and `paid_at` and leaves `payment_method` unchanged.
 
+Sales tax is a percentage from payment settings, added once on the line total. `subtotal_cents` stays the sum of the lines. `total_cents` includes tax, and that is what the customer page, the email, and the card charge use. An appointment that already has tax keeps that stored rate. The client does not send tax cents.
+
 ---
 
 ## Who can write

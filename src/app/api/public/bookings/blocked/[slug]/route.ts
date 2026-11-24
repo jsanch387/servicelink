@@ -6,6 +6,7 @@
  * Uses service role so we can read bookings for any business.
  */
 
+import { SLOT_BLOCKING_BOOKING_STATUSES } from '@/features/availability/booking/constants';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextResponse } from 'next/server';
@@ -51,7 +52,7 @@ export async function GET(
       .from('bookings')
       .select('scheduled_date, start_time, duration_minutes')
       .eq('business_id', businessId)
-      .in('status', ['confirmed', 'completed']);
+      .in('status', [...SLOT_BLOCKING_BOOKING_STATUSES]);
 
     if (error) {
       console.error('[API] GET blocked bookings:', error);

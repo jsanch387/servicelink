@@ -36,13 +36,21 @@ import {
   resolveEffectiveCustomerServiceLocation,
 } from '@/features/business-profile/utils/publicServiceLocation';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
+import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
+import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
+import {
+  onlineAmountDueNowCents,
+  quotePublicBookingSalesTax,
+} from '@/features/availability/booking/utils/publicBookingSalesTax';
 import { resolveBookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingDiscountSnapshot';
 import { promoDiscountResolveErrorMessage } from '@/features/marketing/utils/promoDiscountResolveErrorMessage';
 import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
 import { getAppBaseUrl } from '@/libs/stripe/appBaseUrl';
 import { getStripePlatform } from '@/libs/stripe/platformClient';
 import { userFacingStripeConnectCheckoutError } from '@/libs/stripe/userFacingStripeConnectCheckoutError';
+import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -142,6 +150,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Business not found.' },
         { status: 404 }
+      );
+    }
+
+    const approvalRequired =
+      parsedBookingPayload.ownerManualBooking !== true &&
+      (
+        await getAvailabilityForBusiness(
+          supabase,
+          (profile as { id: string }).id
+        )
+      )?.public_booking_approval_required === true;
+    if (approvalRequired) {
+      logCheckoutDev('reject: appointment request skips payment', {
+        businessSlug,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'This business confirms the appointment before taking payment.',
+        },
+        { status: 400 }
       );
     }
 
@@ -360,7 +390,9 @@ export async function POST(request: NextRequest) {
     const { data: settingsRow, error: settingsError } = await paymentSettingsOf(
       supabase
     )
-      .select('payments_enabled, currency')
+      .select(
+        'payments_enabled, currency, checkout_mode, deposits_enabled, deposit_type, deposit_value, tax_enabled, tax_rate_bps'
+      )
       .eq('business_id', businessId)
       .maybeSingle();
 
@@ -387,9 +419,78 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const currency = normalizeCurrency(
-      (settingsRow as { currency?: string | null }).currency
-    );
+    const settings = settingsRow as {
+      currency?: string | null;
+      checkout_mode?: string | null;
+      deposits_enabled?: boolean | null;
+      deposit_type?: string | null;
+      deposit_value?: number | null;
+      tax_enabled?: boolean | null;
+      tax_rate_bps?: number | null;
+    };
+    const salesTax = quotePublicBookingSalesTax({
+      priceAfterDiscountCents: bookingPayload.totalPriceCents,
+      taxEnabled: settings.tax_enabled === true,
+      taxRateBps:
+        typeof settings.tax_rate_bps === 'number' ? settings.tax_rate_bps : 0,
+    });
+    if (salesTax.taxCents > 0) {
+      const expectedOnline = onlineAmountDueNowCents({
+        paymentsEnabled: true,
+        checkoutMode: checkoutModeFromDb(settings.checkout_mode),
+        depositsEnabled: settings.deposits_enabled === true,
+        depositType: settings.deposit_type === 'fixed' ? 'fixed' : 'percent',
+        depositValue:
+          typeof settings.deposit_value === 'number'
+            ? settings.deposit_value
+            : 0,
+        customerPaymentChoice:
+          bookingPayload.paymentMethodSelected === 'pay_now'
+            ? 'pay_now'
+            : bookingPayload.paymentMethodSelected === 'pay_in_person'
+              ? 'pay_in_person'
+              : null,
+        totalCents: salesTax.totalCents,
+      });
+      if (amountCents !== expectedOnline) {
+        logCheckoutDev('reject: tax amount mismatch', {
+          amountCents,
+          expectedOnline,
+          taxCents: salesTax.taxCents,
+        });
+        return NextResponse.json(
+          { success: false, error: 'Invalid payment amount.' },
+          { status: 400 }
+        );
+      }
+    }
+    const rawBookingPayload = body.bookingPayload;
+    const ownerManualCheckout =
+      rawBookingPayload != null &&
+      typeof rawBookingPayload === 'object' &&
+      (rawBookingPayload as { ownerManualBooking?: unknown })
+        .ownerManualBooking === true;
+    let createdByUserId: string | null = null;
+    if (ownerManualCheckout) {
+      const auth = await getAuthenticatedUser(request);
+      if (!('error' in auth)) {
+        const permitted = await requireBusinessPermission(
+          auth.supabase,
+          'bookings.write'
+        );
+        if (permitted.ok && permitted.businessId === businessId) {
+          createdByUserId = auth.user.id;
+        }
+      }
+    }
+    const bookingPayloadForSession = {
+      ...bookingPayload,
+      taxRateBps: salesTax.rateBps,
+      taxCents: salesTax.taxCents,
+      ...(createdByUserId ? { createdByUserId } : {}),
+    };
+
+    const currency = normalizeCurrency(settings.currency);
 
     const { data: accountRow, error: accountError } = await paymentAccountsOf(
       supabase
@@ -432,8 +533,7 @@ export async function POST(request: NextRequest) {
     const baseUrl = getAppBaseUrl(request);
     const lineName = sanitizeLineItemName(body.serviceName);
     const stripe = getStripePlatform();
-    const paymentKind =
-      bookingPayload.totalPriceCents > amountCents ? 'deposit' : 'full';
+    const paymentKind = salesTax.totalCents > amountCents ? 'deposit' : 'full';
     const { data: checkoutSessionRow, error: checkoutSessionInsertError } =
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
@@ -446,7 +546,7 @@ export async function POST(request: NextRequest) {
           selected_payment_method: bookingPayload.paymentMethodSelected,
           currency,
           expected_amount_cents: amountCents,
-          booking_payload: bookingPayload,
+          booking_payload: bookingPayloadForSession,
         })
         .select('id')
         .single();
@@ -493,12 +593,14 @@ export async function POST(request: NextRequest) {
             businessSlug: slugForUrl,
             checkout: 'success',
             resumeQuery: resumeQuery || undefined,
+            flow: body.checkoutFlow === 'v2' ? 'v2' : undefined,
           }),
           cancel_url: buildBookPageCheckoutReturnUrl({
             baseUrl,
             businessSlug: slugForUrl,
             checkout: 'cancel',
             resumeQuery: resumeQuery || undefined,
+            flow: body.checkoutFlow === 'v2' ? 'v2' : undefined,
           }),
           metadata: {
             businessId,

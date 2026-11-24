@@ -3,7 +3,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { invoiceDraftFromStored } from '../utils/invoiceDraft';
 import type { InvoiceDraft } from '../types';
 
-type LoadInvoiceDraftResult = { ok: true; draft: InvoiceDraft } | { ok: false };
+type LoadInvoiceDraftResult =
+  | { ok: true; draft: InvoiceDraft; bookingId: string | null }
+  | { ok: false };
 
 /**
  * Loads a draft the signed-in shop can already select. Non-drafts stay closed.
@@ -19,7 +21,7 @@ export async function loadInvoiceDraft(
   const { data: invoice, error } = await db
     .from('invoices')
     .select(
-      'id, status, customer_name, customer_email, customer_phone, note, due_on'
+      'id, status, customer_name, customer_email, customer_phone, note, due_on, booking_id'
     )
     .eq('id', invoiceId)
     .eq('business_id', businessId)
@@ -43,6 +45,8 @@ export async function loadInvoiceDraft(
 
   return {
     ok: true,
+    bookingId:
+      typeof invoice.booking_id === 'string' ? invoice.booking_id : null,
     draft: invoiceDraftFromStored({
       customerName:
         typeof invoice.customer_name === 'string' ? invoice.customer_name : '',

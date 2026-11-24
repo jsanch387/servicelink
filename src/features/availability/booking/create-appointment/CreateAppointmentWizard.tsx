@@ -32,6 +32,7 @@ import { ServicePathChooser } from './steps/ServicePathChooser';
 import { VehicleStep } from './steps/VehicleStep';
 import { canAddAnotherJob } from './utils/createAppointmentJobs';
 import type { MembershipVisitPrefill } from './types/membershipVisitPrefill';
+import type { CustomerBookingPrefill } from './types/customerBookingPrefill';
 
 export interface CreateAppointmentWizardProps {
   businessId: string;
@@ -43,6 +44,10 @@ export interface CreateAppointmentWizardProps {
   serviceLocation: PublicBookingServiceLocation;
   activeSale?: PublicActiveSale | null;
   membershipVisit?: MembershipVisitPrefill | null;
+  customerPrefill?: CustomerBookingPrefill | null;
+  /** Business sales tax. Off leaves every total unchanged. */
+  salesTaxEnabled?: boolean;
+  salesTaxRateBps?: number;
 }
 
 export function CreateAppointmentWizard({
@@ -55,6 +60,9 @@ export function CreateAppointmentWizard({
   serviceLocation,
   activeSale = null,
   membershipVisit = null,
+  customerPrefill = null,
+  salesTaxEnabled = false,
+  salesTaxRateBps = 0,
 }: CreateAppointmentWizardProps) {
   const router = useRouter();
   const ctrl = useCreateAppointmentController({
@@ -64,6 +72,7 @@ export function CreateAppointmentWizard({
     catalog: serviceCatalog,
     serviceLocation,
     membershipVisit,
+    customerPrefill,
   });
   const {
     step,
@@ -241,7 +250,11 @@ export function CreateAppointmentWizard({
   } else if (step === CREATE_APPOINTMENT_STEP.VEHICLE) {
     body = (
       <div className="space-y-4">
-        <VehicleStep vehicle={draft.vehicle} onChange={patchVehicle} />
+        <VehicleStep
+          vehicle={draft.vehicle}
+          onChange={patchVehicle}
+          savedVehicles={customerPrefill?.vehicles}
+        />
         {showAddAnotherJob ? (
           <AddAnotherJobCard
             onPress={addAnotherJob}
@@ -280,6 +293,8 @@ export function CreateAppointmentWizard({
         onAddAnotherJob={addAnotherJob}
         addAnotherDisabled={!addJobGate.ok || isSubmitting}
         membershipCovered={Boolean(membershipId)}
+        salesTaxEnabled={salesTaxEnabled}
+        salesTaxRateBps={salesTaxRateBps}
       />
     );
   }
@@ -322,6 +337,8 @@ export function CreateAppointmentWizard({
             <SelectionSummaryCard
               draft={draft}
               membershipCovered={Boolean(membershipId)}
+              salesTaxEnabled={salesTaxEnabled}
+              salesTaxRateBps={salesTaxRateBps}
             />
           </div>
         ) : null}

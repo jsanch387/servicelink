@@ -2,6 +2,7 @@ import {
   appendPublicBookingJob,
   clearPublicBookingJobsCart,
   loadPublicBookingJobsCart,
+  publicVisitJobOpenedServiceDetails,
   publicBookingVisitServiceNameSummary,
   replacePublicBookingVisitJob,
   savePublicBookingVisitDraftOnCart,
@@ -31,6 +32,52 @@ describe('publicBookingJobsCart', () => {
         };
       })()
     );
+  });
+
+  it('sends a skipped service back to the profile and a configured one back to the service', () => {
+    expect(
+      publicVisitJobOpenedServiceDetails({
+        localId: 'j1',
+        serviceId: 'svc-1',
+        serviceName: 'Full detail',
+        servicePriceOptionLabel: null,
+        servicePriceCents: 15000,
+        selectedAddOns: [],
+        durationMinutes: 120,
+        vehicle: { year: '', make: '', model: '' },
+        hasServiceDetails: false,
+      })
+    ).toBe(false);
+
+    expect(
+      publicVisitJobOpenedServiceDetails({
+        localId: 'j2',
+        serviceId: 'svc-2',
+        serviceName: 'Full detail',
+        servicePriceOptionLabel: null,
+        servicePriceCents: 15000,
+        selectedAddOns: [],
+        durationMinutes: 120,
+        vehicle: { year: '', make: '', model: '' },
+        hasServiceDetails: true,
+      })
+    ).toBe(true);
+
+    expect(
+      publicVisitJobOpenedServiceDetails(
+        {
+          localId: 'j3',
+          serviceId: 'svc-3',
+          serviceName: 'Full detail',
+          servicePriceOptionLabel: null,
+          servicePriceCents: 15000,
+          selectedAddOns: [],
+          durationMinutes: 120,
+          vehicle: { year: '', make: '', model: '' },
+        },
+        'mobile'
+      )
+    ).toBe(true);
   });
 
   it('appends jobs and sums duration/price', () => {

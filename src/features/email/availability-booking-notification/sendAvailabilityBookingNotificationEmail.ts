@@ -35,7 +35,10 @@ export async function sendAvailabilityBookingNotificationEmail(
   const dashboardBookingsUrl = `${baseUrl}${ROUTES.DASHBOARD.BOOKINGS}`;
   const subject = getAvailabilityBookingNotificationSubject(
     payload.customerName,
-    { createdByOwner: payload.createdByOwner }
+    {
+      createdByOwner: payload.createdByOwner,
+      appointmentRequest: payload.appointmentRequest,
+    }
   );
   const html = buildAvailabilityBookingEmailHtml(payload, {
     audience: 'owner',

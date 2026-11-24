@@ -78,7 +78,7 @@ export const PaymentsAcceptPaymentsCard: React.FC<
       rounded="rounded-2xl"
       className="w-full overflow-hidden"
     >
-      <div className="p-4 sm:px-8 sm:py-6">
+      <div className="p-4 sm:p-5">
         <Switch
           checked={optimisticOn}
           disabled={busy}

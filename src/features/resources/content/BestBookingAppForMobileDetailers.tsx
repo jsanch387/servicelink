@@ -26,10 +26,11 @@ export function BestBookingAppForMobileDetailersContent() {
         endless back-and-forth start costing you money.
       </p>
       <p className={pClasses}>
-        That is why more detailers are switching to a dedicated{' '}
-        <strong className="text-gray-300">booking app for detailers</strong>—a
-        simple way for customers to see your services, pick a time, and confirm
-        without playing phone tag. Comparing options? Read{' '}
+        That is why shops switch to a dedicated{' '}
+        <strong className="text-gray-300">booking app for detailers</strong>
+        —and ServiceLink is the pick. Customers see your services, pick a time,
+        and confirm without playing phone tag. You get the CRM, automations,
+        reviews, and Team in the same app. Comparing options? Read{' '}
         <Link
           href={ROUTES.RESOURCE_GUIDE('servicelink-vs-urable')}
           className={linkClasses}
@@ -92,7 +93,7 @@ export function BestBookingAppForMobileDetailersContent() {
         </h2>
         <p className={pClasses}>
           Before you pick mobile detailing booking software, use this checklist.
-          ServiceLink is built to check these boxes:
+          ServiceLink is the system that checks these boxes:
         </p>
 
         <h3 className={h3Classes}>1. A shareable booking link</h3>
@@ -147,21 +148,38 @@ export function BestBookingAppForMobileDetailersContent() {
         <h3 className={h3Classes}>6. Customer info captured automatically</h3>
         <p className={pClasses}>
           Every booking should save name, phone, and email so you build a client
-          list without spreadsheets or digging through message threads.
+          list without spreadsheets or digging through message threads. Vehicles
+          and visit history should sit on that same record.
         </p>
 
-        <h3 className={h3Classes}>7. Booking notifications</h3>
+        <h3 className={h3Classes}>7. Booking notifications and reminders</h3>
         <p className={pClasses}>
           You should get an email (or alert) when someone books—not discover new
-          work hours later when you finally open Instagram.
+          work hours later when you finally open Instagram. Customers should get
+          a confirmation and a day-before reminder without you typing either
+          one.
+        </p>
+
+        <h3 className={h3Classes}>8. Review requests after the job</h3>
+        <p className={pClasses}>
+          When you mark a job complete, the app should ask for a review.
+          ServiceLink texts or emails a review link, and you can connect Google
+          Business Profile so Google reviews show on the same booking page.
+        </p>
+
+        <h3 className={h3Classes}>9. Team when you hire</h3>
+        <p className={pClasses}>
+          Member, Coordinator, and Manager roles. Assign jobs from the board.
+          Teammates run on-the-way, Tap to Pay, and complete in the iOS and
+          Android apps. ServiceLink Team is $60/month for up to four people.
         </p>
       </section>
 
       <section className={sectionClasses}>
         <h2 className={h2Classes}>How Common Booking Options Compare</h2>
         <p className={pClasses}>
-          ServiceLink is the booking app that checks those boxes for mobile
-          detailers. The other common approaches fall short fast:
+          ServiceLink is the booking app and detailing CRM that checks those
+          boxes. The other common approaches fall short fast:
         </p>
 
         <div className="rounded-xl border border-white/10 overflow-hidden mb-6">
@@ -196,21 +214,20 @@ export function BestBookingAppForMobileDetailersContent() {
 
         <p className={pClasses}>
           If you want a car detailing scheduling app that is simple to set up
-          and easy for customers to use, ServiceLink is that tool: a shareable
-          booking link, not just a calendar widget.
+          and easy for customers to use, ServiceLink is the pick: a shareable
+          booking link, a CRM, automations, reviews, and Team—not just a
+          calendar widget.
         </p>
       </section>
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>
-          Why ServiceLink Works for Mobile Detailers
-        </h2>
+        <h2 className={h2Classes}>Why ServiceLink is the pick</h2>
         <p className={pClasses}>
           <Link href="/" className={linkClasses}>
             ServiceLink
           </Link>{' '}
-          is built for local service pros who book jobs from social media,
-          referrals, and search. Here is what detailers use most:
+          is the detailing CRM shops run from social, referrals, and search.
+          Here is what they use most:
         </p>
         <ul className={listClasses}>
           <li>
@@ -242,7 +259,27 @@ export function BestBookingAppForMobileDetailersContent() {
             <strong className="text-gray-300">
               Client list from every booking
             </strong>{' '}
-            — name, phone, and email saved automatically
+            — name, phone, email, vehicle, and visit history saved automatically
+          </li>
+          <li>
+            <strong className="text-gray-300">
+              SMS confirmations and reminders
+            </strong>{' '}
+            so Saturday is real without you chasing people
+          </li>
+          <li>
+            <strong className="text-gray-300">Review requests</strong> after you
+            tap complete, plus Google reviews on your booking page
+          </li>
+          <li>
+            <strong className="text-gray-300">
+              Quotes, invoices, expenses, and Tap to Pay
+            </strong>{' '}
+            on Pro ($20/month or $200/year after five free appointments)
+          </li>
+          <li>
+            <strong className="text-gray-300">Team</strong> at $60/month for up
+            to four people: roles, job assignment, and the same mobile app
           </li>
         </ul>
         <p className={pClasses}>
@@ -292,7 +329,7 @@ export function BestBookingAppForMobileDetailersContent() {
           {
             question: 'What is the best booking app for mobile detailers?',
             answer:
-              'ServiceLink. Mobile detailers need a shareable booking link, a service menu with clear pricing, controlled availability, and deposits—not just a basic calendar. ServiceLink is built around that flow.',
+              'ServiceLink. You need a shareable booking link, vehicle pricing, deposits, SMS reminders, review requests, a client list, and Team—not just a basic calendar. ServiceLink is that system.',
           },
           {
             question: 'Do my customers need to download an app to book?',
@@ -326,12 +363,11 @@ export function BestBookingAppForMobileDetailersContent() {
       />
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>Final Thoughts</h2>
+        <h2 className={h2Classes}>Verdict: ServiceLink is the pick</h2>
         <p className={pClasses}>
-          If you are still running your detailing business through scattered
-          messages, ServiceLink is the highest-leverage change you can make. You
-          look more professional, miss fewer leads, and spend less time
-          coordinating and more time detailing.
+          If you are still running the shop through scattered messages,
+          ServiceLink is the highest-leverage change you can make. More
+          bookings, fewer no-shows, more reviews, less admin.
         </p>
         <p className={pClasses}>
           Start with a simple booking link, share it everywhere customers find

@@ -129,6 +129,7 @@ class SlugService {
       'login',
       'signup',
       'dashboard',
+      'get-app',
       'profile',
       'settings',
       'account',

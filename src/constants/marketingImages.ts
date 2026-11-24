@@ -49,6 +49,9 @@ export const MARKETING_IMAGES = {
     startBusiness:
       '/marketing/resources/guide-start-mobile-detailing-cover.webp',
     pricing: '/marketing/resources/guide-mobile-detailing-pricing-cover.webp',
+    crm: '/marketing/resources/guide-crm-cover.webp',
+    mobileTechRx: '/marketing/resources/guide-mobile-tech-rx-cover.webp',
+    getClients: '/marketing/resources/guide-get-clients-cover.webp',
   },
   store: {
     googlePlay: '/store/google-play.png',

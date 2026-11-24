@@ -81,6 +81,8 @@ Cadence label helpers (match web):
 | week          | 1              | Weekly            |
 | week          | 2              | Every 2 weeks     |
 | month         | 1              | Monthly           |
+| month         | 3              | Every 3 months    |
+| month         | 6              | Every 6 months    |
 | year          | 1              | Yearly            |
 | other         | n              | Every {n} {unit}s |
 

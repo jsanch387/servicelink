@@ -97,6 +97,8 @@ export function mapQuoteRowToDashboardQuote(
     customerPhone: row.customer_phone,
     serviceName: row.service_name?.trim() || 'Untitled service',
     totalCents: row.price_cents ?? 0,
+    taxCents: typeof row.tax_cents === 'number' ? row.tax_cents : 0,
+    taxRateBps: typeof row.tax_rate_bps === 'number' ? row.tax_rate_bps : 0,
     durationMinutes: duration,
     activityAt: row.updated_at || row.created_at,
     createdAt: row.created_at,

@@ -80,9 +80,19 @@ async function cancelOpenIntentsForBooking(opts: {
 export async function createBookingTapToPayIntent(opts: {
   ctx: TapToPayBookingContext;
   sessionFees: JobCompletedSessionFeeInput[];
+  /** Captured amount: job balance plus the customer tip. */
   amountCents: number;
+  tipCents: number;
 }): Promise<CreateBookingTapToPayIntentResult> {
   const amountCents = opts.amountCents;
+  const tipCents = opts.tipCents;
+  if (!Number.isInteger(tipCents) || tipCents < 0 || tipCents > amountCents) {
+    return {
+      ok: false,
+      httpStatus: 400,
+      error: 'Nothing to collect for this booking.',
+    };
+  }
   if (!Number.isInteger(amountCents) || amountCents <= 0) {
     return {
       ok: false,
@@ -110,6 +120,7 @@ export async function createBookingTapToPayIntent(opts: {
         kind: 'booking_tap_to_pay',
         bookingId: opts.ctx.bookingId,
         businessId: opts.ctx.businessId,
+        tipCents: String(tipCents),
       },
     });
   } catch (e) {

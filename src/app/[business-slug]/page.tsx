@@ -9,6 +9,7 @@ import { StructuredData } from '@/components/shared';
 import { publicSpecialtyLabels } from '@/constants/businessSpecialties';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { ViewTracker } from '@/features/analytics';
+import { publicBookingV2EnabledForOwner } from '@/features/booking-v2/server/publicBookingV2Access';
 import { PublicBusinessProfileView } from '@/features/business-profile/components/PublicBusinessProfileView';
 import { PublicProfileLandingScrollReset } from '@/features/business-profile/components/PublicProfileLandingScrollReset';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
@@ -32,6 +33,7 @@ import {
   loadPublicReviewSummary,
   publicReviewSummaryFromLoadResult,
 } from '@/features/reviews';
+import { countPublicGoogleReviews } from '@/features/reviews/google-connect/server/loadGoogleReviews';
 import { loadPublicActiveSale } from '@/features/marketing/server/loadPublicActiveSale';
 import { MediaService } from '@/features/media';
 import {
@@ -200,6 +202,7 @@ export default async function PublicProfilePage({
     freeTierGate,
     publicReviewSummaryResult,
     primaryServiceArea,
+    useBookingV2,
   ] = await Promise.all([
     profileId
       ? adminGate
@@ -216,6 +219,7 @@ export default async function PublicProfilePage({
     }),
     loadPublicReviewSummary(adminGate, businessProfile.id),
     loadPrimaryServiceArea(adminGate, businessProfile.id),
+    publicBookingV2EnabledForOwner(adminGate, profileId),
   ]);
 
   const ownerSubscriptionRow = (ownerProfileResult.data ??
@@ -253,6 +257,9 @@ export default async function PublicProfilePage({
 
   const publicReviewSummary = publicReviewSummaryFromLoadResult(
     publicReviewSummaryResult
+  );
+  const publicGoogleReviewCount = await countPublicGoogleReviews(
+    businessProfile.id
   );
   const publicServiceCoverage = primaryServiceArea
     ? toPublicServiceCoverage(primaryServiceArea)
@@ -304,7 +311,11 @@ export default async function PublicProfilePage({
       <ViewTracker businessSlug={slug} />
 
       {/* Structured Data for SEO */}
-      <StructuredData businessProfile={displayProfile} slug={slug} />
+      <StructuredData
+        businessProfile={displayProfile}
+        slug={slug}
+        bookingFlowLocale={bookingFlowLocale}
+      />
 
       <PublicBusinessProfileView
         businessProfile={displayProfile}
@@ -314,8 +325,10 @@ export default async function PublicProfilePage({
         publicFreeBookingsCapReached={publicFreeBookingsCapReached}
         bookingFlowLocale={bookingFlowLocale}
         publicReviewSummary={publicReviewSummary}
+        publicGoogleReviewCount={publicGoogleReviewCount}
         publicProfileSlug={slug}
         publicActiveSale={publicActiveSale}
+        useBookingV2={useBookingV2}
         hasPublicSubscriptionPlans={hasPublicSubscriptionPlans}
         initialTab={initialTab}
         membershipCheckoutCanceled={membershipCheckout === 'cancel'}

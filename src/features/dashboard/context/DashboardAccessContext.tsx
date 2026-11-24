@@ -2,26 +2,20 @@
 
 import {
   can,
-  permissionsForRole,
-  type DashboardAccessRole,
   type TeamPermission,
 } from '@/features/team/constants/teamPermissions';
 import React, { createContext, useContext, useMemo } from 'react';
 
-export type DashboardAccessValue = {
-  isOwner: boolean;
-  role: DashboardAccessRole;
-  permissions: TeamPermission[];
-};
+import {
+  NO_DASHBOARD_ACCESS,
+  type DashboardAccessValue,
+} from '../constants/dashboardAccess';
 
-const DEFAULT_ACCESS: DashboardAccessValue = {
-  isOwner: true,
-  role: 'owner',
-  permissions: permissionsForRole('owner'),
-};
+export type { DashboardAccessValue } from '../constants/dashboardAccess';
+export { NO_DASHBOARD_ACCESS } from '../constants/dashboardAccess';
 
 const DashboardAccessContext =
-  createContext<DashboardAccessValue>(DEFAULT_ACCESS);
+  createContext<DashboardAccessValue>(NO_DASHBOARD_ACCESS);
 
 export function DashboardAccessProvider({
   value,

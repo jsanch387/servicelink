@@ -13,11 +13,11 @@ Shop costs the owner records by hand. Phone and web read and write the same rows
 
 Nav sits in the Money group, after Invoices: Payments, Invoices, Expenses, Subscriptions. It requires onboarding and `expenses.read`. The page title is Expenses.
 
-`expenses.read` and `expenses.write` belong to the owner only. Members and managers do not see the page. Permission notes: `src/features/team/docs/TEAM_FEATURE.md`.
+`expenses.read` and `expenses.write` belong to the owner and the manager. Members and coordinators do not see the page. Permission notes: `src/features/team/docs/TEAM_FEATURE.md`.
 
 ## What the screen does
 
-The owner adds, edits, and removes expenses. The list is a table on desktop and cards on a phone. A row opens the edit form. Remove asks for confirmation, then hard-deletes the row.
+The owner or a manager adds, edits, and removes expenses. The list is a table on desktop and cards on a phone. A row opens the edit form. Remove asks for confirmation, then hard-deletes the row.
 
 Two summary cards sit above the list:
 

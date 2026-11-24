@@ -28,7 +28,7 @@ export function DashboardRevenueChart() {
     <DashboardGlassCard
       fillGridCell={false}
       padding="none"
-      className="flex h-full flex-col p-4"
+      className="flex h-full flex-col px-3 pt-4 pb-4 sm:px-4 sm:pt-5 sm:pb-5"
     >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
@@ -39,7 +39,7 @@ export function DashboardRevenueChart() {
             <p className="mt-0.5 truncate text-xs text-zinc-500">{dateRange}</p>
           )}
         </div>
-        <div className="w-[8.75rem] shrink-0">
+        <div className="w-[7.25rem] shrink-0 sm:w-[8.75rem]">
           <DropdownSelect
             value={range}
             onChange={next => {
@@ -51,7 +51,7 @@ export function DashboardRevenueChart() {
           />
         </div>
       </div>
-      <div className="relative mt-3 min-h-44 flex-1">
+      <div className="relative mt-8 min-h-44 flex-1">
         {loading ? (
           <div
             className="h-full min-h-44 animate-pulse rounded-xl bg-white/[0.04]"

@@ -89,7 +89,7 @@ describe('getWorkPhotoLightboxSrc', () => {
         'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/object/public/business_images/biz/1.jpg'
       )
     ).toBe(
-      'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/render/image/public/business_images/biz/1.jpg?width=1200&quality=70'
+      'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/render/image/public/business_images/biz/1.jpg?width=1200&resize=contain&quality=70'
     );
   });
 });
@@ -135,7 +135,7 @@ describe('toWorkPhotos', () => {
         thumbSrc:
           'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/render/image/public/business_images/c.jpg?width=640&height=640&resize=cover&quality=70',
         lightboxSrc:
-          'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/render/image/public/business_images/c.jpg?width=1200&quality=70',
+          'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/render/image/public/business_images/c.jpg?width=1200&resize=contain&quality=70',
       },
     ]);
   });

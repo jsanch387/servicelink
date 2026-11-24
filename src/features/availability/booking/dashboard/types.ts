@@ -5,7 +5,12 @@
 
 import type { BookingSource } from '@/features/booking-attribution/constants';
 
-export type AvailabilityBookingStatus = 'confirmed' | 'completed' | 'cancelled';
+export type AvailabilityBookingStatus =
+  | 'requested'
+  | 'confirmed'
+  | 'completed'
+  | 'cancelled'
+  | 'expired';
 
 export interface AvailabilityBookingAddress {
   street: string;
@@ -40,6 +45,9 @@ export interface BookingPaymentSummaryDisplay {
   totalAmountCents: number;
   paidOnlineAmountCents: number;
   remainingAmountCents: number;
+  /** Frozen tax on this job. Zero or omitted means the price had no tax. */
+  taxCents?: number;
+  taxRateBps?: number;
 }
 
 export interface AvailabilityBookingDisplay {
@@ -74,6 +82,8 @@ export interface AvailabilityBookingDisplay {
   /** Local wall start `HH:mm` (00/30) for slot generation and reschedule APIs. */
   startTimeHHmm: string;
   status: AvailabilityBookingStatus;
+  /** Owner practice appointment from onboarding. */
+  isTest?: boolean;
   address: AvailabilityBookingAddress;
   notes: string;
   createdAt: string;

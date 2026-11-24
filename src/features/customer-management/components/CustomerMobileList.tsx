@@ -14,7 +14,7 @@ export const CustomerMobileList: React.FC<CustomerMobileListProps> = ({
   onOpenDetail,
 }) => {
   return (
-    <div className="md:hidden space-y-3">
+    <div className="space-y-2 md:hidden">
       {customers.map(customer => (
         <CustomerMobileCard
           key={customer.id}

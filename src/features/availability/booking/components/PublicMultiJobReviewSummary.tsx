@@ -45,12 +45,16 @@ export type PublicMultiJobReviewSummaryProps = {
   saleEstimatedTotalCents?: number;
   saleDiscountCents?: number;
   saleAppliesLine?: string | null;
+  salesTaxCents?: number;
+  salesTaxLabel?: string | null;
   canAddAnotherJob?: boolean;
   onAddAnotherJob?: () => void;
   addAnotherLabel?: string;
   canRemoveJob?: boolean;
   onRemoveJob?: (localId: string) => void;
   removeLabel?: string;
+  /** Request flow: the price is not a charge yet. Tax line stays. */
+  estimateTotal?: boolean;
 };
 
 /**
@@ -69,12 +73,15 @@ export function PublicMultiJobReviewSummary({
   saleEstimatedTotalCents,
   saleDiscountCents,
   saleAppliesLine,
+  salesTaxCents,
+  salesTaxLabel,
   canAddAnotherJob = false,
   onAddAnotherJob,
   addAnotherLabel,
   canRemoveJob = false,
   onRemoveJob,
   removeLabel,
+  estimateTotal = false,
 }: PublicMultiJobReviewSummaryProps) {
   const ui = publicBookingUi(bookingFlowLocale);
   const sl = ui.serviceLocation;
@@ -96,9 +103,16 @@ export function PublicMultiJobReviewSummary({
     saleEstimatedTotalCents != null &&
     saleEstimatedTotalCents < saleSubtotalCents;
 
-  const visitTotalCents = showSalePricing
-    ? saleEstimatedTotalCents!
-    : visitSubtotalCents;
+  const totalLabel = estimateTotal
+    ? ui.common.estimatedTotal
+    : jobs.length > 1
+      ? ui.common.visitTotal
+      : ui.common.total;
+  const showSalesTax =
+    salesTaxCents != null && salesTaxCents > 0 && Boolean(salesTaxLabel);
+  const visitTotalCents =
+    (showSalePricing ? saleEstimatedTotalCents! : visitSubtotalCents) +
+    (showSalesTax ? salesTaxCents! : 0);
 
   const dateFormatted = new Date(
     `${scheduledDateYmd}T12:00:00`
@@ -244,10 +258,16 @@ export function PublicMultiJobReviewSummary({
               <div className="h-px bg-white/10" aria-hidden />
             </>
           ) : null}
+          {showSalesTax ? (
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="text-zinc-400">{salesTaxLabel}</span>
+              <span className="tabular-nums text-zinc-300">
+                {formatCatalogPriceCents(salesTaxCents!)}
+              </span>
+            </div>
+          ) : null}
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-white">
-              {jobs.length > 1 ? ui.common.visitTotal : ui.common.total}
-            </p>
+            <p className="text-sm font-semibold text-white">{totalLabel}</p>
             <p className="text-lg font-semibold tabular-nums text-white">
               {formatCatalogPriceCents(visitTotalCents)}
             </p>

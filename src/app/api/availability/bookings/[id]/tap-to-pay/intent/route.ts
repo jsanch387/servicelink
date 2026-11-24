@@ -88,6 +88,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
+    const chargeCents = amountDue.amountDueCents + parsed.body.tipCents;
+
     const terminalResult = await ensureTerminalLocation({
       supabase: auth.supabase,
       businessId: auth.business.id,
@@ -117,7 +119,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const intentResult = await createBookingTapToPayIntent({
       ctx: ctxResult.ctx,
       sessionFees: parsed.body.sessionFees,
-      amountCents: amountDue.amountDueCents,
+      amountCents: chargeCents,
+      tipCents: parsed.body.tipCents,
     });
     if (!intentResult.ok) {
       return NextResponse.json(
@@ -131,6 +134,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       paymentIntentId: intentResult.paymentIntentId,
       clientSecret: intentResult.clientSecret,
       amountCents: intentResult.amountCents,
+      tipCents: parsed.body.tipCents,
       currency: intentResult.currency,
       terminalLocationId: terminalResult.terminalLocationId,
       stripeAccountId: ctxResult.ctx.stripeAccountId,

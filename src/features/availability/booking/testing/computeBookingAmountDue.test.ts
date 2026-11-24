@@ -262,6 +262,72 @@ describe('computeBookingAmountDue', () => {
     expect(result.adjustedTotalCents).toBe(390_10);
     expect(result.amountDueCents).toBe(0);
   });
+
+  it('adds frozen sales tax once, after the discount', () => {
+    const result = computeBookingAmountDue({
+      servicePriceCents: 10_000,
+      addonDetails: [],
+      sessionFees: [],
+      paidOnlineAmountCents: 5_500,
+      sessionPayment: undefined,
+      taxCents: 1_000,
+      taxRateBps: 1000,
+    });
+
+    expect(result.taxCents).toBe(1_000);
+    expect(result.adjustedTotalCents).toBe(11_000);
+    expect(result.amountDueCents).toBe(5_500);
+  });
+
+  it('recomputes tax on the price after a sale, not the pre-sale tax', () => {
+    const result = computeBookingAmountDue({
+      servicePriceCents: 17_500,
+      addonDetails: [],
+      sessionFees: [],
+      paidOnlineAmountCents: 0,
+      sessionPayment: { method: 'cash', amountCents: 16_144 },
+      discount: {
+        discountSource: 'sale',
+        discountType: 'percentage',
+        discountValue: 10,
+        discountCents: 1_750,
+      },
+      taxCents: 438,
+      taxRateBps: 250,
+    });
+
+    expect(result.discountCents).toBe(1_750);
+    expect(result.taxCents).toBe(394);
+    expect(result.adjustedTotalCents).toBe(16_144);
+    expect(result.amountDueCents).toBe(0);
+  });
+
+  it('reduces the amount due by a payment-time discount without changing the booked total', () => {
+    const result = computeBookingAmountDue({
+      servicePriceCents: 18500,
+      addonDetails: [],
+      sessionFees: [
+        { kind: 'fee', label: 'Travel', amountCents: 2000 },
+        { kind: 'discount', label: 'Deposit', amountCents: 5000 },
+      ],
+      paidOnlineAmountCents: 0,
+      sessionPayment: { method: 'cash', amountCents: 15500 },
+    });
+
+    expect(result.sessionFeeCents).toBe(2000);
+    expect(result.sessionDiscountCents).toBe(5000);
+    expect(result.adjustedTotalCents).toBe(20500);
+    expect(result.discountCents).toBe(0);
+    expect(result.amountDueCents).toBe(0);
+    expect(
+      computeBookingRemainingAmountCents({
+        totalAmountCents: result.adjustedTotalCents,
+        paidOnlineCents: 0,
+        sessionDiscountCents: result.sessionDiscountCents,
+        sessionPayCents: 15500,
+      })
+    ).toBe(0);
+  });
 });
 
 describe('computeBookingRemainingAmountCents', () => {
@@ -271,6 +337,16 @@ describe('computeBookingRemainingAmountCents', () => {
         totalAmountCents: 23000,
         paidOnlineCents: 0,
         sessionPayCents: 23000,
+      })
+    ).toBe(0);
+  });
+
+  it('stays at 0 when the captured tap includes a tip above the job total', () => {
+    expect(
+      computeBookingRemainingAmountCents({
+        totalAmountCents: 10000,
+        paidOnlineCents: 0,
+        sessionPayCents: 12000,
       })
     ).toBe(0);
   });

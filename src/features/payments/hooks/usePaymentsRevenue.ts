@@ -11,6 +11,8 @@ export interface PaymentsRevenueData {
   to: string;
   totalCents: number;
   totalLabel: string;
+  taxCollectedCents: number;
+  taxCollectedLabel: string;
   previousTotalCents: number;
   changePercent: number | null;
   jobsPaid: number;
@@ -72,6 +74,8 @@ export function usePaymentsRevenue(args: {
           to: body.to ?? '',
           totalCents: body.totalCents ?? 0,
           totalLabel: body.totalLabel ?? '$0',
+          taxCollectedCents: body.taxCollectedCents ?? 0,
+          taxCollectedLabel: body.taxCollectedLabel ?? '$0.00',
           previousTotalCents: body.previousTotalCents ?? 0,
           changePercent: body.changePercent ?? null,
           jobsPaid: body.jobsPaid ?? 0,

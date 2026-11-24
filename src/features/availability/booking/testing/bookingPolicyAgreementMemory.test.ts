@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   clearPublicBookingPolicyAgreementMemory,
   hasAgreedToPublicBookingPolicy,
@@ -10,11 +10,21 @@ describe('bookingPolicyAgreementMemory', () => {
     clearPublicBookingPolicyAgreementMemory();
   });
 
-  it('remembers agree for this page load only, keyed by slug', () => {
+  it('remembers agree for this tab, keyed by slug', () => {
     expect(hasAgreedToPublicBookingPolicy('acme-detail')).toBe(false);
     markPublicBookingPolicyAgreed('acme-detail');
     expect(hasAgreedToPublicBookingPolicy('acme-detail')).toBe(true);
     expect(hasAgreedToPublicBookingPolicy('other-shop')).toBe(false);
+  });
+
+  it('keeps the agreement after a reload in the same tab', async () => {
+    const first = await import('../utils/bookingPolicyAgreementMemory');
+    first.markPublicBookingPolicyAgreed('acme-detail');
+    vi.resetModules();
+    const next = await import('../utils/bookingPolicyAgreementMemory');
+    expect(next.hasAgreedToPublicBookingPolicy('acme-detail')).toBe(true);
+    expect(next.hasAgreedToPublicBookingPolicy('other-shop')).toBe(false);
+    next.clearPublicBookingPolicyAgreementMemory();
   });
 
   it('ignores a blank slug', () => {

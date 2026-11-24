@@ -110,6 +110,31 @@ describe('BookingPaymentSuccess', () => {
     expect(screen.getByRole('link', { name: /back to profile/i })).toBeTruthy();
   });
 
+  it('shows the tax line between the service price and the total', () => {
+    render(
+      <BookingPaymentSuccess
+        {...defaultProps}
+        servicePriceCents={85_00}
+        selectedAddOns={[]}
+        taxCents={191}
+        taxRateBps={225}
+        totalAmountCents={86_91}
+        paidOnlineAmountCents={10_00}
+        remainingAmountCents={76_91}
+      />
+    );
+
+    expect(screen.getByText('Tax (2.25%)')).toBeTruthy();
+    expect(screen.getByText('$1.91')).toBeTruthy();
+    expect(screen.getByText('$86.91')).toBeTruthy();
+    expect(screen.getByText('$85.00')).toBeTruthy();
+  });
+
+  it('hides the tax line when the booking was not taxed', () => {
+    render(<BookingPaymentSuccess {...defaultProps} />);
+    expect(screen.queryByText(/Tax \(/)).toBeNull();
+  });
+
   it('links back to the public profile slug', () => {
     render(<BookingPaymentSuccess {...defaultProps} />);
     const link = screen.getByRole('link', { name: /back to profile/i });

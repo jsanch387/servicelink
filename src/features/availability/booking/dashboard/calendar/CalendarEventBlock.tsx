@@ -1,5 +1,6 @@
 'use client';
 
+import { useOwnerTestGuidePhase } from '@/features/onboarding-v3/ownerTestGuide';
 import { calendarAssigneeLabel } from '../utils/bookingAssigneeBoardLabel';
 import { formatMinutesLabel } from './dateUtils';
 import { eventChipClass } from './eventStyles';
@@ -32,6 +33,10 @@ export function CalendarEventBlock({
     heightPx ?? Math.max(32, ((endMin - startMin) / 60) * pixelsPerHour);
   const widthPct = 100 / event.colCount;
   const leftPct = event.col * widthPct;
+  const guideThisJob =
+    useOwnerTestGuidePhase() !== 'complete' &&
+    event.booking?.isTest === true &&
+    event.booking.status === 'confirmed';
   const clickable = Boolean(onSelect);
   const compact = height <= 36;
   const assignee = calendarAssigneeLabel(event.assigneeLabel);
@@ -58,6 +63,12 @@ export function CalendarEventBlock({
         width: `calc(${widthPct}% - 6px)`,
       }}
       title={`${event.title} · ${meta}`}
+      data-owner-test-guide={guideThisJob ? 'job' : undefined}
+      data-owner-test-copy={
+        guideThisJob
+          ? 'Tap your appointment, then mark it complete.'
+          : undefined
+      }
     >
       <p className="truncate text-[12px] font-semibold leading-tight">
         {title}

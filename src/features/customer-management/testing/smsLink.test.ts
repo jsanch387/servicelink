@@ -1,4 +1,7 @@
-import { buildSmsHref } from '@/features/customer-management/utils/smsLink';
+import {
+  buildSmsHref,
+  buildSmsOpenHref,
+} from '@/features/customer-management/utils/smsLink';
 import { describe, expect, it } from 'vitest';
 
 describe('[Core] SMS deep link helper', () => {
@@ -18,6 +21,11 @@ describe('[Core] SMS deep link helper', () => {
       'Mozilla/5.0 (Linux; Android 14)'
     );
     expect(href).toContain('sms:+15551112222?body=');
+  });
+
+  it('opens the messages app with the number only', () => {
+    expect(buildSmsOpenHref('+1 (555) 111-2222')).toBe('sms:+15551112222');
+    expect(buildSmsOpenHref('')).toBeNull();
   });
 
   it('returns null when phone is missing/invalid', () => {

@@ -28,7 +28,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         />
 
         {pageTitle ? (
-          <p className="hidden min-w-0 truncate text-sm font-medium tracking-tight text-zinc-300 sm:block">
+          <p className="min-w-0 truncate text-base font-semibold tracking-tight text-white">
             {pageTitle}
           </p>
         ) : null}

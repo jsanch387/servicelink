@@ -1,7 +1,9 @@
 import { DashboardWrapper } from '@/features/dashboard/components/DashboardWrapper';
-import type { DashboardAccessValue } from '@/features/dashboard/context/DashboardAccessContext';
+import {
+  NO_DASHBOARD_ACCESS,
+  type DashboardAccessValue,
+} from '@/features/dashboard/constants/dashboardAccess';
 import { isOwnerEmailAllowedForMembershipsRollout } from '@/features/subscriptions/config/membershipsRolloutAllowlist';
-import { permissionsForRole } from '@/features/team/constants/teamPermissions';
 import { lookupRemovedMembership } from '@/features/team/server/lookupRemovedMembership';
 import { resolveDashboardContext } from '@/features/team/server/resolveDashboardContext';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
@@ -55,11 +57,7 @@ export default async function DashboardLayout({
         role: access.context.role,
         permissions: access.context.permissions,
       }
-    : {
-        isOwner: true,
-        role: 'owner',
-        permissions: permissionsForRole('owner'),
-      };
+    : NO_DASHBOARD_ACCESS;
   const hasShopAccess =
     isOnboardingCompleted ||
     (access?.ok === true && access.context.isOwner === false);

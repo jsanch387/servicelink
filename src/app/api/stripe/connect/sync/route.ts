@@ -11,7 +11,7 @@
 import { getHasProAccessForPayments } from '@/features/payments/server/getHasProAccessForPayments';
 import { syncConnectPaymentAccountForBusiness } from '@/features/payments/server/syncConnectPaymentAccount';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextRequest, NextResponse } from 'next/server';
 
 const LOG = '[stripe:connect-sync]';
@@ -43,6 +43,17 @@ export async function POST(request: NextRequest) {
     }
     const { user, supabase } = auth;
 
+    const businessResolved = await requireBusinessPermission(
+      supabase,
+      'payments.manage'
+    );
+    if (!businessResolved.ok) {
+      return NextResponse.json(
+        { success: false, error: businessResolved.error },
+        { status: businessResolved.status }
+      );
+    }
+
     const hasPro = await getHasProAccessForPayments(supabase, user.id);
     if (!hasPro) {
       return NextResponse.json(
@@ -51,14 +62,6 @@ export async function POST(request: NextRequest) {
           error: 'Pro subscription required to sync payment account',
         },
         { status: 403 }
-      );
-    }
-
-    const businessResolved = await resolveCurrentBusinessId(supabase);
-    if (!businessResolved.ok) {
-      return NextResponse.json(
-        { success: false, error: businessResolved.error },
-        { status: businessResolved.status }
       );
     }
 

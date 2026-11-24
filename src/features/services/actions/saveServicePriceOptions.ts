@@ -1,52 +1,30 @@
 'use server';
 
-import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
+import { requireShopPermission } from '@/features/team/server/requireShopPermission';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { saveServicePriceOptions as saveServicePriceOptionsApi } from '../api/saveServicePriceOptions';
 import type {
   SaveServicePriceOptionsResult,
   ServicePriceOptionSaveInput,
 } from '../types/services';
-import { hasPriceOptionsAccess } from '../utils/priceOptionsAccess';
 
 export async function saveServicePriceOptionsAction(
   serviceId: string,
   options: ServicePriceOptionSaveInput[]
 ): Promise<SaveServicePriceOptionsResult> {
-  const supabase = await createSupabaseServerClient();
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return {
-      success: false,
-      error: 'You must be signed in to update service price options.',
-    };
+  const shop = await requireShopPermission('services.write');
+  if (!shop.ok) {
+    return { success: false, error: shop.error };
   }
 
-  const stateResult = await getOnboardingState(user.id, supabase);
-  if (!stateResult.success || !stateResult.data) {
-    return {
-      success: false,
-      error: 'Could not load your business.',
-    };
-  }
+  const supabase = shop.supabase;
+  const businessProfile = { id: shop.businessId };
 
-  const { status, businessProfile } = stateResult.data;
-  if (status !== 'completed' || !businessProfile?.id) {
-    return {
-      success: false,
-      error: 'Business profile is not set up.',
-    };
-  }
-
-  const canUsePriceOptions = await hasPriceOptionsAccess({
-    supabase,
-    userId: user.id,
-  });
+  const canUsePriceOptions = await ownerHasProAccessForBusiness(
+    createSupabaseAdminClient(),
+    shop.businessId
+  );
 
   if (!canUsePriceOptions) {
     return {

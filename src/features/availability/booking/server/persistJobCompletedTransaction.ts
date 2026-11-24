@@ -18,6 +18,7 @@ import {
   type BookingAmountDueResult,
 } from './computeBookingAmountDue';
 import { generateInvoicePublicToken } from './generateInvoicePublicToken';
+import { salesTaxEmailLine } from '@/features/availability/booking/utils/publicBookingSalesTax';
 import { generateInvoiceShortCode } from './generateInvoiceShortCode';
 import type {
   JobCompletedRequestBody,
@@ -56,6 +57,11 @@ export interface PersistJobCompletedInput {
   workHandoffStatus: WorkHandoffStatus;
   body: JobCompletedRequestBody;
   amountDue: BookingAmountDueResult;
+  /**
+   * Customer tip included in the captured Tap to Pay amount.
+   * The amount-due result stays the job balance and does not include this.
+   */
+  tipCents?: number;
   requestId: string;
 }
 
@@ -135,6 +141,7 @@ async function replaceSessionFeeLines(
   const rows = sessionFees.map((fee, index) => ({
     booking_id: bookingId,
     business_id: businessId,
+    kind: fee.kind === 'discount' ? 'discount' : 'fee',
     label: fee.label,
     amount_cents: fee.amountCents,
     source: SESSION_FEE_SOURCE,
@@ -157,21 +164,25 @@ async function upsertBookingPaymentsForCompletion(
     amountDue: BookingAmountDueResult;
     sessionPayment: JobCompletedRequestBody['sessionPayment'];
     existing: BookingPaymentsRow | null;
+    tipCents: number;
   }
 ): Promise<void> {
   const now = new Date().toISOString();
   const sessionFeesTotal = args.amountDue.sessionFeeCents;
+  const sessionDiscountsTotal = args.amountDue.sessionDiscountCents ?? 0;
   const totalAmountCents = args.amountDue.adjustedTotalCents;
   const paidOnline = args.amountDue.paidOnlineCents;
   const sessionPay = args.amountDue.sessionPayCents;
   const remainingAmountCents = computeBookingRemainingAmountCents({
     totalAmountCents,
     paidOnlineCents: paidOnline,
+    sessionDiscountCents: sessionDiscountsTotal,
     sessionPayCents: sessionPay,
   });
 
   const patch: Record<string, unknown> = {
     session_fees_total_cents: sessionFeesTotal,
+    session_discounts_total_cents: sessionDiscountsTotal,
     total_amount_cents: totalAmountCents,
     remaining_amount_cents: remainingAmountCents,
     payment_status: 'paid_full',
@@ -188,6 +199,7 @@ async function upsertBookingPaymentsForCompletion(
     }
     if (args.sessionPayment.method === 'tap_to_pay') {
       patch.provider = 'stripe';
+      patch.tip_cents = args.tipCents;
     }
   }
 
@@ -317,6 +329,7 @@ export async function persistJobCompletedTransaction(
   });
 
   const existingToken = await loadExistingInvoiceToken(admin, bookingId);
+  // A replay must not replace fee lines or zero the payment-time discounts.
   if (existingToken) {
     return {
       ok: true,
@@ -363,6 +376,9 @@ export async function persistJobCompletedTransaction(
       ? reviewInvite.rawReviewToken
       : null;
 
+  const receiptTipCents =
+    body.sessionPayment?.method === 'tap_to_pay' ? (input.tipCents ?? 0) : 0;
+
   const snapshot = buildInvoiceSnapshot({
     business: {
       id: businessId,
@@ -374,6 +390,7 @@ export async function persistJobCompletedTransaction(
     sessionFees: body.sessionFees ?? [],
     amountDue,
     sessionPaymentMethod: body.sessionPayment?.method,
+    tipCents: receiptTipCents,
     reviewRawToken,
     coveredByMembership:
       (payments?.payment_method_selected ?? '').trim() === 'membership',
@@ -396,6 +413,10 @@ export async function persistJobCompletedTransaction(
       amountDue,
       sessionPayment: body.sessionPayment,
       existing: payments,
+      tipCents:
+        body.sessionPayment?.method === 'tap_to_pay'
+          ? (input.tipCents ?? 0)
+          : 0,
     });
     if (
       body.sessionPayment?.method === 'tap_to_pay' &&
@@ -498,6 +519,7 @@ export async function persistJobCompletedTransaction(
     startTime: snapshot.booking.startTime,
     totalCents: snapshot.totals.totalCents,
     subtotalCents: snapshot.totals.subtotalCents,
+    tipCents: snapshot.totals.tipCents,
     discount:
       discountLine != null &&
       typeof snapshot.totals.discountCents === 'number' &&
@@ -507,6 +529,10 @@ export async function persistJobCompletedTransaction(
             discountCents: snapshot.totals.discountCents,
           }
         : null,
+    salesTax: salesTaxEmailLine(
+      snapshot.totals.taxRateBps ?? 0,
+      snapshot.totals.taxCents ?? 0
+    ),
     reviewUrl: snapshot.reviewUrl,
     coveredByMembership: snapshot.coveredByMembership === true,
     jobs: snapshot.jobs?.map(job => ({

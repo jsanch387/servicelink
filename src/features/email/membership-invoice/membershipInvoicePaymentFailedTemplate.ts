@@ -32,6 +32,11 @@ export function buildMembershipInvoicePaymentFailedPlainText(
     `Plan: ${plan}`,
     `Schedule: ${payload.cadenceLabel.trim() || 'Recurring'}`,
     `Period: ${payload.periodLabel.trim() || '—'}`,
+    ...(payload.salesTax && payload.salesTax.taxCents > 0
+      ? [
+          `${payload.salesTax.label}: ${formatInvoiceMoney(payload.salesTax.taxCents)}`,
+        ]
+      : []),
     `Attempted: ${payload.eventDateLabel.trim() || '—'}`,
     '',
     'Update payment method:',
@@ -60,6 +65,7 @@ export function buildMembershipInvoicePaymentFailedHtml(
     periodLabel: payload.periodLabel,
     eventDateLabel: payload.eventDateLabel,
     eventDateLabelKey: 'Attempted',
+    salesTax: payload.salesTax,
   });
 
   return `

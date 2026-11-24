@@ -76,7 +76,12 @@ export interface OwnerSubscriber {
   periodVisitTime?: string | null;
 }
 
-export type OwnerCadencePresetId = 'weekly' | 'biweekly' | 'monthly';
+export type OwnerCadencePresetId =
+  | 'weekly'
+  | 'biweekly'
+  | 'monthly'
+  | 'every3Months'
+  | 'every6Months';
 
 export interface OwnerCadencePreset {
   id: OwnerCadencePresetId;
@@ -103,6 +108,18 @@ export const OWNER_CADENCE_PRESETS: OwnerCadencePreset[] = [
     label: 'Monthly',
     intervalUnit: 'month',
     intervalCount: 1,
+  },
+  {
+    id: 'every3Months',
+    label: 'Every 3 months',
+    intervalUnit: 'month',
+    intervalCount: 3,
+  },
+  {
+    id: 'every6Months',
+    label: 'Every 6 months',
+    intervalUnit: 'month',
+    intervalCount: 6,
   },
 ];
 

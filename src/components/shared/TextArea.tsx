@@ -1,4 +1,5 @@
 import { forwardRef, type ReactNode } from 'react';
+import { fieldLabelClassName, fieldSurfaceClassName } from './fieldStyles';
 
 export interface TextAreaProps {
   label?: string;
@@ -18,6 +19,10 @@ export interface TextAreaProps {
   maxLength?: number;
   /** When true, `maxLength` is enforced but the x/y counter is hidden. */
   hideCharCount?: boolean;
+  /**
+   * Kept so existing callers compile. Text areas use the same field chrome as `Input`.
+   */
+  size?: 'default' | 'compact';
 }
 
 export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
@@ -47,7 +52,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
     return (
       <div className={`w-full ${className}`}>
         {label && (
-          <label className="block text-left text-sm font-medium text-gray-200 mb-1.5">
+          <label className={fieldLabelClassName}>
             {label}
             {required && <span className="text-red-400 ml-1">*</span>}
           </label>
@@ -64,11 +69,13 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
           rows={rows}
           maxLength={maxLength}
           className={`
-          w-full px-4 py-3.5 sm:px-5 sm:py-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-base sm:text-sm font-medium
-          focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 focus:bg-white/8
-          transition-all duration-200 resize-none touch-manipulation scrollbar-dark
-          ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/10'}
-          ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-white/20 active:bg-white/8'}
+          w-full px-3 py-2 text-base text-white placeholder:text-white/40 sm:text-sm
+          touch-manipulation scrollbar-dark resize-y
+          ${fieldSurfaceClassName}
+          ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/15'}
+          ${
+            disabled ? 'cursor-not-allowed opacity-50' : 'hover:border-white/25'
+          }
           ${inputClassName}
         `}
         />

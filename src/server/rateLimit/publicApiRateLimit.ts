@@ -128,6 +128,14 @@ const invoiceCheckoutIpCodeRl: { current: Ratelimit | null | undefined } = {
 const publicBookingsIpSlugRl: { current: Ratelimit | null | undefined } = {
   current: undefined,
 };
+const bookingCustomerLookupIpRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const bookingCustomerLookupIpSlugRl: {
+  current: Ratelimit | null | undefined;
+} = {
+  current: undefined,
+};
 const membershipManageLinkIpRl: { current: Ratelimit | null | undefined } = {
   current: undefined,
 };
@@ -588,6 +596,38 @@ export async function assertPublicBookingsRateLimits(
     '1 h'
   );
   const r2 = await consume(slugLimiter, `ip:${ip}:slug:${slug}`, 15, MS_HOUR);
+  if (!r2.ok) return tooManyRequests(r2.reset);
+
+  return null;
+}
+
+/**
+ * GET /api/public/bookings/returning-customer — returns contact details for a
+ * phone that already belongs to this business. Keep it tighter than profile reads.
+ */
+export async function assertPublicBookingCustomerLookupRateLimits(
+  request: NextRequest,
+  businessSlug: string
+): Promise<NextResponse | null> {
+  const ip = getClientIp(request);
+  const slug = safeSlugSegment(businessSlug);
+
+  const ipLimiter = createLimiter(
+    bookingCustomerLookupIpRl,
+    'public_api:booking_customer_lookup:ip',
+    40,
+    '1 h'
+  );
+  const r1 = await consume(ipLimiter, `ip:${ip}`, 40, MS_HOUR);
+  if (!r1.ok) return tooManyRequests(r1.reset);
+
+  const slugLimiter = createLimiter(
+    bookingCustomerLookupIpSlugRl,
+    'public_api:booking_customer_lookup:ipslug',
+    20,
+    '1 h'
+  );
+  const r2 = await consume(slugLimiter, `ip:${ip}:slug:${slug}`, 20, MS_HOUR);
   if (!r2.ok) return tooManyRequests(r2.reset);
 
   return null;

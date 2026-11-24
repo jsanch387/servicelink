@@ -3,6 +3,7 @@ import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelper
 import { PaymentsTransactionsPage } from '@/features/payments';
 import { getBusinessStripeConnectReady } from '@/features/payments/server/getBusinessStripeConnectReady';
 import { getHasProAccessForPayments } from '@/features/payments/server/getHasProAccessForPayments';
+import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -19,6 +20,8 @@ export default async function DashboardPaymentsTransactionsPage() {
   if (userError || !user) {
     redirect(ROUTES.AUTH.LOGIN);
   }
+
+  await requireDashboardPageAccess('payments.manage');
 
   const stateResult = await getOnboardingState(user.id, supabase);
   if (!stateResult.success || stateResult.data?.status !== 'completed') {

@@ -14,6 +14,7 @@ const { sendMock, getResendClientMock, getFromEmailMock } = vi.hoisted(() => ({
 vi.mock('@/features/email/services/resendClient', () => ({
   getResendClient: getResendClientMock,
   getFromEmail: getFromEmailMock,
+  MARK_FROM_EMAIL: 'Mark from ServiceLink <mark@team.myservicelink.app>',
 }));
 
 describe('welcome live email template', () => {
@@ -31,7 +32,7 @@ describe('welcome live email template', () => {
     );
     expect(html).not.toContain('/book');
     expect(html).toContain("You're live");
-    expect(html).toContain('Schedule an appointment');
+    expect(html).not.toContain('Schedule an appointment');
     expect(html).toContain('Facebook groups and Nextdoor');
     expect(html).toContain(
       'Post a before-and-after and put your link under it.'
@@ -51,7 +52,7 @@ describe('welcome live email template', () => {
     );
     expect(html).toContain('https://myservicelink.app/privacy');
     expect(html).toContain('https://myservicelink.app/terms');
-    expect(html).toContain('experience the full system');
+    expect(html).toContain('Your link');
   });
 
   it('escapes/encodes untrusted slug content', () => {
@@ -105,7 +106,7 @@ describe('sendWelcomeLiveEmail', () => {
     expect(sendMock).toHaveBeenCalledTimes(1);
     expect(sendMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: 'ServiceLink <hello@myservicelink.app>',
+        from: 'Mark from ServiceLink <mark@team.myservicelink.app>',
         to: ['owner@example.com'],
         subject: WELCOME_LIVE_SUBJECT,
       })

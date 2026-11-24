@@ -1,25 +1,29 @@
 /**
  * PATCH /api/availability/bookings/[id]
  *
- * Owner-only (RLS): update status (completed / cancelled) or reschedule
- * (scheduledDate + startTime for confirmed bookings). A real slot change
- * emails and texts the customer. Web and mobile share this handler.
+ * Requires bookings.write. Status and reschedule writes use the service-role
+ * client, scoped to the caller's shop. A real slot change emails and texts
+ * the customer. Web and mobile share this handler.
  *
  * DELETE /api/availability/bookings/[id]
  *
- * Owner-only (RLS): permanently remove the booking.
+ * Requires bookings.delete. The delete uses the service-role client, scoped
+ * to the caller's shop.
  *
  * Auth: `getAuthenticatedUser` (mobile Bearer or web cookie) — same as `/actions`.
  */
 
 import { mapBookingRowToDisplay } from '@/features/availability/booking/dashboard/utils/mapBookingRowToDisplay';
 import { attachPaymentSummaryToDisplay } from '@/features/availability/booking/dashboard/utils/attachPaymentSummaryToDisplay';
+import { approveRequestedBooking } from '@/features/availability/services/approveRequestedBooking';
+import { denyRequestedBooking } from '@/features/availability/services/denyRequestedBooking';
 import {
   deleteBookingForOwner,
   rescheduleBookingForOwner,
   updateBookingStatus,
   type BookingStatusUpdate,
 } from '@/features/availability/services/bookingService';
+import { syncBookingPaymentTaxAfterDiscount } from '@/features/availability/booking/server/syncBookingPaymentTaxAfterDiscount';
 import { completeBookingWithSideEffects } from '@/features/availability/services/completeBookingWithSideEffects';
 import { getReviewInviteRequestId } from '@/features/reviews/server/reviewInviteRouteLog';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
@@ -39,7 +43,7 @@ async function loadPaymentRowForBooking(
   const { data } = await (supabase as any)
     .from('booking_payments')
     .select(
-      'payment_status, payment_method_selected, currency, total_amount_cents, paid_online_amount_cents, remaining_amount_cents'
+      'payment_status, payment_method_selected, currency, total_amount_cents, paid_online_amount_cents, remaining_amount_cents, tax_cents, tax_rate_bps'
     )
     .eq('booking_id', bookingId)
     .maybeSingle();
@@ -51,6 +55,8 @@ async function loadPaymentRowForBooking(
     total_amount_cents: number | null;
     paid_online_amount_cents: number | null;
     remaining_amount_cents: number | null;
+    tax_cents?: number | null;
+    tax_rate_bps?: number | null;
   } | null;
 }
 
@@ -105,7 +111,7 @@ export async function PATCH(
         {
           success: false,
           error:
-            'Provide status ("completed" | "cancelled") or scheduledDate + startTime to reschedule.',
+            'Provide status ("completed" | "cancelled" | "confirmed") or scheduledDate + startTime to reschedule.',
         },
         { status: 400 }
       );
@@ -129,6 +135,7 @@ export async function PATCH(
     }
 
     const { businessId } = authResult;
+    const admin = createSupabaseAdminClient();
 
     if (hasReschedule) {
       const d = scheduledDate!.trim();
@@ -146,7 +153,7 @@ export async function PATCH(
         );
       }
 
-      const result = await rescheduleBookingForOwner(supabase, {
+      const result = await rescheduleBookingForOwner(admin, {
         businessId,
         bookingId: bookingId.trim(),
         scheduledDate: d,
@@ -160,10 +167,8 @@ export async function PATCH(
         );
       }
 
-      const payment = await loadPaymentRowForBooking(
-        supabase,
-        bookingId.trim()
-      );
+      await syncBookingPaymentTaxAfterDiscount(result.row, admin);
+      const payment = await loadPaymentRowForBooking(admin, bookingId.trim());
       const display = attachPaymentSummaryToDisplay(
         mapBookingRowToDisplay(result.row),
         result.row,
@@ -176,11 +181,47 @@ export async function PATCH(
       });
     }
 
+    if (status === 'confirmed') {
+      const approved = await approveRequestedBooking(admin, {
+        businessId,
+        bookingId: bookingId.trim(),
+      });
+      if (!approved.ok) {
+        return NextResponse.json(
+          { success: false, error: approved.error },
+          { status: approved.httpStatus }
+        );
+      }
+      return NextResponse.json({
+        success: true,
+        data: mapBookingRowToDisplay(approved.row),
+      });
+    }
+
     if (!status || !ALLOWED_STATUSES.includes(status as BookingStatusUpdate)) {
       return NextResponse.json(
         { success: false, error: 'Status must be "completed" or "cancelled"' },
         { status: 400 }
       );
+    }
+
+    if (status === 'cancelled') {
+      const denied = await denyRequestedBooking(admin, {
+        businessId,
+        bookingId: bookingId.trim(),
+      });
+      if (denied.handled) {
+        if (!denied.ok) {
+          return NextResponse.json(
+            { success: false, error: denied.error },
+            { status: denied.httpStatus }
+          );
+        }
+        return NextResponse.json({
+          success: true,
+          data: mapBookingRowToDisplay(denied.row),
+        });
+      }
     }
 
     // Completion runs the shared lifecycle path (status + maintenance + the
@@ -190,19 +231,21 @@ export async function PATCH(
       status === 'completed'
         ? ((
             await completeBookingWithSideEffects(
-              supabase as SupabaseClient<Database>,
-              createSupabaseAdminClient(),
+              admin,
+              admin,
               bookingId,
               {
                 requestId: getReviewInviteRequestId(request),
                 source: 'web_patch',
-              }
+              },
+              businessId
             )
           )?.booking ?? null)
         : await updateBookingStatus(
-            supabase as SupabaseClient<Database>,
+            admin,
             bookingId,
-            status as BookingStatusUpdate
+            status as BookingStatusUpdate,
+            businessId
           );
 
     if (!updated) {
@@ -246,16 +289,18 @@ export async function DELETE(
       );
     }
 
-    const authResult = await getWritableBusinessId(auth.supabase);
-    if ('status' in authResult) {
+    const resolved = await requireBusinessPermission(
+      auth.supabase,
+      'bookings.delete'
+    );
+    if (!resolved.ok) {
       return NextResponse.json(
-        { success: false, error: authResult.error },
-        { status: authResult.status }
+        { success: false, error: resolved.error },
+        { status: resolved.status }
       );
     }
-
-    const result = await deleteBookingForOwner(auth.supabase, {
-      businessId: authResult.businessId,
+    const result = await deleteBookingForOwner(createSupabaseAdminClient(), {
+      businessId: resolved.businessId,
       bookingId: bookingId.trim(),
     });
 

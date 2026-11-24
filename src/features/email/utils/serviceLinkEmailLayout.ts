@@ -128,10 +128,13 @@ export function serviceLinkEmailServiceAndPricingContent(params: {
   totalLabel?: string | null;
   /** Sale/promo line shown above the appointment total. */
   discount?: { label: string; amountLabel: string } | null;
+  /** Sales tax line shown after the discount and before the total. */
+  salesTax?: { label: string; amountLabel: string } | null;
 }): string {
-  const { lineItems, totalLabel, discount } = params;
+  const { lineItems, totalLabel, discount, salesTax } = params;
   const hasServiceLine = lineItems.some(item => !item.isAddOn);
   const hasDiscount = Boolean(discount?.label?.trim() && discount.amountLabel);
+  const hasSalesTax = Boolean(salesTax?.label?.trim() && salesTax.amountLabel);
   const rows: string[] = [];
 
   if (!hasServiceLine && lineItems.length > 0) {
@@ -185,7 +188,8 @@ export function serviceLinkEmailServiceAndPricingContent(params: {
 
   lineItems.forEach((item, i) => {
     const isFirst = i === 0;
-    const isLast = i === lineItems.length - 1 && !hasDiscount && !totalLabel;
+    const isLast =
+      i === lineItems.length - 1 && !hasDiscount && !hasSalesTax && !totalLabel;
     rows.push(
       serviceLinkEmailPriceLineRow(item.label, item.price, {
         isLast,
@@ -198,6 +202,14 @@ export function serviceLinkEmailServiceAndPricingContent(params: {
   if (hasDiscount && discount) {
     rows.push(
       serviceLinkEmailDiscountLineRow(discount.label, discount.amountLabel, {
+        isLast: !hasSalesTax && !totalLabel,
+      })
+    );
+  }
+
+  if (hasSalesTax && salesTax) {
+    rows.push(
+      serviceLinkEmailPriceLineRow(salesTax.label, salesTax.amountLabel, {
         isLast: !totalLabel,
       })
     );
@@ -262,12 +274,17 @@ export function serviceLinkEmailFootnote(text: string): string {
   return `<p style="margin:14px 0 0 0;${FONT_BODY_MUTED}">${escapeHtml(text)}</p>`;
 }
 
-export function serviceLinkEmailCta(href: string, label: string): string {
+export function serviceLinkEmailCta(
+  href: string,
+  label: string,
+  options?: { fullWidth?: boolean }
+): string {
+  const fullWidth = options?.fullWidth === true;
   return `
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px auto 0 auto;">
+    <table role="presentation" width="${fullWidth ? '100%' : 'auto'}" cellspacing="0" cellpadding="0" border="0" style="margin:${fullWidth ? '24px 0 0 0' : '24px auto 0 auto'};">
       <tr>
         <td align="center" bgcolor="#ffffff" style="border-radius:12px;">
-          <a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 24px;font-family:${SERVICE_LINK_EMAIL_FONT};font-size:15px;font-weight:600;line-height:20px;color:#000000 !important;text-decoration:none !important;">
+          <a href="${escapeHtml(href)}" style="display:${fullWidth ? 'block' : 'inline-block'};padding:14px 24px;font-family:${SERVICE_LINK_EMAIL_FONT};font-size:15px;font-weight:600;line-height:20px;color:#000000 !important;text-decoration:none !important;${fullWidth ? 'text-align:center;' : ''}">
             ${escapeHtml(label)}
           </a>
         </td>

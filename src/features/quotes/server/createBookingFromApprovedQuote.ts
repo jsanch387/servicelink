@@ -25,6 +25,8 @@ export type QuoteRowForApprovedBooking = {
   service_address: string | null;
   service_name: string | null;
   price_cents: number | null;
+  tax_cents?: number | null;
+  tax_rate_bps?: number | null;
   duration_minutes: number | null;
   scheduled_date: string | null;
   scheduled_start_time: string | null;

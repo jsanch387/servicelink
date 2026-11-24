@@ -86,6 +86,7 @@ describe('createTeamInvite', () => {
         businessName: 'Sparkle',
         rawEmail: 'jose@shop.com',
         name: 'Jose',
+        role: 'member',
       })
     ).resolves.toEqual({
       ok: true,
@@ -94,12 +95,14 @@ describe('createTeamInvite', () => {
         id: 'old-invite',
         email: 'jose@shop.com',
         name: 'Jose',
+        role: 'member',
         status: 'pending',
       },
       member: {
         id: 'old-invite',
         email: 'jose@shop.com',
         name: 'Jose',
+        role: 'member',
         status: 'invited',
         source: 'invite',
       },
@@ -111,6 +114,7 @@ describe('createTeamInvite', () => {
         status: 'pending',
         accepted_user_id: null,
         name: 'Jose',
+        role: 'member',
       })
     );
     expect(sendTeamInviteEmail).toHaveBeenCalledWith(

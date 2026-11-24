@@ -1,6 +1,7 @@
 import { listTeamMembersForOwner } from '@/features/team/server/listTeamMembersForOwner';
 import { requireOwnedBusiness } from '@/features/team/server/requireOwnedBusiness';
 import { updateTeamMemberName } from '@/features/team/server/updateTeamMemberName';
+import { updateTeamMemberRole } from '@/features/team/server/updateTeamMemberRole';
 import { TEAM_MEMBER_UI_SOURCES } from '@/features/team/types/teamMemberUi';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -30,7 +31,7 @@ export async function GET() {
   }
 }
 
-/** Owner updates the shop-facing name on a pending invite or active member. */
+/** Owner updates the name or role on a pending invite or active member. */
 export async function PATCH(request: Request) {
   try {
     const auth = await getAuthenticatedUser(request);
@@ -53,6 +54,7 @@ export async function PATCH(request: Request) {
       id?: unknown;
       source?: unknown;
       name?: unknown;
+      role?: unknown;
     } | null;
     const id = typeof body?.id === 'string' ? body.id : '';
     const source =
@@ -70,25 +72,60 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const result = await updateTeamMemberName(createSupabaseAdminClient(), {
-      businessId: owned.businessId,
-      id,
-      source,
-      rawName: body?.name,
-    });
-
-    if (!result.ok) {
+    const wantsName = body != null && 'name' in body;
+    const wantsRole = body != null && 'role' in body;
+    if (!wantsName && !wantsRole) {
       return NextResponse.json(
-        { success: false, error: result.error },
-        { status: result.status }
+        { success: false, error: 'Nothing to update' },
+        { status: 400 }
       );
     }
 
-    return NextResponse.json({ success: true, name: result.name });
+    const admin = createSupabaseAdminClient();
+    let name: string | undefined;
+    let role: string | undefined;
+
+    if (wantsName) {
+      const result = await updateTeamMemberName(admin, {
+        businessId: owned.businessId,
+        id,
+        source,
+        rawName: body?.name,
+      });
+      if (!result.ok) {
+        return NextResponse.json(
+          { success: false, error: result.error },
+          { status: result.status }
+        );
+      }
+      name = result.name;
+    }
+
+    if (wantsRole) {
+      const result = await updateTeamMemberRole(admin, {
+        businessId: owned.businessId,
+        id,
+        source,
+        rawRole: body?.role,
+      });
+      if (!result.ok) {
+        return NextResponse.json(
+          { success: false, error: result.error },
+          { status: result.status }
+        );
+      }
+      role = result.role;
+    }
+
+    return NextResponse.json({
+      success: true,
+      ...(name ? { name } : {}),
+      ...(role ? { role } : {}),
+    });
   } catch (error) {
     console.error('[team] PATCH /api/team/members failed', error);
     return NextResponse.json(
-      { success: false, error: 'Could not update name' },
+      { success: false, error: 'Could not update' },
       { status: 500 }
     );
   }

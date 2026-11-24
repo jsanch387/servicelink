@@ -14,12 +14,12 @@ export async function listTeamMembersForOwner(
   const [{ data: invites }, { data: members }] = await Promise.all([
     db
       .from('team_invites')
-      .select('id, email, name, status, accepted_user_id, created_at')
+      .select('id, email, name, role, status, accepted_user_id, created_at')
       .eq('business_id', businessId)
       .order('created_at', { ascending: true }),
     db
       .from('business_members')
-      .select('id, user_id, created_at')
+      .select('id, user_id, role, created_at')
       .eq('business_id', businessId)
       .eq('status', ACTIVE_TEAM_MEMBER_STATUS)
       .order('created_at', { ascending: true }),
@@ -29,6 +29,7 @@ export async function listTeamMembersForOwner(
     id: string;
     email: string;
     name: string | null;
+    role: string | null;
     status: string;
     accepted_user_id: string | null;
   }>;
@@ -39,6 +40,7 @@ export async function listTeamMembersForOwner(
       id: invite.id,
       email: invite.email,
       name: invite.name?.trim() || null,
+      role: invite.role,
       status: 'invited',
       source: 'invite',
     }));
@@ -47,6 +49,7 @@ export async function listTeamMembersForOwner(
   for (const member of (members ?? []) as Array<{
     id: string;
     user_id: string;
+    role: string | null;
   }>) {
     const { data } = await admin.auth.admin.getUserById(member.user_id);
     const email = data.user?.email?.trim().toLowerCase();
@@ -58,6 +61,7 @@ export async function listTeamMembersForOwner(
         userId: member.user_id,
         email,
       }),
+      role: member.role,
       status: 'active',
       source: 'member',
     });

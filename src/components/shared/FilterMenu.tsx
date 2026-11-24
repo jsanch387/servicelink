@@ -3,6 +3,7 @@
 import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { FilterButton, filterButtonClassName } from './FilterButton';
 
 export type FilterMenuOption<T extends string = string> = {
   id: T;
@@ -10,6 +11,12 @@ export type FilterMenuOption<T extends string = string> = {
 };
 
 const MENU_WIDTH = 220;
+
+export function filterMenuTriggerClassName(
+  _tone: 'outline' | 'solid' = 'solid'
+): string {
+  return filterButtonClassName;
+}
 
 function panelStyle(trigger: HTMLElement): React.CSSProperties {
   const rect = trigger.getBoundingClientRect();
@@ -32,6 +39,7 @@ export function FilterMenu<T extends string>({
   onChange,
   label = 'Filter',
   menuLabel = 'Filter',
+  className = '',
   expanded,
   onExpandedChange,
 }: {
@@ -40,6 +48,9 @@ export function FilterMenu<T extends string>({
   onChange: (id: T) => void;
   label?: string;
   menuLabel?: string;
+  className?: string;
+  /** Accepted so existing screens can pass it. Every filter uses the filled control. */
+  tone?: 'outline' | 'solid';
   /** When set, the parent owns whether the menu is open. */
   expanded?: boolean;
   onExpandedChange?: (open: boolean) => void;
@@ -99,21 +110,20 @@ export function FilterMenu<T extends string>({
 
   return (
     <>
-      <button
+      <FilterButton
         ref={buttonRef}
-        type="button"
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="listbox"
         onClick={() => setOpen(!open)}
-        className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-[10px] border border-white/15 px-3.5 text-sm text-gray-200 transition-colors hover:border-white/30 hover:bg-white/[0.04]"
+        className={className}
       >
         <span>{label}</span>
         <AdjustmentsHorizontalIcon
           className="h-4 w-4 shrink-0 text-gray-400"
           aria-hidden
         />
-      </button>
+      </FilterButton>
       {open && typeof document !== 'undefined'
         ? createPortal(
             <div

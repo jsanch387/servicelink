@@ -10,6 +10,7 @@ import {
   stripeErrorForLogs,
   supabaseErrorForLogs,
 } from './membershipsTransactionLog';
+import { membershipStripeUnitAmount } from './membershipSalesTax';
 import {
   membershipPlanPricesOf,
   membershipPlansOf,
@@ -210,9 +211,13 @@ export async function syncMembershipPlanStripeCatalog(
       if (stripePriceId) {
         try {
           const existing = await stripe.prices.retrieve(stripePriceId);
+          const chargeCents = membershipStripeUnitAmount({
+            priceCents: price.price_cents,
+            taxCents: price.tax_cents,
+          });
           const matches =
             existing.active !== false &&
-            existing.unit_amount === price.price_cents &&
+            existing.unit_amount === chargeCents &&
             existing.currency === currency &&
             existing.recurring?.interval === interval &&
             existing.recurring?.interval_count === price.interval_count &&
@@ -244,7 +249,10 @@ export async function syncMembershipPlanStripeCatalog(
       if (needsNewPrice) {
         const createdPrice = await stripe.prices.create({
           product: productId,
-          unit_amount: price.price_cents,
+          unit_amount: membershipStripeUnitAmount({
+            priceCents: price.price_cents,
+            taxCents: price.tax_cents,
+          }),
           currency,
           recurring: {
             interval,
@@ -253,6 +261,8 @@ export async function syncMembershipPlanStripeCatalog(
           metadata: {
             ...planMeta,
             membership_plan_price_id: price.id,
+            tax_rate_bps: String(price.tax_rate_bps ?? 0),
+            tax_cents: String(price.tax_cents ?? 0),
           },
         });
         stripePriceId = createdPrice.id;

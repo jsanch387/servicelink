@@ -16,6 +16,7 @@ import {
   parseBookServiceLocationTypeQuery,
   type BookDetailsStepQuery,
   type BookServiceLocationTypeQuery,
+  type PublicBookingFlowLocale,
 } from '@/constants/routes';
 import {
   BookServicePicker,
@@ -40,6 +41,7 @@ import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMap
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { resolvePublicBookingService } from '@/features/services/api/resolvePublicBookingService';
 import { sortServicesForDisplay } from '@/features/services/categories/utils/sortServicesForDisplay';
+import { localizedServiceCopy } from '@/features/services/utils/localizedServiceCopy';
 import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
 import type { ServiceRow } from '@/features/services/types/services';
 import {
@@ -93,6 +95,8 @@ interface BookingRequestPageProps {
     visit?: string;
     /** Append another service to the current visit cart. */
     addJob?: string;
+    /** Owner test-appointment walkthrough. Keeps the service list on screen. */
+    guide?: string;
   }>;
 }
 
@@ -122,6 +126,8 @@ type ServiceRowForPicker = {
   id: string;
   name: string;
   description: string | null;
+  name_es?: string | null;
+  description_es?: string | null;
   price_cents: number | null;
   price_options_enabled: boolean | null;
   hours_to_complete: number | null;
@@ -138,6 +144,8 @@ type PaymentSettingsRowForBooking = {
   deposit_type: string;
   deposit_value: number;
   currency: string;
+  tax_enabled?: boolean | null;
+  tax_rate_bps?: number | null;
 };
 
 function mapPaymentSettingsForBooking(
@@ -155,17 +163,24 @@ function mapPaymentSettingsForBooking(
     depositType,
     depositValue: Number.isFinite(row.deposit_value) ? row.deposit_value : 0,
     currency: row.currency?.trim() || 'usd',
+    taxEnabled: row.tax_enabled === true,
+    taxRateBps:
+      typeof row.tax_rate_bps === 'number' && Number.isFinite(row.tax_rate_bps)
+        ? row.tax_rate_bps
+        : 0,
   };
 }
 
 function mapRowToPickerItem(
   row: ServiceRowForPicker,
-  ownerPro: boolean
+  ownerPro: boolean,
+  locale: PublicBookingFlowLocale
 ): BookServicePickerItem {
+  const copy = localizedServiceCopy(locale, row);
   return {
     id: row.id,
-    name: row.name,
-    description: row.description,
+    name: copy.name,
+    description: copy.description,
     priceCents: row.price_cents ?? 0,
     priceOptionsEnabled: row.price_options_enabled === true && ownerPro,
     hours_to_complete: row.hours_to_complete ?? null,
@@ -243,6 +258,7 @@ export default async function BookingRequestPage({
     lang: langParam,
     visit: visitParam,
     addJob: addJobParam,
+    guide: guideParam,
   } = sp;
 
   const isAddingAnotherJob = isPublicBookingAddJobQuery(addJobParam);
@@ -335,6 +351,8 @@ export default async function BookingRequestPage({
   const bufferTime = availabilityRow?.buffer_time ?? 'none';
   const legacyRequestBookingEnabled =
     businessProfile.legacy_request_booking_enabled === true;
+  const requireBookingApproval =
+    availabilityRow?.public_booking_approval_required === true;
   const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
 
   // Free-tier lifetime cap: at limit on Free, treat as not accepting (same as public gate helper).
@@ -370,7 +388,7 @@ export default async function BookingRequestPage({
       adminClient
         .from('business_services')
         .select(
-          'id, name, description, price_cents, price_options_enabled, hours_to_complete, duration_minutes, category_id, sort_order, created_at'
+          'id, name, description, name_es, description_es, price_cents, price_options_enabled, hours_to_complete, duration_minutes, category_id, sort_order, created_at'
         )
         .eq('business_id', businessProfile.id)
         .eq('is_active', true)
@@ -399,10 +417,14 @@ export default async function BookingRequestPage({
       []) as ServiceCategoryRow[];
 
     availabilityPickerServices = sortedPickerRows
-      .map(row => mapRowToPickerItem(row, ownerHasPro))
+      .map(row => mapRowToPickerItem(row, ownerHasPro, bookingFlowLocale))
       .filter(s => s.id && s.name);
 
-    if (availabilityPickerServices.length === 1 && !isOwnerManualBooking) {
+    if (
+      availabilityPickerServices.length === 1 &&
+      !isOwnerManualBooking &&
+      guideParam !== '1'
+    ) {
       redirect(
         getBusinessBookDetailsUrl(slugForRoutes, {
           serviceId: availabilityPickerServices[0].id,
@@ -443,7 +465,8 @@ export default async function BookingRequestPage({
       adminClient,
       businessProfile.id,
       trimmedServiceId,
-      priceOptionId
+      priceOptionId,
+      bookingFlowLocale
     );
 
     if (!resolved.ok) {
@@ -486,7 +509,7 @@ export default async function BookingRequestPage({
     await adminClient
       .from('payment_settings')
       .select(
-        'payments_enabled, checkout_mode, deposits_enabled, deposit_type, deposit_value, currency'
+        'payments_enabled, checkout_mode, deposits_enabled, deposit_type, deposit_value, currency, tax_enabled, tax_rate_bps'
       )
       .eq('business_id', businessProfile.id)
       .maybeSingle();
@@ -632,6 +655,7 @@ export default async function BookingRequestPage({
             initialCustomerServiceChoice={serviceLocationTypeForBack ?? null}
             activeSale={activeSale}
             bookingPolicy={bookingPolicy}
+            requireBookingApproval={requireBookingApproval}
             stripeCheckoutSessionId={stripeCheckoutSessionId}
             exitCalendarFlowHref={bookPageBackHref}
             exitCalendarFlowLabel={bookPageBackLabel}
@@ -665,6 +689,7 @@ export default async function BookingRequestPage({
             minimumNotice={minimumNotice}
             bufferTime={bufferTime}
             paymentSettings={paymentSettings}
+            requireBookingApproval={requireBookingApproval}
             isOwnerManualBooking={isOwnerManualBooking}
             exitCalendarFlowHref={bookPageBackHref}
             exitCalendarFlowLabel={bookPageBackLabel}
@@ -716,6 +741,7 @@ export default async function BookingRequestPage({
             minimumNotice={minimumNotice}
             bufferTime={bufferTime}
             paymentSettings={paymentSettings}
+            requireBookingApproval={requireBookingApproval}
             isOwnerManualBooking={isOwnerManualBooking}
             exitCalendarFlowHref={bookPageBackHref}
             exitCalendarFlowLabel={bookPageBackLabel}

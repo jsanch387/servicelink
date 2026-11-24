@@ -62,6 +62,8 @@ interface BookFlowSwitchProps {
   initialCustomerServiceChoice?: 'mobile' | 'shop' | null;
   activeSale?: PublicActiveSale | null;
   bookingPolicy?: { text: string } | null;
+  /** Public customers request the time instead of being confirmed immediately. */
+  requireBookingApproval?: boolean;
 }
 
 /**
@@ -100,6 +102,7 @@ export function BookFlowSwitch({
   initialCustomerServiceChoice = null,
   activeSale = null,
   bookingPolicy = null,
+  requireBookingApproval = false,
 }: BookFlowSwitchProps) {
   const ui = publicBookingUi(bookingFlowLocale);
 
@@ -180,6 +183,7 @@ export function BookFlowSwitch({
           initialCustomerServiceChoice={initialCustomerServiceChoice}
           activeSale={activeSale}
           bookingPolicy={bookingPolicy}
+          requireBookingApproval={requireBookingApproval}
         />
       </Suspense>
     );

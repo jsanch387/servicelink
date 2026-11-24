@@ -66,7 +66,7 @@ export function buildQuoteCustomerReminderHtml(
       payload.customerName,
       payload.businessName
     ),
-    bodyHtml: `${serviceLinkEmailSection('Quote', detailRows)}${serviceLinkEmailCta(payload.publicQuoteUrl.trim(), 'Review quote')}`,
+    bodyHtml: `${serviceLinkEmailSection('Quote', detailRows)}${serviceLinkEmailCta(payload.publicQuoteUrl.trim(), 'Review quote', { fullWidth: true })}`,
     footerHtml: `Sent for ${business} via ServiceLink.<br>&copy; ${year} ServiceLink.`,
   });
 }

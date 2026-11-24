@@ -37,6 +37,14 @@ export type Database = {
           full_name: string | null;
           onboarding_step: number;
           onboarding_status: 'not_started' | 'in_progress' | 'completed';
+          /** Set once, the first time setup is finished. */
+          onboarding_completed_at: string | null;
+          /** NULL and v2 are the 5-step flow. v3 is the 2-step flow. */
+          onboarding_flow: 'v2' | 'v3' | null;
+          /** Client the account was created on. */
+          signup_platform: 'web' | 'ios' | 'android' | null;
+          /** Set when the owner closes the get-the-app pitch. */
+          app_pitch_dismissed_at: string | null;
           created_at: string;
           updated_at: string;
           subscription_tier: string;
@@ -60,6 +68,10 @@ export type Database = {
           full_name?: string | null;
           onboarding_step?: number;
           onboarding_status?: 'not_started' | 'in_progress' | 'completed';
+          onboarding_completed_at?: string | null;
+          onboarding_flow?: 'v2' | 'v3' | null;
+          signup_platform?: 'web' | 'ios' | 'android' | null;
+          app_pitch_dismissed_at?: string | null;
           created_at?: string;
           updated_at?: string;
           subscription_tier?: string;
@@ -82,6 +94,10 @@ export type Database = {
           full_name?: string | null;
           onboarding_step?: number;
           onboarding_status?: 'not_started' | 'in_progress' | 'completed';
+          onboarding_completed_at?: string | null;
+          onboarding_flow?: 'v2' | 'v3' | null;
+          signup_platform?: 'web' | 'ios' | 'android' | null;
+          app_pitch_dismissed_at?: string | null;
           created_at?: string;
           updated_at?: string;
           subscription_tier?: string;
@@ -99,6 +115,7 @@ export type Database = {
           profile_welcome_modal_seen?: boolean;
           subscription_plan?: string | null;
         };
+        Relationships: [];
       };
       business_service_areas: {
         Row: {
@@ -341,6 +358,7 @@ export type Database = {
           business_id: string;
           email: string;
           name: string | null;
+          role: string;
           link_token_hash: string;
           status: string;
           invited_by: string;
@@ -354,6 +372,7 @@ export type Database = {
           business_id: string;
           email: string;
           name?: string | null;
+          role?: string;
           link_token_hash: string;
           status?: string;
           invited_by: string;
@@ -367,6 +386,7 @@ export type Database = {
           business_id?: string;
           email?: string;
           name?: string | null;
+          role?: string;
           link_token_hash?: string;
           status?: string;
           invited_by?: string;
@@ -496,6 +516,8 @@ export type Database = {
           business_id: string;
           name: string;
           description: string | null;
+          name_es: string | null;
+          description_es: string | null;
           price_cents: number | null;
           hours_to_complete: number | null;
           duration_minutes: number | null;
@@ -511,6 +533,8 @@ export type Database = {
           business_id: string;
           name: string;
           description?: string | null;
+          name_es?: string | null;
+          description_es?: string | null;
           price_cents?: number | null;
           hours_to_complete?: number | null;
           duration_minutes?: number | null;
@@ -526,6 +550,8 @@ export type Database = {
           business_id?: string;
           name?: string;
           description?: string | null;
+          name_es?: string | null;
+          description_es?: string | null;
           price_cents?: number | null;
           hours_to_complete?: number | null;
           duration_minutes?: number | null;
@@ -536,6 +562,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       business_images: {
         Row: {
@@ -691,6 +718,11 @@ export type Database = {
           email: string | null;
           phone_normalized: string | null;
           email_normalized: string | null;
+          street_address: string | null;
+          unit: string | null;
+          city: string | null;
+          state: string | null;
+          zip: string | null;
           notes: string | null;
           /** Transactional SMS opt-in (appointments / membership updates). */
           sms_opt_in: boolean;
@@ -706,6 +738,11 @@ export type Database = {
           email?: string | null;
           phone_normalized?: string | null;
           email_normalized?: string | null;
+          street_address?: string | null;
+          unit?: string | null;
+          city?: string | null;
+          state?: string | null;
+          zip?: string | null;
           notes?: string | null;
           sms_opt_in?: boolean;
           maintenance_visits_completed?: number;
@@ -720,6 +757,11 @@ export type Database = {
           email?: string | null;
           phone_normalized?: string | null;
           email_normalized?: string | null;
+          street_address?: string | null;
+          unit?: string | null;
+          city?: string | null;
+          state?: string | null;
+          zip?: string | null;
           notes?: string | null;
           sms_opt_in?: boolean;
           maintenance_visits_completed?: number;
@@ -819,6 +861,8 @@ export type Database = {
           interval_unit: string;
           interval_count: number;
           price_cents: number;
+          tax_rate_bps: number;
+          tax_cents: number;
           currency: string;
           is_default: boolean;
           stripe_price_id: string | null;
@@ -832,6 +876,8 @@ export type Database = {
           interval_unit: string;
           interval_count: number;
           price_cents: number;
+          tax_rate_bps?: number;
+          tax_cents?: number;
           currency?: string;
           is_default?: boolean;
           stripe_price_id?: string | null;
@@ -845,6 +891,8 @@ export type Database = {
           interval_unit?: string;
           interval_count?: number;
           price_cents?: number;
+          tax_rate_bps?: number;
+          tax_cents?: number;
           currency?: string;
           is_default?: boolean;
           stripe_price_id?: string | null;
@@ -1171,6 +1219,105 @@ export type Database = {
           updated_at?: string;
         };
       };
+      google_reviews: {
+        Row: {
+          id: string;
+          business_id: string;
+          provider_review_id: string;
+          rating: number;
+          body: string;
+          author_display_name: string;
+          author_photo_url: string | null;
+          is_anonymous: boolean;
+          provider_create_time: string;
+          provider_update_time: string | null;
+          owner_reply_body: string | null;
+          owner_replied_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          provider_review_id: string;
+          rating: number;
+          body?: string;
+          author_display_name: string;
+          author_photo_url?: string | null;
+          is_anonymous?: boolean;
+          provider_create_time: string;
+          provider_update_time?: string | null;
+          owner_reply_body?: string | null;
+          owner_replied_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          provider_review_id?: string;
+          rating?: number;
+          body?: string;
+          author_display_name?: string;
+          author_photo_url?: string | null;
+          is_anonymous?: boolean;
+          provider_create_time?: string;
+          provider_update_time?: string | null;
+          owner_reply_body?: string | null;
+          owner_replied_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      google_business_connections: {
+        Row: {
+          id: string;
+          business_id: string;
+          google_account_name: string | null;
+          google_location_name: string | null;
+          google_location_title: string | null;
+          refresh_token: string;
+          access_token: string | null;
+          access_token_expires_at: string | null;
+          scopes: string;
+          connected_at: string;
+          last_synced_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          google_account_name?: string | null;
+          google_location_name?: string | null;
+          google_location_title?: string | null;
+          refresh_token: string;
+          access_token?: string | null;
+          access_token_expires_at?: string | null;
+          scopes?: string;
+          connected_at?: string;
+          last_synced_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          google_account_name?: string | null;
+          google_location_name?: string | null;
+          google_location_title?: string | null;
+          refresh_token?: string;
+          access_token?: string | null;
+          access_token_expires_at?: string | null;
+          scopes?: string;
+          connected_at?: string;
+          last_synced_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       payment_accounts: {
         Row: {
           id: string;
@@ -1241,6 +1388,9 @@ export type Database = {
           updated_at: string;
           /** When false, ServiceLink checkout is off; Stripe may still be connected. */
           payments_enabled: boolean;
+          tax_enabled: boolean;
+          /** Hundredths of a percent. `825` is 8.25%. */
+          tax_rate_bps: number;
         };
         Insert: {
           id?: string;
@@ -1256,6 +1406,8 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           payments_enabled?: boolean;
+          tax_enabled?: boolean;
+          tax_rate_bps?: number;
         };
         Update: {
           id?: string;
@@ -1271,6 +1423,8 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           payments_enabled?: boolean;
+          tax_enabled?: boolean;
+          tax_rate_bps?: number;
         };
       };
       payment_requests: {
@@ -1410,6 +1564,24 @@ export type Database = {
           channel?: string | null;
           signed_up_at?: string;
           first_paid_at?: string | null;
+        };
+        Relationships: [];
+      };
+      owner_lifecycle_emails: {
+        Row: {
+          user_id: string;
+          email_key: string;
+          sent_at: string;
+        };
+        Insert: {
+          user_id: string;
+          email_key: string;
+          sent_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          email_key?: string;
+          sent_at?: string;
         };
         Relationships: [];
       };

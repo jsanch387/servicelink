@@ -5,14 +5,17 @@ import type {
 import { createSale } from '@/features/marketing/server/createSale';
 import { loadDashboardSales } from '@/features/marketing/server/loadDashboardSales';
 import { validateCreateSaleBody } from '@/features/marketing/server/validateSaleBody';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
     const supabase = await createSupabaseServerClient();
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(
+      supabase,
+      'marketing.write'
+    );
 
     if (!resolved.ok) {
       return NextResponse.json(
@@ -49,7 +52,10 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const supabase = await createSupabaseServerClient();
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(
+      supabase,
+      'marketing.write'
+    );
 
     if (!resolved.ok) {
       return NextResponse.json(

@@ -16,10 +16,15 @@ export const ReviewsSummaryCard: React.FC<ReviewsSummaryCardProps> = ({
   bookingFlowLocale = 'en',
 }) => {
   return (
-    <DashboardGlassCard fillGridCell={false} padding="md" className="w-full">
+    <DashboardGlassCard
+      fillGridCell={false}
+      padding="md"
+      className="h-full w-full"
+    >
       <ReviewsRatingSummary
         summary={summary}
         bookingFlowLocale={bookingFlowLocale}
+        stackScore
       />
     </DashboardGlassCard>
   );

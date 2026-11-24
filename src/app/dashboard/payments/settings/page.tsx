@@ -9,6 +9,7 @@ import { syncConnectPaymentAccountForBusiness } from '@/features/payments/server
 import type { PaymentSettingsDashboardInitial } from '@/features/payments/types/paymentSettingsDashboard';
 import { isStripeConnectReady } from '@/features/payments/utils/isStripeConnectReady';
 import { paymentSettingsRowToDashboardInitial } from '@/features/payments/utils/paymentSettingsMaps';
+import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -32,6 +33,8 @@ export default async function DashboardPaymentsSettingsPage({
   if (userError || !user) {
     redirect(ROUTES.AUTH.LOGIN);
   }
+
+  await requireDashboardPageAccess('payments.manage');
 
   const stateResult = await getOnboardingState(user.id, supabase);
   if (!stateResult.success || stateResult.data?.status !== 'completed') {
@@ -95,7 +98,7 @@ export default async function DashboardPaymentsSettingsPage({
 
   const { data: paymentSettingsRow } = await paymentSettingsOf(supabase)
     .select(
-      'payments_enabled, checkout_mode, deposits_enabled, deposit_type, deposit_value, currency'
+      'payments_enabled, checkout_mode, deposits_enabled, deposit_type, deposit_value, currency, tax_enabled, tax_rate_bps'
     )
     .eq('business_id', businessId)
     .maybeSingle();
@@ -119,6 +122,8 @@ export default async function DashboardPaymentsSettingsPage({
           depositType: 'percent',
           depositValue: 0,
           currency: 'usd',
+          taxEnabled: false,
+          taxRateBps: 0,
         };
   }
 
@@ -143,6 +148,7 @@ export default async function DashboardPaymentsSettingsPage({
       priorPaymentsSetup={priorPaymentsSetup}
       paymentSettings={paymentSettingsForDashboard}
       stripeExpressAccountId={paymentAccount?.stripe_account_id?.trim() ?? null}
+      showSalesTaxCard
     />
   );
 }

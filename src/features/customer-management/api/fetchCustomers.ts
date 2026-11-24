@@ -7,6 +7,7 @@ export type FetchCustomersResult =
       ok: true;
       customers: CustomerRecord[];
       businessName: string | null;
+      businessType: string | null;
       businessBookingLink: string;
     }
   | { ok: false; error: string };
@@ -16,6 +17,7 @@ export async function fetchCustomersList(): Promise<FetchCustomersResult> {
     const res = await fetch(API_ROUTES.CUSTOMERS, {
       credentials: 'include',
       method: 'GET',
+      cache: 'no-store',
       headers: { Accept: 'application/json' },
     });
 
@@ -40,6 +42,10 @@ export async function fetchCustomersList(): Promise<FetchCustomersResult> {
       ok: true,
       customers: data.customers,
       businessName: data.businessName,
+      businessType:
+        'businessType' in data && typeof data.businessType === 'string'
+          ? data.businessType
+          : null,
       businessBookingLink: data.businessBookingLink,
     };
   } catch {

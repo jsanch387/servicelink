@@ -19,6 +19,7 @@ export const ProfileReviewsSummary: React.FC<ProfileReviewsSummaryProps> = ({
       <ReviewsRatingSummary
         summary={summary}
         bookingFlowLocale={bookingFlowLocale}
+        stackScore
       />
     </header>
   );

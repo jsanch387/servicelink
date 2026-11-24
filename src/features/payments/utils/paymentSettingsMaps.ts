@@ -22,6 +22,8 @@ export function paymentSettingsRowToDashboardInitial(row: {
   deposit_type: string;
   deposit_value: number;
   currency: string;
+  tax_enabled?: boolean | null;
+  tax_rate_bps?: number | null;
 }): PaymentSettingsDashboardInitial {
   const depositType =
     row.deposit_type === 'fixed' || row.deposit_type === 'percent'
@@ -34,6 +36,11 @@ export function paymentSettingsRowToDashboardInitial(row: {
     depositType,
     depositValue: Number.isFinite(row.deposit_value) ? row.deposit_value : 0,
     currency: row.currency?.trim() || 'usd',
+    taxEnabled: row.tax_enabled === true,
+    taxRateBps:
+      typeof row.tax_rate_bps === 'number' && Number.isFinite(row.tax_rate_bps)
+        ? Math.max(0, Math.round(row.tax_rate_bps))
+        : 0,
   };
 }
 

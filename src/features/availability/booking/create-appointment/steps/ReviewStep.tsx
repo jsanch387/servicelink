@@ -1,7 +1,9 @@
 'use client';
 
 import { GlassCard, nativeCheckboxSmClassName } from '@/components/shared';
+import { quotePublicBookingSalesTax } from '@/features/availability/booking/utils/publicBookingSalesTax';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import { formatSalesTaxRateLabel } from '@/features/payments/utils/salesTaxRate';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
 import { computeBookingSalePricing } from '@/features/marketing/utils/computeBookingSalePricing';
 import { formatPublicSaleDiscountLabel } from '@/features/marketing/utils/formatPublicSaleDiscountLabel';
@@ -72,6 +74,9 @@ export interface ReviewStepProps {
   addAnotherDisabled?: boolean;
   /** Membership Book visit: show Membership instead of $0; hide sale toggle. */
   membershipCovered?: boolean;
+  /** Business sales tax, applied once on the visit after the sale. */
+  salesTaxEnabled?: boolean;
+  salesTaxRateBps?: number;
 }
 
 export function ReviewStep({
@@ -89,6 +94,8 @@ export function ReviewStep({
   onAddAnotherJob,
   addAnotherDisabled = false,
   membershipCovered = false,
+  salesTaxEnabled = false,
+  salesTaxRateBps = 0,
 }: ReviewStepProps) {
   const visitSubtotalCents = useMemo(
     () => jobs.reduce((s, j) => s + jobLineTotalCents(j), 0),
@@ -109,9 +116,25 @@ export function ReviewStep({
   const saleApplied =
     !membershipCovered && applySale && salePricing.saleApplies;
   const discountCents = saleApplied ? salePricing.discountCents : 0;
-  const visitTotalCents = saleApplied
+  const priceAfterDiscountCents = saleApplied
     ? salePricing.estimatedTotalCents
     : visitSubtotalCents;
+  const salesTax = useMemo(
+    () =>
+      quotePublicBookingSalesTax({
+        priceAfterDiscountCents,
+        taxEnabled: salesTaxEnabled && !membershipCovered,
+        taxRateBps: salesTaxRateBps,
+      }),
+    [
+      priceAfterDiscountCents,
+      salesTaxEnabled,
+      salesTaxRateBps,
+      membershipCovered,
+    ]
+  );
+  const visitTotalCents = salesTax.totalCents;
+  const taxRateLabel = formatSalesTaxRateLabel(salesTax.rateBps);
 
   const saleDiscountLabel = activeSale
     ? formatPublicSaleDiscountLabel(
@@ -221,8 +244,20 @@ export function ReviewStep({
                     −{formatCatalogPriceCents(discountCents)}
                   </span>
                 </div>
-                <div className="h-px bg-white/10" aria-hidden />
               </>
+            ) : null}
+            {salesTax.taxCents > 0 ? (
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-zinc-400">
+                  {taxRateLabel ? `Tax (${taxRateLabel})` : 'Tax'}
+                </span>
+                <span className="tabular-nums text-zinc-300">
+                  {formatCatalogPriceCents(salesTax.taxCents)}
+                </span>
+              </div>
+            ) : null}
+            {saleApplied || salesTax.taxCents > 0 ? (
+              <div className="h-px bg-white/10" aria-hidden />
             ) : null}
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold text-white">

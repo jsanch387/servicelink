@@ -26,7 +26,18 @@ describe('CRON_JOBS catalog', () => {
   });
 
   it('uses the centralized booking-reminders route', () => {
-    expect(CRON_JOBS[0]?.path).toBe(API_ROUTES.INTERNAL_CRON_BOOKING_REMINDERS);
+    expect(CRON_JOBS.find(job => job.id === 'booking-reminders')?.path).toBe(
+      API_ROUTES.INTERNAL_CRON_BOOKING_REMINDERS
+    );
+  });
+
+  it('expires unanswered appointment requests each day', () => {
+    expect(CRON_JOBS.map(job => job.id)).toContain(
+      'appointment-request-expirations'
+    );
+    expect(
+      CRON_JOBS.find(job => job.id === 'appointment-request-expirations')?.path
+    ).toBe(API_ROUTES.INTERNAL_CRON_APPOINTMENT_REQUEST_EXPIRATIONS);
   });
 
   it('registers quote-request follow-ups', () => {
@@ -43,9 +54,25 @@ describe('CRON_JOBS catalog', () => {
     ).toBe(API_ROUTES.INTERNAL_CRON_QUOTE_CUSTOMER_REMINDERS);
   });
 
-  it('runs all jobs on the same daily slot', () => {
+  it('registers google review pulls', () => {
+    expect(CRON_JOBS.map(job => job.id)).toContain('google-review-pulls');
+    expect(CRON_JOBS.find(job => job.id === 'google-review-pulls')?.path).toBe(
+      API_ROUTES.INTERNAL_CRON_GOOGLE_REVIEW_PULLS
+    );
+  });
+
+  it('keeps every job on the shared daily slot', () => {
     expect(new Set(CRON_JOBS.map(job => job.schedule))).toEqual(
       new Set([CRON_DAILY_14_UTC])
+    );
+  });
+
+  it('sends unfinished-setup notes on the daily run', () => {
+    expect(CRON_JOBS.find(job => job.id === 'onboarding-emails')).toMatchObject(
+      {
+        path: API_ROUTES.INTERNAL_CRON_ONBOARDING_EMAILS,
+        schedule: CRON_DAILY_14_UTC,
+      }
     );
   });
 });

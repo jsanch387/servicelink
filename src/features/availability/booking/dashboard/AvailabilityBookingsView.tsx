@@ -17,10 +17,22 @@ import type {
 //   SyncBookingsCtaCard,
 // } from '@/features/calendar-sync';
 import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
+import {
+  dismissOwnerTestGuide,
+  readOwnerTestGuide,
+  readOwnerTestGuideDismissed,
+  setOwnerTestGuide,
+} from '@/features/onboarding-v3/ownerTestGuide';
 import { shopHasBookingAssignees } from '@/features/team/utils/shopHasBookingAssignees';
 import { FreeBookingsTracker, FREE_BOOKINGS_LIMIT } from '@/features/pricing';
 import { PlusIcon } from '@heroicons/react/24/outline';
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { AvailabilityBookingDetailPanel } from './AvailabilityBookingDetailPanel';
 import { BookingsCalendar } from './calendar/BookingsCalendar';
 import { CalendarModeToggle } from './calendar/CalendarModeToggle';
@@ -62,11 +74,13 @@ export function AvailabilityBookingsView({
 }: AvailabilityBookingsViewProps) {
   const access = useDashboardAccess();
   const canWriteBookings = access.can('bookings.write');
+  const canDeleteBookings = access.can('bookings.delete');
   const canRunBookings = access.can('bookings.run');
   const {
     bookings,
     isLoading,
     isLoadingMore,
+    totalCount,
     listPageIndex,
     hasNextListPage,
     setListPage,
@@ -113,6 +127,30 @@ export function AvailabilityBookingsView({
     [assignedToMe, loadRange]
   );
 
+  // Walk through the first appointment only. Another appointment, or the
+  // close button, ends it for good on this browser.
+  useEffect(() => {
+    if (isLoading) return;
+    const moreThanOne =
+      totalCount == null ? bookings.length > 1 : totalCount > 1;
+    if (readOwnerTestGuideDismissed()) {
+      if (readOwnerTestGuide()) dismissOwnerTestGuide();
+      return;
+    }
+    if (moreThanOne) {
+      if (!readOwnerTestGuideDismissed() || readOwnerTestGuide()) {
+        dismissOwnerTestGuide();
+      }
+      return;
+    }
+    const hasOpenTest = bookings.some(
+      booking => booking.isTest && booking.status === 'confirmed'
+    );
+    if (!hasOpenTest || selectedBooking) return;
+    if (readOwnerTestGuide() === 'job') return;
+    setOwnerTestGuide('job');
+  }, [bookings, isLoading, selectedBooking, totalCount]);
+
   const timeOffIntervalsForSlots = useMemo<TimeOffInterval[]>(
     () => timeOffBlocks.map(toTimeOffIntervalFields),
     [timeOffBlocks]
@@ -124,7 +162,9 @@ export function AvailabilityBookingsView({
       .filter(
         b =>
           b.id !== selectedBooking.id &&
-          (b.status === 'confirmed' || b.status === 'completed')
+          (b.status === 'requested' ||
+            b.status === 'confirmed' ||
+            b.status === 'completed')
       )
       .map(b => ({
         date: b.date,
@@ -156,13 +196,32 @@ export function AvailabilityBookingsView({
     setSelectedBooking(null);
   };
 
+  const handleApprove = async (id: string) => {
+    setUpdateError(null);
+    setUpdatingId(id);
+    const result = await updateBookingStatus(id, 'confirmed');
+    setUpdatingId(null);
+    if (!result.success) {
+      setUpdateError(result.error ?? 'Failed to approve booking');
+      return;
+    }
+    setSelectedBooking(prev =>
+      prev && prev.id === id ? { ...prev, status: 'confirmed' } : prev
+    );
+  };
+
   const handleCancel = async (id: string) => {
     setUpdateError(null);
     setUpdatingId(id);
     const result = await updateBookingStatus(id, 'cancelled');
     setUpdatingId(null);
     if (!result.success) {
-      setUpdateError(result.error ?? 'Failed to cancel booking');
+      const denying =
+        selectedBooking?.id === id && selectedBooking.status === 'requested';
+      setUpdateError(
+        result.error ??
+          (denying ? 'Failed to deny request' : 'Failed to cancel booking')
+      );
       return;
     }
     setSelectedBooking(null);
@@ -259,7 +318,7 @@ export function AvailabilityBookingsView({
         }`}
       >
         <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <h1 className="text-3xl font-bold leading-none text-white">
                 Bookings
@@ -355,6 +414,17 @@ export function AvailabilityBookingsView({
             onListActive={loadCurrentList}
             onVisibleRangeChange={loadVisibleRange}
             onSelectBooking={booking => {
+              const onlyPractice =
+                !readOwnerTestGuideDismissed() &&
+                (totalCount === 1 ||
+                  (totalCount == null && bookings.length === 1));
+              if (
+                onlyPractice &&
+                booking.isTest &&
+                booking.status === 'confirmed'
+              ) {
+                setOwnerTestGuide('complete');
+              }
               setUpdateError(null);
               setSelectedBooking(booking);
             }}
@@ -365,10 +435,21 @@ export function AvailabilityBookingsView({
       {selectedBooking && (
         <AvailabilityBookingDetailPanel
           booking={selectedBooking}
-          onClose={() => setSelectedBooking(null)}
+          onClose={() => {
+            setSelectedBooking(null);
+            if (
+              selectedBooking?.isTest &&
+              selectedBooking.status === 'confirmed' &&
+              readOwnerTestGuide() === 'complete'
+            ) {
+              setOwnerTestGuide('job');
+            }
+          }}
           readOnly={!canWriteBookings}
           canRunActions={canRunBookings}
+          canDelete={canDeleteBookings}
           onMarkCompleted={handleMarkCompleted}
+          onApprove={handleApprove}
           onCancel={handleCancel}
           onDelete={handleDelete}
           onReschedule={canWriteBookings ? handleReschedule : undefined}

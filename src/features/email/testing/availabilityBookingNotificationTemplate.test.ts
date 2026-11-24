@@ -242,6 +242,17 @@ describe('buildAvailabilityBookingEmailHtml — booking + payments', () => {
     expect(customerBooked).toContain(
       'someone booked an appointment with your business'
     );
+
+    const request = buildAvailabilityBookingEmailHtml(
+      { ...basePayload(), appointmentRequest: true },
+      {
+        audience: 'owner',
+        dashboardBookingsUrl: 'https://app.example.com/dashboard/bookings',
+      }
+    );
+    expect(request).toContain('New appointment request');
+    expect(request).toContain('requested an appointment');
+    expect(request).toContain('someone requested an appointment');
   });
 });
 

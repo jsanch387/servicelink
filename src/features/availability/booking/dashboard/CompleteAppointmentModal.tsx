@@ -1,6 +1,10 @@
 'use client';
 
 import { Button, Modal } from '@/components/shared';
+import {
+  setOwnerTestGuide,
+  useOwnerTestGuidePhase,
+} from '@/features/onboarding-v3/ownerTestGuide';
 import { useEffect, useState } from 'react';
 import type { AvailabilityBookingDisplay } from './types';
 import {
@@ -44,6 +48,9 @@ export function CompleteAppointmentModal({
   onClose,
   onConfirm,
 }: CompleteAppointmentModalProps) {
+  const guideComplete =
+    useOwnerTestGuidePhase() === 'complete' ||
+    (booking.isTest === true && booking.status === 'confirmed');
   const amountDueCents = resolveCompleteAmountDueCents(booking);
   const currency = resolveCompleteCurrency(booking);
   const needsCollection = amountDueCents > 0;
@@ -59,6 +66,7 @@ export function CompleteAppointmentModal({
 
   const handleConfirm = () => {
     if (!canConfirm || isUpdating) return;
+    if (guideComplete) setOwnerTestGuide(null);
     if (needsCollection && method) {
       void onConfirm({
         sessionPayment: { method, amountCents: amountDueCents },

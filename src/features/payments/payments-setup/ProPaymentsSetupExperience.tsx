@@ -35,6 +35,7 @@ export type ProPaymentsSetupExperienceProps = {
    * “how customers pay” preview). Used on Subscriptions; Payments keeps default.
    */
   showLockedPreview?: boolean;
+  showSalesTaxCard?: boolean;
   /** Replaces the default setup sentence. Restricted accounts keep the Stripe notice. */
   lead?: string;
   /** When false, hide the checklist under the button. */
@@ -53,6 +54,7 @@ export const ProPaymentsSetupExperience: React.FC<
   showLockedPreview = true,
   lead: leadOverride,
   showBenefits = true,
+  showSalesTaxCard = false,
 }) => {
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
@@ -181,7 +183,10 @@ export const ProPaymentsSetupExperience: React.FC<
           <p className="mt-8 max-w-md text-left text-sm text-gray-500">
             {teaseOverline}
           </p>
-          <FreePaymentPreviewLockedDashboard className="mt-8 w-full sm:mt-10" />
+          <FreePaymentPreviewLockedDashboard
+            className="mt-8 w-full sm:mt-10"
+            showSalesTaxCard={showSalesTaxCard}
+          />
         </>
       ) : null}
     </div>

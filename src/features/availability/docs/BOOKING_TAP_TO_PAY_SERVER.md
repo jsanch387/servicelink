@@ -9,7 +9,7 @@
 Phase 2 adds Stripe **Tap to Pay on iPhone** to the mobile Complete sheet:
 
 1. Mobile initializes Terminal SDK with a **connection token**.
-2. Mobile requests a **PaymentIntent** for the current amount due (+ session fees).
+2. Mobile requests a **PaymentIntent** for the current amount due (+ session fees + optional `tipCents`). The tip is one charge, stored as `tip_cents`, and is not a fee line. `session_stripe_fee_cents` stays null until Stripe reports the balance-transaction fee (`charge.updated` / `payment_intent.succeeded`).
 3. Customer taps card on-device; SDK confirms the PaymentIntent.
 4. Mobile sends existing **`job_completed`** with `tap_to_pay` + `stripePaymentIntentId`.
 5. Server verifies the PaymentIntent with Stripe, then runs the Phase 1 persist pipeline.

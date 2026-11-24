@@ -4,6 +4,10 @@ import type { OwnerSubscriptionPlan } from '../types/ownerSubscriptionPlan';
 import { countActivePlanSubscribers } from './countActivePlanSubscribers';
 import { mapMembershipPlanToOwner } from './mapMembershipPlanRow';
 import {
+  loadMembershipShopTax,
+  withMembershipCadenceTax,
+} from './membershipSalesTax';
+import {
   membershipPlanPricesOf,
   membershipPlansOf,
 } from './membershipTablesQuery';
@@ -33,9 +37,14 @@ export async function getMembershipPlanForBusiness(
     planId
   );
 
-  return mapMembershipPlanToOwner(
+  const mapped = mapMembershipPlanToOwner(
     planRow,
     priceRows ?? [],
     activeSubscriberCount
   );
+  const shopTax = await loadMembershipShopTax(supabase, businessId);
+  return {
+    ...mapped,
+    cadenceOptions: withMembershipCadenceTax(mapped.cadenceOptions, shopTax),
+  };
 }

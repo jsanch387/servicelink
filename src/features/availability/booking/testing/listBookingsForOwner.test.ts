@@ -22,15 +22,20 @@ function createClient(rows: ReturnType<typeof row>[]) {
     gte?: [string, string];
     lte?: [string, string];
     eqs: [string, string][];
+    ins: [string, string[]][];
     or?: string;
     limit?: number;
     orders: [string, { ascending: boolean }][];
-  } = { orders: [], eqs: [] };
+  } = { orders: [], eqs: [], ins: [] };
 
   const query = {
     select: vi.fn(() => query),
     eq: vi.fn((column: string, value: string) => {
       captured.eqs.push([column, value]);
+      return query;
+    }),
+    in: vi.fn((column: string, value: string[]) => {
+      captured.ins.push([column, value]);
       return query;
     }),
     gte: vi.fn((column: string, value: string) => {
@@ -87,7 +92,7 @@ describe('listBookingsForOwner', () => {
     });
 
     expect(captured.limit).toBe(16);
-    expect(captured.eqs).toContainEqual(['status', 'confirmed']);
+    expect(captured.ins).toContainEqual(['status', ['requested', 'confirmed']]);
     expect(captured.gte).toEqual(['scheduled_date', '2026-09-15']);
     expect(captured.orders[0]).toEqual(['scheduled_date', { ascending: true }]);
     expect(page.bookings).toHaveLength(15);
@@ -112,7 +117,7 @@ describe('listBookingsForOwner', () => {
     });
 
     expect(captured.or).toBe(
-      'status.eq.completed,and(status.eq.confirmed,scheduled_date.lt.2026-09-15)'
+      'status.eq.expired,status.eq.completed,and(status.eq.confirmed,scheduled_date.lt.2026-09-15)'
     );
     expect(captured.orders[0]).toEqual([
       'scheduled_date',

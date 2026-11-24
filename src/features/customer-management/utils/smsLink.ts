@@ -11,6 +11,13 @@ function normalizePhoneForSms(phone: string): string {
  * - iOS: `sms:+123?&body=...`
  * - Android/others: `sms:+123?body=...`
  */
+/** Open the device messages app for this number, with no prefilled text. */
+export function buildSmsOpenHref(phone: string): string | null {
+  const cleanPhone = normalizePhoneForSms(phone);
+  if (!cleanPhone) return null;
+  return `sms:${cleanPhone}`;
+}
+
 export function buildSmsHref(
   phone: string,
   message: string,

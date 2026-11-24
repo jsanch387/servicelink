@@ -8,6 +8,9 @@ import {
   loadDashboardShopView,
 } from '@/features/dashboard/server/loadDashboardShopView';
 import { OnboardingFlowV2 } from '@/features/onboarding-v2';
+import { OnboardingFlowV3 } from '@/features/onboarding-v3';
+import { businessHasTestBooking } from '@/features/onboarding-v3/server/businessHasTestBooking';
+import { stampOnboardingFlowForNewProfile } from '@/features/onboarding-v3/server/stampOnboardingFlowForNewProfile';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { RemovedFromTeamScreen } from '@/features/team';
 import { can } from '@/features/team/constants/teamPermissions';
@@ -30,7 +33,7 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ createShop?: string }>;
+  searchParams: Promise<{ createShop?: string; practice?: string }>;
 }) {
   // Create server client for SSR
   const supabase = await createSupabaseServerClient();
@@ -45,7 +48,9 @@ export default async function DashboardPage({
     redirect('/login');
   }
 
-  const startOwnShop = (await searchParams).createShop === '1';
+  const params = await searchParams;
+  const startOwnShop = params.createShop === '1';
+  const startPractice = params.practice === '1';
 
   // Get complete onboarding state
   const stateResult = await getOnboardingState(user.id, supabase);
@@ -60,6 +65,8 @@ export default async function DashboardPage({
     currentStep,
     businessProfile,
     services: existingServices,
+    onboardingFlow,
+    contactInfo,
   } = stateResult.data!;
 
   // Map old onboarding services to v2 shape (for step 2 resume)
@@ -134,7 +141,39 @@ export default async function DashboardPage({
     return <DashboardContent dashboardData={dashboardData} />;
   }
 
-  // Render based on onboarding status (new signups and in-progress see v2 flow)
+  let resolvedFlow = onboardingFlow;
+  if (status === 'not_started' && resolvedFlow == null) {
+    resolvedFlow = await stampOnboardingFlowForNewProfile(
+      supabase,
+      user.id,
+      user.email
+    );
+  }
+
+  const showNewOnboarding =
+    (status === 'not_started' || status === 'in_progress') &&
+    resolvedFlow === 'v3';
+
+  if (showNewOnboarding) {
+    const phoneDigits = (contactInfo.phone_number_call ?? '')
+      .replace(/\D/g, '')
+      .slice(0, 10);
+    return (
+      <OnboardingFlowV3
+        initialStep={currentStep >= 2 ? 'business' : 'industry'}
+        industry={(businessProfile?.business_type as string) ?? ''}
+        trades={resolveBusinessSpecialties(
+          (businessProfile?.business_type as string) ?? '',
+          (businessProfile as { specialties?: string[] | null } | null)
+            ?.specialties
+        )}
+        businessName={(businessProfile?.business_name as string) ?? ''}
+        phone={phoneDigits}
+      />
+    );
+  }
+
+  // People already in the 5-step flow stay there. New accounts get the 2-step setup.
   switch (status) {
     case 'not_started':
     case 'in_progress':
@@ -178,7 +217,7 @@ export default async function DashboardPage({
       const { data: profileRow } = await supabase
         .from('profiles')
         .select(
-          'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+          'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, onboarding_completed_at, signup_platform, app_pitch_dismissed_at'
         )
         .eq('user_id', user.id)
         .maybeSingle();
@@ -204,7 +243,62 @@ export default async function DashboardPage({
         redirect('/login');
       }
 
-      return <DashboardContent dashboardData={dashboardData} />;
+      let v3Setup: {
+        hasPhone: boolean;
+        hasTestBooking: boolean;
+        slug: string;
+      } | null = null;
+      const profile = profileRow as {
+        onboarding_completed_at?: string | null;
+        signup_platform?: 'web' | 'ios' | 'android' | null;
+        app_pitch_dismissed_at?: string | null;
+      } | null;
+      const finishedNewSetup = Boolean(profile?.onboarding_completed_at);
+      const signedUpInTheApp =
+        profile?.signup_platform === 'ios' ||
+        profile?.signup_platform === 'android';
+      const showAppPitch =
+        access.context.isOwner &&
+        !signedUpInTheApp &&
+        !profile?.app_pitch_dismissed_at &&
+        ((finishedNewSetup && onboardingFlow === 'v3') ||
+          process.env.NODE_ENV === 'development');
+      if (
+        onboardingFlow === 'v3' &&
+        access.context.isOwner &&
+        finishedNewSetup
+      ) {
+        const { data: contactRaw } = await supabase
+          .from('business_profiles')
+          .select('phone_number_call')
+          .eq('id', access.context.businessId)
+          .maybeSingle();
+        const contact = contactRaw as {
+          phone_number_call: string | null;
+        } | null;
+        const phone = (contact?.phone_number_call ?? '').replace(/\D/g, '');
+        const slug =
+          dashboardData.slugData.hasSlug && dashboardData.slugData.slug
+            ? dashboardData.slugData.slug
+            : '';
+        v3Setup = {
+          hasPhone: phone.length === 10,
+          hasTestBooking: await businessHasTestBooking(
+            supabase,
+            access.context.businessId
+          ),
+          slug,
+        };
+      }
+
+      return (
+        <DashboardContent
+          dashboardData={dashboardData}
+          v3Setup={v3Setup}
+          startPractice={startPractice && access.context.isOwner}
+          showAppPitch={showAppPitch}
+        />
+      );
     }
 
     default:

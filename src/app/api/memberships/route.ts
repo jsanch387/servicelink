@@ -5,13 +5,16 @@
 
 import { loadOwnerMembershipsState } from '@/features/subscriptions/server/loadOwnerMembershipsState';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
     const supabase = await createSupabaseServerClient();
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(
+      supabase,
+      'billing.manage'
+    );
 
     if (!resolved.ok) {
       return NextResponse.json(

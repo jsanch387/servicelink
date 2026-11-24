@@ -41,7 +41,7 @@ export interface CustomerBookingMetrics {
   nextAppointmentAddOnDetails: { name: string; priceCents: number }[];
 }
 
-function addonTotalCents(details: unknown): number {
+export function addonTotalCents(details: unknown): number {
   if (!Array.isArray(details)) {
     return 0;
   }

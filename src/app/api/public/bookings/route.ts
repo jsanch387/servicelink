@@ -17,6 +17,7 @@ import {
   normalizeBookingCustomerInput,
 } from '@/features/availability/booking/utils/bookingCustomerFieldLimits';
 import { coerceBookingCents } from '@/features/availability/booking/utils/coerceBookingCents';
+import { SLOT_BLOCKING_BOOKING_STATUSES } from '@/features/availability/booking/constants';
 import {
   PUBLIC_BOOKING_MAX_JOBS,
   PUBLIC_BOOKING_MAX_JOBS_MESSAGE,
@@ -60,6 +61,7 @@ import {
   isSlotAllowedByLeadTime,
   resolvePublicBookingLeadTimeZone,
 } from '@/features/availability/utils/minimumNotice';
+import { notifyCustomerAppointmentRequestReceived } from '@/features/availability/services/notifyCustomerAppointmentRequestReceived';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
 import { loadCustomerSmsOptIn } from '@/features/customer-management/server/loadCustomerSmsOptIn';
 import {
@@ -97,25 +99,59 @@ import type { BookingDiscountSnapshot } from '@/features/marketing/server/bookin
 import { promoDiscountResolveErrorMessage } from '@/features/marketing/utils/promoDiscountResolveErrorMessage';
 import { normalizeEnteredPromoCode } from '@/features/marketing/server/resolveBookingPromoDiscountSnapshot';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
+import {
+  quotePublicBookingSalesTax,
+  salesTaxEmailLine,
+} from '@/features/availability/booking/utils/publicBookingSalesTax';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
+import { businessHasAnyBooking } from '@/features/onboarding-v3/server/businessHasTestBooking';
+import { OWNER_TEST_BOOKING_COOKIE } from '@/features/onboarding-v3/ownerTestBooking';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { assertPublicBookingsRateLimits } from '@/server/rateLimit/publicApiRateLimit';
 import { supabaseErrorForLogs } from '@/server/logging/structuredLog';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextRequest, NextResponse } from 'next/server';
+
+function publicBookingStoredTax(args: {
+  /** Membership visits are covered. Tax stays off even when the switch is on. */
+  membershipCovered: boolean;
+  paySettings: {
+    tax_enabled?: boolean;
+    tax_rate_bps?: number | null;
+  } | null;
+  priceAfterDiscountCents: number;
+}) {
+  return quotePublicBookingSalesTax({
+    priceAfterDiscountCents: args.priceAfterDiscountCents,
+    taxEnabled:
+      !args.membershipCovered && args.paySettings?.tax_enabled === true,
+    taxRateBps:
+      typeof args.paySettings?.tax_rate_bps === 'number'
+        ? args.paySettings.tax_rate_bps
+        : 0,
+  });
+}
 
 function publicBookingJson(
   requestId: string,
   body: unknown,
-  status: number
+  status: number,
+  clearOwnerTestCookie = false
 ): NextResponse {
-  return NextResponse.json(body, {
+  const response = NextResponse.json(body, {
     status,
     headers: {
       'X-Request-ID': requestId,
       'Cache-Control': 'no-store',
     },
   });
+  if (clearOwnerTestCookie) {
+    response.cookies.set(OWNER_TEST_BOOKING_COOKIE, '', {
+      path: '/',
+      maxAge: 0,
+    });
+  }
+  return response;
 }
 
 export async function POST(request: NextRequest) {
@@ -235,6 +271,8 @@ export async function POST(request: NextRequest) {
     }
 
     let ownerAuthMethod: 'bearer' | 'cookie' | 'public' = 'public';
+    let createdByUserId: string | null = null;
+    let isOwnerTestBooking = false;
 
     const supabase = createSupabaseAdminClient();
 
@@ -438,7 +476,10 @@ export async function POST(request: NextRequest) {
           auth.status
         );
       }
-      const resolved = await resolveCurrentBusinessId(auth.supabase);
+      const resolved = await requireBusinessPermission(
+        auth.supabase,
+        'bookings.write'
+      );
       if (!resolved.ok) {
         logBookingTransaction(requestId, 'warn', 'owner_business', {
           http: resolved.status,
@@ -458,6 +499,7 @@ export async function POST(request: NextRequest) {
         );
       }
       ownerAuthMethod = auth.authMethod;
+      createdByUserId = auth.user.id;
     }
 
     const p = profile as {
@@ -480,23 +522,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cap = await enforceFreeTierBookingCapBeforeCreate(supabase, {
-      id: businessId,
-      profile_id: profileId,
-      free_bookings_count: p.free_bookings_count,
-    });
-    if (!cap.ok) {
-      return publicBookingJson(
-        requestId,
-        { success: false, error: cap.message },
-        403
-      );
+    // The first public booking is the practice appointment, signed in or not.
+    // A later visit, including Book a test appointment, counts toward the five.
+    if (
+      !ownerManualBooking &&
+      !(await businessHasAnyBooking(supabase, businessId))
+    ) {
+      isOwnerTestBooking = true;
+    }
+
+    if (!isOwnerTestBooking) {
+      const cap = await enforceFreeTierBookingCapBeforeCreate(supabase, {
+        id: businessId,
+        profile_id: profileId,
+        free_bookings_count: p.free_bookings_count,
+      });
+      if (!cap.ok) {
+        return publicBookingJson(
+          requestId,
+          { success: false, error: cap.message },
+          403
+        );
+      }
     }
 
     const availabilityRow = await getAvailabilityForBusiness(
       supabase,
       businessId
     );
+    const appointmentRequest =
+      !ownerManualBooking &&
+      !isOwnerTestBooking &&
+      availabilityRow?.public_booking_approval_required === true;
     const durationMinutes = parsedJobs
       ? sumJobDurationMinutes(parsedJobs)
       : body.durationMinutes!;
@@ -549,7 +606,7 @@ export async function POST(request: NextRequest) {
         .select('scheduled_date, start_time, duration_minutes')
         .eq('business_id', businessId)
         .eq('scheduled_date', body.scheduledDate)
-        .in('status', ['confirmed', 'completed']);
+        .in('status', [...SLOT_BLOCKING_BOOKING_STATUSES]);
 
       if (dayBookErr) {
         logBookingTransaction(requestId, 'warn', 'load_day_bookings', {
@@ -609,7 +666,9 @@ export async function POST(request: NextRequest) {
     });
     const { data: paymentSettingsRow, error: paymentSettingsError } =
       await paymentSettingsOf(supabase)
-        .select('payments_enabled, checkout_mode, currency')
+        .select(
+          'payments_enabled, checkout_mode, currency, tax_enabled, tax_rate_bps'
+        )
         .eq('business_id', businessId)
         .maybeSingle();
 
@@ -623,6 +682,8 @@ export async function POST(request: NextRequest) {
       payments_enabled?: boolean;
       checkout_mode?: string | null;
       currency?: string | null;
+      tax_enabled?: boolean;
+      tax_rate_bps?: number | null;
     } | null;
 
     const rawClientPm = body.paymentMethodSelected;
@@ -700,13 +761,15 @@ export async function POST(request: NextRequest) {
 
       // Sale applies once to the appointment subtotal (all jobs), unless the
       // owner opted out via applySale: false (web Review checkbox).
-      // Public: always apply qualifying sale; promo allowed.
+      // Public: always apply qualifying sale. Promo is payment-only, so a
+      // request cannot use one.
       const ownerWantsSale = !ownerManualBooking || body.applySale !== false;
-      const enteredPromoCode = ownerManualBooking
-        ? ''
-        : normalizeEnteredPromoCode(
-            typeof body.promoCode === 'string' ? body.promoCode : ''
-          );
+      const enteredPromoCode =
+        ownerManualBooking || appointmentRequest
+          ? ''
+          : normalizeEnteredPromoCode(
+              typeof body.promoCode === 'string' ? body.promoCode : ''
+            );
       let discountSnapshot: BookingDiscountSnapshot | null = null;
       if (ownerWantsSale) {
         const discountResolved = await resolveBookingDiscountSnapshot(
@@ -719,7 +782,7 @@ export async function POST(request: NextRequest) {
             promoCode: enteredPromoCode || null,
             customerPhone: sanitizedCustomer.phone,
             customerEmail: sanitizedCustomer.email,
-            allowPromoCode: !ownerManualBooking,
+            allowPromoCode: !ownerManualBooking && !appointmentRequest,
           }
         );
         if (!discountResolved.ok) {
@@ -779,6 +842,9 @@ export async function POST(request: NextRequest) {
           ...(typeof publicSmsOptIn === 'boolean'
             ? { smsOptIn: publicSmsOptIn }
             : {}),
+          createdByUserId,
+          isTest: isOwnerTestBooking,
+          ...(appointmentRequest ? { status: 'requested' as const } : {}),
         });
       } catch (createErr) {
         logBookingTransaction(requestId, 'error', 'appointment_create_failed', {
@@ -797,14 +863,21 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const visitTotalAfterDiscount = discountSnapshot
+        ? Math.max(0, visitGross - discountSnapshot.discountCents)
+        : visitGross;
+      const visitTax = publicBookingStoredTax({
+        membershipCovered: paymentMethodForInsert === 'membership',
+        paySettings,
+        priceAfterDiscountCents: visitTotalAfterDiscount,
+      });
       try {
-        const visitTotalAfterDiscount = discountSnapshot
-          ? Math.max(0, visitGross - discountSnapshot.discountCents)
-          : visitGross;
         await insertBookingPaymentsRowForNoCheckoutPublicBooking(supabase, {
           bookingId: result.id,
           businessId,
-          totalAmountCents: visitTotalAfterDiscount,
+          totalAmountCents: visitTax.totalCents,
+          taxRateBps: visitTax.rateBps,
+          taxCents: visitTax.taxCents,
           currency: paySettings?.currency?.trim() || 'usd',
           paymentsEnabled: paySettings?.payments_enabled === true,
           checkoutMode: paySettings?.checkout_mode ?? null,
@@ -857,7 +930,8 @@ export async function POST(request: NextRequest) {
         checkoutMode: paySettings?.checkout_mode,
         clientPaymentMethod,
         currency: paySettings?.currency?.trim() || 'usd',
-        totalPriceCents: visitGross,
+        totalPriceCents:
+          visitTax.taxCents > 0 ? visitTax.totalCents : visitGross,
         hasPriceLineItems,
       });
 
@@ -884,11 +958,17 @@ export async function POST(request: NextRequest) {
               },
             }
           : {}),
+        ...(salesTaxEmailLine(visitTax.rateBps, visitTax.taxCents)
+          ? {
+              salesTax: salesTaxEmailLine(visitTax.rateBps, visitTax.taxCents),
+            }
+          : {}),
         jobs: emailJobs,
         paymentSummary,
         serviceLocation: emailServiceLocation,
         customerNotes: sanitizedCustomer.notes?.trim() || undefined,
         createdByOwner: ownerManualBooking || undefined,
+        ...(appointmentRequest ? { appointmentRequest: true } : {}),
       };
 
       await notifyOwnerForAvailabilityBookingCreated(supabase, {
@@ -904,7 +984,31 @@ export async function POST(request: NextRequest) {
 
       let customerConfirmationOutcome: 'sent' | 'failed' | 'skipped' =
         'skipped';
-      if (sanitizedCustomer.email) {
+      let customerSmsOutcome: 'sent' | 'failed' | 'skipped' | 'no_phone' =
+        'skipped';
+      const allowCustomerSms =
+        typeof publicSmsOptIn === 'boolean'
+          ? publicSmsOptIn
+          : await loadCustomerSmsOptIn(supabase, result.customerId);
+      if (appointmentRequest) {
+        const received = await notifyCustomerAppointmentRequestReceived({
+          admin: supabase,
+          businessId,
+          bookingId: result.id,
+          customerId: result.customerId,
+          businessName: businessDisplayName,
+          customerName: sanitizedCustomer.fullName,
+          customerEmail: sanitizedCustomer.email,
+          customerPhone: sanitizedCustomer.phone,
+          serviceName: serviceSummaryLine,
+          scheduledDate: body.scheduledDate,
+          startTime: visitStart,
+          smsOptIn: allowCustomerSms,
+          correlationId: requestId,
+        });
+        customerConfirmationOutcome = received.email;
+        customerSmsOutcome = received.sms;
+      } else if (sanitizedCustomer.email) {
         try {
           await sendAvailabilityBookingCustomerConfirmationEmail(
             sanitizedCustomer.email,
@@ -925,13 +1029,7 @@ export async function POST(request: NextRequest) {
 
       // SMS: short confirmation ping. Email (above) carries full details.
       // Both channels when both contacts exist — complementary, not exclusive.
-      let customerSmsOutcome: 'sent' | 'failed' | 'skipped' | 'no_phone' =
-        'skipped';
-      const allowCustomerSms =
-        typeof publicSmsOptIn === 'boolean'
-          ? publicSmsOptIn
-          : await loadCustomerSmsOptIn(supabase, result.customerId);
-      if (sanitizedCustomer.phone && allowCustomerSms) {
+      if (!appointmentRequest && sanitizedCustomer.phone && allowCustomerSms) {
         const smsResult = await sendAndRecordSms({
           admin: supabase,
           businessId,
@@ -948,9 +1046,9 @@ export async function POST(request: NextRequest) {
           correlationId: requestId,
         });
         customerSmsOutcome = smsResult.sent ? 'sent' : 'failed';
-      } else if (!sanitizedCustomer.phone) {
+      } else if (!appointmentRequest && !sanitizedCustomer.phone) {
         customerSmsOutcome = 'no_phone';
-      } else {
+      } else if (!appointmentRequest) {
         customerSmsOutcome = 'skipped';
       }
 
@@ -994,7 +1092,8 @@ export async function POST(request: NextRequest) {
             jobCount,
           },
         },
-        201
+        201,
+        isOwnerTestBooking
       );
     }
 
@@ -1019,11 +1118,13 @@ export async function POST(request: NextRequest) {
 
     // Owner manual booking: sale auto-apply only (unless applySale: false).
     // Ignore client promo + discount preview fields — server recomputes.
-    const enteredPromoCode = ownerManualBooking
-      ? ''
-      : normalizeEnteredPromoCode(
-          typeof body.promoCode === 'string' ? body.promoCode : ''
-        );
+    // A request has no payment step, so a promo code is ignored.
+    const enteredPromoCode =
+      ownerManualBooking || appointmentRequest
+        ? ''
+        : normalizeEnteredPromoCode(
+            typeof body.promoCode === 'string' ? body.promoCode : ''
+          );
     const ownerWantsSale = !ownerManualBooking || body.applySale !== false;
     let discountSnapshot: BookingDiscountSnapshot | null = null;
     if (ownerWantsSale) {
@@ -1035,7 +1136,7 @@ export async function POST(request: NextRequest) {
         promoCode: enteredPromoCode || null,
         customerPhone: sanitizedCustomer.phone,
         customerEmail: sanitizedCustomer.email,
-        allowPromoCode: !ownerManualBooking,
+        allowPromoCode: !ownerManualBooking && !appointmentRequest,
       });
       if (!discountResolved.ok) {
         return publicBookingJson(
@@ -1074,16 +1175,26 @@ export async function POST(request: NextRequest) {
       ...(typeof publicSmsOptIn === 'boolean'
         ? { smsOptIn: publicSmsOptIn }
         : {}),
+      createdByUserId,
+      isTest: isOwnerTestBooking,
+      ...(appointmentRequest ? { status: 'requested' as const } : {}),
     });
 
+    const totalAfterDiscount = discountSnapshot
+      ? Math.max(0, totalPriceCentsForEmail - discountSnapshot.discountCents)
+      : totalPriceCentsForEmail;
+    const bookingTax = publicBookingStoredTax({
+      membershipCovered: paymentMethodForInsert === 'membership',
+      paySettings,
+      priceAfterDiscountCents: totalAfterDiscount,
+    });
     try {
-      const totalAfterDiscount = discountSnapshot
-        ? Math.max(0, totalPriceCentsForEmail - discountSnapshot.discountCents)
-        : totalPriceCentsForEmail;
       await insertBookingPaymentsRowForNoCheckoutPublicBooking(supabase, {
         bookingId: result.id,
         businessId,
-        totalAmountCents: totalAfterDiscount,
+        totalAmountCents: bookingTax.totalCents,
+        taxRateBps: bookingTax.rateBps,
+        taxCents: bookingTax.taxCents,
         currency: paySettings?.currency?.trim() || 'usd',
         paymentsEnabled: paySettings?.payments_enabled === true,
         checkoutMode: paySettings?.checkout_mode ?? null,
@@ -1119,7 +1230,10 @@ export async function POST(request: NextRequest) {
       checkoutMode: paySettings?.checkout_mode,
       clientPaymentMethod,
       currency: paySettings?.currency?.trim() || 'usd',
-      totalPriceCents: totalPriceCentsForEmail,
+      totalPriceCents:
+        bookingTax.taxCents > 0
+          ? bookingTax.totalCents
+          : totalPriceCentsForEmail,
       hasPriceLineItems,
     });
 
@@ -1152,10 +1266,19 @@ export async function POST(request: NextRequest) {
             },
           }
         : {}),
+      ...(salesTaxEmailLine(bookingTax.rateBps, bookingTax.taxCents)
+        ? {
+            salesTax: salesTaxEmailLine(
+              bookingTax.rateBps,
+              bookingTax.taxCents
+            ),
+          }
+        : {}),
       paymentSummary,
       serviceLocation: emailServiceLocation,
       customerNotes: sanitizedCustomer.notes?.trim() || undefined,
       createdByOwner: ownerManualBooking || undefined,
+      ...(appointmentRequest ? { appointmentRequest: true } : {}),
     };
 
     await notifyOwnerForAvailabilityBookingCreated(supabase, {
@@ -1170,7 +1293,31 @@ export async function POST(request: NextRequest) {
     });
 
     let customerConfirmationOutcome: 'sent' | 'failed' | 'skipped' = 'skipped';
-    if (sanitizedCustomer.email) {
+    let customerSmsOutcome: 'sent' | 'failed' | 'skipped' | 'no_phone' =
+      'skipped';
+    const allowCustomerSms =
+      typeof publicSmsOptIn === 'boolean'
+        ? publicSmsOptIn
+        : await loadCustomerSmsOptIn(supabase, result.customerId);
+    if (appointmentRequest) {
+      const received = await notifyCustomerAppointmentRequestReceived({
+        admin: supabase,
+        businessId,
+        bookingId: result.id,
+        customerId: result.customerId,
+        businessName: businessDisplayName,
+        customerName: sanitizedCustomer.fullName,
+        customerEmail: sanitizedCustomer.email,
+        customerPhone: sanitizedCustomer.phone,
+        serviceName: storedServiceName,
+        scheduledDate: body.scheduledDate,
+        startTime: body.startTime.trim(),
+        smsOptIn: allowCustomerSms,
+        correlationId: requestId,
+      });
+      customerConfirmationOutcome = received.email;
+      customerSmsOutcome = received.sms;
+    } else if (sanitizedCustomer.email) {
       try {
         await sendAvailabilityBookingCustomerConfirmationEmail(
           sanitizedCustomer.email,
@@ -1191,13 +1338,7 @@ export async function POST(request: NextRequest) {
 
     // SMS: short confirmation ping. Email (above) carries full details.
     // Both channels when both contacts exist — complementary, not exclusive.
-    let customerSmsOutcome: 'sent' | 'failed' | 'skipped' | 'no_phone' =
-      'skipped';
-    const allowCustomerSms =
-      typeof publicSmsOptIn === 'boolean'
-        ? publicSmsOptIn
-        : await loadCustomerSmsOptIn(supabase, result.customerId);
-    if (sanitizedCustomer.phone && allowCustomerSms) {
+    if (!appointmentRequest && sanitizedCustomer.phone && allowCustomerSms) {
       const smsResult = await sendAndRecordSms({
         admin: supabase,
         businessId,
@@ -1214,9 +1355,9 @@ export async function POST(request: NextRequest) {
         correlationId: requestId,
       });
       customerSmsOutcome = smsResult.sent ? 'sent' : 'failed';
-    } else if (!sanitizedCustomer.phone) {
+    } else if (!appointmentRequest && !sanitizedCustomer.phone) {
       customerSmsOutcome = 'no_phone';
-    } else {
+    } else if (!appointmentRequest) {
       customerSmsOutcome = 'skipped';
     }
 
@@ -1239,7 +1380,8 @@ export async function POST(request: NextRequest) {
           jobCount: 1,
         },
       },
-      201
+      201,
+      isOwnerTestBooking
     );
   } catch (err) {
     logBookingTransaction(requestId, 'error', 'unhandled', {

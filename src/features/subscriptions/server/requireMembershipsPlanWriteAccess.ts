@@ -6,7 +6,7 @@
 import type { AuthenticatedRequestUser } from '@/libs/api/getAuthenticatedUser';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import type { Database } from '@/libs/supabase/client';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { assertMembershipsReady } from './assertMembershipsReady';
 import {
@@ -67,7 +67,10 @@ export async function requireMembershipsPlanWriteAccess(
     };
   }
 
-  const resolved = await resolveCurrentBusinessId(auth.supabase);
+  const resolved = await requireBusinessPermission(
+    auth.supabase,
+    'billing.manage'
+  );
   if (!resolved.ok) {
     return {
       ok: false,

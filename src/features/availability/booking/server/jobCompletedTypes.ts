@@ -14,7 +14,11 @@ export const SESSION_PAYMENT_METHODS = [
 
 export type SessionPaymentMethod = (typeof SESSION_PAYMENT_METHODS)[number];
 
+export type SessionLineKind = 'fee' | 'discount';
+
 export interface JobCompletedSessionFeeInput {
+  /** Omitted by older clients. Treated as a fee. */
+  kind?: SessionLineKind;
   label: string;
   amountCents: number;
 }

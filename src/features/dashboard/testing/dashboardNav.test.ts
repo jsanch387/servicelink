@@ -20,6 +20,18 @@ const memberCan = (permission: Parameters<typeof can>[1]) =>
     permission
   );
 
+const coordinatorCan = (permission: Parameters<typeof can>[1]) =>
+  can(
+    { isOwner: false, permissions: permissionsForRole('coordinator') },
+    permission
+  );
+
+const managerCan = (permission: Parameters<typeof can>[1]) =>
+  can(
+    { isOwner: false, permissions: permissionsForRole('manager') },
+    permission
+  );
+
 describe('isDashboardNavItemActive', () => {
   it('matches an exact href', () => {
     expect(
@@ -46,6 +58,18 @@ describe('isDashboardNavItemActive', () => {
 });
 
 describe('getVisibleDashboardNavItems', () => {
+  it('shows no links when the shop could not be resolved', () => {
+    const names = getVisibleDashboardNavItems({
+      hasShopAccess: true,
+      showMembershipsNav: true,
+      showTeamNav: true,
+      showInvoicesNav: true,
+      can: () => false,
+    }).map(item => item.name);
+
+    expect(names).toEqual([]);
+  });
+
   it('hides onboarding-only items before setup is done', () => {
     const items = getVisibleDashboardNavItems({
       hasShopAccess: false,
@@ -59,10 +83,51 @@ describe('getVisibleDashboardNavItems', () => {
     const names = getVisibleDashboardNavItems({
       hasShopAccess: true,
       showMembershipsNav: true,
+      showTeamNav: true,
+      showInvoicesNav: true,
       can: memberCan,
     }).map(item => item.name);
 
     expect(names).toEqual(['Dashboard', 'Bookings']);
+  });
+
+  it('keeps a coordinator on the same nav as a member', () => {
+    const names = getVisibleDashboardNavItems({
+      hasShopAccess: true,
+      showMembershipsNav: true,
+      showTeamNav: true,
+      showInvoicesNav: true,
+      can: coordinatorCan,
+    }).map(item => item.name);
+
+    expect(names).toEqual(['Dashboard', 'Bookings']);
+  });
+
+  it('opens the office for a manager and keeps owner locks out of the nav', () => {
+    const names = getVisibleDashboardNavItems({
+      hasShopAccess: true,
+      showMembershipsNav: true,
+      showTeamNav: true,
+      showInvoicesNav: true,
+      can: managerCan,
+    }).map(item => item.name);
+
+    expect(names).toEqual([
+      'Dashboard',
+      'Booking link',
+      'Services',
+      'Bookings',
+      'Reviews',
+      'Quotes',
+      'Invoices',
+      'Expenses',
+      'Customers',
+      'Availability',
+      'Marketing',
+    ]);
+    expect(names).not.toContain('Payments');
+    expect(names).not.toContain('Subscriptions');
+    expect(names).not.toContain('Team');
   });
 
   it('groups payments, invoices, expenses, and subscriptions under Money', () => {
@@ -160,7 +225,6 @@ describe('getVisibleDashboardNavItems', () => {
     expect(names).toContain('Team');
     expect(names.indexOf('Team')).toBe(names.indexOf('Bookings') + 1);
     expect(names).toContain('Customers');
-    expect(items.find(item => item.name === 'Team')?.badge).toBe('new');
   });
 
   it('hides Team when the rollout flag is off', () => {
@@ -182,6 +246,9 @@ describe('getDashboardPageTitle', () => {
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.TEAM)).toBe('Team');
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.INVOICES)).toBe('Invoices');
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.EXPENSES)).toBe('Expenses');
+    expect(getDashboardPageTitle(ROUTES.DASHBOARD.CUSTOMER('cust_1'))).toBe(
+      'Customers'
+    );
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.INVOICES_NEW)).toBe(
       'New invoice'
     );

@@ -12,6 +12,9 @@ export type {
 export { sendAvailabilityBookingCustomerConfirmationEmail } from './availability-booking-notification/sendAvailabilityBookingCustomerConfirmationEmail';
 export { sendAvailabilityBookingNotificationEmail } from './availability-booking-notification/sendAvailabilityBookingNotificationEmail';
 export { sendAvailabilityBookingCanceledEmail } from './availability-booking-canceled/sendAvailabilityBookingCanceledEmail';
+export { sendAvailabilityBookingRequestReceivedEmail } from './availability-booking-request-received/sendAvailabilityBookingRequestReceivedEmail';
+export { sendAvailabilityBookingRequestExpiredEmail } from './availability-booking-request-expired/sendAvailabilityBookingRequestExpiredEmail';
+export { sendAvailabilityBookingRequestDeniedEmail } from './availability-booking-request-denied/sendAvailabilityBookingRequestDeniedEmail';
 export { sendAvailabilityBookingRescheduledEmail } from './availability-booking-rescheduled/sendAvailabilityBookingRescheduledEmail';
 export { sendAvailabilityBookingReminderEmail } from './availability-booking-reminder/sendAvailabilityBookingReminderEmail';
 export type {
@@ -22,6 +25,18 @@ export type {
   AvailabilityBookingCanceledPayload,
   SendAvailabilityBookingCanceledResult,
 } from './availability-booking-canceled/types';
+export type {
+  AvailabilityBookingRequestReceivedPayload,
+  SendAvailabilityBookingRequestReceivedResult,
+} from './availability-booking-request-received/types';
+export type {
+  AvailabilityBookingRequestExpiredPayload,
+  SendAvailabilityBookingRequestExpiredResult,
+} from './availability-booking-request-expired/types';
+export type {
+  AvailabilityBookingRequestDeniedPayload,
+  SendAvailabilityBookingRequestDeniedResult,
+} from './availability-booking-request-denied/types';
 export type {
   AvailabilityBookingRescheduledPayload,
   SendAvailabilityBookingRescheduledResult,

@@ -16,7 +16,7 @@ import { startExpressConnectOnboarding } from '@/features/payments/stripe';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { getAppBaseUrl } from '@/libs/stripe';
 import { validateConnectAccountLinkUrl } from '@/libs/stripe/validateConnectAccountLinkUrl';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextRequest, NextResponse } from 'next/server';
 
 type OnboardRequestBody = {
@@ -63,6 +63,22 @@ export async function POST(request: NextRequest) {
     }
     const { user, supabase } = auth;
 
+    const businessResolved = await requireBusinessPermission(
+      supabase,
+      'payments.manage'
+    );
+    if (!businessResolved.ok) {
+      logConnect('onboard.abort', {
+        reason: 'forbidden',
+        userId: user.id,
+        httpStatus: businessResolved.status,
+      });
+      return NextResponse.json(
+        { success: false, error: businessResolved.error },
+        { status: businessResolved.status }
+      );
+    }
+
     const hasPro = await getHasProAccessForPayments(supabase, user.id);
     if (!hasPro) {
       logConnect('onboard.abort', {
@@ -75,19 +91,6 @@ export async function POST(request: NextRequest) {
           error: 'Pro subscription required to connect payments',
         },
         { status: 403 }
-      );
-    }
-
-    const businessResolved = await resolveCurrentBusinessId(supabase);
-    if (!businessResolved.ok) {
-      logConnect('onboard.abort', {
-        reason: 'no_business',
-        userId: user.id,
-        httpStatus: businessResolved.status,
-      });
-      return NextResponse.json(
-        { success: false, error: businessResolved.error },
-        { status: businessResolved.status }
       );
     }
 

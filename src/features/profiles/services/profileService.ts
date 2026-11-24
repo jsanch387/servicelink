@@ -5,6 +5,8 @@
  * Only creates profile during signup. Nothing else.
  */
 
+import { onboardingFlowForEmail } from '@/features/onboarding-v3/config/onboardingV3Allowlist';
+import { stampOnboardingFlowForNewProfile } from '@/features/onboarding-v3/server/stampOnboardingFlowForNewProfile';
 import { createClient } from '@/libs/supabase';
 
 export class ProfileService {
@@ -12,16 +14,28 @@ export class ProfileService {
    * Creates a profile for a new user during signup
    * This is the ONLY function needed for auth flow
    */
-  static async createProfile(userId: string, fullName?: string | null) {
+  static async createProfile(
+    userId: string,
+    fullName?: string | null,
+    email?: string | null
+  ) {
     try {
       const supabase = createClient() as any;
+      const flow = onboardingFlowForEmail(email);
 
       const { error } = await supabase.from('profiles').insert({
         user_id: userId,
         full_name: fullName,
+        onboarding_flow: flow,
+        signup_platform: 'web',
       });
 
       if (error) {
+        // The confirm-email trigger may have inserted the row first.
+        if (error.code === '23505') {
+          await stampOnboardingFlowForNewProfile(supabase, userId, email);
+          return { success: true };
+        }
         return { success: false, error: error.message };
       }
 

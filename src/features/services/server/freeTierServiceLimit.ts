@@ -10,6 +10,7 @@ import {
   FREE_TIER_SERVICE_LIMIT_USER_MESSAGE,
 } from '@/features/pricing/types';
 import type { Database } from '@/libs/supabase/client';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export const FREE_TIER_SERVICE_LIMIT_MESSAGE =
@@ -44,10 +45,10 @@ type ProfileAccessRow = {
 };
 
 export async function ownerHasProAccessForServices(
-  supabase: SupabaseClient<Database>,
+  _supabase: SupabaseClient<Database>,
   ownerUserId: string
 ): Promise<boolean> {
-  const { data } = await supabase
+  const { data } = await createSupabaseAdminClient()
     .from('profiles')
     .select(
       'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'

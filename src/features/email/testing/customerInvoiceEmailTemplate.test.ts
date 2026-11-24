@@ -38,4 +38,23 @@ describe('customer invoice email', () => {
     ]);
     expect(customerInvoiceEmailLooksTransactional(html, text)).toBe(true);
   });
+
+  it('lists tax above the amount due when the bill includes tax', () => {
+    const text = buildCustomerInvoiceEmailText({
+      ...payload,
+      totalCents: 86_91,
+      salesTax: { label: 'Tax (2.25%)', taxCents: 191 },
+    });
+    const html = buildCustomerInvoiceEmailHtml({
+      ...payload,
+      totalCents: 86_91,
+      salesTax: { label: 'Tax (2.25%)', taxCents: 191 },
+    });
+
+    expect(text).toContain('Subtotal: $85.00');
+    expect(text).toContain('Tax (2.25%): $1.91');
+    expect(text).toContain('Amount due: $86.91');
+    expect(html).toContain('Tax (2.25%)');
+    expect(html).toContain('$86.91');
+  });
 });

@@ -1,6 +1,8 @@
 import { ROUTES } from '@/constants/routes';
 import { blogGuideSignupPath } from '@/features/marketing-attribution';
+import { GuideFaqAccordion } from '@/features/resources/components/GuideFaqAccordion';
 import { GuideProTip } from '@/features/resources/components/GuideCallouts';
+import { getGuideBySlug } from '@/features/resources/data/guides';
 import Link from 'next/link';
 
 import {
@@ -11,6 +13,9 @@ import {
   pClasses,
   sectionClasses,
 } from './guideContentStyles';
+
+const GUIDE_FAQS =
+  getGuideBySlug('how-mobile-detailers-get-clients-from-instagram')?.faqs ?? [];
 
 export function HowMobileDetailersGetClientsInstagramContent() {
   return (
@@ -160,8 +165,10 @@ export function HowMobileDetailersGetClientsInstagramContent() {
           <li>an easy way to book</li>
         </ul>
         <p className={pClasses}>
-          This is why detailers put a ServiceLink booking link in their bio.
-          Instead of answering many DMs, customers click the link and book.{' '}
+          This is why shops put a ServiceLink booking link in their bio. Instead
+          of answering many DMs, customers click the link and book. ServiceLink
+          is the detailing CRM behind that link: deposits, reminders, review
+          requests, and Team.{' '}
           <Link
             href={blogGuideSignupPath(
               'how-mobile-detailers-get-clients-from-instagram'
@@ -193,7 +200,6 @@ export function HowMobileDetailersGetClientsInstagramContent() {
           <li>available booking times</li>
         </ul>
         <p className={pClasses}>
-          Tools like{' '}
           <Link
             href={blogGuideSignupPath(
               'how-mobile-detailers-get-clients-from-instagram'
@@ -202,8 +208,8 @@ export function HowMobileDetailersGetClientsInstagramContent() {
           >
             ServiceLink
           </Link>{' '}
-          help detailers create a simple booking page they can place in their
-          bio. When customers click your link they can quickly:
+          is the detailing CRM shops put in the bio. When customers click your
+          link they can quickly:
         </p>
         <ul className={listClasses}>
           <li>see your services</li>
@@ -309,9 +315,28 @@ export function HowMobileDetailersGetClientsInstagramContent() {
         <p className={pClasses}>
           Over time your content can bring a steady flow of local customers.
           Start posting your work, stay consistent, and make it easy for
-          customers to book you with a simple link in your bio.
+          customers to book you with a simple link in your bio. For the rest of
+          the week—Google, referrals, and a 30-day plan—see{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE(
+              'how-to-get-more-mobile-detailing-clients'
+            )}
+            className={linkClasses}
+          >
+            how to get more mobile detailing clients
+          </Link>
+          .
         </p>
       </section>
+
+      {GUIDE_FAQS.length ? (
+        <GuideFaqAccordion
+          items={GUIDE_FAQS.map(faq => ({
+            question: faq.question,
+            answer: faq.answer,
+          }))}
+        />
+      ) : null}
     </>
   );
 }

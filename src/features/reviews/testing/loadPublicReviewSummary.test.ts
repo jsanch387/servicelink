@@ -4,48 +4,47 @@ import {
   publicReviewSummaryFromLoadResult,
 } from '../server/loadPublicReviewSummary';
 
-function createMockDb(result: { data: unknown; error: unknown }) {
-  const limit = vi.fn().mockResolvedValue(result);
-  const order = vi.fn().mockReturnValue({ limit });
-  const eqHidden = vi.fn().mockReturnValue({ order });
-  const eqBusiness = vi.fn().mockReturnValue({ eq: eqHidden });
-  const select = vi.fn().mockReturnValue({ eq: eqBusiness });
-  const from = vi.fn().mockReturnValue({ select });
-  return { from, select, eqBusiness, eqHidden, order, limit };
+function createCountDb(counts: Partial<Record<number, number>>) {
+  const from = vi.fn().mockImplementation(() => {
+    const eq = vi.fn().mockImplementation((column: string, value: unknown) => {
+      if (column === 'rating') {
+        return Promise.resolve({
+          count: counts[Number(value)] ?? 0,
+          error: null,
+        });
+      }
+      return { eq };
+    });
+    return {
+      select: vi.fn().mockReturnValue({ eq }),
+    };
+  });
+  return { from };
 }
 
 describe('loadPublicReviewSummary', () => {
   it('returns empty when there are no ratings', async () => {
-    const db = createMockDb({ data: [], error: null });
+    const db = createCountDb({});
     await expect(loadPublicReviewSummary(db, 'biz-1')).resolves.toEqual({
       status: 'empty',
     });
   });
 
-  it('derives summary from rating rows only', async () => {
-    const db = createMockDb({
-      data: [{ rating: 5 }, { rating: 4 }],
-      error: null,
-    });
+  it('derives the score from every star count, not a recent page', async () => {
+    const db = createCountDb({ 5: 3, 4: 1 });
     const result = await loadPublicReviewSummary(db, 'biz-1');
     expect(result.status).toBe('ok');
     if (result.status === 'ok') {
-      expect(result.summary.reviewCount).toBe(2);
-      expect(result.summary.averageRating).toBe(4.5);
+      expect(result.summary.reviewCount).toBe(4);
+      expect(result.summary.averageRating).toBe(4.8);
+      expect(result.summary.breakdown[0]).toEqual({ stars: 5, percent: 75 });
     }
-    expect(db.select).toHaveBeenCalledWith('rating');
+    expect(db.from).toHaveBeenCalledWith('reviews');
   });
 });
 
 describe('publicReviewSummaryFromLoadResult', () => {
   it('returns summary only for ok status', () => {
-    const summary = {
-      averageRating: 5,
-      reviewCount: 1,
-      breakdown: [],
-    };
-    expect(summary);
-
     expect(publicReviewSummaryFromLoadResult({ status: 'empty' })).toBeNull();
   });
 });

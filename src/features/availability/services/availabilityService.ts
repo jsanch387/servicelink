@@ -38,6 +38,11 @@ export async function getAvailabilityForBusiness(
 /** Payload to save (snake_case for DB). */
 export interface SaveAvailabilityPayload {
   accept_bookings: boolean;
+  /**
+   * Omit to leave the stored value alone (and the column default on insert).
+   * True stores public bookings as requests. False auto-confirms.
+   */
+  public_booking_approval_required?: boolean;
   minimum_notice: string;
   buffer_time?: string;
   weekly_schedule: BusinessAvailabilityRow['weekly_schedule'];
@@ -65,6 +70,10 @@ export async function upsertAvailabilityForBusiness(
     weekly_schedule: payload.weekly_schedule,
     selected_preset: payload.selected_preset,
   };
+  if (typeof payload.public_booking_approval_required === 'boolean') {
+    row.public_booking_approval_required =
+      payload.public_booking_approval_required;
+  }
   if (payload.buffer_time !== undefined) {
     row.buffer_time = payload.buffer_time;
   }

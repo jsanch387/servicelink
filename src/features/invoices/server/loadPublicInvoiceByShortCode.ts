@@ -30,7 +30,7 @@ export async function loadPublicInvoiceByShortCode(
   const { data: invoice, error } = await db
     .from('invoices')
     .select(
-      'id, business_id, status, invoice_number, customer_name, customer_email, customer_phone, due_on, note, total_cents'
+      'id, business_id, status, invoice_number, customer_name, customer_email, customer_phone, due_on, note, subtotal_cents, tax_cents, tax_rate_bps, total_cents'
     )
     .eq('short_code', code)
     .maybeSingle();
@@ -73,6 +73,9 @@ export async function loadPublicInvoiceByShortCode(
         : null,
     dueOn: typeof invoice.due_on === 'string' ? invoice.due_on : null,
     note: typeof invoice.note === 'string' ? invoice.note : null,
+    subtotalCents: Number(invoice.subtotal_cents) || 0,
+    taxCents: Number(invoice.tax_cents) || 0,
+    taxRateBps: Number(invoice.tax_rate_bps) || 0,
     totalCents,
     canPay: await invoiceCanAcceptCardPayment(admin, {
       businessId: String(invoice.business_id),

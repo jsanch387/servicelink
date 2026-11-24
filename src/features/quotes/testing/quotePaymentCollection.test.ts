@@ -32,6 +32,17 @@ describe('quoteCustomerPayment', () => {
     });
   });
 
+  it('lets the customer pay in full or in person when deposits are off', () => {
+    const payment = quoteCustomerPayment({
+      collection: 'customer_choice',
+      priceCents: 20000,
+      depositType: null,
+      depositValue: null,
+      gatesOpen: true,
+    });
+    expect(payment.choices).toEqual(['full', 'pay_in_person']);
+  });
+
   it('lets the customer pay a deposit, the total, or in person', () => {
     const payment = quoteCustomerPayment({
       collection: 'customer_choice',

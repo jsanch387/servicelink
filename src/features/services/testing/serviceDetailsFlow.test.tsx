@@ -336,6 +336,28 @@ describe('ServiceDetailsScreen flow', () => {
     expect(screen.getByText(/optional add-ons/i)).toBeTruthy();
   });
 
+  it('skips the price summary and opens location when there is nothing to configure', () => {
+    render(
+      <ServiceDetailsScreen
+        businessSlug="acme-auto"
+        serviceId="svc-1"
+        service={{ ...baseService, priceOptionsEnabled: false }}
+        addOns={[]}
+        priceOptions={[]}
+        serviceLocation={bothLocation}
+      />
+    );
+
+    expect(screen.queryByText('summary')).toBeNull();
+    expect(
+      screen.getByRole('heading', { name: /where should service happen/i })
+    ).toBeTruthy();
+    expect(screen.getByRole('link', { name: /back to profile/i })).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: /back to options/i })
+    ).toBeNull();
+  });
+
   it('asks for mobile vs shop before calendar when business offers both', async () => {
     const user = userEvent.setup();
     render(

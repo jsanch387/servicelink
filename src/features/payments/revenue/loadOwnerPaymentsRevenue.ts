@@ -1,5 +1,8 @@
 import { resolveTapToPayRouteAuth } from '@/features/availability/booking/server/resolveTapToPayRouteAuth';
-import { formatPaymentDollars } from '@/features/payments/utils/formatPaymentMoney';
+import {
+  formatPaymentCents,
+  formatPaymentDollars,
+} from '@/features/payments/utils/formatPaymentMoney';
 import { assertOwnerPaymentsTransactionsRateLimits } from '@/server/rateLimit/ownerPaymentsTransactionsRateLimit';
 import type { NextRequest } from 'next/server';
 import { aggregatePaymentsRevenue } from './aggregatePaymentsRevenue';
@@ -22,6 +25,8 @@ export type LoadOwnerPaymentsRevenueResult =
       toYmd: string;
       totalCents: number;
       totalLabel: string;
+      taxCollectedCents: number;
+      taxCollectedLabel: string;
       previousTotalCents: number;
       changePercent: number | null;
       jobsPaid: number;
@@ -113,6 +118,8 @@ export async function loadOwnerPaymentsRevenue(
     toYmd: range.range.toYmd,
     totalCents: summary.collectedCents,
     totalLabel: formatPaymentDollars(summary.collectedCents),
+    taxCollectedCents: summary.taxCollectedCents,
+    taxCollectedLabel: formatPaymentCents(summary.taxCollectedCents),
     previousTotalCents: summary.previousTotalCents,
     changePercent: summary.changePercent,
     jobsPaid: summary.jobsPaid,

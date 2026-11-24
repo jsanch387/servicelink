@@ -23,6 +23,7 @@ import {
   PRESET_WEEKENDS_ONLY,
 } from '../utils/presets';
 import { BlockTimeSection } from './BlockTimeSection';
+import { BookingConfirmationSection } from './BookingConfirmationSection';
 import { BufferTimeSection } from './BufferTimeSection';
 import { LeadTimeSection } from './LeadTimeSection';
 import { MasterToggleSection } from './MasterToggleSection';
@@ -71,6 +72,7 @@ export const AvailabilityContent: React.FC = () => {
     'mon_fri_9_5'
   );
   const [saving, setSaving] = useState(false);
+  const [autoConfirmBookings, setAutoConfirmBookings] = useState(true);
   const [timeOffBlocks, setTimeOffBlocks] = useState<BlockTimeEntry[]>([]);
   const [activeTab, setActiveTab] = useState<AvailabilityTab>('schedule');
 
@@ -79,12 +81,16 @@ export const AvailabilityContent: React.FC = () => {
     if (loading) return;
     if (!availabilityData) {
       setAcceptBookings(false);
+      setAutoConfirmBookings(true);
       setMinimumNotice('none');
       setBufferTime('none');
       setTimeOffBlocks([]);
       return;
     }
     setAcceptBookings(availabilityData.accept_bookings);
+    setAutoConfirmBookings(
+      availabilityData.public_booking_approval_required !== true
+    );
     setSchedule(availabilityData.weekly_schedule ?? { ...DEFAULT_SCHEDULE });
     const preset =
       availabilityData.selected_preset &&
@@ -139,6 +145,7 @@ export const AvailabilityContent: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           acceptBookings,
+          requireBookingApproval: !autoConfirmBookings,
           schedule,
           minimumNotice,
           bufferTime,
@@ -160,6 +167,7 @@ export const AvailabilityContent: React.FC = () => {
     }
   }, [
     acceptBookings,
+    autoConfirmBookings,
     schedule,
     minimumNotice,
     bufferTime,
@@ -276,6 +284,11 @@ export const AvailabilityContent: React.FC = () => {
                     acceptBookings ? '' : 'opacity-50'
                   }`}
                 >
+                  <BookingConfirmationSection
+                    autoConfirm={autoConfirmBookings}
+                    onToggle={setAutoConfirmBookings}
+                    disabled={!acceptBookings}
+                  />
                   <BlockTimeSection
                     entries={timeOffBlocks}
                     onEntriesChange={setTimeOffBlocks}

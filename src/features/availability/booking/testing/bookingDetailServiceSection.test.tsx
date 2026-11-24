@@ -107,4 +107,39 @@ describe('BookingDetailServiceSection', () => {
     expect(screen.getByText('Summer Sale — 10% off')).toBeTruthy();
     expect(screen.getByText('$180.00')).toBeTruthy();
   });
+
+  it('adds stored tax onto the visit total', () => {
+    render(
+      <BookingDetailServiceSection
+        booking={baseBooking({
+          servicePriceCents: 85_00,
+          jobs: [
+            {
+              serviceName: 'Exterior Wash',
+              servicePriceOptionLabel: null,
+              servicePriceCents: 85_00,
+              durationMinutes: 60,
+              selectedAddOns: [],
+              vehicleLabel: null,
+            },
+          ],
+          payment: {
+            paymentStatus: 'deposit_paid',
+            paymentMethodSelected: 'pay_in_person',
+            currency: 'usd',
+            totalAmountCents: 86_91,
+            paidOnlineAmountCents: 10_00,
+            remainingAmountCents: 76_91,
+            taxCents: 191,
+            taxRateBps: 225,
+          },
+        })}
+      />
+    );
+
+    expect(screen.getByText('$85.00')).toBeTruthy();
+    expect(screen.getByText('Tax (2.25%)')).toBeTruthy();
+    expect(screen.getByText('$1.91')).toBeTruthy();
+    expect(screen.getByText('$86.91')).toBeTruthy();
+  });
 });

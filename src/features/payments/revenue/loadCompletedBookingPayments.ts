@@ -18,7 +18,7 @@ const SELECT = [
   'addon_details',
   'subtotal_cents',
   'discount_cents',
-  'booking_payments ( total_amount_cents, paid_online_amount_cents, session_fees_total_cents, session_payment_amount_cents, remaining_amount_cents, session_payment_method, session_payment_recorded_at )',
+  'booking_payments ( total_amount_cents, paid_online_amount_cents, session_fees_total_cents, session_payment_amount_cents, remaining_amount_cents, session_payment_method, session_payment_recorded_at, tax_cents )',
 ].join(', ');
 
 export type LoadCompletedBookingPaymentsResult =

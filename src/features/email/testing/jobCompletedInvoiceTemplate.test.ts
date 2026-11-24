@@ -149,6 +149,36 @@ describe('buildJobCompletedInvoiceEmailHtml', () => {
     expect(html).not.toContain('SUV');
   });
 
+  it('shows the tip under the visit total and the charged amount', () => {
+    const html = buildJobCompletedInvoiceEmailHtml({
+      ...basePayload,
+      totalCents: 10000,
+      tipCents: 2000,
+    });
+    expect(html).toContain('Total');
+    expect(html).toContain('$100.00');
+    expect(html).toContain('Tip');
+    expect(html).toContain('$20.00');
+    expect(html).toContain('Amount paid');
+    expect(html).toContain('$120.00');
+
+    const text = buildJobCompletedInvoiceEmailPlainText({
+      ...basePayload,
+      totalCents: 10000,
+      tipCents: 2000,
+    });
+    expect(text).toContain('Total: $100.00');
+    expect(text).toContain('Tip: $20.00');
+    expect(text).toContain('Amount paid: $120.00');
+  });
+
+  it('leaves a receipt with no tip unchanged', () => {
+    const html = buildJobCompletedInvoiceEmailHtml(basePayload);
+    expect(html).toContain('$120.00');
+    expect(html).not.toContain('>Tip<');
+    expect(html).not.toContain('Amount paid');
+  });
+
   it('uses membership copy instead of a $0.00 total', () => {
     const html = buildJobCompletedInvoiceEmailHtml({
       ...basePayload,

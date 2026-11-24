@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildVehicleAssetDraft,
+  parseManualVehicleFields,
   vehicleAssetFingerprint,
   vehicleAssetLabel,
 } from '../utils/customerAssetTypes';
@@ -26,6 +27,19 @@ describe('customer asset helpers', () => {
     expect(
       buildVehicleAssetDraft({ year: '2018', make: 'Toyota', model: '' })
     ).toBeNull();
+  });
+
+  it('accepts a manual year, make, and model', () => {
+    expect(
+      parseManualVehicleFields({
+        year: ' 2019 ',
+        make: 'Honda',
+        model: 'Civic',
+      })
+    ).toEqual({ ok: true, year: '2019', make: 'Honda', model: 'Civic' });
+    expect(
+      parseManualVehicleFields({ year: '19', make: 'Honda', model: 'Civic' }).ok
+    ).toBe(false);
   });
 
   it('dedupes vehicles from customer + jobs', () => {

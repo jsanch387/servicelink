@@ -25,6 +25,8 @@ interface BusinessProfile {
 
 export interface OnboardingState {
   status: 'not_started' | 'in_progress' | 'completed';
+  /** NULL and v2 stay on the 5-step flow. v3 is the 2-step flow. */
+  onboardingFlow: 'v2' | 'v3' | null;
   currentStep: number;
   userProfile: Record<string, unknown>;
   businessProfile: BusinessProfile | null;
@@ -66,7 +68,7 @@ export async function getOnboardingState(
     const { data: profileRows, error: profileError } = await db
       .from('profiles')
       .select(
-        'user_id, onboarding_status, onboarding_step, full_name, created_at, updated_at'
+        'user_id, onboarding_status, onboarding_step, onboarding_flow, full_name, created_at, updated_at'
       )
       .eq('user_id', userId)
       .order('created_at', { ascending: true })
@@ -192,8 +194,13 @@ export async function getOnboardingState(
       };
     }
 
+    const flowRaw = userProfile.onboarding_flow;
+    const onboardingFlow =
+      flowRaw === 'v2' || flowRaw === 'v3' ? flowRaw : null;
+
     const state: OnboardingState = {
       status: status as OnboardingState['status'],
+      onboardingFlow,
       currentStep,
       userProfile,
       businessProfile,

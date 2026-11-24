@@ -101,6 +101,32 @@ export function buildVehicleAssetDraft(input: {
   };
 }
 
+const VEHICLE_YEAR = /^\d{4}$/;
+const VEHICLE_NAME_MAX = 40;
+
+/** Manual add from the customer page. Year is four digits; make and model are required. */
+export function parseManualVehicleFields(input: {
+  year: string;
+  make: string;
+  model: string;
+}):
+  | { ok: true; year: string; make: string; model: string }
+  | { ok: false; error: string } {
+  const year = input.year.trim();
+  const make = input.make.trim();
+  const model = input.model.trim();
+  if (!VEHICLE_YEAR.test(year)) {
+    return { ok: false, error: 'Enter a 4-digit year.' };
+  }
+  if (!make || !model) {
+    return { ok: false, error: 'Make and model are required.' };
+  }
+  if (make.length > VEHICLE_NAME_MAX || model.length > VEHICLE_NAME_MAX) {
+    return { ok: false, error: 'Make and model are too long.' };
+  }
+  return { ok: true, year, make, model };
+}
+
 export function isPetSpeciesValue(value: string): value is PetSpecies {
   return (PET_SPECIES_VALUES as readonly string[]).includes(value);
 }

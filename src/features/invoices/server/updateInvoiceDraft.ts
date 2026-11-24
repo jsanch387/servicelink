@@ -1,7 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { quotePublicBookingSalesTax } from '@/features/availability/booking/utils/publicBookingSalesTax';
+
 import type { ParsedInvoiceDraft } from '../utils/parseSaveInvoiceDraft';
 import { bookingLink } from './insertInvoiceDraft';
+import { loadInvoiceTaxPreview } from './loadInvoiceTaxPreview';
 
 const POSITION_OFFSET = 1000;
 
@@ -116,6 +119,19 @@ export async function updateInvoiceDraft(
   }
 
   const linked = await bookingLink(admin, input.businessId, input.bookingId);
+  const taxBookingId =
+    (typeof invoice.booking_id === 'string' && invoice.booking_id) ||
+    linked.bookingId;
+  const taxPreview = await loadInvoiceTaxPreview(
+    admin,
+    input.businessId,
+    taxBookingId
+  );
+  const salesTax = quotePublicBookingSalesTax({
+    priceAfterDiscountCents: draft.subtotalCents,
+    taxEnabled: taxPreview.salesTaxEnabled,
+    taxRateBps: taxPreview.salesTaxRateBps,
+  });
 
   const { error: headerError } = await db
     .from('invoices')
@@ -126,7 +142,9 @@ export async function updateInvoiceDraft(
       note: draft.note,
       due_on: draft.dueOn,
       subtotal_cents: draft.subtotalCents,
-      total_cents: draft.totalCents,
+      tax_rate_bps: salesTax.rateBps,
+      tax_cents: salesTax.taxCents,
+      total_cents: salesTax.totalCents,
       ...(linked.bookingId && !invoice.booking_id
         ? { booking_id: linked.bookingId }
         : {}),

@@ -17,6 +17,7 @@ export type PublicBookingUi = {
     backToAddOns: string;
     backToServices: string;
     backToBookings: string;
+    backToDashboard: string;
     backToAppointmentType: string;
   };
   common: {
@@ -47,7 +48,11 @@ export type PublicBookingUi = {
     schedule: string;
     customer: string;
     subtotal: string;
+    /** `Tax (8.25%)` — rate label already includes the percent sign. */
+    salesTax: (rate: string) => string;
     visitTotal: string;
+    /** Request review and request-sent screen. Includes tax when tax is on. */
+    estimatedTotal: string;
     /** Summary row when customer email was left blank */
     emailNotProvided: string;
   };
@@ -172,6 +177,12 @@ export type PublicBookingUi = {
     policyConsentRequired: string;
     continueToPayment: string;
     confirmBooking: string;
+    /** Final public CTA when the business requires approval. */
+    requestAppointment: string;
+    /** Shown above that CTA so the customer knows approval comes first. */
+    requestAppointmentNote: (businessName: string) => string;
+    /** Busy label for that same CTA. */
+    requestingAppointment: string;
     chooseHowToPay: string;
     paymentHeading: string;
     howDoYouWantToPay: string;
@@ -310,8 +321,12 @@ export type PublicBookingUi = {
     subtitleCustomerNoEmail: (businessName: string) => string;
     cardHeaderOwner: string;
     cardHeaderCustomer: string;
+    /** Public customer title when the business must approve the appointment. */
+    requestTitle: string;
+    requestSubtitleCustomer: (businessName: string) => string;
+    requestSubtitleCustomerNoEmail: (businessName: string) => string;
+    requestCardHeader: string;
     ownerPaymentNote: string;
-    customerPaymentNote: string;
     goToBookings: string;
     backToProfile: string;
   };
@@ -332,6 +347,8 @@ export type PublicBookingUi = {
     seeMore: string;
     seeLess: string;
     contactForQuote: string;
+    /** Public booking-link card action. */
+    book: string;
   };
   /** Customer subscription plans on the public booking link. */
   subscriptions: {
@@ -370,6 +387,9 @@ export type PublicBookingUi = {
     firstVisitTimeTitle: string;
     firstVisitTimeRequired: string;
     firstVisitNoSlots: string;
+    reviewTitle: string;
+    /** Date row on the subscribe review. The visit itself is not a charge. */
+    reviewFirstVisitLabel: string;
     /** Back link on `/{slug}/subscribe`. */
     subscribePageBackLabel: string;
     subscribeStepBackLabel: string;
@@ -460,6 +480,7 @@ export type PublicBookingUi = {
     reviewsTab: string;
     noBioYet: string;
     specialtiesAriaLabel: string;
+    socialMediaAriaLabel: string;
     bookingPolicyLabel: string;
     viewBookingPolicy: (businessName: string) => string;
     /** Public profile: free cap — clarify bookings are paused via ServiceLink only. */
@@ -467,8 +488,11 @@ export type PublicBookingUi = {
     reviewCountLabel: (count: number) => string;
     ratingAriaLabel: (average: string) => string;
     reviewsSectionTitle: string;
+    googleReviewsSectionTitle: string;
     reviewsShowingSample: string;
     reviewsLoadError: string;
+    reviewsLoadMore: string;
+    reviewsLoadMoreError: string;
     reviewsRetry: string;
     reviewsLoadingAriaLabel: string;
     galleryLoadError: string;
@@ -537,5 +561,110 @@ export type PublicBookingUi = {
     errVehicleMake: string;
     errVehicleModel: string;
     submitErrorGeneric: string;
+  };
+  /** Public booking v2 — set up one service before it joins the visit. */
+  bookingV2: {
+    servicesStep: string;
+    stepOf: (current: number, total: number) => string;
+    backToProfile: string;
+    readMore: string;
+    showLess: string;
+    pricingOptions: string;
+    addOns: string;
+    optional: string;
+    yourVehicle: string;
+    yourPet: string;
+    vehicleHelper: string;
+    year: string;
+    make: string;
+    model: string;
+    viewDescription: string;
+    hideDescription: string;
+    addToBooking: string;
+    saveChanges: string;
+    addAService: string;
+    percentOff: (percent: number) => string;
+    amountOff: (amount: string) => string;
+    back: string;
+    yourBooking: string;
+    yourBookingSubtitle: string;
+    yourBookingSubtitlePlace: string;
+    edit: string;
+    remove: string;
+    addAnotherService: string;
+    addAnotherServiceHint: string;
+    whereShouldWeDoIt: string;
+    weComeToYou: string;
+    atYourHomeOrWork: string;
+    atOurShop: string;
+    pickATime: string;
+    dateTimeStep: string;
+    soonestAvailable: string;
+    orPickAnotherDay: string;
+    morning: string;
+    afternoon: string;
+    evening: string;
+    continue: string;
+    serviceCount: (count: number) => string;
+    noOpenTimes: string;
+    previousMonth: string;
+    nextMonth: string;
+    yourDetails: string;
+    detailsRequiredHint: string;
+    contact: string;
+    phone: string;
+    phonePlaceholder: string;
+    fullName: string;
+    namePlaceholder: string;
+    emailOptional: string;
+    emailPlaceholder: string;
+    detailsPhoneHint: string;
+    serviceAddress: string;
+    streetAddress: string;
+    streetPlaceholder: string;
+    unitOptional: string;
+    unitPlaceholder: string;
+    city: string;
+    cityPlaceholder: string;
+    state: string;
+    statePlaceholder: string;
+    zip: string;
+    zipPlaceholder: string;
+    noteForUs: string;
+    reviewAndPay: string;
+    price: string;
+    subtotal: string;
+    havePromoCode: string;
+    total: string;
+    howToPay: string;
+    payNow: string;
+    payNowHint: string;
+    payInPerson: string;
+    payAtAppointment: string;
+    payWithCard: (amount: string) => string;
+    depositPercentNote: (businessName: string, percent: number) => string;
+    depositFixedNote: (businessName: string, amount: string) => string;
+    secureStripe: string;
+    confirmBooking: string;
+    submittingAppointment: string;
+    openingCheckout: string;
+    requestingAppointment: string;
+    notePlaceholder: string;
+    percentOffApplied: (percent: number) => string;
+    amountOffApplied: (amount: string) => string;
+    emptyBooking: string;
+    bookedTitle: string;
+    textedConfirmation: string;
+    emailedConfirmation: string;
+    textedAndEmailedConfirmation: string;
+    aboutDuration: (duration: string) => string;
+    addOnCount: (count: number) => string;
+    paid: string;
+    depositPaid: string;
+    addToCalendar: string;
+    text: string;
+    call: string;
+    changeInText: string;
+    backToBusiness: (businessName: string) => string;
   };
 };

@@ -4,6 +4,7 @@ export type ListCustomersSuccess = {
   success: true;
   customers: CustomerRecord[];
   businessName: string | null;
+  businessType?: string | null;
   businessBookingLink: string;
 };
 

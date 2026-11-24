@@ -5,9 +5,9 @@ import {
 } from '@/constants/routes';
 import { normalizePublicBookingOfferedLocales } from '@/libs/bookingFlowLocale';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
+import { InstagramIcon, TikTokIcon } from '@/icons';
 import { MapPinIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import { CheckBadgeIcon } from '@heroicons/react/24/solid';
-import { InstagramIcon, TikTokIcon } from '@/icons';
 import { ProfileRatingSummary } from '../reviews';
 import type { PublicProfileReviewsSummary } from '@/features/reviews';
 import { PublicBookingLanguageToggle } from './PublicBookingLanguageToggle';
@@ -17,11 +17,11 @@ import {
   LogoPlaceholder,
 } from '../../../components/shared';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
+import { socialLinksForDisplay } from '../utils/socialMedia';
 import {
   getProfileCoverDisplaySrc,
   getProfileLogoDisplaySrc,
 } from '../utils/workPhotoSrc';
-import { socialLinksForDisplay } from '../utils/socialMedia';
 import { ProfileMediaImage } from './ProfileMediaImage';
 
 interface ProfileHeaderProps {
@@ -202,7 +202,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         {socialLinks.length > 0 ? (
           <div
             className="mt-3.5 flex items-center justify-center gap-2.5"
-            aria-label="Social media"
+            aria-label={ui.profile.socialMediaAriaLabel}
           >
             {socialLinks.map(link => (
               <a
