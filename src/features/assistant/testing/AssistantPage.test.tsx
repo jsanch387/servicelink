@@ -1,7 +1,8 @@
 import { AssistantPage } from '@/features/assistant';
-import { cleanup, render, screen } from '@testing-library/react';
+import { ASSISTANT_BETA_TEXT_LIMIT } from '@/features/assistant/constants/assistantBetaLimits';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   REBOOK_CHECKIN_AFTER_DAYS,
@@ -13,6 +14,13 @@ import {
 afterEach(() => {
   cleanup();
 });
+
+const usage = {
+  yearMonth: '2026-10',
+  sent: 0,
+  limit: ASSISTANT_BETA_TEXT_LIMIT,
+  remaining: ASSISTANT_BETA_TEXT_LIMIT,
+};
 
 function person(
   id: string,
@@ -48,72 +56,111 @@ const today = buildAssistantToday({
 });
 
 describe('Assistant sample day', () => {
-  it('prepares Sarah’s booking message and marks it sent', async () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          success: true,
+          recorded: 3,
+          usage: {
+            ...usage,
+            sent: 3,
+            remaining: ASSISTANT_BETA_TEXT_LIMIT - 3,
+          },
+          results: [
+            { customerId: 'sarah', subject: 'rebook_checkin', ok: true },
+            { customerId: 'marco', subject: 'rebook_checkin', ok: true },
+            { customerId: 'elena', subject: 'rebook_checkin', ok: true },
+          ],
+        }),
+      }))
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('opens check-ins and marks selected texts sent', async () => {
     const user = userEvent.setup();
-    render(<AssistantPage today={today} />);
+    render(<AssistantPage today={today} usage={usage} />);
 
     expect(screen.getByRole('heading', { name: 'Assistant' })).toBeTruthy();
-    expect(screen.getByText(/Jane hasn’t left a review yet/)).toBeTruthy();
-    expect(screen.getByText(/Sarah hasn’t booked in/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: 'Send to 3' }));
-
-    expect(
-      screen.getByRole('textbox', { name: 'Booking message for Sarah' })
-    ).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: 'Send to Sarah' }));
-
-    expect(screen.getByText('Sent')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Preview' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Restart' })).toBeNull();
-  });
-
-  it('returns to the morning list from the message screen', async () => {
-    const user = userEvent.setup();
-    render(<AssistantPage today={today} />);
-
-    await user.click(screen.getByRole('button', { name: 'Send to 4' }));
-    expect(
-      screen.getByRole('textbox', { name: 'Review follow-up for Jane' })
-    ).toBeTruthy();
-
-    await user.click(screen.getByRole('button', { name: 'Back' }));
-
-    expect(screen.getByRole('button', { name: 'Send to 4' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Send to 3' })).toBeTruthy();
-    expect(
-      screen.queryByRole('textbox', { name: 'Review follow-up for Jane' })
-    ).toBeNull();
-  });
-
-  it('lets a morning note be skipped', async () => {
-    const user = userEvent.setup();
-    render(<AssistantPage today={today} />);
-
     await user.click(
-      screen.getByRole('button', { name: 'Skip booking messages' })
-    );
-
-    expect(screen.getByText('Booking messages skipped')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Preview' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Restart' })).toBeNull();
-  });
-
-  it('collapses and expands the assistant panel', async () => {
-    const user = userEvent.setup();
-    render(<AssistantPage today={today} />);
-
-    await user.click(
-      screen.getByRole('button', { name: 'Collapse assistant' })
+      screen.getByRole('button', {
+        name: /These customers haven’t booked in a while/,
+      })
     );
 
     expect(
-      screen.getByRole('button', { name: 'Expand assistant' })
+      screen.getByRole('heading', { name: 'Check in with customers' })
+    ).toBeTruthy();
+    expect(screen.getByText('Message')).toBeTruthy();
+    expect(screen.getByText('Sarah Lee')).toBeTruthy();
+    expect(
+      screen.getAllByRole('meter', { name: /of .* texts this month/ }).length
+    ).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: 'Send 3 texts' }));
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Sent').length).toBeGreaterThan(0);
+    });
+  });
+
+  it('returns to the morning list from the prepare screen', async () => {
+    const user = userEvent.setup();
+    render(<AssistantPage today={today} usage={usage} />);
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /These customers haven’t left a review/,
+      })
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Ask for reviews' })
     ).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'Expand assistant' }));
+    await user.click(screen.getByRole('button', { name: 'Assistant' }));
 
     expect(
-      screen.getByRole('button', { name: 'Collapse assistant' })
+      screen.getByRole('button', {
+        name: /These customers haven’t left a review/,
+      })
     ).toBeTruthy();
+    expect(
+      screen.getByRole('button', {
+        name: /These customers haven’t booked in a while/,
+      })
+    ).toBeTruthy();
+  });
+
+  it('opens handled activity from the morning list', async () => {
+    const user = userEvent.setup();
+    render(<AssistantPage today={today} usage={usage} />);
+
+    await user.click(
+      screen.getByRole('button', { name: /Handled for you this week/ })
+    );
+
+    expect(screen.getByRole('button', { name: 'Today' })).toBeTruthy();
+  });
+
+  it('fills the ask field from a suggestion', async () => {
+    const user = userEvent.setup();
+    render(<AssistantPage today={today} usage={usage} />);
+
+    await user.click(
+      screen.getByRole('button', { name: 'How much did I make last month?' })
+    );
+
+    expect(
+      (
+        screen.getByRole('textbox', {
+          name: 'Ask about your business',
+        }) as HTMLInputElement
+      ).value
+    ).toBe('How much did I make last month?');
   });
 });

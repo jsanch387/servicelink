@@ -200,6 +200,25 @@ export const API_ROUTES = {
    */
   PAYMENTS_REVENUE: '/api/payments/revenue',
   CUSTOMERS: '/api/customers',
+  /**
+   * Owner/manager: Assistant action items for today (reviews + check-ins).
+   * Auth: Bearer (mobile) or cookie (web). Requires customers.read.
+   */
+  ASSISTANT_TODAY: '/api/assistant/today',
+  /** Owner/manager: monthly Assistant text usage (beta cap). */
+  ASSISTANT_USAGE: '/api/assistant/usage',
+  /** Owner/manager: log Skip decisions (no SMS). Requires customers.write. */
+  ASSISTANT_SKIP: '/api/assistant/skip',
+  /**
+   * Owner/manager: accept Send — reserves quota + logs `sent` (SMS later).
+   * Requires customers.write.
+   */
+  ASSISTANT_SEND: '/api/assistant/send',
+  /**
+   * Owner/manager: mint unique review invite URLs for Prepare drafts.
+   * Requires customers.read.
+   */
+  ASSISTANT_REVIEW_LINKS: '/api/assistant/review-links',
   /** Shop bookings list (owner or active member). */
   AVAILABILITY_BOOKINGS: '/api/availability/bookings',
   /** Owner + active teammates who can be assigned to a booking. */

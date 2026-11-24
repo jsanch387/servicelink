@@ -23,9 +23,18 @@ export type AssistantDraft = {
   id: string;
   label: string;
   customerName: string;
+  customerId: string;
+  bookingId?: string | null;
   detail: string;
   body: string;
   status: AssistantActionStatus;
+  /** Short visit label for the list, e.g. "Nov 4". */
+  visitDate?: string;
+  subject?:
+    | 'review_followup'
+    | 'rebook_checkin'
+    | 'quote_followup'
+    | 'invoice_reminder';
 };
 
 export type AssistantView = 'today' | 'activity';

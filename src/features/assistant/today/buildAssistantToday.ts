@@ -25,6 +25,8 @@ export type AssistantCustomerInput = {
   phone: string | null;
   email: string | null;
   lastVisitDaysAgo: number | null;
+  /** YYYY-MM-DD of the last completed visit, when known. */
+  lastVisitOn?: string | null;
   lastVisitBookingId: string | null;
   hasUpcomingAppointment: boolean;
   hasReview: boolean;
@@ -49,6 +51,10 @@ export type AssistantPerson = {
   days: number;
   detail: string;
   body: string;
+  /** Short visit label for the prepare list, e.g. "Nov 4". */
+  visitDate: string;
+  /** Present on quote and invoice rows for money copy. */
+  amountCents?: number;
 };
 
 export type AssistantQuoteInput = {
@@ -143,7 +149,7 @@ export function buildAssistantToday(input: {
       !suppressed.has(key(customer.id, 'review_followup'))
     ) {
       reviews.push(
-        person(customer, 'review_followup', name, days, input.bookingUrl)
+        person(customer, 'review_followup', name, days, input.bookingUrl, now)
       );
     }
 
@@ -153,7 +159,7 @@ export function buildAssistantToday(input: {
       !suppressed.has(key(customer.id, 'rebook_checkin'))
     ) {
       checkIns.push(
-        person(customer, 'rebook_checkin', name, days, input.bookingUrl)
+        person(customer, 'rebook_checkin', name, days, input.bookingUrl, now)
       );
     }
   }
@@ -203,10 +209,12 @@ function person(
   subject: AssistantSubject,
   name: string,
   days: number,
-  bookingUrl: string
+  bookingUrl: string,
+  now: Date
 ): AssistantPerson {
   const firstName = name.split(/\s+/)[0] || name;
   const dayWord = days === 1 ? 'day' : 'days';
+  const visitDate = formatVisitDate(customer, days, now);
 
   if (subject === 'review_followup') {
     return {
@@ -218,14 +226,15 @@ function person(
       firstName,
       days,
       detail: `No review yet. It’s been ${days} ${dayWord}.`,
-      body: `Hey ${firstName}, hope the detail is still looking great. Would you mind leaving a quick review when you get a chance? It really helps. [review link]`,
+      body: `Thanks again for trusting us. If you have a minute, a quick review really helps us out: [review link]`,
+      visitDate,
     };
   }
 
   const link = bookingUrl.trim();
-  const bookLine = link
-    ? ` Book here: ${link}. Or call or text me.`
-    : ' Call or text me and I’ll hold a spot.';
+  const body = link
+    ? `Hey, it’s been a while since your last appointment. Just wanted to share our booking link in case you’re ready to come back in: ${link}`
+    : `Hey, it’s been a while since your last appointment. Just wanted to check in — happy to hold a spot whenever you’re ready.`;
 
   return {
     id: `${customer.id}:rebook_checkin`,
@@ -236,8 +245,33 @@ function person(
     firstName,
     days,
     detail: `Hasn’t booked in ${days} ${dayWord}.`,
-    body: `Hey ${firstName}, it’s been ${days} ${dayWord} since your last detail. I can hold a spot this week or next.${bookLine}`,
+    body,
+    visitDate,
   };
+}
+
+function formatVisitDate(
+  customer: AssistantCustomerInput,
+  days: number,
+  now: Date
+): string {
+  if (customer.lastVisitOn) {
+    const [year, month, day] = customer.lastVisitOn.split('-').map(Number);
+    if (year && month && day) {
+      return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      });
+    }
+  }
+
+  const visit = new Date(now);
+  visit.setHours(0, 0, 0, 0);
+  visit.setDate(visit.getDate() - days);
+  return visit.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
 export function assistantBrief(groups: {
@@ -467,6 +501,8 @@ function quotePerson(
     days: quote.daysWaiting,
     detail: `Out for ${quote.daysWaiting} ${dayWord} · ${amount}`,
     body: `Hey ${firstName}, just checking in on the ${about} for ${amount}. Happy to hold a spot if you want it.`,
+    visitDate: '—',
+    amountCents: quote.amountCents,
   };
 }
 
@@ -497,6 +533,8 @@ function invoicePerson(
     days: overdue === null ? invoice.daysSinceSent : overdue,
     detail,
     body: `Hey ${firstName}, your invoice for ${amount} is still open.${pay}`,
+    visitDate: '—',
+    amountCents: invoice.amountCents,
   };
 }
 

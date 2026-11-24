@@ -1,6 +1,6 @@
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { Button, IconButton } from '@/components/shared';
-import React, { useState } from 'react';
+import { ArrowUpIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { Button } from '@/components/shared';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 
 import {
   draftById,
@@ -8,396 +8,304 @@ import {
   eveningLines,
   sentConfirmation,
 } from '../mock/sampleDay';
-import {
-  assistantBrief,
-  type AssistantBrief,
-  type AssistantPerson,
-} from '../today/buildAssistantToday';
+import type { AssistantPerson } from '../today/buildAssistantToday';
 import type { ActivityEntry, AssistantDraft } from '../types';
-import { AssistantMark } from './AssistantMark';
-import { DraftMessageCard } from './DraftMessageCard';
-import { RecentActivity } from './RecentActivity';
 
 const GROUPS = [
   {
-    kind: 'quote',
-    label: 'Quotes',
-    skipLabel: 'Quotes',
-    detail: 'Sent, and no reply yet',
-    preview:
-      'Hey {first_name}, just checking in on the quote I sent. Happy to hold a spot if you want it.',
-    title: (count: number, name: string) =>
-      count === 1 ? `Follow up with ${name}` : `Follow up on ${count} quotes`,
-  },
-  {
-    kind: 'invoice',
-    label: 'Invoices',
-    skipLabel: 'Invoices',
-    detail: 'Still unpaid',
-    preview:
-      'Hey {first_name}, your invoice is still open whenever you’re ready to pay.',
-    title: (count: number, name: string) =>
-      count === 1 ? `Collect from ${name}` : `Collect ${count} invoices`,
-  },
-  {
     kind: 'review',
-    label: 'Reviews',
-    skipLabel: 'Reviews',
-    detail: 'No review yet',
-    preview:
-      'Hi {first_name}, thanks again for trusting us. A quick review would mean a lot. [review link]',
-    title: (count: number, name: string) =>
-      count === 1 ? `Ask ${name} for a review` : `Ask for ${count} reviews`,
+    title: 'These customers haven’t left a review',
+    subtitle: () => 'Asking usually brings in one or two',
   },
   {
     kind: 'customer',
-    label: 'Check-in',
-    skipLabel: 'Booking messages',
-    detail: 'It’s been a while since the last visit',
-    preview:
-      'Hey {first_name}, it’s been a while since your last detail. I can hold a spot this week. [booking link]',
-    title: (count: number, name: string) =>
-      count === 1 ? `Check in with ${name}` : `Check in with ${count} regulars`,
+    title: 'These customers haven’t booked in a while',
+    subtitle: () => 'Last visit over 90 days ago',
   },
 ] as const;
 
-const compactButtonClass =
-  '!h-7 !min-h-0 !rounded-lg !px-2.5 !py-0 !text-[13px] !font-medium !leading-none';
+const ASK_SUGGESTIONS = [
+  'How much did I make last month?',
+  'Who are my top customers?',
+  'Which service makes me the most?',
+  'Block off Friday afternoon',
+] as const;
 
-const NAME_PREVIEW = 3;
-
-function initials(name: string) {
-  return name.slice(0, 2).toUpperCase();
+function groupTitle(group: (typeof GROUPS)[number]): string {
+  return group.title;
 }
 
-function AssistantRail({ brief }: { brief: AssistantBrief }) {
+function handledSummary(activity: readonly ActivityEntry[]): string {
+  if (activity.length === 0) {
+    return 'When messages go out, they’ll show up here.';
+  }
+
+  const counts = {
+    review: 0,
+    rebook: 0,
+    reminder: 0,
+    other: 0,
+  };
+  for (const entry of activity) {
+    if (entry.topic === 'review') counts.review += 1;
+    else if (entry.topic === 'rebook') counts.rebook += 1;
+    else if (entry.topic === 'reminder') counts.reminder += 1;
+    else counts.other += 1;
+  }
+
+  const parts: string[] = [];
+  if (counts.reminder > 0) {
+    parts.push(
+      `${counts.reminder} ${counts.reminder === 1 ? 'reminder' : 'reminders'}`
+    );
+  }
+  if (counts.review > 0) {
+    parts.push(
+      `${counts.review} ${counts.review === 1 ? 'review request' : 'review requests'}`
+    );
+  }
+  if (counts.rebook > 0) {
+    parts.push(
+      `${counts.rebook} ${counts.rebook === 1 ? 'check-in' : 'check-ins'}`
+    );
+  }
+  if (counts.other > 0) {
+    parts.push(`${counts.other} ${counts.other === 1 ? 'update' : 'updates'}`);
+  }
+  return parts.join(' · ');
+}
+
+const ASK_LINE_HEIGHT = 22;
+const ASK_MAX_LINES = 8;
+
+function AskAnythingRail() {
+  const [draft, setDraft] = useState('');
+  const [expanded, setExpanded] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = '0px';
+    const next = Math.min(
+      Math.max(el.scrollHeight, ASK_LINE_HEIGHT),
+      ASK_LINE_HEIGHT * ASK_MAX_LINES
+    );
+    el.style.height = `${next}px`;
+    setExpanded(next > ASK_LINE_HEIGHT + 4);
+  }, [draft]);
+
+  const sendButton = (
+    <button
+      type="submit"
+      aria-label="Send question"
+      disabled={!draft.trim()}
+      className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-black transition-opacity disabled:cursor-not-allowed disabled:opacity-35"
+    >
+      <ArrowUpIcon className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+    </button>
+  );
+
   return (
-    <div className="flex h-full flex-col">
-      <div className="grid gap-3">
-        <div className="rounded-2xl bg-white/[0.05] px-3.5 py-3 text-sm leading-6 text-zinc-200">
-          {brief.intro.map(line => (
-            <p key={line} className="mt-3 first:mt-0">
-              {line}
-            </p>
+    <div className="flex h-full w-full min-w-0 flex-col">
+      <div className="w-full min-w-0">
+        <h2 className="text-2xl font-semibold tracking-tight text-white">
+          Ask anything
+        </h2>
+        <p className="mt-2 text-sm leading-5 text-white/55">
+          I know your bookings, customers and money.
+        </p>
+      </div>
+
+      <div className="mt-10 min-h-0 w-full flex-1 overflow-y-auto">
+        <p className="text-sm text-white/55">Try asking</p>
+        <div className="mt-3 grid w-full gap-2.5">
+          {ASK_SUGGESTIONS.map(suggestion => (
+            <button
+              key={suggestion}
+              type="button"
+              onClick={() => setDraft(suggestion)}
+              className="w-full cursor-pointer rounded-2xl border border-white/[0.12] bg-transparent px-4 py-3.5 text-left text-sm leading-5 text-white/85 transition-colors hover:border-white/20 hover:bg-white/[0.03] hover:text-white"
+            >
+              {suggestion}
+            </button>
           ))}
         </div>
-        {brief.quotes ? (
-          <div className="rounded-2xl bg-white/[0.05] px-3.5 py-3 text-sm leading-6 text-zinc-200">
-            <p>{brief.quotes}</p>
-          </div>
-        ) : null}
-        {brief.invoices ? (
-          <div className="rounded-2xl bg-white/[0.05] px-3.5 py-3 text-sm leading-6 text-zinc-200">
-            <p>{brief.invoices}</p>
-          </div>
-        ) : null}
-        {brief.review ? (
-          <div className="rounded-2xl bg-white/[0.05] px-3.5 py-3 text-sm leading-6 text-zinc-200">
-            <p>{brief.review}</p>
-          </div>
-        ) : null}
-        {brief.checkIn ? (
-          <div className="rounded-2xl bg-white/[0.05] px-3.5 py-3 text-sm leading-6 text-zinc-200">
-            <p>{brief.checkIn}</p>
-          </div>
-        ) : null}
       </div>
+
+      <form
+        className={`mt-6 box-border w-full min-w-0 border border-white/[0.08] bg-[#262626] ${
+          expanded
+            ? 'flex flex-col rounded-[22px] px-3.5 pt-3 pb-2.5'
+            : 'flex h-11 items-center gap-2 rounded-full py-1.5 pr-1.5 pl-4'
+        }`}
+        onSubmit={event => {
+          event.preventDefault();
+        }}
+      >
+        <label className="sr-only" htmlFor="assistant-ask">
+          Ask about your business
+        </label>
+        <textarea
+          id="assistant-ask"
+          ref={textareaRef}
+          rows={1}
+          value={draft}
+          onChange={event => setDraft(event.target.value)}
+          onKeyDown={event => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
+              event.currentTarget.form?.requestSubmit();
+            }
+          }}
+          placeholder="Ask about your business"
+          className={`resize-none overflow-y-auto bg-transparent text-[15px] leading-[22px] text-white outline-none placeholder:text-white/40 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+            expanded
+              ? 'w-full min-h-[22px] max-h-[176px]'
+              : 'min-h-[22px] max-h-[22px] min-w-0 flex-1'
+          }`}
+        />
+        {expanded ? (
+          <div className="mt-2 flex items-center justify-end">{sendButton}</div>
+        ) : (
+          sendButton
+        )}
+      </form>
     </div>
   );
 }
 
 export function MorningMoment({
-  quotes,
-  invoices,
   reviews,
   checkIns,
   activity,
   onPrepare,
   onOpenActivity,
 }: {
-  quotes: readonly AssistantPerson[];
-  invoices: readonly AssistantPerson[];
   reviews: readonly AssistantPerson[];
   checkIns: readonly AssistantPerson[];
   activity: readonly ActivityEntry[];
   onPrepare: (people: readonly AssistantPerson[]) => void;
   onOpenActivity: () => void;
 }) {
-  const [skipped, setSkipped] = useState<string[]>([]);
-  const [railCollapsed, setRailCollapsed] = useState(false);
   const peopleByKind = {
-    quote: quotes,
-    invoice: invoices,
     review: reviews,
     customer: checkIns,
   };
-  const groups = GROUPS.map(group => {
-    const items = peopleByKind[group.kind];
-    const open = items.filter(person => !skipped.includes(person.id));
-    return {
-      ...group,
-      items,
-      open,
-      sendLabel: open.length === 1 ? 'Send' : `Send to ${open.length}`,
-    };
-  });
-  const openGroups = groups.filter(group => group.open.length > 0);
-  const skippedGroups = groups.filter(
-    group => group.items.length > 0 && group.open.length === 0
-  );
+  const openGroups = GROUPS.map(group => ({
+    ...group,
+    open: peopleByKind[group.kind],
+  })).filter(group => group.open.length > 0);
+
+  const thingCount = openGroups.length;
+  const subtitle =
+    thingCount === 0
+      ? 'Nothing needs a yes from you right now.'
+      : `${thingCount === 1 ? 'One thing needs' : `${numberWord(thingCount)} things need`} a yes from you. Nothing sends without it.`;
 
   return (
-    <div className="flex w-full flex-col gap-6 lg:block">
-      <div
-        className={`assistant-rail-motion grid min-w-0 content-start gap-8 transition-[margin] ${
-          railCollapsed ? 'lg:mr-10' : 'lg:mr-[21rem]'
-        }`}
-      >
+    <div className="grid w-full gap-10 lg:-my-10 lg:min-h-[calc(100dvh-4rem)] lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-0">
+      <div className="grid min-w-0 content-start gap-8 px-4 sm:px-8 lg:py-10 lg:pr-8 lg:pl-12">
         <header>
-          <h2 className="text-3xl font-medium tracking-tight text-white sm:text-4xl">
-            Good morning
+          <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            Assistant
           </h2>
+          <p className="mt-2 max-w-xl text-sm text-white/60 sm:text-base">
+            {subtitle}
+          </p>
         </header>
 
-        <section className="-mt-4">
+        <section className="-mt-2 grid gap-3">
           {openGroups.length > 0 ? (
-            <div className="grid gap-3 lg:grid-cols-2">
-              {openGroups.map(group => {
-                const count = group.open.length;
-                const prepare = () => onPrepare(group.open);
-
-                return (
-                  <article
-                    key={group.kind}
-                    className="flex flex-col rounded-[26px] border border-white/[0.08] bg-white/[0.03] p-4"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="rounded-lg bg-white/10 px-2 py-1 text-xs font-medium text-white">
-                        {group.label}
-                      </span>
-                      <span className="text-xs text-white/60">
-                        SMS · {count} {count === 1 ? 'person' : 'people'}
-                      </span>
-                    </div>
-                    <h4 className="mt-4 text-sm font-medium text-white">
-                      {group.title(count, group.open[0]?.firstName ?? '')}
-                    </h4>
-                    <p className="mt-1 text-sm text-white/60">{group.detail}</p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {group.open.slice(0, NAME_PREVIEW).map(person => (
-                        <span
-                          key={person.id}
-                          className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white/[0.06] pr-2.5 pl-1"
-                        >
-                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-[10px] font-medium text-white">
-                            {initials(person.firstName)}
-                          </span>
-                          <span className="text-xs font-medium text-white">
-                            {person.firstName}
-                          </span>
-                        </span>
-                      ))}
-                      {count > NAME_PREVIEW ? (
-                        <span className="inline-flex h-8 items-center rounded-full bg-white/[0.06] px-2.5 text-xs font-medium text-white/60">
-                          + {count - NAME_PREVIEW} more
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-4 rounded-[10px] bg-black/40 px-3 py-3 text-sm leading-5 text-white/60">
-                      {group.preview}
-                    </p>
-                    <div className="mt-4 flex items-center justify-between gap-2">
+            <div className="overflow-hidden rounded-[22px] border border-white/[0.08] bg-white/[0.03]">
+              <ul>
+                {openGroups.map((group, index) => {
+                  const count = group.open.length;
+                  return (
+                    <li
+                      key={group.kind}
+                      className={
+                        index > 0 ? 'border-t border-white/[0.06]' : undefined
+                      }
+                    >
                       <button
                         type="button"
-                        aria-label={`Skip ${group.skipLabel.toLowerCase()}`}
-                        onClick={() =>
-                          setSkipped(current => [
-                            ...current,
-                            ...group.open.map(person => person.id),
-                          ])
-                        }
-                        className="inline-flex h-7 cursor-pointer items-center rounded-lg px-2 text-[13px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white"
+                        onClick={() => onPrepare(group.open)}
+                        className="flex w-full cursor-pointer items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-white/[0.04] sm:gap-5 sm:px-5 sm:py-5"
                       >
-                        Skip
+                        <span className="w-8 shrink-0 text-2xl font-semibold tracking-tight text-white tabular-nums sm:w-10 sm:text-3xl">
+                          {count}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold tracking-tight text-white sm:text-base">
+                            {groupTitle(group)}
+                          </span>
+                          <span className="mt-1 block text-sm text-white/60">
+                            {group.subtitle(group.open)}
+                          </span>
+                        </span>
+                        <ChevronRightIcon
+                          className="h-5 w-5 shrink-0 text-white/40"
+                          aria-hidden
+                        />
                       </button>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="secondary"
-                          size="xs"
-                          className={compactButtonClass}
-                          aria-label={`Edit ${group.label.toLowerCase()}`}
-                          onClick={prepare}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="primary"
-                          size="xs"
-                          className={compactButtonClass}
-                          onClick={prepare}
-                        >
-                          {group.sendLabel}
-                        </Button>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           ) : (
-            <p className="mt-3 text-sm text-white/60">
+            <p className="text-sm text-white/60">
               Nothing needs you this morning.
             </p>
           )}
-          {skippedGroups.length > 0 ? (
-            <div className="mt-3 grid gap-2">
-              {skippedGroups.map(group => (
-                <div key={group.kind} className="flex items-center gap-3">
-                  <p className="text-sm text-zinc-500">
-                    {group.skipLabel} skipped
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    className={compactButtonClass}
-                    onClick={() =>
-                      setSkipped(current =>
-                        current.filter(
-                          id => !group.items.some(item => item.id === id)
-                        )
-                      )
-                    }
-                  >
-                    Undo
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : null}
+
+          <button
+            type="button"
+            onClick={onOpenActivity}
+            className="flex w-full cursor-pointer items-center gap-4 rounded-[22px] border border-white/[0.08] bg-white/[0.03] px-4 py-4 text-left transition-colors hover:bg-white/[0.04] sm:gap-5 sm:px-5 sm:py-5"
+          >
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold tracking-tight text-white sm:text-base">
+                Handled for you this week
+              </span>
+              <span className="mt-1 block text-sm text-white/60">
+                {handledSummary(activity)}
+              </span>
+            </span>
+            <ChevronRightIcon
+              className="h-5 w-5 shrink-0 text-white/40"
+              aria-hidden
+            />
+          </button>
         </section>
-        <RecentActivity entries={activity} onViewAll={onOpenActivity} />
       </div>
+
       <aside
         id="assistant-rail"
-        className={`assistant-rail-motion relative mt-6 flex w-full flex-col overflow-hidden rounded-3xl bg-white/[0.04] lg:fixed lg:top-[5.25rem] lg:right-4 lg:bottom-4 lg:z-20 lg:mt-0 ${
-          railCollapsed
-            ? 'p-4 lg:w-14 lg:items-center lg:px-1.5 lg:py-3'
-            : 'p-4 lg:w-[22rem] lg:p-5'
-        }`}
+        className="flex w-full min-w-0 flex-col border-white/[0.08] px-4 pt-6 sm:px-8 lg:h-full lg:min-h-full lg:border-l lg:px-5 lg:pt-4 lg:pb-10"
       >
-        <div
-          className={`flex min-w-0 items-center gap-2.5 ${
-            railCollapsed
-              ? 'lg:h-full lg:w-full lg:flex-col lg:justify-between'
-              : ''
-          }`}
-        >
-          <AssistantMark size="md" />
-          <p
-            className={`min-w-0 flex-1 truncate text-sm font-medium text-white ${
-              railCollapsed ? 'lg:sr-only' : ''
-            }`}
-          >
-            Assistant
-          </p>
-          <IconButton
-            icon={railCollapsed ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-            onClick={() => setRailCollapsed(current => !current)}
-            variant="ghost"
-            size="sm"
-            className="shrink-0 !rounded-[10px] text-white hover:text-white max-lg:!hidden lg:!inline-flex"
-            aria-label={
-              railCollapsed ? 'Expand assistant' : 'Collapse assistant'
-            }
-            aria-expanded={!railCollapsed}
-            aria-controls="assistant-rail"
-            title={railCollapsed ? 'Expand assistant' : 'Collapse assistant'}
-          />
-        </div>
-        <div
-          className={`mt-4 min-h-0 flex-1 overflow-hidden ${
-            railCollapsed ? 'lg:hidden' : ''
-          }`}
-        >
-          <AssistantRail
-            brief={assistantBrief({
-              quotes: quotes.filter(person => !skipped.includes(person.id)),
-              invoices: invoices.filter(person => !skipped.includes(person.id)),
-              reviews: reviews.filter(person => !skipped.includes(person.id)),
-              checkIns: checkIns.filter(person => !skipped.includes(person.id)),
-            })}
-          />
-        </div>
+        <AskAnythingRail />
       </aside>
     </div>
   );
 }
 
-export function PrepareMoment({
-  drafts,
-  onBack,
-  onBodyChange,
-  onSend,
-  onSkip,
-  onUndo,
-  onSendBoth,
-}: {
-  drafts: readonly AssistantDraft[];
-  onBack: () => void;
-  onBodyChange: (id: AssistantDraft['id'], body: string) => void;
-  onSend: (id: AssistantDraft['id']) => void;
-  onSkip: (id: AssistantDraft['id']) => void;
-  onUndo: (id: AssistantDraft['id']) => void;
-  onSendBoth: () => void;
-}) {
-  const readyCount = drafts.filter(draft => draft.status === 'ready').length;
-
-  return (
-    <div className="-mt-2 w-full sm:-mt-4">
-      <button
-        type="button"
-        onClick={onBack}
-        className="assistant-rise mb-4 inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-      >
-        <ChevronLeftIcon className="h-4 w-4" aria-hidden />
-        Back
-      </button>
-      <div className="assistant-rise flex flex-wrap items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <AssistantMark size="md" />
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold tracking-tight text-white">
-              {drafts.length === 1 ? '1 message' : `${drafts.length} messages`}
-            </h2>
-            <p className="mt-1 text-sm text-white/60">
-              Make any changes if you want.
-            </p>
-          </div>
-        </div>
-        {readyCount > 1 ? (
-          <Button variant="primary" size="xs" onClick={onSendBoth}>
-            {readyCount === 2 ? 'Send both' : 'Send all'}
-          </Button>
-        ) : null}
-      </div>
-      <div className="mt-6 grid items-stretch gap-4 md:grid-cols-2">
-        {drafts.map((draft, index) => (
-          <div
-            key={draft.id}
-            className={`assistant-rise assistant-delay-${index + 1} h-full`}
-          >
-            <DraftMessageCard
-              draft={draft}
-              onBodyChange={body => onBodyChange(draft.id, body)}
-              onSend={() => onSend(draft.id)}
-              onSkip={() => onSkip(draft.id)}
-              onUndo={() => onUndo(draft.id)}
-            />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+function numberWord(count: number): string {
+  const words = [
+    'Zero',
+    'One',
+    'Two',
+    'Three',
+    'Four',
+    'Five',
+    'Six',
+    'Seven',
+    'Eight',
+    'Nine',
+    'Ten',
+  ];
+  return words[count] ?? String(count);
 }
 
 export function SentMoment({
