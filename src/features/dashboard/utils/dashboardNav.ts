@@ -34,7 +34,7 @@ export type DashboardNavItem = {
   requiresAvailability?: boolean;
   requiredPermission?: TeamPermission;
   activePathPrefix?: string;
-  badge?: 'beta' | 'new';
+  badge?: 'new';
   /** Collapsible side-nav group. Omitted items stay as their own row. */
   navGroup?: 'shop' | 'schedule' | 'money';
 };
@@ -122,7 +122,6 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     requiresOnboarding: true,
     requiresMemberships: true,
     requiredPermission: 'billing.manage',
-    badge: 'beta',
     activePathPrefix: '/dashboard/subscriptions',
     navGroup: 'money',
   },
@@ -141,7 +140,6 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     requiresOnboarding: true,
     requiredPermission: 'team.manage',
     requiresTeamRollout: true,
-    badge: 'new',
     activePathPrefix: '/dashboard/team',
   },
   {
@@ -168,7 +166,6 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     requiresOnboarding: true,
     requiredPermission: 'invoices.read',
     activePathPrefix: '/dashboard/invoices',
-    badge: 'new',
     navGroup: 'money',
     requiresInvoicesRollout: true,
   },
@@ -179,7 +176,6 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     requiresOnboarding: true,
     requiredPermission: 'expenses.read',
     activePathPrefix: '/dashboard/expenses',
-    badge: 'new',
     navGroup: 'money',
   },
   {
@@ -317,7 +313,7 @@ export function getVisibleDashboardNavEntries(args: {
 
 export function getDashboardPageTitle(pathname: string): string | null {
   if (pathname === ROUTES.DASHBOARD.SETTINGS) return 'Settings';
-  if (pathname === ROUTES.DASHBOARD.CONTACT) return 'Help';
+  if (pathname === ROUTES.DASHBOARD.CONTACT) return 'Contact us';
   if (pathname.startsWith(`${ROUTES.DASHBOARD.UPGRADE}`)) return 'Upgrade';
   if (pathname === ROUTES.DASHBOARD.PAYMENTS) return 'Revenue';
   if (pathname.startsWith(ROUTES.DASHBOARD.PAYMENTS_TRANSACTIONS)) {

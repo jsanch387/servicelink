@@ -1,14 +1,25 @@
-import { ASSISTANT_BETA_TEXT_LIMIT } from '@/features/assistant/constants/assistantBetaLimits';
+import {
+  ASSISTANT_BETA_CHAT_TURN_LIMIT,
+  ASSISTANT_BETA_TEXT_LIMIT,
+} from '@/features/assistant/constants/assistantBetaLimits';
 import {
   assistantYearMonthUtc,
+  getAssistantChatUsage,
   getAssistantTextUsage,
+  reserveAssistantChatTurn,
   reserveAssistantTextUsage,
 } from '@/features/assistant/server/assistantUsageMonth';
 import { describe, expect, it, vi } from 'vitest';
 
-function adminWithUsage(sent: number | null) {
+function adminWithUsage(sent: number | null, chatTurns: number | null = null) {
   const maybeSingle = vi.fn().mockResolvedValue({
-    data: sent === null ? null : { text_sent_count: sent },
+    data:
+      sent === null && chatTurns === null
+        ? null
+        : {
+            text_sent_count: sent ?? 0,
+            chat_turn_count: chatTurns ?? 0,
+          },
     error: null,
   });
   const upsert = vi.fn().mockResolvedValue({ error: null });
@@ -60,6 +71,44 @@ describe('assistantUsageMonth', () => {
       new Date('2026-11-20T12:00:00.000Z')
     );
 
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe('limit_reached');
+    expect(admin._upsert).not.toHaveBeenCalled();
+  });
+
+  it('reads and reserves chat turns against the beta limit', async () => {
+    const admin = adminWithUsage(0, 4);
+    const usage = await getAssistantChatUsage(
+      admin as never,
+      'biz-1',
+      new Date('2026-11-20T12:00:00.000Z')
+    );
+    expect(usage).toEqual({
+      yearMonth: '2026-11',
+      used: 4,
+      limit: ASSISTANT_BETA_CHAT_TURN_LIMIT,
+      remaining: ASSISTANT_BETA_CHAT_TURN_LIMIT - 4,
+    });
+
+    const reserved = await reserveAssistantChatTurn(
+      admin as never,
+      'biz-1',
+      new Date('2026-11-20T12:00:00.000Z')
+    );
+    expect(reserved.ok).toBe(true);
+    if (!reserved.ok) return;
+    expect(reserved.usage.used).toBe(5);
+    expect(admin._upsert).toHaveBeenCalled();
+  });
+
+  it('blocks chat reserve at the monthly cap', async () => {
+    const admin = adminWithUsage(0, ASSISTANT_BETA_CHAT_TURN_LIMIT);
+    const result = await reserveAssistantChatTurn(
+      admin as never,
+      'biz-1',
+      new Date('2026-11-20T12:00:00.000Z')
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason).toBe('limit_reached');

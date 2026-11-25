@@ -1,6 +1,6 @@
 'use client';
 
-import { toast } from '@/components/shared';
+import { Modal, toast } from '@/components/shared';
 import React, { useMemo, useState } from 'react';
 
 import './assistant.css';
@@ -9,7 +9,10 @@ import type { AssistantDecisionResponse } from '../api/types';
 import { ASSISTANT_API } from '../constants/assistantApiPaths';
 import { filterActivity } from '../mock/sampleDay';
 import type { AssistantSendItemResult } from '../server/applyAssistantDecisions';
-import type { AssistantTextUsage } from '../server/assistantUsageMonth';
+import type {
+  AssistantChatUsage,
+  AssistantTextUsage,
+} from '../server/assistantUsageMonth';
 import type {
   AssistantToday,
   AssistantPerson,
@@ -27,6 +30,7 @@ import {
   MorningMoment,
   SentMoment,
 } from './AssistantMoments';
+import { AssistantProTeaserModalBody } from './AssistantProTeaserModalBody';
 import { AssistantShell } from './AssistantShell';
 import { PrepareMoment } from './PrepareMoment';
 
@@ -124,9 +128,14 @@ function draftsFromPeople(
 export function AssistantPage({
   today,
   usage: initialUsage,
+  chatUsage,
+  isPro = false,
 }: {
   today: AssistantToday;
   usage: AssistantTextUsage;
+  chatUsage: AssistantChatUsage;
+  /** Pro unlocks prepare/send and Ask chat. Free sees real data + teaser. */
+  isPro?: boolean;
 }) {
   const [moment, setMoment] = useState<DayMoment>('morning');
   const [view, setView] = useState<AssistantView>('today');
@@ -134,9 +143,8 @@ export function AssistantPage({
   const [drafts, setDrafts] = useState<AssistantDraft[]>([]);
   const [preparedIds, setPreparedIds] = useState<string[] | null>(null);
   const [usage, setUsage] = useState(initialUsage);
-  const [pendingAction, setPendingAction] = useState<'send' | 'skip' | null>(
-    null
-  );
+  const [pendingAction, setPendingAction] = useState<'send' | null>(null);
+  const [proTeaserOpen, setProTeaserOpen] = useState(false);
 
   const entries = useMemo(
     () => filterActivity(today.activity, filter),
@@ -230,26 +238,6 @@ export function AssistantPage({
     }
   };
 
-  const skipSelected = async (ids: readonly string[]) => {
-    if (pendingAction) return;
-    setPendingAction('skip');
-    try {
-      const result = await postDecision(ASSISTANT_API.SKIP, ids);
-      if (!result) return;
-      if (!result.success) {
-        toast.error(result.error);
-        return;
-      }
-      if (result.usage) setUsage(result.usage);
-      markDrafts(ids, 'skipped');
-      toast.success(ids.length === 1 ? 'Skipped' : `${ids.length} skipped`);
-    } catch {
-      toast.error('Could not skip. Try again.');
-    } finally {
-      setPendingAction(null);
-    }
-  };
-
   const preparedDrafts = preparedIds
     ? drafts.filter(draft => preparedIds.includes(draft.id))
     : drafts;
@@ -295,8 +283,15 @@ export function AssistantPage({
               reviews={today.reviews}
               checkIns={today.checkIns}
               activity={today.activity}
+              chatUsage={chatUsage}
+              unlocked={isPro}
               onOpenActivity={() => setView('activity')}
+              onRequestUpgrade={() => setProTeaserOpen(true)}
               onPrepare={people => {
+                if (!isPro) {
+                  setProTeaserOpen(true);
+                  return;
+                }
                 setPreparedIds(people.map(person => person.id));
                 setDrafts(draftsFromPeople(people));
                 setMoment('prepare');
@@ -304,7 +299,7 @@ export function AssistantPage({
             />
           ) : null}
 
-          {view === 'today' && moment === 'prepare' ? (
+          {view === 'today' && moment === 'prepare' && isPro ? (
             <PrepareMoment
               drafts={preparedDrafts}
               usage={usage}
@@ -316,7 +311,6 @@ export function AssistantPage({
               }}
               onBodyChange={(id, body) => updateDraft(id, { body })}
               onSendSelected={sendSelected}
-              onSkipSelected={skipSelected}
             />
           ) : null}
 
@@ -339,6 +333,17 @@ export function AssistantPage({
           ) : null}
         </div>
       </div>
+
+      <Modal
+        isOpen={proTeaserOpen}
+        onClose={() => setProTeaserOpen(false)}
+        title="Assistant"
+        maxWidth="sm"
+      >
+        <AssistantProTeaserModalBody
+          onClose={() => setProTeaserOpen(false)}
+        />
+      </Modal>
     </AssistantShell>
   );
 }

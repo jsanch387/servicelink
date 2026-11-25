@@ -15,4 +15,4 @@ Owner dashboard feature: morning suggestions for **review follow-ups** and **reb
 
 ## Next
 
-**Ask-anything** chat — read-only tool calling (see [`docs/CHAT.md`](./docs/CHAT.md)). Architecture locked; build next.
+**Ask-anything** chat — v1 read tools live (ephemeral thread). Architecture: [`docs/CHAT.md`](./docs/CHAT.md). Tool list: [`docs/TOOLS.md`](./docs/TOOLS.md).

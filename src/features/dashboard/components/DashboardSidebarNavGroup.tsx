@@ -13,7 +13,6 @@ import {
   readV3CalendarGuide,
   V3_GUIDE_EVENT,
 } from '@/features/onboarding-v3/v3Guide';
-import { BetaBadge, NewBadge } from '@/components/shared';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React, { useEffect, useId, useRef, useState } from 'react';
@@ -102,19 +101,13 @@ export function DashboardSidebarNavGroup({
 
   const childLinks = items.map(item => {
     const active = isDashboardNavItemActive(pathname, item);
-    const label =
-      item.badge === 'beta'
-        ? `${item.name} (Beta)`
-        : item.badge === 'new'
-          ? `${item.name} (New)`
-          : item.name;
-    return { item, active, label };
+    return { item, active };
   });
 
   const showRail = items.length > 1;
 
   const renderLinks = (keyPrefix: string, withRail: boolean) =>
-    childLinks.map(({ item, active, label }) => (
+    childLinks.map(({ item, active }) => (
       <div
         key={`${keyPrefix}-${item.name}`}
         className={`relative ${withRail ? 'pl-4' : ''}`}
@@ -130,7 +123,7 @@ export function DashboardSidebarNavGroup({
         <Link
           href={item.href}
           aria-current={active ? 'page' : undefined}
-          aria-label={label}
+          aria-label={item.name}
           onClick={() => {
             if (item.name === 'Bookings') {
               const phase = readOwnerTestGuide();
@@ -165,12 +158,6 @@ export function DashboardSidebarNavGroup({
           }`}
         >
           <span className="min-w-0 truncate">{item.name}</span>
-          {item.badge === 'beta' ? (
-            <BetaBadge className="ml-auto shrink-0" />
-          ) : null}
-          {item.badge === 'new' ? (
-            <NewBadge className="ml-auto shrink-0" />
-          ) : null}
         </Link>
       </div>
     ));

@@ -4,10 +4,6 @@ import { IconButton, Logo } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { useSignOutAndRedirect } from '@/features/auth';
 import {
-  requestToggleSupportChat,
-  SUPPORT_CHAT_TRIGGER_ATTR,
-} from '@/features/contact/utils/supportChatTrigger';
-import {
   AdjustmentsHorizontalIcon,
   ArrowRightStartOnRectangleIcon,
   ChatBubbleLeftRightIcon,
@@ -35,7 +31,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   showInvoicesNav = false,
   collapsed = false,
   onToggleCollapsed,
-  showSupportChat = false,
 }) => {
   const pathname = usePathname();
   const access = useDashboardAccess();
@@ -49,6 +44,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   });
   const showSettings = hasShopAccess && access.can('team.manage');
   const settingsActive = pathname === ROUTES.DASHBOARD.SETTINGS;
+  const supportActive = pathname === ROUTES.DASHBOARD.CONTACT;
 
   return (
     <>
@@ -151,18 +147,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               collapsed ? 'lg:px-2' : ''
             }`}
           >
-            {showSupportChat ? (
-              <DashboardSidebarNavItem
-                name="Contact"
-                icon={ChatBubbleLeftRightIcon}
-                collapsed={collapsed}
-                dataAttributes={{ [SUPPORT_CHAT_TRIGGER_ATTR]: '' }}
-                onClick={() => {
-                  setOpen(false);
-                  requestToggleSupportChat();
-                }}
-              />
-            ) : null}
             {showSettings ? (
               <DashboardSidebarNavItem
                 name="Settings"
@@ -172,7 +156,16 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 collapsed={collapsed}
                 onNavigate={() => setOpen(false)}
               />
-            ) : (
+            ) : null}
+            <DashboardSidebarNavItem
+              name="Contact us"
+              href={ROUTES.DASHBOARD.CONTACT}
+              icon={ChatBubbleLeftRightIcon}
+              isActive={supportActive}
+              collapsed={collapsed}
+              onNavigate={() => setOpen(false)}
+            />
+            {!showSettings ? (
               <DashboardSidebarNavItem
                 name={signingOut ? 'Logging out…' : 'Log out'}
                 icon={ArrowRightStartOnRectangleIcon}
@@ -183,7 +176,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                   void signOutAndRedirect();
                 }}
               />
-            )}
+            ) : null}
           </div>
         </div>
       </aside>

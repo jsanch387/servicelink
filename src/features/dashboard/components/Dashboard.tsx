@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import React, { useEffect } from 'react';
 
 import { IconButton } from '@/components/shared';
-import { SupportWidget } from '@/features/contact/components/SupportWidget';
 import {
   DashboardAccessProvider,
   NO_DASHBOARD_ACCESS,
@@ -70,7 +69,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           showInvoicesNav={isOwnerEmailAllowedForInvoicesRollout(accountEmail)}
           collapsed={collapsed}
           onToggleCollapsed={() => setCollapsed(current => !current)}
-          showSupportChat={Boolean(accountEmail)}
         />
         <div className="dashboard-content flex-1 flex flex-col min-w-0">
           <div className="sticky top-0 z-50 bg-[var(--dashboard-bg)] lg:z-30">
@@ -95,9 +93,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
         </div>
-        {accountEmail ? (
-          <SupportWidget variant="inApp" accountEmail={accountEmail} />
-        ) : null}
       </div>
     </DashboardAccessProvider>
   );

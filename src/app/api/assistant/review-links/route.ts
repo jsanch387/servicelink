@@ -6,6 +6,7 @@
  * Body: { items: [{ customerId, bookingId }] }
  */
 
+import { assistantProRequiredResponse } from '@/features/assistant/server/requireAssistantPro';
 import { resolveAssistantReviewInviteUrl } from '@/features/reviews/server/resolveAssistantReviewInviteUrl';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
@@ -58,6 +59,9 @@ export async function POST(request: Request) {
         { status: resolved.status }
       );
     }
+
+    const proDenied = await assistantProRequiredResponse(resolved.businessId);
+    if (proDenied) return proDenied;
 
     let body: unknown;
     try {

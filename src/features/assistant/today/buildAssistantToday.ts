@@ -364,6 +364,7 @@ function toActivityEntry(
       time,
       label,
       detail: `${name} · tool ran.`,
+      customerName: action.customerName?.trim() || null,
       kind: 'brief',
       topic: 'brief',
       actor: 'Assistant',
@@ -394,6 +395,7 @@ function toActivityEntry(
             ? 'Invoice reminder sent'
             : 'Check-in sent',
       detail: `You sent ${name}’s ${what}.`,
+      customerName: name,
       kind: topic,
       topic,
       actor: 'You',
@@ -412,6 +414,7 @@ function toActivityEntry(
             ? 'Invoice reminder restored'
             : 'Check-in restored',
       detail: `You brought ${name}’s ${what} back.`,
+      customerName: name,
       kind: topic,
       topic,
       actor: 'You',
@@ -429,6 +432,7 @@ function toActivityEntry(
           ? 'Invoice reminder skipped'
           : 'Check-in skipped',
     detail: `You skipped ${name}’s ${what}.`,
+    customerName: name,
     kind: topic,
     topic,
     actor: 'You',

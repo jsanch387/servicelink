@@ -6,9 +6,11 @@ Human-readable reference for how Owner Assistant works today: product rules, due
 
 | Doc | Use when |
 | --- | --- |
+| [CHAT.md](./CHAT.md) | Ask anything (tools, Pro, chat turns, kill switch) |
+| [TOOLS.md](./TOOLS.md) | Ask tool catalog |
 | [DATABASE.md](./DATABASE.md) | Schema, RLS, related tables |
 | [ASSISTANT_ACTIONS_TABLE.md](./ASSISTANT_ACTIONS_TABLE.md) | Decision log columns |
-| [ASSISTANT_USAGE_MONTHS_TABLE.md](./ASSISTANT_USAGE_MONTHS_TABLE.md) | Monthly meter |
+| [ASSISTANT_USAGE_MONTHS_TABLE.md](./ASSISTANT_USAGE_MONTHS_TABLE.md) | Text + chat monthly meters |
 | Reviews [FLOWS.md](../../reviews/docs/FLOWS.md) | Invite / review link lifecycle |
 | SMS `sendAndRecordSms` | Shared outbound delivery |
 
@@ -66,9 +68,11 @@ sequenceDiagram
 | **Check-in due** | No upcoming booking, last visit &gt; 90 days ago, not suppressed |
 | **Suppression** | Latest decision `sent` or `skipped` hides that customer+subject until `unskipped` or they leave a review |
 | **No bombardment** | After Send, they stay off the list (no timed re-nudge yet) |
-| **Beta quota** | `ASSISTANT_BETA_TEXT_LIMIT` = **30** texts / shop / UTC month |
+| **Pro required** | Free shops see real due counts + upgrade teaser; Send / Ask / Skip API need Pro |
+| **Beta text quota** | `ASSISTANT_BETA_TEXT_LIMIT` = **30** texts / shop / UTC month |
 | **Quota honesty** | Increment only after a real delivery (or same-day SMS duplicate) |
 | **Partial batches** | Some can succeed; failures stay ready with toast / results |
+| **Skip UI** | Hidden for now; `POST .../skip` still exists and is Pro-gated |
 | **Product copy** | Never call it “AI” or “Agent” in UI |
 
 ---
@@ -123,18 +127,11 @@ There is **no** “show again in N days after send” rule yet. Re-ask would nee
 
 ---
 
-## Prepare → Skip / Send
-
-### Skip
-
-1. `POST /api/assistant/skip` (`customers.write`)
-2. Insert `assistant_actions` with `kind = skipped`
-3. No SMS, no quota
-4. Customer leaves the morning list on next load
+## Prepare → Send (Skip API optional)
 
 ### Send
 
-1. `POST /api/assistant/send` (`customers.write`)
+1. `POST /api/assistant/send` (`customers.write` + Pro)
 2. For each item (sequential, max 20):
    - Stop if monthly remaining is 0
    - **Reviews:** resolve unique invite URL (`resolveAssistantReviewInviteUrl`), replace `[review link]`
@@ -142,6 +139,13 @@ There is **no** “show again in N days after send” rule yet. Re-ask would nee
    - On success (or same-day SMS `duplicate`): write `assistant_actions` `kind = sent` + `sms_message_id`, then `+1` usage **only if** the action row was newly created
    - On failure: no action, no quota; item stays ready
 3. UI: spinner **Sending**, toast on success/error, mark only successes as Sent
+
+### Skip (API only — no prepare button in v1 UI)
+
+1. `POST /api/assistant/skip` (`customers.write` + Pro)
+2. Insert `assistant_actions` with `kind = skipped`
+3. No SMS, no quota
+4. Customer leaves the morning list on next load
 
 **SMS types**
 
@@ -186,16 +190,20 @@ Same invite model as job-complete reviews; rotating invalidates older pending li
 | UI | Pill: “N of 30 texts this month” |
 | Gate | Block Send when remaining is 0; mid-batch stop with `limit_reached` |
 
-Paid tiers / higher caps are not wired yet — change the constant (and later env/plan) when pricing lands.
+Paid tiers / higher caps are not wired yet — change the constant (and later env/plan) when pricing lands. Monthly reset is automatic (new UTC `year_month` row).
+
+Ask chat has a separate **30 turns / month** meter — see [CHAT.md](./CHAT.md) and [ASSISTANT_USAGE_MONTHS_TABLE.md](./ASSISTANT_USAGE_MONTHS_TABLE.md).
 
 ---
 
 ## Auth & permissions
 
-| Surface | Permission |
-| --- | --- |
-| Dashboard page + `GET .../today` + `GET .../usage` + review-links | `customers.read` |
-| `POST .../skip` + `POST .../send` | `customers.write` |
+| Surface | Permission | Pro |
+| --- | --- | --- |
+| Dashboard page + `GET .../today` + `GET .../usage` | `customers.read` | No (free teaser) |
+| `POST .../send` + `POST .../skip` | `customers.write` | Yes |
+| `POST .../review-links` | `customers.read` | Yes |
+| `POST .../chat` | `customers.read` | Yes |
 
 Writes to `assistant_*` and `sms_messages` use **service role** (admin client). Owners/managers only SELECT those tables via RLS.
 
@@ -213,10 +221,11 @@ Outbound SMS also respects:
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/assistant/today` | Due list + usage |
-| `GET` | `/api/assistant/usage` | Usage only |
-| `POST` | `/api/assistant/skip` | Log skips |
-| `POST` | `/api/assistant/send` | SMS + decisions + quota |
-| `POST` | `/api/assistant/review-links` | Mint URLs (optional; Send also mints) |
+| `GET` | `/api/assistant/usage` | Text usage only |
+| `POST` | `/api/assistant/send` | SMS + decisions + quota (Pro) |
+| `POST` | `/api/assistant/skip` | Log skips (Pro; no UI) |
+| `POST` | `/api/assistant/review-links` | Mint URLs (Pro; Send also mints) |
+| `POST` | `/api/assistant/chat` | Ask stream + tools (Pro) — [CHAT.md](./CHAT.md) |
 
 Client paths: `features/assistant/constants/assistantApiPaths.ts` (keep in sync with `ROUTES`).
 
@@ -255,10 +264,11 @@ Client paths: `features/assistant/constants/assistantApiPaths.ts` (keep in sync 
 
 | Route / view | Role |
 | --- | --- |
-| `/dashboard/assistant` | SSR loads today + usage → `AssistantPage` |
-| Morning | Cards for reviews / check-ins + Ask-anything rail (chat not live yet) |
-| Prepare | Table + shared message + quota pill + Skip / Send |
-| Activity | Local/sample activity filter (decision rows also feed activity entries from actions) |
+| `/dashboard/assistant` | SSR: today + text usage + chat usage + `isPro` → `AssistantPage` |
+| Morning | Due cards + activity preview; desktop Ask rail; mobile **Ask anything** CTA |
+| Prepare | Table + shared message + text quota pill + Send (Pro only) |
+| Activity | Preview (5 recent) + View all (`assistant_actions` → activity entries) |
+| Free | Pro banner + locked prepare/Ask → upgrade modal |
 
 ---
 
@@ -270,12 +280,14 @@ Client paths: `features/assistant/constants/assistantApiPaths.ts` (keep in sync 
 | `today/buildAssistantToday.ts` | Pure due rules + copy |
 | `server/applyAssistantDecisions.ts` | Skip + Send orchestration |
 | `server/recordAssistantActions.ts` | Insert decisions / dedupe keys / SMS types |
-| `server/assistantUsageMonth.ts` | Read / reserve / release meter |
+| `server/assistantUsageMonth.ts` | Text + chat meters |
+| `server/requireAssistantPro.ts` | Pro gate helper |
+| `server/assistantChatGuards.ts` | Ask kill switch + turn reserve |
 | `reviews/server/resolveAssistantReviewInviteUrl.ts` | Unique review URLs for Assistant |
 | `sms/services/sendAndRecordSms.ts` | Shared delivery |
 
 ---
 
-## Next (chat)
+## Ask anything
 
-Ask-anything is **read-only tool calling** (on-demand fetch for this shop — not a fixed data pack; not MCP for owners). Full architecture, v1 tool list, and schema: **[CHAT.md](./CHAT.md)**. Do not overload `assistant_actions` for chat transcripts.
+Shipped — see **[CHAT.md](./CHAT.md)** and **[TOOLS.md](./TOOLS.md)**. Do not overload `assistant_actions` for chat transcripts.

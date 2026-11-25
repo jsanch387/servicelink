@@ -1,15 +1,24 @@
-import { ArrowUpIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import {
+  ChatBubbleLeftRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  LockClosedIcon,
+} from '@heroicons/react/24/outline';
 import { Button } from '@/components/shared';
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import { PaymentsProTeaserBanner } from '@/features/payments/free-payment-preview';
+import React, { useState } from 'react';
 
+import { AskAnythingRail } from '../chat/components/AskAnythingRail';
 import {
   draftById,
   effectiveStatus,
   eveningLines,
   sentConfirmation,
 } from '../mock/sampleDay';
+import type { AssistantChatUsage } from '../server/assistantUsageMonth';
 import type { AssistantPerson } from '../today/buildAssistantToday';
 import type { ActivityEntry, AssistantDraft } from '../types';
+import { RecentActivity } from './RecentActivity';
 
 const GROUPS = [
   {
@@ -24,170 +33,31 @@ const GROUPS = [
   },
 ] as const;
 
-const ASK_SUGGESTIONS = [
-  'How much did I make last month?',
-  'Who are my top customers?',
-  'Which service makes me the most?',
-  'Block off Friday afternoon',
-] as const;
-
 function groupTitle(group: (typeof GROUPS)[number]): string {
   return group.title;
-}
-
-function handledSummary(activity: readonly ActivityEntry[]): string {
-  if (activity.length === 0) {
-    return 'When messages go out, they’ll show up here.';
-  }
-
-  const counts = {
-    review: 0,
-    rebook: 0,
-    reminder: 0,
-    other: 0,
-  };
-  for (const entry of activity) {
-    if (entry.topic === 'review') counts.review += 1;
-    else if (entry.topic === 'rebook') counts.rebook += 1;
-    else if (entry.topic === 'reminder') counts.reminder += 1;
-    else counts.other += 1;
-  }
-
-  const parts: string[] = [];
-  if (counts.reminder > 0) {
-    parts.push(
-      `${counts.reminder} ${counts.reminder === 1 ? 'reminder' : 'reminders'}`
-    );
-  }
-  if (counts.review > 0) {
-    parts.push(
-      `${counts.review} ${counts.review === 1 ? 'review request' : 'review requests'}`
-    );
-  }
-  if (counts.rebook > 0) {
-    parts.push(
-      `${counts.rebook} ${counts.rebook === 1 ? 'check-in' : 'check-ins'}`
-    );
-  }
-  if (counts.other > 0) {
-    parts.push(`${counts.other} ${counts.other === 1 ? 'update' : 'updates'}`);
-  }
-  return parts.join(' · ');
-}
-
-const ASK_LINE_HEIGHT = 22;
-const ASK_MAX_LINES = 8;
-
-function AskAnythingRail() {
-  const [draft, setDraft] = useState('');
-  const [expanded, setExpanded] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useLayoutEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = '0px';
-    const next = Math.min(
-      Math.max(el.scrollHeight, ASK_LINE_HEIGHT),
-      ASK_LINE_HEIGHT * ASK_MAX_LINES
-    );
-    el.style.height = `${next}px`;
-    setExpanded(next > ASK_LINE_HEIGHT + 4);
-  }, [draft]);
-
-  const sendButton = (
-    <button
-      type="submit"
-      aria-label="Send question"
-      disabled={!draft.trim()}
-      className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-black transition-opacity disabled:cursor-not-allowed disabled:opacity-35"
-    >
-      <ArrowUpIcon className="h-4 w-4" strokeWidth={2.25} aria-hidden />
-    </button>
-  );
-
-  return (
-    <div className="flex h-full w-full min-w-0 flex-col">
-      <div className="w-full min-w-0">
-        <h2 className="text-2xl font-semibold tracking-tight text-white">
-          Ask anything
-        </h2>
-        <p className="mt-2 text-sm leading-5 text-white/55">
-          I know your bookings, customers and money.
-        </p>
-      </div>
-
-      <div className="mt-10 min-h-0 w-full flex-1 overflow-y-auto">
-        <p className="text-sm text-white/55">Try asking</p>
-        <div className="mt-3 grid w-full gap-2.5">
-          {ASK_SUGGESTIONS.map(suggestion => (
-            <button
-              key={suggestion}
-              type="button"
-              onClick={() => setDraft(suggestion)}
-              className="w-full cursor-pointer rounded-2xl border border-white/[0.12] bg-transparent px-4 py-3.5 text-left text-sm leading-5 text-white/85 transition-colors hover:border-white/20 hover:bg-white/[0.03] hover:text-white"
-            >
-              {suggestion}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <form
-        className={`mt-6 box-border w-full min-w-0 border border-white/[0.08] bg-[#262626] ${
-          expanded
-            ? 'flex flex-col rounded-[22px] px-3.5 pt-3 pb-2.5'
-            : 'flex h-11 items-center gap-2 rounded-full py-1.5 pr-1.5 pl-4'
-        }`}
-        onSubmit={event => {
-          event.preventDefault();
-        }}
-      >
-        <label className="sr-only" htmlFor="assistant-ask">
-          Ask about your business
-        </label>
-        <textarea
-          id="assistant-ask"
-          ref={textareaRef}
-          rows={1}
-          value={draft}
-          onChange={event => setDraft(event.target.value)}
-          onKeyDown={event => {
-            if (event.key === 'Enter' && !event.shiftKey) {
-              event.preventDefault();
-              event.currentTarget.form?.requestSubmit();
-            }
-          }}
-          placeholder="Ask about your business"
-          className={`resize-none overflow-y-auto bg-transparent text-[15px] leading-[22px] text-white outline-none placeholder:text-white/40 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
-            expanded
-              ? 'w-full min-h-[22px] max-h-[176px]'
-              : 'min-h-[22px] max-h-[22px] min-w-0 flex-1'
-          }`}
-        />
-        {expanded ? (
-          <div className="mt-2 flex items-center justify-end">{sendButton}</div>
-        ) : (
-          sendButton
-        )}
-      </form>
-    </div>
-  );
 }
 
 export function MorningMoment({
   reviews,
   checkIns,
   activity,
+  chatUsage,
+  unlocked = true,
   onPrepare,
   onOpenActivity,
+  onRequestUpgrade,
 }: {
   reviews: readonly AssistantPerson[];
   checkIns: readonly AssistantPerson[];
   activity: readonly ActivityEntry[];
+  chatUsage: AssistantChatUsage;
+  /** When false, prepare/chat actions open the Pro teaser instead. */
+  unlocked?: boolean;
   onPrepare: (people: readonly AssistantPerson[]) => void;
   onOpenActivity: () => void;
+  onRequestUpgrade?: () => void;
 }) {
+  const [mobileAskOpen, setMobileAskOpen] = useState(false);
   const peopleByKind = {
     review: reviews,
     customer: checkIns,
@@ -205,7 +75,18 @@ export function MorningMoment({
 
   return (
     <div className="grid w-full gap-10 lg:-my-10 lg:min-h-[calc(100dvh-4rem)] lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-0">
-      <div className="grid min-w-0 content-start gap-8 px-4 sm:px-8 lg:py-10 lg:pr-8 lg:pl-12">
+      <div
+        className={`min-w-0 content-start gap-8 px-4 pb-28 sm:px-8 lg:grid lg:py-10 lg:pr-8 lg:pb-0 lg:pl-12 ${
+          mobileAskOpen ? 'hidden lg:grid' : 'grid'
+        }`}
+      >
+        {!unlocked ? (
+          <PaymentsProTeaserBanner
+            title="Assistant is included with Pro"
+            description="See who needs a review or check-in, send texts with your approval, and ask about your shop."
+          />
+        ) : null}
+
         <header>
           <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             Assistant
@@ -230,7 +111,19 @@ export function MorningMoment({
                     >
                       <button
                         type="button"
-                        onClick={() => onPrepare(group.open)}
+                        onClick={() => {
+                          if (!unlocked) {
+                            onRequestUpgrade?.();
+                            return;
+                          }
+                          onPrepare(group.open);
+                        }}
+                        aria-label={
+                          unlocked
+                            ? undefined
+                            : `${groupTitle(group)}: Pro feature — learn more`
+                        }
+                        title={unlocked ? undefined : 'Pro feature'}
                         className="flex w-full cursor-pointer items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-white/[0.04] sm:gap-5 sm:px-5 sm:py-5"
                       >
                         <span className="w-8 shrink-0 text-2xl font-semibold tracking-tight text-white tabular-nums sm:w-10 sm:text-3xl">
@@ -244,48 +137,74 @@ export function MorningMoment({
                             {group.subtitle(group.open)}
                           </span>
                         </span>
-                        <ChevronRightIcon
-                          className="h-5 w-5 shrink-0 text-white/40"
-                          aria-hidden
-                        />
+                        {unlocked ? (
+                          <ChevronRightIcon
+                            className="h-5 w-5 shrink-0 text-white/40"
+                            aria-hidden
+                          />
+                        ) : (
+                          <LockClosedIcon
+                            className="h-5 w-5 shrink-0 text-white/40"
+                            aria-hidden
+                          />
+                        )}
                       </button>
                     </li>
                   );
                 })}
               </ul>
             </div>
-          ) : (
-            <p className="text-sm text-white/60">
-              Nothing needs you this morning.
-            </p>
-          )}
+          ) : null}
 
-          <button
-            type="button"
-            onClick={onOpenActivity}
-            className="flex w-full cursor-pointer items-center gap-4 rounded-[22px] border border-white/[0.08] bg-white/[0.03] px-4 py-4 text-left transition-colors hover:bg-white/[0.04] sm:gap-5 sm:px-5 sm:py-5"
-          >
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold tracking-tight text-white sm:text-base">
-                Handled for you this week
-              </span>
-              <span className="mt-1 block text-sm text-white/60">
-                {handledSummary(activity)}
-              </span>
-            </span>
-            <ChevronRightIcon
-              className="h-5 w-5 shrink-0 text-white/40"
-              aria-hidden
-            />
-          </button>
+          <RecentActivity entries={activity} onViewAll={onOpenActivity} />
         </section>
       </div>
 
+      {!mobileAskOpen ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pt-3 pb-[max(2.25rem,calc(env(safe-area-inset-bottom)+1.25rem))] lg:hidden">
+          <button
+            type="button"
+            onClick={() => {
+              if (!unlocked) {
+                onRequestUpgrade?.();
+                return;
+              }
+              setMobileAskOpen(true);
+            }}
+            aria-label={
+              unlocked ? 'Ask anything' : 'Ask anything: Pro feature — learn more'
+            }
+            className="pointer-events-auto flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-white text-[15px] font-semibold tracking-tight text-black shadow-[0_10px_28px_rgba(0,0,0,0.45)] transition-colors hover:bg-zinc-100"
+          >
+            <ChatBubbleLeftRightIcon className="h-5 w-5" aria-hidden />
+            Ask anything
+          </button>
+        </div>
+      ) : null}
+
       <aside
         id="assistant-rail"
-        className="flex w-full min-w-0 flex-col border-white/[0.08] px-4 pt-6 sm:px-8 lg:h-full lg:min-h-full lg:border-l lg:px-5 lg:pt-4 lg:pb-10"
+        className={`min-h-0 w-full min-w-0 flex-col overflow-hidden border-white/[0.08] px-4 sm:px-8 lg:flex lg:h-full lg:max-h-[calc(100dvh-4rem)] lg:border-l lg:px-5 lg:pt-4 lg:pb-10 ${
+          mobileAskOpen
+            ? 'flex h-[calc(100dvh-5.5rem)] pt-2 pb-4'
+            : 'hidden pt-6'
+        }`}
       >
-        <AskAnythingRail />
+        <button
+          type="button"
+          onClick={() => setMobileAskOpen(false)}
+          className="mb-3 inline-flex w-fit cursor-pointer items-center gap-0.5 text-[14px] font-medium text-[#9A9A9A] transition-colors hover:text-white lg:hidden"
+        >
+          <ChevronLeftIcon className="h-4 w-4" aria-hidden />
+          Assistant
+        </button>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <AskAnythingRail
+            unlocked={unlocked}
+            chatUsage={chatUsage}
+            onRequestUpgrade={onRequestUpgrade}
+          />
+        </div>
       </aside>
     </div>
   );

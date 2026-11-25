@@ -12,6 +12,7 @@ import type {
   AssistantDecisionResponse,
 } from '@/features/assistant/api/types';
 import { applyAssistantSend } from '@/features/assistant/server/applyAssistantDecisions';
+import { assistantProRequiredResponse } from '@/features/assistant/server/requireAssistantPro';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -45,6 +46,9 @@ export async function POST(request: Request) {
         { status: resolved.status }
       );
     }
+
+    const proDenied = await assistantProRequiredResponse(resolved.businessId);
+    if (proDenied) return proDenied;
 
     let body: unknown;
     try {

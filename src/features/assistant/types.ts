@@ -55,6 +55,8 @@ export type ActivityEntry = {
   time: string;
   label: string;
   detail: string;
+  /** Customer display name when the action is about someone. */
+  customerName?: string | null;
   kind: ActivityKind;
   topic: ActivityTopic;
   actor: 'Assistant' | 'You' | 'System';

@@ -83,16 +83,14 @@ export function PrepareMoment({
   onBack,
   onBodyChange,
   onSendSelected,
-  onSkipSelected,
 }: {
   drafts: readonly AssistantDraft[];
   usage: AssistantTextUsage;
   pending?: boolean;
-  pendingAction?: 'send' | 'skip' | null;
+  pendingAction?: 'send' | null;
   onBack: () => void;
   onBodyChange: (id: AssistantDraft['id'], body: string) => void;
   onSendSelected: (ids: readonly string[]) => void;
-  onSkipSelected: (ids: readonly string[]) => void;
 }) {
   const visibleDrafts = useMemo(
     () =>
@@ -266,25 +264,7 @@ export function PrepareMoment({
             </p>
           ) : null}
 
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              disabled={sendCount === 0 || pending}
-              onClick={() => onSkipSelected(selectedReadyIds)}
-              className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-[#3A3A3A] px-5 text-[15px] font-semibold text-[#F5F5F5] transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {pendingAction === 'skip' ? (
-                <>
-                  <span
-                    className="h-4 w-4 animate-spin rounded-full border-2 border-[#F5F5F5]/40 border-t-[#F5F5F5]"
-                    aria-hidden
-                  />
-                  Skipping
-                </>
-              ) : (
-                'Skip'
-              )}
-            </button>
+          <div className="flex justify-end">
             <button
               type="button"
               disabled={sendBlocked}

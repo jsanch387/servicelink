@@ -33,9 +33,9 @@ export interface DashboardProps {
   dashboardAccess?: DashboardAccessValue;
   /** Memberships / Subscriptions nav — rollout gate (open to all when enabled). */
   showMembershipsNav?: boolean;
-  /** Signed-in account email for the dashboard help widget. */
+  /** Signed-in account email (e.g. Support / contact flows). */
   accountEmail?: string | null;
-  /** Removed teammate: no sidebar, header, or help widget. */
+  /** Removed teammate: no sidebar or header. */
   hideChrome?: boolean;
 }
 
@@ -61,6 +61,4 @@ export interface DashboardSidebarProps {
   showInvoicesNav?: boolean;
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
-  /** Opens the in-app support chat from the sidebar. */
-  showSupportChat?: boolean;
 }

@@ -151,9 +151,6 @@ describe('getVisibleDashboardNavItems', () => {
       'Expenses',
       'Subscriptions',
     ]);
-    expect(money.items.find(item => item.name === 'Subscriptions')?.badge).toBe(
-      'beta'
-    );
     expect(topLevel).toEqual([
       'Dashboard',
       'Assistant',
@@ -302,8 +299,8 @@ describe('getDashboardPageTitle', () => {
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.SETTINGS)).toBe('Settings');
   });
 
-  it('returns Help for the contact route', () => {
-    expect(getDashboardPageTitle(ROUTES.DASHBOARD.CONTACT)).toBe('Help');
+  it('returns Contact us for the contact route', () => {
+    expect(getDashboardPageTitle(ROUTES.DASHBOARD.CONTACT)).toBe('Contact us');
   });
 
   it('names payments sub-screens', () => {
