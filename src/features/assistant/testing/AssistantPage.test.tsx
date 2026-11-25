@@ -6,7 +6,15 @@ import {
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -231,9 +239,7 @@ describe('Assistant sample day', () => {
       <AssistantPage today={today} usage={usage} chatUsage={chatUsage} isPro />
     );
 
-    await user.click(
-      screen.getByRole('button', { name: /Ask anything/i })
-    );
+    await user.click(screen.getByRole('button', { name: /Ask anything/i }));
 
     expect(
       screen.getByText(
@@ -274,22 +280,16 @@ describe('Assistant sample day', () => {
       })
     );
 
-    expect(
-      screen.getByText('Unlock Assistant with Pro')
-    ).toBeTruthy();
+    expect(screen.getByText('Unlock Assistant with Pro')).toBeTruthy();
     expect(
       screen.queryByRole('heading', { name: 'Check in with customers' })
     ).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'Not now' }));
 
-    await user.click(
-      screen.getByRole('button', { name: /Ask anything/i })
-    );
+    await user.click(screen.getByRole('button', { name: /Ask anything/i }));
 
     expect(sendMessageMock).not.toHaveBeenCalled();
-    expect(
-      screen.getByText('Unlock Assistant with Pro')
-    ).toBeTruthy();
+    expect(screen.getByText('Unlock Assistant with Pro')).toBeTruthy();
   });
 });

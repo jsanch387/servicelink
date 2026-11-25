@@ -20,7 +20,10 @@ function renderInline(text: string, keyPrefix: string): ReactNode[] {
         ? token.slice(2, -2)
         : token;
     nodes.push(
-      <strong key={`${keyPrefix}-b-${key}`} className="font-semibold text-white">
+      <strong
+        key={`${keyPrefix}-b-${key}`}
+        className="font-semibold text-white"
+      >
         {body}
       </strong>
     );
@@ -71,7 +74,8 @@ export function AssistantReplyText({ text }: { text: string }) {
         const lines = block.split('\n').map(line => line.trimEnd());
         const listLines = lines.filter(line => line.trim().length > 0);
         const allBullets =
-          listLines.length > 0 && listLines.every(line => isBullet(line.trim()));
+          listLines.length > 0 &&
+          listLines.every(line => isBullet(line.trim()));
         const allNumbered =
           listLines.length > 0 &&
           listLines.every(line => isNumbered(line.trim()));

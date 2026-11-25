@@ -94,9 +94,7 @@ export function PrepareMoment({
 }) {
   const visibleDrafts = useMemo(
     () =>
-      drafts
-        .filter(draft => draft.status !== 'skipped')
-        .slice(0, BATCH_LIMIT),
+      drafts.filter(draft => draft.status !== 'skipped').slice(0, BATCH_LIMIT),
     [drafts]
   );
   const readyIds = useMemo(

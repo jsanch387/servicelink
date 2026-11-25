@@ -1,6 +1,4 @@
-import {
-  ASSISTANT_BETA_CHAT_TURN_LIMIT,
-} from '@/features/assistant/constants/assistantBetaLimits';
+import { ASSISTANT_BETA_CHAT_TURN_LIMIT } from '@/features/assistant/constants/assistantBetaLimits';
 import {
   getAssistantChatUsage,
   releaseAssistantChatTurn,

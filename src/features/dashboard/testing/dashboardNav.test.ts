@@ -151,12 +151,7 @@ describe('getVisibleDashboardNavItems', () => {
       'Expenses',
       'Subscriptions',
     ]);
-    expect(topLevel).toEqual([
-      'Dashboard',
-      'Assistant',
-      'Quotes',
-      'Customers',
-    ]);
+    expect(topLevel).toEqual(['Dashboard', 'Assistant', 'Quotes', 'Customers']);
     expect(
       entries.map(entry =>
         entry.kind === 'group' ? entry.name : entry.item.name

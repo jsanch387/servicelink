@@ -48,8 +48,7 @@ export function buildAssistantChatTools(args: { businessId: string }) {
             'week = this week, month = this calendar month, last_month = previous calendar month, year = this year, all = all time'
           ),
       }),
-      execute: async ({ period }) =>
-        executeGetRevenue({ businessId, period }),
+      execute: async ({ period }) => executeGetRevenue({ businessId, period }),
     }),
     getServiceMenu: tool({
       description:
@@ -90,8 +89,7 @@ export function buildAssistantChatTools(args: { businessId: string }) {
       inputSchema: z.object({
         kind: z.enum(DUE_FOLLOW_UP_KINDS).optional(),
       }),
-      execute: async ({ kind }) =>
-        executeGetDueFollowUps({ businessId, kind }),
+      execute: async ({ kind }) => executeGetDueFollowUps({ businessId, kind }),
     }),
     findCustomer: tool({
       description:
@@ -119,8 +117,7 @@ export function buildAssistantChatTools(args: { businessId: string }) {
       inputSchema: z.object({
         period: z.enum(GET_EXPENSE_PERIODS),
       }),
-      execute: async ({ period }) =>
-        executeGetExpenses({ businessId, period }),
+      execute: async ({ period }) => executeGetExpenses({ businessId, period }),
     }),
     getUnpaidInvoices: tool({
       description:

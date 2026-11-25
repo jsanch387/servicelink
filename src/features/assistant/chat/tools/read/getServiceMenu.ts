@@ -40,7 +40,10 @@ export async function executeGetServiceMenu(args: {
       .eq('business_id', args.businessId);
 
     if (categoryError) {
-      console.error('[assistant:chat] getServiceMenu categories', categoryError);
+      console.error(
+        '[assistant:chat] getServiceMenu categories',
+        categoryError
+      );
     }
 
     const categoryNameById = new Map<string, string>();

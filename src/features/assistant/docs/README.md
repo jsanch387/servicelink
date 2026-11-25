@@ -6,20 +6,20 @@ Start with **[FLOWS.md](./FLOWS.md)** for SMS due/prepare/send. Use **[CHAT.md](
 
 ## Product & architecture
 
-| Doc | When to read |
-| --- | --- |
-| **[FLOWS.md](./FLOWS.md)** | Due rules, prepare/send, SMS, text quota, suppression, APIs, UI |
-| **[CHAT.md](./CHAT.md)** | Ask-anything — turn flow, Pro, meters, kill switch, UI, security |
-| **[TOOLS.md](./TOOLS.md)** | Ask tool catalog — live + planned tools, args, status |
-| [DATABASE.md](./DATABASE.md) | ER diagram, RLS, related tables, example queries |
+| Doc                          | When to read                                                     |
+| ---------------------------- | ---------------------------------------------------------------- |
+| **[FLOWS.md](./FLOWS.md)**   | Due rules, prepare/send, SMS, text quota, suppression, APIs, UI  |
+| **[CHAT.md](./CHAT.md)**     | Ask-anything — turn flow, Pro, meters, kill switch, UI, security |
+| **[TOOLS.md](./TOOLS.md)**   | Ask tool catalog — live + planned tools, args, status            |
+| [DATABASE.md](./DATABASE.md) | ER diagram, RLS, related tables, example queries                 |
 
 ## Database tables
 
-| Doc | When to read |
-| --- | --- |
-| [ASSISTANT_ACTIONS_TABLE.md](./ASSISTANT_ACTIONS_TABLE.md) | `assistant_actions` (skip / send / unskip) |
-| [ASSISTANT_USAGE_MONTHS_TABLE.md](./ASSISTANT_USAGE_MONTHS_TABLE.md) | Text + chat monthly meters |
-| [ASSISTANT_CHAT_GAPS_TABLE.md](./ASSISTANT_CHAT_GAPS_TABLE.md) | Ask miss signals |
+| Doc                                                                  | When to read                               |
+| -------------------------------------------------------------------- | ------------------------------------------ |
+| [ASSISTANT_ACTIONS_TABLE.md](./ASSISTANT_ACTIONS_TABLE.md)           | `assistant_actions` (skip / send / unskip) |
+| [ASSISTANT_USAGE_MONTHS_TABLE.md](./ASSISTANT_USAGE_MONTHS_TABLE.md) | Text + chat monthly meters                 |
+| [ASSISTANT_CHAT_GAPS_TABLE.md](./ASSISTANT_CHAT_GAPS_TABLE.md)       | Ask miss signals                           |
 
 **Migrations (run in Supabase in order):**
 
@@ -30,26 +30,26 @@ Start with **[FLOWS.md](./FLOWS.md)** for SMS due/prepare/send. Use **[CHAT.md](
 
 ## Related systems (not owned by this feature)
 
-| System | Role for Assistant |
-| --- | --- |
-| `customers` / `bookings` / `reviews` | Compute who is due (read-only on open) |
-| `review_invites` | Unique review URLs for review follow-ups |
-| `sms_messages` + Telnyx via `sendAndRecordSms` | Delivery log for every outbound text |
-| Pricing / Pro | `ownerHasProAccessForBusiness` — Assistant actions + Ask |
-| Team permissions | `customers.read` to open / Ask; `customers.write` to Send (and Skip API) |
+| System                                         | Role for Assistant                                                       |
+| ---------------------------------------------- | ------------------------------------------------------------------------ |
+| `customers` / `bookings` / `reviews`           | Compute who is due (read-only on open)                                   |
+| `review_invites`                               | Unique review URLs for review follow-ups                                 |
+| `sms_messages` + Telnyx via `sendAndRecordSms` | Delivery log for every outbound text                                     |
+| Pricing / Pro                                  | `ownerHasProAccessForBusiness` — Assistant actions + Ask                 |
+| Team permissions                               | `customers.read` to open / Ask; `customers.write` to Send (and Skip API) |
 
 ## App code map
 
-| Path | Role |
-| --- | --- |
-| `../today/` | Due computation (`loadAssistantToday`, `buildAssistantToday`) |
-| `../server/` | Decisions, text/chat meters, Pro gate, chat guards |
-| `../chat/` | Ask UI, prompt, tools, stream runner |
-| `../components/` | Morning, prepare, activity, Pro teaser |
-| `../constants/` | Beta limits + API path constants |
-| `src/app/dashboard/assistant/` | SSR page (`today`, text usage, chat usage, `isPro`) |
-| `src/app/api/assistant/*` | HTTP routes |
-| `src/server/rateLimit/assistantChatRateLimit.ts` | Ask burst limiter |
+| Path                                             | Role                                                          |
+| ------------------------------------------------ | ------------------------------------------------------------- |
+| `../today/`                                      | Due computation (`loadAssistantToday`, `buildAssistantToday`) |
+| `../server/`                                     | Decisions, text/chat meters, Pro gate, chat guards            |
+| `../chat/`                                       | Ask UI, prompt, tools, stream runner                          |
+| `../components/`                                 | Morning, prepare, activity, Pro teaser                        |
+| `../constants/`                                  | Beta limits + API path constants                              |
+| `src/app/dashboard/assistant/`                   | SSR page (`today`, text usage, chat usage, `isPro`)           |
+| `src/app/api/assistant/*`                        | HTTP routes                                                   |
+| `src/server/rateLimit/assistantChatRateLimit.ts` | Ask burst limiter                                             |
 
 ## Status (v1 / beta)
 
@@ -74,9 +74,9 @@ Start with **[FLOWS.md](./FLOWS.md)** for SMS due/prepare/send. Use **[CHAT.md](
 
 ## Launch checklist
 
-1. Migrations `001`–`004` applied on the target database  
-2. `OPENAI_API_KEY` on the deploy env for Ask  
-3. Smoke Pro: prepare → send; Ask suggestion + freeform; rings move  
-4. Smoke free: sees data; prepare/Ask locked; APIs return `pro_required`  
-5. Optional: `ASSISTANT_CHAT_DISABLED=1` kill switch  
-6. Optional later: `UPSTASH_REDIS_REST_URL` + `TOKEN` for shared burst limits  
+1. Migrations `001`–`004` applied on the target database
+2. `OPENAI_API_KEY` on the deploy env for Ask
+3. Smoke Pro: prepare → send; Ask suggestion + freeform; rings move
+4. Smoke free: sees data; prepare/Ask locked; APIs return `pro_required`
+5. Optional: `ASSISTANT_CHAT_DISABLED=1` kill switch
+6. Optional later: `UPSTASH_REDIS_REST_URL` + `TOKEN` for shared burst limits

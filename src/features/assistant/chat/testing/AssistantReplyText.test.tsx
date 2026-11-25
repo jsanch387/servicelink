@@ -33,4 +33,3 @@ describe('AssistantReplyText', () => {
     expect(screen.getByRole('list')).toBeTruthy();
   });
 });
-

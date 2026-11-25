@@ -2,9 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type AssistantDecisionKind = 'skipped' | 'unskipped' | 'sent';
 
-export type AssistantDecisionSubject =
-  | 'review_followup'
-  | 'rebook_checkin';
+export type AssistantDecisionSubject = 'review_followup' | 'rebook_checkin';
 
 export type AssistantActionWrite = {
   customerId: string;
@@ -28,10 +26,7 @@ export async function recordAssistantActions(
     actor?: 'owner' | 'assistant' | 'system';
     actions: readonly AssistantActionWrite[];
   }
-): Promise<
-  | { ok: true; created: boolean }
-  | { ok: false; error: string }
-> {
+): Promise<{ ok: true; created: boolean } | { ok: false; error: string }> {
   if (input.actions.length === 0) return { ok: true, created: false };
 
   const rows = input.actions.map(action => ({

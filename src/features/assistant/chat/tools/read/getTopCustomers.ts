@@ -90,7 +90,9 @@ export async function executeGetTopCustomers(args: {
         lastVisitAt: metric.lastVisitScheduledDate,
       }))
       .filter(customer => customer.spendCents > 0 || customer.visitCount > 0)
-      .sort((a, b) => b.spendCents - a.spendCents || b.visitCount - a.visitCount)
+      .sort(
+        (a, b) => b.spendCents - a.spendCents || b.visitCount - a.visitCount
+      )
       .slice(0, limit);
 
     return { ok: true, period, customers };

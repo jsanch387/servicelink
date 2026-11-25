@@ -93,8 +93,7 @@ export function ChatTurnRing({ usage }: { usage: AssistantChatUsage }) {
         >
           <span className="font-semibold text-white tabular-nums">
             {usage.used} of {usage.limit}
-          </span>
-          {' '}
+          </span>{' '}
           questions this month
         </div>
       ) : null}

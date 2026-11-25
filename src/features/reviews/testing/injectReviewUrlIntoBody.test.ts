@@ -21,10 +21,7 @@ describe('injectReviewUrlIntoBody', () => {
 
   it('appends when the placeholder is missing', () => {
     expect(
-      injectReviewUrlIntoBody(
-        'Thanks again.',
-        'https://app.example/review/abc'
-      )
+      injectReviewUrlIntoBody('Thanks again.', 'https://app.example/review/abc')
     ).toBe('Thanks again. https://app.example/review/abc');
   });
 });

@@ -53,9 +53,7 @@ export async function executeGetUnpaidInvoices(args: {
 
     const invoices = ((data ?? []) as unknown[])
       .map(row =>
-        mapInvoiceListRow(
-          row as Parameters<typeof mapInvoiceListRow>[0]
-        )
+        mapInvoiceListRow(row as Parameters<typeof mapInvoiceListRow>[0])
       )
       .filter((row): row is InvoiceListItem => row != null);
 

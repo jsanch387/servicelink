@@ -1,8 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import {
-  sendAndRecordSms,
-  type SendAndRecordSmsResult,
-} from '@/features/sms';
+import { sendAndRecordSms, type SendAndRecordSmsResult } from '@/features/sms';
 import {
   injectReviewUrlIntoBody,
   resolveAssistantReviewInviteUrl,
@@ -330,16 +327,16 @@ async function prepareAssistantMessageBody(
   businessId: string,
   item: AssistantDecisionItem,
   body: string
-): Promise<
-  | { ok: true; body: string }
-  | { ok: false; reason: string }
-> {
+): Promise<{ ok: true; body: string } | { ok: false; reason: string }> {
   if (item.subject !== 'review_followup') {
     return { ok: true, body };
   }
 
   // Prepare already minted a link into the draft — keep the owner's edit.
-  if (!body.includes('[review link]') && /\/review\/[A-Za-z0-9_-]+/.test(body)) {
+  if (
+    !body.includes('[review link]') &&
+    /\/review\/[A-Za-z0-9_-]+/.test(body)
+  ) {
     return { ok: true, body };
   }
 

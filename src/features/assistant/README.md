@@ -6,12 +6,12 @@ Owner dashboard feature: morning suggestions for **review follow-ups** and **reb
 
 ## Quick facts
 
-| Item | Value |
-| --- | --- |
-| Route | `/dashboard/assistant` |
-| Beta text cap | 30 / shop / UTC month |
-| SMS types | `assistant_review_followup`, `assistant_rebook_checkin` |
-| Tables | `assistant_actions`, `assistant_usage_months` (+ shared `sms_messages`, `review_invites`) |
+| Item          | Value                                                                                     |
+| ------------- | ----------------------------------------------------------------------------------------- |
+| Route         | `/dashboard/assistant`                                                                    |
+| Beta text cap | 30 / shop / UTC month                                                                     |
+| SMS types     | `assistant_review_followup`, `assistant_rebook_checkin`                                   |
+| Tables        | `assistant_actions`, `assistant_usage_months` (+ shared `sms_messages`, `review_invites`) |
 
 ## Next
 

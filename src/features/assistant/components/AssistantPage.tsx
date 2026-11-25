@@ -67,7 +67,9 @@ function summarizeSendFailures(
   failed: readonly AssistantSendItemResult[]
 ): string {
   const reasons = new Set(
-    failed.map(item => item.reason).filter((reason): reason is string => Boolean(reason))
+    failed
+      .map(item => item.reason)
+      .filter((reason): reason is string => Boolean(reason))
   );
   const hint = [...reasons]
     .map(reason => {
@@ -160,10 +162,7 @@ export function AssistantPage({
     );
   };
 
-  const markDrafts = (
-    ids: readonly string[],
-    status: 'sent' | 'skipped'
-  ) => {
+  const markDrafts = (ids: readonly string[], status: 'sent' | 'skipped') => {
     const idSet = new Set(ids);
     setDrafts(current =>
       current.map(draft =>
@@ -340,9 +339,7 @@ export function AssistantPage({
         title="Assistant"
         maxWidth="sm"
       >
-        <AssistantProTeaserModalBody
-          onClose={() => setProTeaserOpen(false)}
-        />
+        <AssistantProTeaserModalBody onClose={() => setProTeaserOpen(false)} />
       </Modal>
     </AssistantShell>
   );

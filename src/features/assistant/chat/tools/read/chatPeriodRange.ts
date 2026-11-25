@@ -79,8 +79,5 @@ export function resolveChatPeriodRange(args: {
 }
 
 export function todayYmd(now: Date = new Date(), timeZone?: string): string {
-  return zonedYmd(
-    now,
-    timeZone?.trim() || PAYMENTS_REVENUE_DEFAULT_TIME_ZONE
-  );
+  return zonedYmd(now, timeZone?.trim() || PAYMENTS_REVENUE_DEFAULT_TIME_ZONE);
 }

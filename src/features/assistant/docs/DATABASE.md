@@ -11,13 +11,13 @@ Schema and behavior for **`assistant_actions`**, **`assistant_usage_months`**, a
 
 ## Tables at a glance
 
-| Table | Role | Who writes |
-| --- | --- | --- |
-| `assistant_actions` | Append-only decisions (skip / send / unskip) | **service_role** only |
-| `assistant_usage_months` | Monthly text + Ask turn meters | **service_role** only |
-| `assistant_chat_gaps` | Ask miss signals (not chat history) | **service_role** via `recordChatGap` |
-| `sms_messages` | Delivery log (shared SMS feature) | **service_role** via `sendAndRecordSms` |
-| `review_invites` | Unique review tokens (shared reviews feature) | **service_role** at Send for reviews |
+| Table                    | Role                                          | Who writes                              |
+| ------------------------ | --------------------------------------------- | --------------------------------------- |
+| `assistant_actions`      | Append-only decisions (skip / send / unskip)  | **service_role** only                   |
+| `assistant_usage_months` | Monthly text + Ask turn meters                | **service_role** only                   |
+| `assistant_chat_gaps`    | Ask miss signals (not chat history)           | **service_role** via `recordChatGap`    |
+| `sms_messages`           | Delivery log (shared SMS feature)             | **service_role** via `sendAndRecordSms` |
+| `review_invites`         | Unique review tokens (shared reviews feature) | **service_role** at Send for reviews    |
 
 Owners and active **managers** may **SELECT** Assistant tables. Authenticated clients cannot INSERT/UPDATE them.
 
@@ -82,12 +82,12 @@ erDiagram
 
 `loadAssistantToday` SELECTs:
 
-| Table | Why |
-| --- | --- |
-| `business_profiles` | Booking / book URL for check-in copy |
-| `customers` | Name, phone, email |
-| `bookings` | Last visit, upcoming, `lastVisitBookingId` |
-| `reviews` | Exclude customers who already reviewed |
+| Table               | Why                                         |
+| ------------------- | ------------------------------------------- |
+| `business_profiles` | Booking / book URL for check-in copy        |
+| `customers`         | Name, phone, email                          |
+| `bookings`          | Last visit, upcoming, `lastVisitBookingId`  |
+| `reviews`           | Exclude customers who already reviewed      |
 | `assistant_actions` | Latest decisions for suppression + activity |
 
 No writes on page load. Chat usage is loaded separately via `getAssistantChatUsage`.
@@ -96,12 +96,12 @@ No writes on page load. Chat usage is loaded separately via `getAssistantChatUsa
 
 ## Write path (send)
 
-| Step | Table / system |
-| --- | --- |
-| Mint review URL | `review_invites` (rotate or insert) |
-| Send SMS | `sms_messages` + Telnyx |
+| Step            | Table / system                                                 |
+| --------------- | -------------------------------------------------------------- |
+| Mint review URL | `review_invites` (rotate or insert)                            |
+| Send SMS        | `sms_messages` + Telnyx                                        |
 | Record decision | `assistant_actions` (`kind = sent`, optional `sms_message_id`) |
-| Meter | `assistant_usage_months` upsert `text_sent_count + 1` |
+| Meter           | `assistant_usage_months` upsert `text_sent_count + 1`          |
 
 Skip only inserts `assistant_actions` (`kind = skipped`).
 
@@ -109,21 +109,21 @@ Skip only inserts `assistant_actions` (`kind = skipped`).
 
 ## Write path (Ask)
 
-| Step | Table / system |
-| --- | --- |
-| Reserve turn | `assistant_usage_months.chat_turn_count + 1` |
-| Tool gap (optional) | `assistant_chat_gaps` via `recordChatGap` |
-| Conversation | Not persisted |
+| Step                | Table / system                               |
+| ------------------- | -------------------------------------------- |
+| Reserve turn        | `assistant_usage_months.chat_turn_count + 1` |
+| Tool gap (optional) | `assistant_chat_gaps` via `recordChatGap`    |
+| Conversation        | Not persisted                                |
 
 ---
 
 ## RLS summary
 
-| Table | SELECT | INSERT / UPDATE / DELETE |
-| --- | --- | --- |
-| `assistant_actions` | Owner + active manager | service_role only |
-| `assistant_usage_months` | Owner + active manager | service_role only |
-| `assistant_chat_gaps` | Owner + active manager (if policy applied) | service_role only |
+| Table                    | SELECT                                     | INSERT / UPDATE / DELETE |
+| ------------------------ | ------------------------------------------ | ------------------------ |
+| `assistant_actions`      | Owner + active manager                     | service_role only        |
+| `assistant_usage_months` | Owner + active manager                     | service_role only        |
+| `assistant_chat_gaps`    | Owner + active manager (if policy applied) | service_role only        |
 
 App routes use `createSupabaseAdminClient()` for writes after `requireBusinessPermission`.
 

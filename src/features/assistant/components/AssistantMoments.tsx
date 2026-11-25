@@ -172,7 +172,9 @@ export function MorningMoment({
               setMobileAskOpen(true);
             }}
             aria-label={
-              unlocked ? 'Ask anything' : 'Ask anything: Pro feature — learn more'
+              unlocked
+                ? 'Ask anything'
+                : 'Ask anything: Pro feature — learn more'
             }
             className="pointer-events-auto flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-white text-[15px] font-semibold tracking-tight text-black shadow-[0_10px_28px_rgba(0,0,0,0.45)] transition-colors hover:bg-zinc-100"
           >

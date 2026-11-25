@@ -67,7 +67,11 @@ export async function reserveAssistantTextUsage(
   now: Date = new Date()
 ): Promise<
   | { ok: true; usage: AssistantTextUsage }
-  | { ok: false; reason: 'limit_reached' | 'invalid_count'; usage: AssistantTextUsage }
+  | {
+      ok: false;
+      reason: 'limit_reached' | 'invalid_count';
+      usage: AssistantTextUsage;
+    }
 > {
   if (!Number.isInteger(count) || count < 1) {
     const usage = await getAssistantTextUsage(admin, businessId, now);

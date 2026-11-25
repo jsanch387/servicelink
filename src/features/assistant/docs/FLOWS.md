@@ -4,15 +4,15 @@ Human-readable reference for how Owner Assistant works today: product rules, due
 
 **Related docs**
 
-| Doc | Use when |
-| --- | --- |
-| [CHAT.md](./CHAT.md) | Ask anything (tools, Pro, chat turns, kill switch) |
-| [TOOLS.md](./TOOLS.md) | Ask tool catalog |
-| [DATABASE.md](./DATABASE.md) | Schema, RLS, related tables |
-| [ASSISTANT_ACTIONS_TABLE.md](./ASSISTANT_ACTIONS_TABLE.md) | Decision log columns |
-| [ASSISTANT_USAGE_MONTHS_TABLE.md](./ASSISTANT_USAGE_MONTHS_TABLE.md) | Text + chat monthly meters |
-| Reviews [FLOWS.md](../../reviews/docs/FLOWS.md) | Invite / review link lifecycle |
-| SMS `sendAndRecordSms` | Shared outbound delivery |
+| Doc                                                                  | Use when                                           |
+| -------------------------------------------------------------------- | -------------------------------------------------- |
+| [CHAT.md](./CHAT.md)                                                 | Ask anything (tools, Pro, chat turns, kill switch) |
+| [TOOLS.md](./TOOLS.md)                                               | Ask tool catalog                                   |
+| [DATABASE.md](./DATABASE.md)                                         | Schema, RLS, related tables                        |
+| [ASSISTANT_ACTIONS_TABLE.md](./ASSISTANT_ACTIONS_TABLE.md)           | Decision log columns                               |
+| [ASSISTANT_USAGE_MONTHS_TABLE.md](./ASSISTANT_USAGE_MONTHS_TABLE.md) | Text + chat monthly meters                         |
+| Reviews [FLOWS.md](../../reviews/docs/FLOWS.md)                      | Invite / review link lifecycle                     |
+| SMS `sendAndRecordSms`                                               | Shared outbound delivery                           |
 
 ---
 
@@ -58,22 +58,22 @@ sequenceDiagram
 
 ## Product rules (v1 / beta)
 
-| Rule | Behavior |
-| --- | --- |
-| **Prepare only** | Owner must approve; no autonomous sends |
-| **Reviews + check-ins only** | Quotes / invoices are computed in shared builders but hidden from UI for now |
-| **No cron suggestions** | Due list = read-time rules over live CRM data |
-| **Reachable customers** | Phone or email required to appear |
-| **Review due** | Completed visit ≥ 3 days ago, no review yet, not suppressed |
-| **Check-in due** | No upcoming booking, last visit &gt; 90 days ago, not suppressed |
-| **Suppression** | Latest decision `sent` or `skipped` hides that customer+subject until `unskipped` or they leave a review |
-| **No bombardment** | After Send, they stay off the list (no timed re-nudge yet) |
-| **Pro required** | Free shops see real due counts + upgrade teaser; Send / Ask / Skip API need Pro |
-| **Beta text quota** | `ASSISTANT_BETA_TEXT_LIMIT` = **30** texts / shop / UTC month |
-| **Quota honesty** | Increment only after a real delivery (or same-day SMS duplicate) |
-| **Partial batches** | Some can succeed; failures stay ready with toast / results |
-| **Skip UI** | Hidden for now; `POST .../skip` still exists and is Pro-gated |
-| **Product copy** | Never call it “AI” or “Agent” in UI |
+| Rule                         | Behavior                                                                                                 |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Prepare only**             | Owner must approve; no autonomous sends                                                                  |
+| **Reviews + check-ins only** | Quotes / invoices are computed in shared builders but hidden from UI for now                             |
+| **No cron suggestions**      | Due list = read-time rules over live CRM data                                                            |
+| **Reachable customers**      | Phone or email required to appear                                                                        |
+| **Review due**               | Completed visit ≥ 3 days ago, no review yet, not suppressed                                              |
+| **Check-in due**             | No upcoming booking, last visit &gt; 90 days ago, not suppressed                                         |
+| **Suppression**              | Latest decision `sent` or `skipped` hides that customer+subject until `unskipped` or they leave a review |
+| **No bombardment**           | After Send, they stay off the list (no timed re-nudge yet)                                               |
+| **Pro required**             | Free shops see real due counts + upgrade teaser; Send / Ask / Skip API need Pro                          |
+| **Beta text quota**          | `ASSISTANT_BETA_TEXT_LIMIT` = **30** texts / shop / UTC month                                            |
+| **Quota honesty**            | Increment only after a real delivery (or same-day SMS duplicate)                                         |
+| **Partial batches**          | Some can succeed; failures stay ready with toast / results                                               |
+| **Skip UI**                  | Hidden for now; `POST .../skip` still exists and is Pro-gated                                            |
+| **Product copy**             | Never call it “AI” or “Agent” in UI                                                                      |
 
 ---
 
@@ -116,12 +116,12 @@ Prepare shows at most **20** rows (`BATCH_LIMIT`).
 
 `suppressedKeys` keeps the **latest** decision per `(customerId, subject)` among `skipped` | `unskipped` | `sent`.
 
-| Latest kind | On due list? |
-| --- | --- |
-| `sent` | No |
-| `skipped` | No |
+| Latest kind | On due list?                     |
+| ----------- | -------------------------------- |
+| `sent`      | No                               |
+| `skipped`   | No                               |
 | `unskipped` | Yes (if still due by data rules) |
-| none | Yes (if due) |
+| none        | Yes (if due)                     |
 
 There is **no** “show again in N days after send” rule yet. Re-ask would need either `unskipped` or a future cooldown rule.
 
@@ -149,18 +149,18 @@ There is **no** “show again in N days after send” rule yet. Re-ask would nee
 
 **SMS types**
 
-| Subject | `sms_messages.type` |
-| --- | --- |
+| Subject           | `sms_messages.type`         |
+| ----------------- | --------------------------- |
 | `review_followup` | `assistant_review_followup` |
-| `rebook_checkin` | `assistant_rebook_checkin` |
+| `rebook_checkin`  | `assistant_rebook_checkin`  |
 
 **Dedupe keys**
 
-| Layer | Key shape |
-| --- | --- |
-| `sms_messages` | `assistant:{customerId}:{subject}:{YYYY-MM-DD}` (UTC day) |
-| `assistant_actions` sent | `sent:{customerId}:{subject}:{YYYY-MM-DD}` |
-| `assistant_actions` skip | `skipped:{customerId}:{subject}:{ISO timestamp}` |
+| Layer                    | Key shape                                                 |
+| ------------------------ | --------------------------------------------------------- |
+| `sms_messages`           | `assistant:{customerId}:{subject}:{YYYY-MM-DD}` (UTC day) |
+| `assistant_actions` sent | `sent:{customerId}:{subject}:{YYYY-MM-DD}`                |
+| `assistant_actions` skip | `skipped:{customerId}:{subject}:{ISO timestamp}`          |
 
 Failed SMS clears `sms_messages.dedupe_key` so retry the same day is allowed.
 
@@ -183,12 +183,12 @@ Same invite model as job-complete reviews; rotating invalidates older pending li
 
 ## Quota (beta)
 
-| Piece | Where |
-| --- | --- |
+| Piece | Where                                                                      |
+| ----- | -------------------------------------------------------------------------- |
 | Limit | `ASSISTANT_BETA_TEXT_LIMIT` in `constants/assistantBetaLimits.ts` (**30**) |
-| Meter | `assistant_usage_months` per `(business_id, year_month)` UTC |
-| UI | Pill: “N of 30 texts this month” |
-| Gate | Block Send when remaining is 0; mid-batch stop with `limit_reached` |
+| Meter | `assistant_usage_months` per `(business_id, year_month)` UTC               |
+| UI    | Pill: “N of 30 texts this month”                                           |
+| Gate  | Block Send when remaining is 0; mid-batch stop with `limit_reached`        |
 
 Paid tiers / higher caps are not wired yet — change the constant (and later env/plan) when pricing lands. Monthly reset is automatic (new UTC `year_month` row).
 
@@ -198,12 +198,12 @@ Ask chat has a separate **30 turns / month** meter — see [CHAT.md](./CHAT.md) 
 
 ## Auth & permissions
 
-| Surface | Permission | Pro |
-| --- | --- | --- |
-| Dashboard page + `GET .../today` + `GET .../usage` | `customers.read` | No (free teaser) |
-| `POST .../send` + `POST .../skip` | `customers.write` | Yes |
-| `POST .../review-links` | `customers.read` | Yes |
-| `POST .../chat` | `customers.read` | Yes |
+| Surface                                            | Permission        | Pro              |
+| -------------------------------------------------- | ----------------- | ---------------- |
+| Dashboard page + `GET .../today` + `GET .../usage` | `customers.read`  | No (free teaser) |
+| `POST .../send` + `POST .../skip`                  | `customers.write` | Yes              |
+| `POST .../review-links`                            | `customers.read`  | Yes              |
+| `POST .../chat`                                    | `customers.read`  | Yes              |
 
 Writes to `assistant_*` and `sms_messages` use **service role** (admin client). Owners/managers only SELECT those tables via RLS.
 
@@ -218,14 +218,14 @@ Outbound SMS also respects:
 
 ## HTTP API
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `GET` | `/api/assistant/today` | Due list + usage |
-| `GET` | `/api/assistant/usage` | Text usage only |
-| `POST` | `/api/assistant/send` | SMS + decisions + quota (Pro) |
-| `POST` | `/api/assistant/skip` | Log skips (Pro; no UI) |
-| `POST` | `/api/assistant/review-links` | Mint URLs (Pro; Send also mints) |
-| `POST` | `/api/assistant/chat` | Ask stream + tools (Pro) — [CHAT.md](./CHAT.md) |
+| Method | Path                          | Purpose                                         |
+| ------ | ----------------------------- | ----------------------------------------------- |
+| `GET`  | `/api/assistant/today`        | Due list + usage                                |
+| `GET`  | `/api/assistant/usage`        | Text usage only                                 |
+| `POST` | `/api/assistant/send`         | SMS + decisions + quota (Pro)                   |
+| `POST` | `/api/assistant/skip`         | Log skips (Pro; no UI)                          |
+| `POST` | `/api/assistant/review-links` | Mint URLs (Pro; Send also mints)                |
+| `POST` | `/api/assistant/chat`         | Ask stream + tools (Pro) — [CHAT.md](./CHAT.md) |
 
 Client paths: `features/assistant/constants/assistantApiPaths.ts` (keep in sync with `ROUTES`).
 
@@ -252,8 +252,18 @@ Client paths: `features/assistant/constants/assistantApiPaths.ts` (keep in sync 
   "recorded": 2,
   "usage": { "yearMonth": "2026-11", "sent": 5, "limit": 30, "remaining": 25 },
   "results": [
-    { "customerId": "…", "subject": "review_followup", "ok": true, "smsMessageId": "…" },
-    { "customerId": "…", "subject": "review_followup", "ok": false, "reason": "sms_opt_out" }
+    {
+      "customerId": "…",
+      "subject": "review_followup",
+      "ok": true,
+      "smsMessageId": "…"
+    },
+    {
+      "customerId": "…",
+      "subject": "review_followup",
+      "ok": false,
+      "reason": "sms_opt_out"
+    }
   ]
 }
 ```
@@ -262,29 +272,29 @@ Client paths: `features/assistant/constants/assistantApiPaths.ts` (keep in sync 
 
 ## UI surfaces
 
-| Route / view | Role |
-| --- | --- |
-| `/dashboard/assistant` | SSR: today + text usage + chat usage + `isPro` → `AssistantPage` |
-| Morning | Due cards + activity preview; desktop Ask rail; mobile **Ask anything** CTA |
-| Prepare | Table + shared message + text quota pill + Send (Pro only) |
-| Activity | Preview (5 recent) + View all (`assistant_actions` → activity entries) |
-| Free | Pro banner + locked prepare/Ask → upgrade modal |
+| Route / view           | Role                                                                        |
+| ---------------------- | --------------------------------------------------------------------------- |
+| `/dashboard/assistant` | SSR: today + text usage + chat usage + `isPro` → `AssistantPage`            |
+| Morning                | Due cards + activity preview; desktop Ask rail; mobile **Ask anything** CTA |
+| Prepare                | Table + shared message + text quota pill + Send (Pro only)                  |
+| Activity               | Preview (5 recent) + View all (`assistant_actions` → activity entries)      |
+| Free                   | Pro banner + locked prepare/Ask → upgrade modal                             |
 
 ---
 
 ## Code map (server)
 
-| Module | Responsibility |
-| --- | --- |
-| `today/loadAssistantToday.ts` | Fetch CRM rows + actions |
-| `today/buildAssistantToday.ts` | Pure due rules + copy |
-| `server/applyAssistantDecisions.ts` | Skip + Send orchestration |
-| `server/recordAssistantActions.ts` | Insert decisions / dedupe keys / SMS types |
-| `server/assistantUsageMonth.ts` | Text + chat meters |
-| `server/requireAssistantPro.ts` | Pro gate helper |
-| `server/assistantChatGuards.ts` | Ask kill switch + turn reserve |
-| `reviews/server/resolveAssistantReviewInviteUrl.ts` | Unique review URLs for Assistant |
-| `sms/services/sendAndRecordSms.ts` | Shared delivery |
+| Module                                              | Responsibility                             |
+| --------------------------------------------------- | ------------------------------------------ |
+| `today/loadAssistantToday.ts`                       | Fetch CRM rows + actions                   |
+| `today/buildAssistantToday.ts`                      | Pure due rules + copy                      |
+| `server/applyAssistantDecisions.ts`                 | Skip + Send orchestration                  |
+| `server/recordAssistantActions.ts`                  | Insert decisions / dedupe keys / SMS types |
+| `server/assistantUsageMonth.ts`                     | Text + chat meters                         |
+| `server/requireAssistantPro.ts`                     | Pro gate helper                            |
+| `server/assistantChatGuards.ts`                     | Ask kill switch + turn reserve             |
+| `reviews/server/resolveAssistantReviewInviteUrl.ts` | Unique review URLs for Assistant           |
+| `sms/services/sendAndRecordSms.ts`                  | Shared delivery                            |
 
 ---
 

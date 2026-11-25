@@ -9,11 +9,7 @@ export type ResolveAssistantReviewInviteUrlResult =
   | { ok: true; url: string; inviteId: string }
   | {
       ok: false;
-      reason:
-        | 'no_customer'
-        | 'no_booking'
-        | 'already_reviewed'
-        | 'error';
+      reason: 'no_customer' | 'no_booking' | 'already_reviewed' | 'error';
       error?: string;
     };
 
@@ -212,7 +208,8 @@ export async function resolveAssistantReviewInviteUrl(
     return {
       ok: false,
       reason: 'error',
-      error: error instanceof Error ? error.message : 'Failed to resolve review URL',
+      error:
+        error instanceof Error ? error.message : 'Failed to resolve review URL',
     };
   }
 }

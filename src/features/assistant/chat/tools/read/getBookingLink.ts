@@ -24,7 +24,10 @@ export async function executeGetBookingLink(args: {
 
     if (error) {
       console.error('[assistant:chat] getBookingLink', error);
-      return { ok: false, error: 'Could not load your booking link right now.' };
+      return {
+        ok: false,
+        error: 'Could not load your booking link right now.',
+      };
     }
 
     const profile = data as {

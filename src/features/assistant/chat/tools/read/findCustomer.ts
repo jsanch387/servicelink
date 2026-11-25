@@ -64,7 +64,10 @@ export async function executeFindCustomer(args: {
         )
         .eq('business_id', args.businessId)
         .not('customer_id', 'is', null),
-      db.from('reviews').select('customer_id').eq('business_id', args.businessId),
+      db
+        .from('reviews')
+        .select('customer_id')
+        .eq('business_id', args.businessId),
     ]);
 
     if (customerResult.error || bookingResult.error || reviewResult.error) {
@@ -99,9 +102,7 @@ export async function executeFindCustomer(args: {
         const phone = (customer.phone ?? '').toLowerCase();
         const email = (customer.email ?? '').toLowerCase();
         return (
-          name.includes(query) ||
-          phone.includes(query) ||
-          email.includes(query)
+          name.includes(query) || phone.includes(query) || email.includes(query)
         );
       })
       .slice(0, limit)

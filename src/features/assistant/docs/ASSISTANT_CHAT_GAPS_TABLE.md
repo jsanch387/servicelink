@@ -2,14 +2,14 @@
 
 Product signal when Ask-anything **cannot** answer. **Not** a chat transcript — no thread, no assistant reply text.
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | uuid | PK |
-| `business_id` | uuid | Shop |
-| `question_excerpt` | text | Truncated owner question (≤ 500 chars) |
-| `reason` | text | `no_tool` \| `empty_result` \| `error` \| `thumbs_down` |
-| `topic_hint` | text? | Short tag from the model (e.g. `schedule`, `customer`, `invoice`) ≤ 80 |
-| `created_at` | timestamptz | |
+| Column             | Type        | Notes                                                                  |
+| ------------------ | ----------- | ---------------------------------------------------------------------- |
+| `id`               | uuid        | PK                                                                     |
+| `business_id`      | uuid        | Shop                                                                   |
+| `question_excerpt` | text        | Truncated owner question (≤ 500 chars)                                 |
+| `reason`           | text        | `no_tool` \| `empty_result` \| `error` \| `thumbs_down`                |
+| `topic_hint`       | text?       | Short tag from the model (e.g. `schedule`, `customer`, `invoice`) ≤ 80 |
+| `created_at`       | timestamptz |                                                                        |
 
 **Writes:** `service_role` only (via `recordChatGap` tool).  
 **Reads:** owner / manager SELECT (same pattern as other Assistant tables).

@@ -22,7 +22,9 @@ const ASK_SUGGESTIONS = [
 const ASK_LINE_HEIGHT = 22;
 const ASK_MAX_LINES = 8;
 
-function messageText(parts: readonly { type: string; text?: string }[]): string {
+function messageText(
+  parts: readonly { type: string; text?: string }[]
+): string {
   return parts
     .filter(part => part.type === 'text' && typeof part.text === 'string')
     .map(part => part.text as string)
