@@ -1,7 +1,7 @@
 {
   "name": "ServiceLink",
   "short_name": "ServiceLink",
-  "description": "Your Business. One Beautiful Link. Stop wasting money on expensive websites.",
+  "description": "ServiceLink is the booking, payments and CRM app for mobile detailers.",
   "icons": [
     {
       "src": "/brand/favicon.png",

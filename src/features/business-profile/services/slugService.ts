@@ -8,6 +8,7 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { isReservedBusinessSlug } from '@/constants/reservedSlugs';
 import { SLUG_MAX_LENGTH } from '@/constants/slug';
 import type { Database } from '@/libs/supabase/client';
 import { createClient } from '@/libs/supabase/client';
@@ -109,36 +110,7 @@ class SlugService {
       };
     }
 
-    // Check for reserved slugs
-    const reservedSlugs = [
-      'admin',
-      'api',
-      'app',
-      'www',
-      'mail',
-      'ftp',
-      'blog',
-      'shop',
-      'store',
-      'help',
-      'support',
-      'contact',
-      'about',
-      'terms',
-      'privacy',
-      'login',
-      'signup',
-      'dashboard',
-      'get-app',
-      'profile',
-      'settings',
-      'account',
-      'billing',
-      'prolink-services',
-      'admin-link',
-    ];
-
-    if (reservedSlugs.includes(cleanSlug)) {
+    if (isReservedBusinessSlug(cleanSlug)) {
       return {
         isValid: false,
         error: 'This link name is reserved and cannot be used.',

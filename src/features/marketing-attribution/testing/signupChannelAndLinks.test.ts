@@ -20,6 +20,10 @@ describe('signupLinks', () => {
       '/signup?utm_source=site&utm_medium=cta&utm_campaign=pricing'
     );
     expect(siteSignupPath('homepage')).toContain('utm_campaign=homepage');
+    expect(siteSignupPath('auto-detailing', 'hero')).toBe(
+      '/signup?utm_source=site&utm_medium=cta&utm_campaign=auto-detailing&utm_content=hero'
+    );
+    expect(siteSignupPath('faq')).toContain('utm_campaign=faq');
   });
 });
 
@@ -90,6 +94,22 @@ describe('deriveSignupAttributionChannel', () => {
         referrer: 'https://www.google.com/',
       })
     ).toBe('blog');
+
+    expect(
+      deriveSignupAttributionChannel({
+        landingPath: '/auto-detailing',
+        referrer: 'https://www.google.com/',
+      })
+    ).toBe('site');
+
+    expect(
+      deriveSignupAttributionChannel({
+        utmSource: 'site',
+        utmMedium: 'cta',
+        utmCampaign: 'auto-detailing',
+        landingPath: '/auto-detailing',
+      })
+    ).toBe('site');
   });
 
   it('classifies organic search and direct', () => {

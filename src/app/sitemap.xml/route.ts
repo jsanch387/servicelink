@@ -201,6 +201,24 @@ ${GUIDES.map(guide => {
     <priority>0.85</priority>
   </url>
   <url>
+    <loc>${baseUrl}/auto-detailing</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/faq</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/llms.txt</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
     <loc>${baseUrl}/workshop</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>weekly</changefreq>

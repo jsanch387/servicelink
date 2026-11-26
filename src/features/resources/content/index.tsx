@@ -1,6 +1,8 @@
 import React from 'react';
 import { BestBookingAppForMobileDetailersContent } from './BestBookingAppForMobileDetailers';
+import { BestBookingAppsAndCrmsForMobileDetailersContent } from './BestBookingAppsAndCrmsForMobileDetailers';
 import { BestCrmForMobileDetailersContent } from './BestCrmForMobileDetailers';
+import { SquareAppointmentsAlternativeMobileDetailersContent } from './SquareAppointmentsAlternativeMobileDetailers';
 import { DetailDeckAlternativeMobileDetailersContent } from './DetailDeckAlternativeMobileDetailers';
 import { HowMobileDetailersGetClientsInstagramContent } from './HowMobileDetailersGetClientsInstagram';
 import { HowMuchToChargeForMobileDetailingContent } from './HowMuchToChargeForMobileDetailing';
@@ -15,6 +17,10 @@ import { StopNoShowsDepositsMobileDetailingContent } from './StopNoShowsDeposits
 /** Map of guide slug to content component. Add new guides here. */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export const GUIDE_CONTENT: Record<string, React.ComponentType<{}>> = {
+  'best-booking-apps-and-crms-for-mobile-detailers':
+    BestBookingAppsAndCrmsForMobileDetailersContent,
+  'square-appointments-alternative-mobile-detailers':
+    SquareAppointmentsAlternativeMobileDetailersContent,
   'best-crm-for-mobile-detailers': BestCrmForMobileDetailersContent,
   'mobile-tech-rx-alternative': MobileTechRxAlternativeContent,
   'how-to-get-more-mobile-detailing-clients':

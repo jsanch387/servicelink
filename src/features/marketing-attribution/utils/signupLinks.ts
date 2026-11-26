@@ -39,13 +39,23 @@ export function blogIndexSignupPath(): string {
   });
 }
 
-/** Marketing site page CTAs (homepage, pricing, features, …). */
+export type SiteSignupCampaign =
+  | 'homepage'
+  | 'pricing'
+  | 'features'
+  | 'marketplace'
+  | 'auto-detailing'
+  | 'faq';
+
+/** Marketing site page CTAs (homepage, pricing, features, industry landings, …). */
 export function siteSignupPath(
-  campaign: 'homepage' | 'pricing' | 'features' | 'marketplace'
+  campaign: SiteSignupCampaign,
+  content?: string
 ): string {
   return buildMarketingSignupPath({
     source: 'site',
     medium: 'cta',
     campaign,
+    content,
   });
 }

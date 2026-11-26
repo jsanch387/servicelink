@@ -1,3 +1,4 @@
+import { isReservedOrphanTopLevelPath } from '@/constants/reservedSlugs';
 import { AUTH_REQUIRED_PATH_PREFIXES, ROUTES } from '@/constants/routes';
 import { applyMarketingAttributionCookie } from '@/features/marketing-attribution/server/applyMarketingAttributionCookie';
 import { bookingReferralCaptureRedirect } from '@/features/booking-attribution/server/bookingReferralCookie';
@@ -44,6 +45,12 @@ export async function middleware(request: NextRequest) {
     }
     return out;
   };
+
+  if (isReservedOrphanTopLevelPath(pathname)) {
+    return withStaleExpiry(
+      NextResponse.rewrite(new URL('/__not-found', request.url))
+    );
+  }
 
   let response = withStaleExpiry(
     NextResponse.next({
