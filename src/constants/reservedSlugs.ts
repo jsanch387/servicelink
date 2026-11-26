@@ -79,7 +79,7 @@ export const RESERVED_BUSINESS_SLUGS = [
   'support',
   'waitlist',
   'www',
-  '__not-found',
+  'reserved-not-found',
 ] as const;
 
 const RESERVED_SLUG_SET = new Set<string>(RESERVED_BUSINESS_SLUGS);
@@ -120,7 +120,7 @@ const IMPLEMENTED_TOP_LEVEL_SEGMENTS = new Set([
   'team',
   'terms',
   'workshop',
-  '__not-found',
+  'reserved-not-found',
 ]);
 
 /** `/blog`, `/help`, and other reserved words with no marketing page. */

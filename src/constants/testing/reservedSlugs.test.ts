@@ -24,7 +24,7 @@ describe('reserved business slugs', () => {
     expect(isReservedOrphanTopLevelPath('/faq')).toBe(false);
     expect(isReservedOrphanTopLevelPath('/auto-detailing')).toBe(false);
     expect(isReservedOrphanTopLevelPath('/blacklabelauto')).toBe(false);
-    expect(isReservedOrphanTopLevelPath('/__not-found')).toBe(false);
+    expect(isReservedOrphanTopLevelPath('/reserved-not-found')).toBe(false);
   });
 
   it('has unique entries', () => {

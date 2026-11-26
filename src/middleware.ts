@@ -48,7 +48,7 @@ export async function middleware(request: NextRequest) {
 
   if (isReservedOrphanTopLevelPath(pathname)) {
     return withStaleExpiry(
-      NextResponse.rewrite(new URL('/__not-found', request.url))
+      NextResponse.rewrite(new URL('/reserved-not-found', request.url))
     );
   }
 

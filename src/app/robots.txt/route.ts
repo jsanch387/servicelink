@@ -26,7 +26,7 @@ Disallow: /auth/
 Disallow: /api/
 Disallow: /settings/
 Disallow: /waitlist/
-Disallow: /__not-found
+Disallow: /reserved-not-found
 
 # Sitemap for discoverability (Google, Bing, AI crawlers)
 Sitemap: ${baseUrl}/sitemap.xml`;
