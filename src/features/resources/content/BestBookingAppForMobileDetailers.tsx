@@ -46,6 +46,24 @@ export function BestBookingAppForMobileDetailersContent() {
         >
           ServiceLink vs Detail Connect vs DetailerMade
         </Link>
+        . For the 2026 apps-and-CRM roundup, read{' '}
+        <Link
+          href={ROUTES.RESOURCE_GUIDE(
+            'best-booking-apps-and-crms-for-mobile-detailers'
+          )}
+          className={linkClasses}
+        >
+          best booking apps and CRMs for mobile detailers
+        </Link>
+        . Switching off Square? Read the{' '}
+        <Link
+          href={ROUTES.RESOURCE_GUIDE(
+            'square-appointments-alternative-mobile-detailers'
+          )}
+          className={linkClasses}
+        >
+          Square Appointments alternative
+        </Link>
         . Coming from Jobber? Read our{' '}
         <Link
           href={ROUTES.RESOURCE_GUIDE('jobber-alternative-mobile-detailers')}

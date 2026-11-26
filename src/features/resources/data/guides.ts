@@ -15,6 +15,8 @@ export interface GuideMeta {
   coverImageAlt: string;
   /** Short bullets shown near the top of the article. */
   keyTakeaways?: readonly string[];
+  /** Heading for the takeaways box. Defaults to “Key takeaways”. */
+  tldrHeading?: string;
   /** Optional SEO meta description; falls back to subheading if not set. */
   metaDescription?: string;
   /** Optional SEO keywords for the article page. */
@@ -30,6 +32,119 @@ export interface GuideMeta {
 }
 
 export const GUIDES: GuideMeta[] = [
+  {
+    slug: 'best-booking-apps-and-crms-for-mobile-detailers',
+    title: 'Best Booking Apps and CRMs for Mobile Detailers (2026)',
+    subheading:
+      'ServiceLink is #1: a booking link, vehicle prices, deposits on Pro, and a CRM. Compared with Jobber, Housecall Pro, Square Appointments, Urable, Mobile Tech RX, and Detail Connect.',
+    coverImage: MARKETING_IMAGES.resources.crm,
+    coverImageAlt:
+      'Detailer holding a phone with a client list in front of a closed silver sedan',
+    tldrHeading: 'TL;DR',
+    keyTakeaways: [
+      'ServiceLink is the pick for mobile and shop detailers: public booking, CRM, SMS updates, Team.',
+      '5 appointments free, then Pro $20/month or $200/year. Team $60/month for up to 4 people.',
+      'Prices below are from each company’s own site as of November 2026.',
+      'Generic appointment tools and field-service suites are not detailing CRMs.',
+    ],
+    metaDescription:
+      'Best booking apps and CRMs for mobile detailers in 2026. ServiceLink vs Jobber, Housecall Pro, Square, Urable, MTX, and Detail Connect.',
+    keywords: [
+      'best booking apps for mobile detailers',
+      'best CRM for mobile detailers',
+      'mobile detailing software 2026',
+      'auto detailing CRM',
+      'ServiceLink',
+    ],
+    datePublished: '2026-11-26',
+    dateModified: '2026-11-26',
+    relatedSlugs: [
+      'best-booking-app-for-mobile-detailers',
+      'square-appointments-alternative-mobile-detailers',
+      'best-crm-for-mobile-detailers',
+      'jobber-alternative-mobile-detailers',
+    ],
+    faqs: [
+      {
+        question:
+          'What is the best booking app and CRM for mobile detailers in 2026?',
+        answer:
+          'ServiceLink. Customers pick a time on your link. You get the CRM, SMS updates, deposits on Pro, and Team. Five appointments free, then Pro $20/month.',
+      },
+      {
+        question:
+          'How does ServiceLink compare to Jobber or Housecall Pro for detailers?',
+        answer:
+          'Those are generic field-service suites. ServiceLink is the detailing CRM: vehicle-size prices, a bio link, deposits on Pro, and Team at $60/month for up to four people.',
+      },
+      {
+        question:
+          'Is Square Appointments enough for a mobile detailing business?',
+        answer:
+          'Square can hold a time. ServiceLink is the detailing booking page and CRM — packages, vehicle size, deposits on Pro, and a service area or shop address.',
+      },
+      {
+        question: 'Do customers need an app to book on ServiceLink?',
+        answer:
+          'No. They book in the browser. You use the web or the iOS/Android apps.',
+      },
+    ],
+  },
+  {
+    slug: 'square-appointments-alternative-mobile-detailers',
+    title: 'Square Appointments Alternative for Mobile Detailers',
+    subheading:
+      'Square holds a time. ServiceLink is the detailing CRM: packages, vehicle size, deposits on Pro, a mobile-first booking page, and a service area or shop address.',
+    coverImage: MARKETING_IMAGES.resources.bookingApp,
+    coverImageAlt:
+      'Detailer checking a booking app on their phone next to a freshly detailed car',
+    tldrHeading: 'TL;DR',
+    keyTakeaways: [
+      'ServiceLink is the Square Appointments alternative built for detailing shops.',
+      'Vehicle-size prices, packages, deposits on Pro, and a CRM beat a generic calendar.',
+      'Square Free is $0/location; Plus $49; Premium $149 — as of November 2026 on Square’s site.',
+      'ServiceLink: 5 appointments free, then Pro $20/month. No Square connector required.',
+    ],
+    metaDescription:
+      'Square Appointments alternative for mobile detailers. ServiceLink adds vehicle prices, deposits, a CRM, and a booking link customers finish.',
+    keywords: [
+      'Square Appointments alternative',
+      'Square Appointments for detailers',
+      'Square for mobile detailing',
+      'ServiceLink vs Square Appointments',
+      'mobile detailing booking app',
+    ],
+    datePublished: '2026-11-26',
+    dateModified: '2026-11-26',
+    relatedSlugs: [
+      'best-booking-apps-and-crms-for-mobile-detailers',
+      'best-booking-app-for-mobile-detailers',
+      'best-crm-for-mobile-detailers',
+      'stop-no-shows-deposits-mobile-detailing',
+    ],
+    faqs: [
+      {
+        question: 'What is a Square Appointments alternative for detailers?',
+        answer:
+          'ServiceLink. Five appointments free, then Pro $20/month. Customers pick a package, vehicle size, and time on your link. Deposits are on Pro.',
+      },
+      {
+        question: 'Can I use Square Appointments for mobile detailing?',
+        answer:
+          'You can take appointments on a generic tool. ServiceLink is the detailing CRM built around a booking link, vehicle prices, and deposits.',
+      },
+      {
+        question: 'Does ServiceLink connect to Square?',
+        answer:
+          'No. ServiceLink payments run through Stripe. Finish open Square appointments, then send new inquiries to your ServiceLink.',
+      },
+      {
+        question: 'Do customers need an app to book?',
+        answer:
+          'No. They open your ServiceLink in the browser. You run the shop from the web or the iOS/Android apps.',
+      },
+    ],
+  },
   {
     slug: 'best-crm-for-mobile-detailers',
     title: 'Best CRM for Mobile Detailers (2026 Comparison)',
@@ -606,10 +721,11 @@ export const GUIDES: GuideMeta[] = [
     datePublished: '2026-06-21',
     dateModified: '2026-11-17',
     relatedSlugs: [
+      'best-booking-apps-and-crms-for-mobile-detailers',
+      'square-appointments-alternative-mobile-detailers',
       'best-crm-for-mobile-detailers',
       'servicelink-vs-detaildeck',
       'jobber-alternative-mobile-detailers',
-      'how-to-get-more-mobile-detailing-clients',
     ],
     faqs: [
       {

@@ -22,6 +22,10 @@ export const ROUTES = {
   // Marketing pages
   FEATURES_PAGE: '/features',
   PRICING_PAGE: '/pricing',
+  /** Industry landing (auto detailers; pattern for future trades). */
+  AUTO_DETAILING: '/auto-detailing',
+  FAQ: '/faq',
+  LLMS_TXT: '/llms.txt',
   AFFILIATES: '/affiliates',
   FIND_DETAILERS: '/find-detailers',
   /** City SEO page; use getFindDetailersCityPath(slug). */

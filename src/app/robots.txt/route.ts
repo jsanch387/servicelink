@@ -16,6 +16,9 @@ Allow: /signup
 Allow: /login
 Allow: /resources
 Allow: /resources/
+Allow: /auto-detailing
+Allow: /faq
+Allow: /llms.txt
 Allow: /find-detailers
 Allow: /find-detailers/
 Disallow: /dashboard/
@@ -23,6 +26,7 @@ Disallow: /auth/
 Disallow: /api/
 Disallow: /settings/
 Disallow: /waitlist/
+Disallow: /reserved-not-found
 
 # Sitemap for discoverability (Google, Bing, AI crawlers)
 Sitemap: ${baseUrl}/sitemap.xml`;

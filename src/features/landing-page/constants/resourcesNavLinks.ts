@@ -49,6 +49,14 @@ export const RESOURCES_NAV_VIEW_ALL: ResourcesNavItem = {
 
 const GUIDE_LINKS = [
   {
+    label: 'Best Booking Apps and CRMs (2026)',
+    href: ROUTES.RESOURCE_GUIDE(
+      'best-booking-apps-and-crms-for-mobile-detailers'
+    ),
+    description: 'ServiceLink vs Jobber, Square, Urable, and more',
+    icon: 'book',
+  },
+  {
     label: 'Best Booking App for Mobile Detailers',
     href: ROUTES.RESOURCE_GUIDE('best-booking-app-for-mobile-detailers'),
     description: 'What to look for and how options stack up',

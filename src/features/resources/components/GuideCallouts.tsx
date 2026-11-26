@@ -2,9 +2,13 @@ import React from 'react';
 
 type GuideKeyTakeawaysProps = {
   items: readonly string[];
+  heading?: string;
 };
 
-export function GuideKeyTakeaways({ items }: GuideKeyTakeawaysProps) {
+export function GuideKeyTakeaways({
+  items,
+  heading = 'Key takeaways',
+}: GuideKeyTakeawaysProps) {
   if (!items.length) return null;
 
   return (
@@ -16,7 +20,7 @@ export function GuideKeyTakeaways({ items }: GuideKeyTakeawaysProps) {
         id="key-takeaways-heading"
         className="text-lg sm:text-xl font-bold text-white mb-3 tracking-tight"
       >
-        Key takeaways
+        {heading}
       </h2>
       <ul className="space-y-3">
         {items.map(item => (

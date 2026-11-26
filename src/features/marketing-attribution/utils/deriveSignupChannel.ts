@@ -63,7 +63,10 @@ function isSiteMarketingPath(path?: string | null): boolean {
     normalized === '/find-detailers' ||
     normalized === '/contact' ||
     normalized === '/workshop' ||
-    normalized.startsWith('/workshop/')
+    normalized.startsWith('/workshop/') ||
+    normalized === '/auto-detailing' ||
+    normalized === '/faq' ||
+    normalized === '/llms.txt'
   );
 }
 
@@ -171,7 +174,9 @@ export function deriveSignupAttributionChannel(
   if (
     landing === '/pricing' ||
     landing === '/features' ||
-    landing === '/find-detailers'
+    landing === '/find-detailers' ||
+    landing === '/auto-detailing' ||
+    landing === '/faq'
   ) {
     return 'site';
   }

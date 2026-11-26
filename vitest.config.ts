@@ -13,6 +13,7 @@ export default defineConfig({
     include: [
       'src/features/**/testing/**/*.test.ts',
       'src/features/**/testing/**/*.test.tsx',
+      'src/constants/**/testing/**/*.test.ts',
       'src/server/**/testing/**/*.test.ts',
       'src/libs/**/testing/**/*.test.ts',
       'src/lib/**/*.test.ts',

@@ -281,7 +281,10 @@ export default async function ResourceGuidePage({
           </p>
 
           {guide.keyTakeaways?.length ? (
-            <GuideKeyTakeaways items={guide.keyTakeaways} />
+            <GuideKeyTakeaways
+              items={guide.keyTakeaways}
+              heading={guide.tldrHeading}
+            />
           ) : null}
 
           {GuideContent ? (

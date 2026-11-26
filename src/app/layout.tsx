@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { MarketingAttributionRoot } from '@/features/marketing-attribution';
+import { SiteStructuredData } from '@/features/seo/SiteStructuredData';
 import {
   AFFONSO_COOKIE_DURATION_DAYS,
   AFFONSO_PUBLIC_PROGRAM_ID,
@@ -91,6 +92,7 @@ const gtagPrimaryId = gaMeasurementId || googleAdsId;
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: 'ServiceLink',
+  manifest: '/site.webmanifest',
   title: {
     default: HOME_SEO_TITLE,
     template: '%s | ServiceLink',
@@ -250,6 +252,7 @@ export default function RootLayout({
             />
           </noscript>
         ) : null}
+        <SiteStructuredData />
         <Suspense fallback={null}>
           <MarketingAttributionRoot />
         </Suspense>

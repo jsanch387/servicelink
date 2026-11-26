@@ -21,12 +21,14 @@ const FIND_DETAILERS_LINK = {
 const PRODUCT_LINKS = [
   { href: ROUTES.FEATURES_PAGE, label: 'Features' },
   { href: ROUTES.PRICING_PAGE, label: 'Pricing' },
+  { href: ROUTES.AUTO_DETAILING, label: 'Auto detailing' },
   { href: ROUTES.RESOURCES, label: 'Resources' },
   { href: ROUTES.WORKSHOP, label: 'Workshop' },
   { href: ROUTES.AFFILIATES, label: 'Affiliate program' },
 ] as const;
 
 const SUPPORT_LINKS = [
+  { href: ROUTES.FAQ, label: 'FAQ' },
   { href: ROUTES.CONTACT_PAGE, label: 'Contact' },
 ] as const;
 

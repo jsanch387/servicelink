@@ -7,6 +7,8 @@
 
 import { StructuredData } from '@/components/shared';
 import { publicSpecialtyLabels } from '@/constants/businessSpecialties';
+import { isReservedBusinessSlug } from '@/constants/reservedSlugs';
+import { rethrowNextNavigation } from '@/libs/next/rethrowNextNavigation';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { ViewTracker } from '@/features/analytics';
 import { publicBookingV2EnabledForOwner } from '@/features/booking-v2/server/publicBookingV2Access';
@@ -66,8 +68,10 @@ function firstSearchParam(
   return undefined;
 }
 
-// Enable static generation with revalidation for better performance
-export const revalidate = 60; // Revalidate every 60 seconds
+// ISR for live booking pages. There is no `loading.tsx` on this segment:
+// a loading shell flushes HTTP 200 before `notFound()`, which is how unknown
+// slugs used to look like real pages to crawlers.
+export const revalidate = 60;
 
 interface PublicProfilePageProps {
   params: Promise<{
@@ -161,6 +165,9 @@ export default async function PublicProfilePage({
   searchParams,
 }: PublicProfilePageProps) {
   const { 'business-slug': slug } = await params;
+  if (isReservedBusinessSlug(slug)) {
+    notFound();
+  }
   const sp = (await searchParams) ?? {};
   const langParam = firstSearchParam(sp.lang);
   const membershipCheckout = firstSearchParam(sp.membershipCheckout)?.trim();
@@ -349,15 +356,14 @@ export default async function PublicProfilePage({
 // Generate comprehensive metadata for SEO
 export async function generateMetadata({ params }: PublicProfilePageProps) {
   const { 'business-slug': slug } = await params;
+  if (isReservedBusinessSlug(slug)) {
+    notFound();
+  }
 
   try {
     const adminMeta = createSupabaseAdminClient();
     if (!(await isPublicBusinessSlugVisible(adminMeta, slug))) {
-      return {
-        title: 'Business Profile Not Found | ServiceLink',
-        description: 'The requested business profile could not be found.',
-        robots: 'noindex, nofollow',
-      };
+      notFound();
     }
 
     const siteUrl = (
@@ -376,11 +382,7 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
       .single();
 
     if (!profileData) {
-      return {
-        title: 'Business Profile Not Found | ServiceLink',
-        description: 'The requested business profile could not be found.',
-        robots: 'noindex, nofollow',
-      };
+      notFound();
     }
 
     const profile = profileData as PublicBusinessProfileRow;
@@ -483,11 +485,8 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
       },
     };
   } catch (error) {
+    rethrowNextNavigation(error);
     console.error('Error generating metadata:', error);
-    return {
-      title: 'Business Profile | ServiceLink',
-      description: 'Professional business profile on ServiceLink',
-      robots: 'noindex, nofollow',
-    };
+    notFound();
   }
 }
