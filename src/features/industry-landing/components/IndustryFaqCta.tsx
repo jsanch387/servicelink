@@ -1,6 +1,7 @@
 import { ROUTES } from '@/constants/routes';
 import { HeroCtaButton } from '@/features/landing-page/components/HeroCtaButton';
 import { siteSignupPath } from '@/features/marketing-attribution';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import type { IndustryLandingContent } from '../types';
 
@@ -10,48 +11,54 @@ export function IndustryFaqCta({
   content: IndustryLandingContent;
 }) {
   return (
-    <section className="px-4 py-14 sm:px-6 sm:py-20">
+    <section className="px-4 py-20 sm:px-6 sm:py-24 md:py-28">
       <div className="mx-auto max-w-3xl">
-        <h2 className="text-center text-2xl font-bold tracking-tight text-white">
-          FAQ
-        </h2>
-        <div className="mt-8 space-y-2">
+        <header className="mb-12 text-center sm:mb-14">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+            FAQ
+          </p>
+          <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            Common questions
+          </h2>
+        </header>
+        <div className="space-y-2">
           {content.faqs.map(faq => (
             <details
               key={faq.question}
               className="group overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.02] open:bg-white/[0.03]"
             >
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left marker:content-none hover:bg-white/[0.03] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left marker:content-none hover:bg-white/[0.03] sm:px-6 sm:py-5 [&::-webkit-details-marker]:hidden">
                 <span className="pr-2 text-sm font-medium text-white sm:text-base">
                   {faq.question}
                 </span>
-                <span
-                  className="shrink-0 text-gray-500 transition-transform group-open:rotate-45"
+                <ChevronDownIcon
+                  className="h-5 w-5 shrink-0 text-zinc-400 transition-transform duration-200 group-open:rotate-180"
                   aria-hidden
-                >
-                  +
-                </span>
+                />
               </summary>
-              <p className="px-5 pb-5 text-sm leading-relaxed text-zinc-400">
+              <p className="px-5 pb-4 text-sm leading-relaxed text-zinc-400 sm:px-6 sm:pb-5">
                 {faq.answer}
               </p>
             </details>
           ))}
         </div>
-        <p className="mt-4 text-center text-sm text-zinc-500">
-          <Link href={ROUTES.FAQ} className="cursor-pointer hover:text-white">
+        <p className="mt-5 text-center text-sm text-zinc-500">
+          <Link
+            href={ROUTES.FAQ}
+            className="cursor-pointer underline-offset-4 transition-colors hover:text-white hover:underline"
+          >
             More questions
           </Link>
         </p>
 
-        <div className="mt-14 border-t border-white/[0.08] pt-12 text-center">
-          <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+        <div className="mt-20 border-t border-white/[0.08] pt-16 text-center sm:mt-24 sm:pt-20">
+          <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             {content.cta.heading}
           </h2>
-          <p className="mx-auto mt-3 max-w-md text-zinc-400">
+          <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-zinc-400">
             {content.cta.line}
           </p>
-          <div className="mt-7 flex justify-center">
+          <div className="mt-8 flex justify-center">
             <HeroCtaButton href={siteSignupPath('auto-detailing', 'footer')}>
               Start free
             </HeroCtaButton>

@@ -305,6 +305,20 @@ html.support-chat-open .animate-marquee-premium-ltr {
   animation: how-it-works-spark-y 700ms ease-out forwards;
 }
 
+@keyframes industry-device-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-industry-device-float {
+  animation: industry-device-float 6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marketing-streak-pulse {
     animation: none;
@@ -313,7 +327,8 @@ html.support-chat-open .animate-marquee-premium-ltr {
   .animate-how-it-works-line-fill,
   .animate-how-it-works-line-fill-y,
   .animate-how-it-works-spark,
-  .animate-how-it-works-spark-y {
+  .animate-how-it-works-spark-y,
+  .animate-industry-device-float {
     animation: none;
   }
   .skeleton-image {
