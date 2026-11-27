@@ -26,12 +26,6 @@ function emptyCopy(
       description: 'You have replied to every review. Nice work.',
     };
   }
-  if (filter === 'replied') {
-    return {
-      title: 'No replied reviews',
-      description: 'Replies you send will show up in this filter.',
-    };
-  }
   return {
     title: 'No reviews',
     description: 'Try another filter.',

@@ -6,5 +6,5 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardReviewsPage() {
   await requireDashboardPageAccess('reviews.read');
 
-  return <ReviewsDashboardPage showGoogleConnect />;
+  return <ReviewsDashboardPage enableGoogleRefresh />;
 }

@@ -5,14 +5,15 @@ import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
 import { bcp47ForBookingLocale } from '@/libs/i18n/publicBookingUi';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { GOOGLE_CONNECT_RETURN_ERROR } from '../copy/googleConnectCopy';
 import { useDashboardReviews } from '../hooks/useDashboardReviews';
 import { useGoogleBusinessConnection } from '../hooks/useGoogleBusinessConnection';
 import type { DashboardReview, ReviewsDashboardFilterId } from '../types';
-import { reviewMatchesFilter } from '../utils/reviewFilters';
+import {
+  countReviewsNeedingReply,
+  reviewMatchesFilter,
+} from '../utils/reviewFilters';
 import { ReviewsDashboardHeader } from './ReviewsDashboardHeader';
 import { ReviewsDashboardShell } from './ReviewsDashboardShell';
-import { ReviewsGoogleConnectCard } from './cards/ReviewsGoogleConnectCard';
 import { ReviewsSummaryCard } from './cards/ReviewsSummaryCard';
 import { ReviewListRow } from './list/ReviewListRow';
 import { ReviewsDashboardSkeleton } from './list/ReviewsDashboardSkeleton';
@@ -22,13 +23,13 @@ import { ReviewsSetupEmptyState } from './list/ReviewsSetupEmptyState';
 
 export interface ReviewsDashboardPageProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
-  /** Shows the Google connect card. */
-  showGoogleConnect?: boolean;
+  /** Quiet Google refresh when a listing is connected. */
+  enableGoogleRefresh?: boolean;
 }
 
 export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
   bookingFlowLocale = 'en',
-  showGoogleConnect = false,
+  enableGoogleRefresh = false,
 }) => {
   const locale = bcp47ForBookingLocale(bookingFlowLocale);
   const {
@@ -43,16 +44,7 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
     loadMoreReviews,
     updateReview,
   } = useDashboardReviews();
-  const {
-    connected: googleConnected,
-    connectLoading,
-    connectError,
-    reviewReloadNonce,
-    startConnect,
-  } = useGoogleBusinessConnection(showGoogleConnect);
-  const [googleReturnNotice, setGoogleReturnNotice] = useState<
-    'connected' | 'error' | null
-  >(null);
+  const { reviewReloadNonce } = useGoogleBusinessConnection(enableGoogleRefresh);
   const canWriteReviews = useDashboardAccess().can('reviews.write');
   const [filter, setFilter] = useState<ReviewsDashboardFilterId>('all');
   const [openReplyId, setOpenReplyId] = useState<string | null>(null);
@@ -103,21 +95,11 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
     void reloadReviews();
   }, [reviewReloadNonce, reloadReviews]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const google = params.get('google');
-    if (google === 'connected' || google === 'error') {
-      setGoogleReturnNotice(google);
-      params.delete('google');
-      const next = params.toString();
-      const path = `${window.location.pathname}${next ? `?${next}` : ''}`;
-      window.history.replaceState({}, '', path);
-    }
-  }, []);
-
   const hasAnyReviews = reviews.length > 0;
-  const googleKnownConnected =
-    googleConnected || googleReturnNotice === 'connected';
+  const needsReplyCount = useMemo(
+    () => countReviewsNeedingReply(reviews),
+    [reviews]
+  );
   /** Full skeleton only on first load — avoids flashing over existing data on retry. */
   const showLoadingSkeleton = loadStatus === 'loading' && !hasAnyReviews;
 
@@ -125,17 +107,7 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
     <ReviewsDashboardShell>
       <ReviewsDashboardHeader />
 
-      {showGoogleConnect && googleReturnNotice === 'error' ? (
-        <p className="mb-4 text-sm text-red-300" role="alert">
-          {GOOGLE_CONNECT_RETURN_ERROR}
-        </p>
-      ) : null}
-
-      <div
-        className={
-          showGoogleConnect ? 'mb-6 grid gap-3 lg:grid-cols-2' : 'mb-6'
-        }
-      >
+      <div className="mb-6 max-w-md">
         {showLoadingSkeleton ? (
           <div
             className="h-40 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.02]"
@@ -146,16 +118,6 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
             summary={summary}
             bookingFlowLocale={bookingFlowLocale}
           />
-        ) : null}
-        {showGoogleConnect ? (
-          <div className={loadStatus === 'error' ? 'lg:col-span-2' : 'h-full'}>
-            <ReviewsGoogleConnectCard
-              connected={googleKnownConnected}
-              connectLoading={connectLoading}
-              connectError={connectError}
-              onConnect={() => void startConnect()}
-            />
-          </div>
         ) : null}
       </div>
 
@@ -178,11 +140,13 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
       ) : (
         <>
           {hasAnyReviews ? (
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs text-zinc-500">
-                Showing {sorted.length} of {reviews.length} reviews
-              </p>
-              <ReviewsFilterPills value={filter} onChange={setFilter} />
+            <div className="mb-4">
+              <ReviewsFilterPills
+                value={filter}
+                onChange={setFilter}
+                allCount={reviews.length}
+                needsReplyCount={needsReplyCount}
+              />
             </div>
           ) : null}
 
@@ -192,29 +156,35 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
             <ReviewsListEmptyState filter={filter} hasAnyReviews />
           ) : (
             <ul className="grid list-none grid-cols-1 gap-2 pb-8 sm:gap-3 lg:grid-cols-2 lg:gap-4 sm:pb-10">
-              {sorted.map(review => (
-                <li
-                  key={review.id}
-                  className={
-                    canWriteReviews && openReplyId === review.id
-                      ? 'h-full lg:col-span-2'
-                      : 'h-full'
-                  }
-                >
-                  <ReviewListRow
-                    review={review}
-                    locale={locale}
-                    bookingFlowLocale={bookingFlowLocale}
-                    isReplyOpen={canWriteReviews && openReplyId === review.id}
-                    onToggleReply={
-                      canWriteReviews
-                        ? () => handleToggleReply(review.id)
-                        : undefined
+              {sorted.map(review => {
+                const canReply =
+                  canWriteReviews &&
+                  review.source !== 'google' &&
+                  !review.ownerReply?.body?.trim();
+                return (
+                  <li
+                    key={review.id}
+                    className={
+                      canReply && openReplyId === review.id
+                        ? 'h-full lg:col-span-2'
+                        : 'h-full'
                     }
-                    onSendReply={canWriteReviews ? handleSendReply : undefined}
-                  />
-                </li>
-              ))}
+                  >
+                    <ReviewListRow
+                      review={review}
+                      locale={locale}
+                      bookingFlowLocale={bookingFlowLocale}
+                      isReplyOpen={canReply && openReplyId === review.id}
+                      onToggleReply={
+                        canReply
+                          ? () => handleToggleReply(review.id)
+                          : undefined
+                      }
+                      onSendReply={canReply ? handleSendReply : undefined}
+                    />
+                  </li>
+                );
+              })}
             </ul>
           )}
           {hasMore ? (

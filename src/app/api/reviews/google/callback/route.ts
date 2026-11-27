@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     const config = getGoogleBusinessOAuthConfig();
     if (!config) {
       return NextResponse.redirect(
-        new URL(ROUTES.DASHBOARD.REVIEWS, request.url)
+        new URL(ROUTES.DASHBOARD.REVIEWS_SETTINGS, request.url)
       );
     }
 

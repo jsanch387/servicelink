@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const google = request.nextUrl.searchParams.get('google');
   const notice = google === 'connected' ? 'connected' : 'error';
   const deepLink = googleReviewsMobileDeepLink(notice);
-  const webFallback = `${request.nextUrl.origin}${ROUTES.DASHBOARD.REVIEWS}?google=${notice}`;
+  const webFallback = `${request.nextUrl.origin}${ROUTES.DASHBOARD.REVIEWS_SETTINGS}?google=${notice}`;
 
   return new NextResponse(
     buildGoogleReviewsMobileBridgeHtml({

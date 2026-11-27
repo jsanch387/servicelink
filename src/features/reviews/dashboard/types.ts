@@ -3,7 +3,7 @@ import type {
   PublicProfileReview,
 } from '../types/publicProfile';
 
-export type ReviewsDashboardFilterId = 'all' | 'needs_reply' | 'replied';
+export type ReviewsDashboardFilterId = 'all' | 'needs_reply';
 
 /** Owner inbox review — includes visibility flag (hidden rows stay in dashboard). */
 export type DashboardReview = PublicProfileReview & {

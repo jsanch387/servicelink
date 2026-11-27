@@ -1,5 +1,6 @@
 export { ReviewsDashboardPage } from './components/ReviewsDashboardPage';
 export type { ReviewsDashboardPageProps } from './components/ReviewsDashboardPage';
+export { ReviewsSettingsPage } from './components/ReviewsSettingsPage';
 export { ReviewDetailPage } from './components/ReviewDetailPage';
 export { ReviewsDashboardSkeleton } from './components/list/ReviewsDashboardSkeleton';
 export { useDashboardReviews } from './hooks/useDashboardReviews';

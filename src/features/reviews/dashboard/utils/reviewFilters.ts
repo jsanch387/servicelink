@@ -10,8 +10,7 @@ export function reviewMatchesFilter(
   filter: ReviewsDashboardFilterId
 ): boolean {
   if (filter === 'all') return true;
-  if (filter === 'needs_reply') return reviewNeedsReply(review);
-  return !reviewNeedsReply(review);
+  return reviewNeedsReply(review);
 }
 
 export function countReviewsNeedingReply(reviews: DashboardReview[]): number {

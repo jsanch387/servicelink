@@ -1,5 +1,6 @@
 export {
   ReviewsDashboardPage,
+  ReviewsSettingsPage,
   ReviewDetailPage,
   ReviewsDashboardSkeleton,
   useDashboardReviews,

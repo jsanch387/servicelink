@@ -10,7 +10,7 @@ import {
   ReviewOwnerReplyDisplay,
 } from '@/features/business-profile/reviews';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
-import React from 'react';
+import React, { useState } from 'react';
 import type { DashboardReview } from '../../types';
 import { ReviewReplyForm } from './ReviewReplyForm';
 
@@ -31,7 +31,10 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
   onToggleReply,
   onSendReply,
 }) => {
+  const [replyExpanded, setReplyExpanded] = useState(false);
+  const isGoogle = review.source === 'google';
   const hasReply = Boolean(review.ownerReply?.body?.trim());
+  const canComposeReply = !isGoogle && !hasReply && Boolean(onToggleReply);
   const ui = publicBookingUi(bookingFlowLocale);
   const expandLabels = {
     seeMore: ui.serviceCard.seeMore,
@@ -67,7 +70,7 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
           </div>
         ) : null}
 
-        {hasReply && review.ownerReply ? (
+        {hasReply && review.ownerReply && replyExpanded ? (
           <ReviewOwnerReplyDisplay
             body={review.ownerReply.body}
             className="mt-4 sm:mt-5"
@@ -76,26 +79,30 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
           />
         ) : null}
 
-        {review.source !== 'google' &&
-        !hasReply &&
-        !isReplyOpen &&
-        onToggleReply ? (
+        {hasReply ? (
+          <button
+            type="button"
+            className="mt-4 cursor-pointer self-start text-sm font-medium text-zinc-400 underline-offset-2 hover:text-white hover:underline"
+            onClick={() => setReplyExpanded(open => !open)}
+            aria-expanded={replyExpanded}
+          >
+            {replyExpanded ? 'Hide reply' : 'View reply'}
+          </button>
+        ) : null}
+
+        {canComposeReply && !isReplyOpen ? (
           <Button
             type="button"
             variant="secondary"
             size="sm"
-            className="mt-4 w-full sm:w-auto"
+            className="mt-4 w-full cursor-pointer sm:w-auto"
             onClick={onToggleReply}
           >
             Reply
           </Button>
         ) : null}
 
-        {review.source !== 'google' &&
-        !hasReply &&
-        isReplyOpen &&
-        onSendReply &&
-        onToggleReply ? (
+        {canComposeReply && isReplyOpen && onSendReply && onToggleReply ? (
           <ReviewReplyForm
             onSend={body => onSendReply(review.id, body)}
             onCancel={onToggleReply}

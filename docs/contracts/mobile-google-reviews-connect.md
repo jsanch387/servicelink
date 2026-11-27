@@ -8,13 +8,14 @@ Owners connect the Google account that manages their Business Profile. ServiceLi
 
 ## Endpoints
 
-| Purpose                       | Method | Path                           |
-| ----------------------------- | ------ | ------------------------------ |
-| Start Google connect          | `POST` | `/api/reviews/google/connect`  |
-| Confirm the connection        | `GET`  | `/api/reviews/google/status`   |
-| Google’s return (do not call) | `GET`  | `/api/reviews/google/callback` |
+| Purpose                       | Method | Path                              |
+| ----------------------------- | ------ | --------------------------------- |
+| Start Google connect          | `POST` | `/api/reviews/google/connect`     |
+| Confirm the connection        | `GET`  | `/api/reviews/google/status`      |
+| Disconnect Google             | `POST` | `/api/reviews/google/disconnect`  |
+| Google’s return (do not call) | `GET`  | `/api/reviews/google/callback`    |
 
-**Central path constants:** `API_ROUTES.REVIEWS_GOOGLE_CONNECT`, `API_ROUTES.REVIEWS_GOOGLE_STATUS`.
+**Central path constants:** `API_ROUTES.REVIEWS_GOOGLE_CONNECT`, `API_ROUTES.REVIEWS_GOOGLE_STATUS`, `API_ROUTES.REVIEWS_GOOGLE_DISCONNECT`.
 
 ---
 

@@ -18,9 +18,14 @@ export type UseGoogleBusinessConnectionResult = {
   pullLoading: boolean;
   refreshCoolingDown: boolean;
   connectError: string | null;
+  /** Live Google leave-a-review URL from listing metadata (preview). */
+  googleReviewUrl: string | null;
+  googlePlaceId: string | null;
   /** Bumps after a background refresh so the inbox can reload. */
   reviewReloadNonce: number;
+  disconnectLoading: boolean;
   startConnect: () => Promise<void>;
+  disconnect: () => Promise<boolean>;
   pullReviews: () => Promise<boolean>;
 };
 
@@ -31,9 +36,12 @@ export function useGoogleBusinessConnection(
   const [loadStatus, setLoadStatus] = useState<LoadStatus>('loading');
   const [importedCount, setImportedCount] = useState<number | null>(null);
   const [connectLoading, setConnectLoading] = useState(false);
+  const [disconnectLoading, setDisconnectLoading] = useState(false);
   const [pullLoading, setPullLoading] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [googleReviewUrl, setGoogleReviewUrl] = useState<string | null>(null);
+  const [googlePlaceId, setGooglePlaceId] = useState<string | null>(null);
   const [reviewReloadNonce, setReviewReloadNonce] = useState(0);
   const [refreshLockedUntil, setRefreshLockedUntil] = useState(0);
   const [, setCooldownTick] = useState(0);
@@ -67,6 +75,8 @@ export function useGoogleBusinessConnection(
           success?: boolean;
           connected?: boolean;
           lastSyncedAt?: string | null;
+          googleReviewUrl?: string | null;
+          googlePlaceId?: string | null;
         } | null;
         if (cancelled) return;
         if (!response.ok || !json?.success) {
@@ -76,6 +86,16 @@ export function useGoogleBusinessConnection(
         setConnected(json.connected === true);
         setLastSyncedAt(
           typeof json.lastSyncedAt === 'string' ? json.lastSyncedAt : null
+        );
+        setGoogleReviewUrl(
+          typeof json.googleReviewUrl === 'string' && json.googleReviewUrl.trim()
+            ? json.googleReviewUrl.trim()
+            : null
+        );
+        setGooglePlaceId(
+          typeof json.googlePlaceId === 'string' && json.googlePlaceId.trim()
+            ? json.googlePlaceId.trim()
+            : null
         );
         setLoadStatus('ready');
       } catch {
@@ -119,6 +139,46 @@ export function useGoogleBusinessConnection(
       );
     } finally {
       setConnectLoading(false);
+    }
+  }, [enabled]);
+
+  const disconnect = useCallback(async () => {
+    if (!enabled) return false;
+    setConnectError(null);
+    setDisconnectLoading(true);
+    try {
+      const response = await fetch(API_ROUTES.REVIEWS_GOOGLE_DISCONNECT, {
+        method: 'POST',
+      });
+      const json = (await response.json().catch(() => null)) as {
+        success?: boolean;
+        error?: string;
+      } | null;
+
+      if (!response.ok || !json?.success) {
+        setConnectError(
+          typeof json?.error === 'string' && json.error.trim()
+            ? json.error
+            : 'Could not disconnect Google.'
+        );
+        return false;
+      }
+
+      setConnected(false);
+      setGoogleReviewUrl(null);
+      setGooglePlaceId(null);
+      setLastSyncedAt(null);
+      setImportedCount(null);
+      autoRefreshStarted.current = false;
+      setReviewReloadNonce(nonce => nonce + 1);
+      return true;
+    } catch {
+      setConnectError(
+        'Something went wrong. Check your connection and try again.'
+      );
+      return false;
+    } finally {
+      setDisconnectLoading(false);
     }
   }, [enabled]);
 
@@ -209,11 +269,15 @@ export function useGoogleBusinessConnection(
     importedCount,
     loadStatus,
     connectLoading,
+    disconnectLoading,
     pullLoading,
     refreshCoolingDown,
     connectError,
+    googleReviewUrl,
+    googlePlaceId,
     reviewReloadNonce,
     startConnect,
+    disconnect,
     pullReviews,
   };
 }

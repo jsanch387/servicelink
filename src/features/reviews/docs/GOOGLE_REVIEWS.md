@@ -56,13 +56,23 @@ Connect can succeed even when listing lookup fails (quota 0). Pull retries looku
 
 ## Owner UI
 
-Card: `ReviewsGoogleConnectCard` on `ReviewsDashboardPage`. Copy: `dashboard/copy/googleConnectCopy.ts`. Hook: `useGoogleBusinessConnection`.
+Reviews uses an **Inbox / Settings** section nav (same idea as Payments).
 
-| State          | What they see                                                                                                                   |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Not connected  | Connect explanation + **Connect to Google**                                                                                     |
-| Connected      | Imported count, or a note that new reviews show up on their own. **Refresh now** is optional and waits 3 minutes between tries. |
-| Refresh failed | Error under the button (quota, no listing, Google error). A quiet background refresh does not show this.                        |
+| Surface | What lives there |
+| --- | --- |
+| `/dashboard/reviews` (Inbox) | Star summary + review list |
+| `/dashboard/reviews/settings` | Google connect, Google review link, review-request destination |
+
+Card: `ReviewsGoogleConnectCard` on Settings. Destination: `ReviewsRequestDestinationCard`. Copy: `dashboard/copy/googleConnectCopy.ts`. Hook: `useGoogleBusinessConnection`.
+
+| State | What they see on Settings |
+| --- | --- |
+| Not connected | Connect explanation + **Connect to Google** |
+| Connected | Status, truncated review link (copy / open), **Disconnect** (confirm modal), destination choice (ServiceLink vs Google) |
+
+**Disconnect** revokes the Google token (best effort), deletes `google_business_connections` for the shop, clears imported `google_reviews`, and resets `business_profiles.review_request_destination` to `servicelink`.
+
+**Review request destination** is stored on `business_profiles.review_request_destination` (`servicelink` | `google`, default `servicelink`). Settings load/save via `GET`/`PATCH` `/api/reviews/settings`. Choosing Google requires an active Google connection.
 
 Google rows in the inbox have `source: 'google'`. They are excluded from **Needs reply** and have no reply UI.
 
@@ -141,7 +151,7 @@ sequenceDiagram
   App->>Google: Exchange code
   App->>Google: List accounts and locations
   App->>DB: Upsert google_business_connections
-  App->>Owner: Redirect /dashboard/reviews?google=connected
+  App->>Owner: Redirect /dashboard/reviews/settings?google=connected
 
   Owner->>App: Lands back on Reviews
   App->>Google: Find listing again

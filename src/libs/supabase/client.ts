@@ -229,6 +229,8 @@ export type Database = {
           /** When true and text is set, customers must agree before booking. */
           booking_policy_enabled: boolean;
           booking_policy_text: string | null;
+          /** Where review requests send customers: servicelink or google. */
+          review_request_destination: 'servicelink' | 'google';
           /** True when this shop used Team before the Team price existed. */
           team_included: boolean;
         };
@@ -275,6 +277,7 @@ export type Database = {
           public_booking_default_locale?: string;
           booking_policy_enabled?: boolean;
           booking_policy_text?: string | null;
+          review_request_destination?: 'servicelink' | 'google';
           team_included?: boolean;
         };
         Update: {
@@ -320,6 +323,7 @@ export type Database = {
           public_booking_default_locale?: string;
           booking_policy_enabled?: boolean;
           booking_policy_text?: string | null;
+          review_request_destination?: 'servicelink' | 'google';
           team_included?: boolean;
         };
       };

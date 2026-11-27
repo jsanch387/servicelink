@@ -96,6 +96,8 @@ export const ROUTES = {
     /** Owner multi-job create appointment wizard. */
     BOOKINGS_NEW: '/dashboard/bookings/new',
     REVIEWS: '/dashboard/reviews',
+    /** Owner: Google connect, review request destination, and related config. */
+    REVIEWS_SETTINGS: '/dashboard/reviews/settings',
     /** Single review (owner dashboard). Pass UUID from your data layer. */
     REVIEW_DETAIL: (reviewId: string) =>
       `/dashboard/reviews/${encodeURIComponent(reviewId.trim())}`,
@@ -363,6 +365,10 @@ export const API_ROUTES = {
   REVIEWS_GOOGLE_SYNC: '/api/reviews/google/sync',
   /** Owner: import Google reviews for the connected listing. */
   REVIEWS_GOOGLE_PULL: '/api/reviews/google/pull',
+  /** Owner: disconnect Google and clear imported Google reviews. */
+  REVIEWS_GOOGLE_DISCONNECT: '/api/reviews/google/disconnect',
+  /** Owner: review request destination (ServiceLink vs Google). */
+  REVIEWS_SETTINGS: '/api/reviews/settings',
   /** Vercel Cron: unanswered quote requests in the 3-day follow-up window. */
   INTERNAL_CRON_QUOTE_REQUEST_FOLLOW_UPS:
     '/api/internal/cron/quote-request-follow-ups',

@@ -9,7 +9,7 @@ export function googleConnectReturnPath(
   notice: GoogleConnectReturnNotice
 ): string {
   const params = new URLSearchParams({ google: notice });
-  return `${ROUTES.DASHBOARD.REVIEWS}?${params.toString()}`;
+  return `${ROUTES.DASHBOARD.REVIEWS_SETTINGS}?${params.toString()}`;
 }
 
 /** https page the OAuth browser can land on. It opens the app. */

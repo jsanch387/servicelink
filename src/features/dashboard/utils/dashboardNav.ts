@@ -325,6 +325,9 @@ export function getDashboardPageTitle(pathname: string): string | null {
   if (pathname.startsWith(ROUTES.DASHBOARD.PAYMENTS_SETTINGS)) {
     return 'Payment settings';
   }
+  if (pathname.startsWith(ROUTES.DASHBOARD.REVIEWS_SETTINGS)) {
+    return 'Review settings';
+  }
   if (pathname === ROUTES.DASHBOARD.INVOICES_NEW) return 'New invoice';
   if (pathname.startsWith(`${ROUTES.DASHBOARD.INVOICES}/`)) return 'Invoice';
 

@@ -1,3 +1,4 @@
+import { fetchGoogleLocationReviewLink } from '@/features/reviews/google-connect/server/fetchGoogleLocationReviewLink';
 import { loadGoogleBusinessConnectionStatus } from '@/features/reviews/google-connect/server/loadGoogleBusinessConnectionStatus';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
@@ -31,11 +32,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    let googleReviewUrl: string | null = null;
+    let googlePlaceId: string | null = null;
+    if (loaded.status.connected) {
+      const link = await fetchGoogleLocationReviewLink(resolved.businessId);
+      if (link.ok) {
+        googleReviewUrl = link.link.reviewUrl;
+        googlePlaceId = link.link.placeId;
+      }
+    }
+
     return NextResponse.json({
       success: true,
       connected: loaded.status.connected,
       locationTitle: loaded.status.locationTitle,
       lastSyncedAt: loaded.status.lastSyncedAt,
+      googleReviewUrl,
+      googlePlaceId,
     });
   } catch (error) {
     console.error('[reviews:google-connect] GET status failed', error);
